@@ -291,7 +291,7 @@
 import axios from "axios";
 
 const frappeClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_FRAPPE_BASE_URL,
+  baseURL: process.env.NEXT_PUBLIC_dev_prod_FRAPPE_BASE_URL,
   timeout: 15000,
   withCredentials: true,
   headers: {
