@@ -66,8 +66,7 @@ export const getAllowedRoles = (frappeRoles: any[]): AllowedRole[] => {
     'Projects Manager': 'Projects Manager',
     'Projects User': 'Projects User',
     'Delivery Manager': 'Delivery Manager',
-    // Add other possible Frappe role names that should map to your roles
-    'System Manager': 'Sales Manager', // Example mapping
+    
     'Employee': 'Sales User', // Example mapping
     // Check your Frappe system for actual role names and map them here
   };

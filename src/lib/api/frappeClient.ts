@@ -288,17 +288,16 @@
 
 // src/api/frappeclient
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import axios from 'axios';
+import axios from "axios";
 
-// // Create axios instance with base URL pointing to proxy
 const frappeClient = axios.create({
-  baseURL: 'https://recuritment.vercel.app/api/frappe',
+  baseURL: process.env.NEXT_PUBLIC_FRAPPE_BASE_URL,
   timeout: 15000,
   withCredentials: true,
   headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-  }
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  },
 });
 // Request interceptor
 frappeClient.interceptors.request.use(
