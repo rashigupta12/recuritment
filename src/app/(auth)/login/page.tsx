@@ -1,7 +1,6 @@
-//src/app/(auth)/login/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/components/providers/ThemeProvider';
@@ -9,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import Image from 'next/image';
@@ -20,9 +18,26 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
-  const { login, error, clearError } = useAuth();
+  const { login, error, clearError, isAuthenticated, currentRole } = useAuth();
   const { brandConfig } = useTheme();
   const router = useRouter();
+
+  // Check if user is already authenticated and redirect
+  useEffect(() => {
+    if (isAuthenticated && currentRole) {
+      console.log('User already authenticated, redirecting to dashboard');
+      const roleRoutes: Record<string, string> = {
+        'Sales User': '/dashboard/sales-user',
+        'Sales Manager': '/dashboard/sales-manager',
+        'Projects Manager': '/dashboard/projects-manager',
+        'Projects User': '/dashboard/projects-user',
+        'Delivery Manager': '/dashboard/delivery-manager',
+      };
+      
+      const redirectTo = roleRoutes[currentRole] || '/dashboard/sales-user';
+      router.replace(redirectTo);
+    }
+  }, [isAuthenticated, currentRole, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,15 +47,25 @@ export default function LoginPage() {
     clearError();
 
     try {
+      console.log('Attempting login...');
       const result = await login(username, password);
+      
+      console.log('Login result:', result);
       
       if (result.success) {
         if (result.requiresPasswordReset) {
-          router.push('/first-time-password-reset');
+          console.log('Password reset required, redirecting...');
+          router.replace('/first-time-password-reset');
         } else {
-          // User will be redirected by middleware based on their role
-          router.push('/dashboard');
+          console.log('Login successful, waiting for role-based redirect...');
+          // The AuthContext will handle the redirect, but add a backup
+          setTimeout(() => {
+            console.log('Backup redirect triggered');
+            router.replace('/dashboard');
+          }, 1000);
         }
+      } else {
+        console.error('Login failed:', result.error);
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -48,6 +73,18 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
+
+  // Don't show login form if user is already authenticated
+  if (isAuthenticated && currentRole) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="loading-spinner mx-auto mb-4"></div>
+          <p>Redirecting to your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 py-12 px-4 sm:px-6 lg:px-8">

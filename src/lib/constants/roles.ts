@@ -31,33 +31,71 @@ export const ROLE_PERMISSIONS: Record<AllowedRole, string[]> = {
 };
 
 export const getAllowedRoles = (frappeRoles: any[]): AllowedRole[] => {
+  console.log('=== ROLE DEBUGGING START ===');
+  console.log('Raw frappeRoles input:', frappeRoles);
+  
   if (!frappeRoles || !Array.isArray(frappeRoles)) {
+    console.log('No valid roles array, returning empty array');
     return [];
   }
 
-  const roleNames = frappeRoles.map(r => {
-    if (typeof r === 'string') return r;
-    if (typeof r === 'object' && r !== null) {
-      return r.role || r.name || '';
+  // Extract role names from the Frappe structure
+  const roleNames = frappeRoles.map((r, index) => {
+    console.log(`Role ${index}:`, r);
+    if (typeof r === 'string') {
+      console.log(`Role ${index} is string:`, r);
+      return r;
     }
+    if (typeof r === 'object' && r !== null) {
+      // Frappe stores role name in the 'role' property
+      const roleName = r.role || r.name || '';
+      console.log(`Role ${index} is object, extracted role name:`, roleName);
+      return roleName;
+    }
+    console.log(`Role ${index} is neither string nor valid object`);
     return '';
   }).filter(Boolean);
-
+  
+  console.log('Extracted role names:', roleNames);
+  
+  // Map Frappe role names to your AllowedRole types
+  // You need to check what actual role names exist in your Frappe system
   const roleMap: Record<string, AllowedRole> = {
     'Sales User': 'Sales User',
     'Sales Manager': 'Sales Manager',
     'Projects Manager': 'Projects Manager',
     'Projects User': 'Projects User',
     'Delivery Manager': 'Delivery Manager',
+    // Add other possible Frappe role names that should map to your roles
+    'System Manager': 'Sales Manager', // Example mapping
+    'Employee': 'Sales User', // Example mapping
+    // Check your Frappe system for actual role names and map them here
   };
-
+  
+  console.log('Available role mappings:', Object.keys(roleMap));
+  
   const mappedRoles = new Set<AllowedRole>();
   
+  // Map roles and add debug output
   for (const roleName of roleNames) {
+    console.log(`Checking role: "${roleName}"`);
     if (roleMap[roleName]) {
       mappedRoles.add(roleMap[roleName]);
+      console.log(`✅ Mapped: ${roleName} -> ${roleMap[roleName]}`);
+    } else {
+      console.log(`❌ Not mapped: ${roleName} (you may need to add this to roleMap)`);
     }
   }
-
-  return Array.from(mappedRoles);
+  
+  const finalRoles = Array.from(mappedRoles);
+  console.log('Final mapped roles:', finalRoles);
+  
+  // If no roles mapped, log all available Frappe roles for debugging
+  if (finalRoles.length === 0) {
+    console.log('⚠️ No valid roles found! Available Frappe roles to map:', roleNames);
+  }
+  
+  console.log('=== ROLE DEBUGGING END ===');
+  
+  return finalRoles;
 };
