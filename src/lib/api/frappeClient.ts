@@ -292,7 +292,7 @@ import axios from 'axios';
 
 // // Create axios instance with base URL pointing to proxy
 const frappeClient = axios.create({
-  baseURL: 'http://localhost:3000/api/frappe',
+  baseURL: 'https://recuritment.vercel.app/api/frappe',
   timeout: 15000,
   withCredentials: true,
   headers: {
