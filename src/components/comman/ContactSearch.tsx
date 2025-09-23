@@ -1,0 +1,644 @@
+'use client';
+import { frappeAPI } from '@/lib/api/frappeClient';
+import { Edit, Loader2, Mail, Phone, Plus, User, X } from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+
+// -------- Type Definitions --------
+type Email = { email_id: string; is_primary: number };
+type Phone = { phone: string; is_primary_phone: number };
+
+type ContactType = {
+  name: string;
+  first_name: string | null;
+  last_name: string | null;
+  designation?: string | null;
+  gender?: string | null;
+  organization?: string | null;
+  email_ids: Email[];
+  phone_nos: Phone[];
+};
+
+type SimplifiedContact = {
+  name: string;
+  email: string;
+  phone: string;
+  contactId?: string;
+  // Add additional fields to store the full contact data
+  designation?: string;
+  gender?: string;
+  organization?: string;
+  first_name?: string;
+  last_name?: string;
+};
+
+type ContactMeta = {
+  uniqueDesignations: string[];
+  uniqueGenders: string[];
+  uniqueOrganizations: string[];
+};
+
+type ContactSearchSectionProps = {
+  onContactSelect: (contact: SimplifiedContact) => void;
+  selectedContact: SimplifiedContact | null;
+  onEdit: () => void;
+  onRemove: () => void;
+};
+
+// -------- Meta Extraction Utility --------
+function extractContactMeta(contacts: ContactType[]): ContactMeta {
+console.log(contacts)
+  const designations = new Set<string>();
+  const genders = new Set<string>();
+  const organizations = new Set<string>();
+
+  contacts.forEach(contact => {
+    if (contact.designation && contact.designation.trim()) designations.add(contact.designation.trim());
+    if (contact.gender && contact.gender.trim()) genders.add(contact.gender.trim());
+    if (contact.organization && contact.organization.trim()) organizations.add(contact.organization.trim());
+  });
+
+  return {
+    uniqueDesignations: Array.from(designations),
+    uniqueGenders: Array.from(genders),
+    uniqueOrganizations: Array.from(organizations),
+  };
+}
+
+// -------- Component --------
+const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
+  onContactSelect,
+  selectedContact,
+  // onEdit,
+  onRemove,
+}) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<ContactType[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [showContactDialog, setShowContactDialog] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({
+    top: 0,
+    left: 0,
+    width: 0,
+  });
+
+  const [contactForm, setContactForm] = useState({
+    first_name: '',
+    last_name: '',
+    designation: '',
+    gender: '',
+    email: '',
+    phone: '',
+    organization: '',
+  });
+
+  const [contactMeta, setContactMeta] = useState<ContactMeta>({
+    uniqueDesignations: [],
+    uniqueGenders: [],
+    uniqueOrganizations: [],
+  });
+
+  // Calculate dropdown position
+  const calculateDropdownPosition = useCallback(() => {
+    if (!inputRef.current) return;
+    const inputRect = inputRef.current.getBoundingClientRect();
+    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+    const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+    setDropdownPosition({
+      top: inputRect.bottom + scrollTop,
+      left: inputRect.left + scrollLeft,
+      width: inputRect.width,
+    });
+  }, []);
+
+  useEffect(() => {
+    if (showDropdown) {
+      calculateDropdownPosition();
+      const handleResize = () => calculateDropdownPosition();
+      window.addEventListener('resize', handleResize);
+      window.addEventListener('scroll', handleResize);
+      return () => {
+        window.removeEventListener('resize', handleResize);
+        window.removeEventListener('scroll', handleResize);
+      };
+    }
+  }, [showDropdown, calculateDropdownPosition]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node) &&
+        !inputRef.current?.contains(event.target as Node)
+      ) {
+        setShowDropdown(false);
+      }
+    };
+    if (showDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showDropdown]);
+
+  // Helpers
+  const getPrimaryEmail = (contact: ContactType): string => {
+    const primaryEmail = contact.email_ids.find(email => email.is_primary === 1);
+    return primaryEmail?.email_id || (contact.email_ids.length > 0 ? contact.email_ids[0].email_id : '');
+  };
+
+  const getPrimaryPhone = (contact: ContactType): string => {
+    const primaryPhone = contact.phone_nos.find(phone => phone.is_primary_phone === 1);
+    return primaryPhone?.phone || (contact.phone_nos.length > 0 ? contact.phone_nos[0].phone : '');
+  };
+
+  const getFullName = (contact: ContactType): string => {
+    return contact.name && contact.name.trim()
+      ? contact.name
+      : `${contact.first_name ?? ''} ${contact.last_name ?? ''}`.trim();
+  };
+
+  // Search contacts
+  const searchContacts = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      setShowDropdown(false);
+      setContactMeta({ uniqueDesignations: [], uniqueGenders: [], uniqueOrganizations: [] });
+      return;
+    }
+    setIsSearching(true);
+    setShowDropdown(true);
+    try {
+      const response = await frappeAPI.makeAuthenticatedRequest(
+        "GET",
+        `/method/recruitment_app.contact_search.search_contacts?search_term=${encodeURIComponent(query)}`
+      );
+      if (response.message?.status === 'success') {
+        const data: ContactType[] = response.message.data || [];
+        console.log(data)
+        setSearchResults(data);
+        setContactMeta(extractContactMeta(data));
+      } else {
+        setSearchResults([]);
+        setContactMeta({ uniqueDesignations: [], uniqueGenders: [], uniqueOrganizations: [] });
+      }
+    } catch (error) {
+      setSearchResults([]);
+      setContactMeta({ uniqueDesignations: [], uniqueGenders: [], uniqueOrganizations: [] });
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
+
+  // Debounced search
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      searchContacts(searchQuery);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchQuery, searchContacts]);
+
+  // Handlers
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+
+  const handleContactSelect = (contact: ContactType) => {
+    const simplifiedContact: SimplifiedContact = {
+      name: getFullName(contact),
+      email: getPrimaryEmail(contact),
+      phone: getPrimaryPhone(contact),
+      contactId: contact.name,
+      // Store additional fields for editing
+      designation: contact.designation || '',
+      gender: contact.gender || '',
+      organization: contact.organization || '',
+      first_name: contact.first_name || '',
+      last_name: contact.last_name || '',
+    };
+    onContactSelect(simplifiedContact);
+    setSearchQuery(getFullName(contact));
+    setShowDropdown(false);
+    setSearchResults([]);
+  };
+
+  const handleInputFocus = () => {
+    if (searchQuery.trim() && !isSearching) {
+      setShowDropdown(true);
+    } else if (searchQuery.trim()) {
+      searchContacts(searchQuery);
+    }
+  };
+
+  const handleClearContact = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setSearchQuery('');
+    setSearchResults([]);
+    setShowDropdown(false);
+    onRemove();
+  };
+
+  const handleEditContact = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (selectedContact) {
+      // Use the stored contact data if available, otherwise parse from name
+      const firstName = selectedContact.first_name || selectedContact.name.split(' ')[0] || '';
+      const lastName = selectedContact.last_name || selectedContact.name.split(' ').slice(1).join(' ') || '';
+      
+      setContactForm({
+        first_name: firstName,
+        last_name: lastName,
+        designation: selectedContact.designation || '',
+        gender: selectedContact.gender || '',
+        email: selectedContact.email,
+        phone: selectedContact.phone,
+        organization: selectedContact.organization || '',
+      });
+    }
+    setShowContactDialog(true);
+    setShowDropdown(false);
+  };
+
+  const handleCreateContact = () => {
+    const [firstName, ...lastNameParts] = searchQuery.split(' ');
+    setContactForm({
+      first_name: firstName || searchQuery,
+      last_name: lastNameParts.join(' ') || '',
+      designation: '',
+      gender: '',
+      email: '',
+      phone: '',
+      organization: '',
+    });
+    setShowContactDialog(true);
+    setShowDropdown(false);
+  };
+
+  const handleSaveContact = async () => {
+    try {
+      setIsSaving(true);
+
+      const contactData = {
+        first_name: contactForm.first_name,
+        last_name: contactForm.last_name,
+        designation: contactForm.designation,
+        gender: contactForm.gender,
+        organization: contactForm.organization,
+        email_ids: contactForm.email
+          ? [{ email_id: contactForm.email, is_primary: 1 }]
+          : [],
+        phone_nos: contactForm.phone
+          ? [{ phone: contactForm.phone, is_primary_phone: 1 }]
+          : [],
+      };
+
+      let contactId: string;
+      let contactName: string;
+
+      if (selectedContact?.contactId) {
+        await frappeAPI.updateContact(selectedContact.contactId, contactData);
+        contactId = selectedContact.contactId;
+        contactName = selectedContact.name;
+      } else {
+        const response = await frappeAPI.createContact(contactData);
+        contactId = response.data.name;
+        contactName = `${contactForm.first_name} ${contactForm.last_name}`.trim();
+      }
+
+      const simplifiedContact: SimplifiedContact = {
+        name: contactName,
+        email: contactForm.email,
+        phone: contactForm.phone,
+        contactId,
+        // Include the additional fields in the updated contact
+        designation: contactForm.designation,
+        gender: contactForm.gender,
+        organization: contactForm.organization,
+        first_name: contactForm.first_name,
+        last_name: contactForm.last_name,
+      };
+      onContactSelect(simplifiedContact);
+      setSearchQuery(contactName);
+      setShowContactDialog(false);
+      setContactForm({ first_name: '', last_name: '', designation: '', gender: '', email: '', phone: '', organization: '' });
+    } catch (error) {
+      alert('Failed to save contact. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const hasValidContact = Boolean(selectedContact);
+
+  // -------- Dropdown Component --------
+  const DropdownContent = () => (
+    <div
+      ref={dropdownRef}
+      className="fixed bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-y-auto"
+      style={{
+        top: dropdownPosition.top,
+        left: dropdownPosition.left,
+        width: dropdownPosition.width,
+        zIndex: 9999,
+      }}
+    >
+      {isSearching ? (
+        <div className="px-4 py-2 text-sm text-gray-500 flex items-center">
+          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          Searching contacts...
+        </div>
+      ) : searchResults.length > 0 ? (
+        <div className="overflow-y-auto max-h-[calc(60vh-100px)]">
+          {searchResults.map((contact, index) => (
+            <div
+              key={contact.name || index}
+              className="px-4 py-3 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+              onClick={() => handleContactSelect(contact)}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-gray-900 truncate">{getFullName(contact)}</p>
+                  <div className="text-xs text-gray-500 mt-1 space-y-1">
+                    {contact.designation && (
+                      <div className="text-sm text-gray-600">{contact.designation}</div>
+                    )}
+                    {contact.organization && (
+                      <div className="text-sm text-gray-600">{contact.organization}</div>
+                    )}
+                    {contact.gender && (
+                      <div className="flex items-center"><span className="mr-2">{contact.gender}</span></div>
+                    )}
+                    {getPrimaryEmail(contact) && (
+                      <div className="flex items-center">
+                        <Mail className="h-3 w-3 mr-1 flex-shrink-0" />
+                        <span className="truncate">{getPrimaryEmail(contact)}</span>
+                      </div>
+                    )}
+                    {getPrimaryPhone(contact) && (
+                      <div className="flex items-center">
+                        <Phone className="h-3 w-3 mr-1 flex-shrink-0" />
+                        <span>{getPrimaryPhone(contact)}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+          <div
+            className="px-4 py-3 hover:bg-primary/5 cursor-pointer border-t bg-gray-50 text-primary font-medium"
+            onClick={handleCreateContact}
+          >
+            <Plus className="h-4 w-4 inline mr-2" />
+            Add New Contact
+          </div>
+        </div>
+      ) : searchQuery ? (
+        <div
+          className="px-4 py-3 hover:bg-primary/5 cursor-pointer text-primary font-medium"
+          onClick={handleCreateContact}
+        >
+          <Plus className="h-4 w-4 inline mr-2" />
+          Create contact for &quot;{searchQuery}&quot;
+        </div>
+      ) : (
+        <div className="px-4 py-2 text-sm text-gray-500">
+          Start typing to search contacts...
+        </div>
+      )}
+      {/* Display extracted meta below dropdown for quick view or filter UI */}
+      {(contactMeta.uniqueDesignations.length > 0 ||
+        contactMeta.uniqueGenders.length > 0 ||
+        contactMeta.uniqueOrganizations.length > 0) && (
+        <div className="px-4 py-2 border-t text-xs text-gray-400 bg-gray-50">
+          <div>
+            <span className="font-medium">Designations:</span>{" "}
+            {contactMeta.uniqueDesignations.join(", ")}
+          </div>
+          <div>
+            <span className="font-medium">Genders:</span>{" "}
+            {contactMeta.uniqueGenders.join(", ")}
+          </div>
+          <div>
+            <span className="font-medium">Organizations:</span>{" "}
+            {contactMeta.uniqueOrganizations.join(", ")}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // -------- Render --------
+  return (
+    <div className="space-y-4">
+      {/* Search Field */}
+      <div className="w-full">
+        <div className="relative">
+          <div className="flex items-center">
+            <User className="absolute left-3 h-4 w-4 text-gray-400" />
+            <input
+              ref={inputRef}
+              type="text"
+              placeholder="Search contacts by name, email, or phone..."
+              value={searchQuery}
+              onChange={handleSearchChange}
+              onFocus={handleInputFocus}
+              className="w-full pl-10 pr-20 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors"
+            />
+
+            <div className="absolute right-2 flex items-center space-x-1 z-10">
+              {isSearching && (
+                <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+              )}
+              {!isSearching && (hasValidContact || searchQuery.trim()) && (
+                <>
+                  {hasValidContact && (
+                    <button
+                      type="button"
+                      onClick={handleEditContact}
+                      className="p-1 rounded-full text-gray-500 hover:text-primary hover:bg-primary/10 transition-colors flex-shrink-0"
+                      title="Edit contact"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleClearContact}
+                    className="p-1 rounded-full text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors flex-shrink-0"
+                    title="Clear contact"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+        {showDropdown && typeof document !== 'undefined' && createPortal(<DropdownContent />, document.body)}
+      </div>
+
+      {/* Selected Contact Display */}
+      {selectedContact && (
+        <div className="border border-primary/20 rounded-lg p-4 bg-primary/5 animate-in fade-in-50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                <User className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-medium text-gray-900">{selectedContact.name}</h3>
+                <div className="text-sm text-gray-600 space-y-1">
+                  {selectedContact.designation && (
+                    <div className="text-sm text-gray-600">{selectedContact.designation}</div>
+                  )}
+                  {selectedContact.organization && (
+                    <div className="text-sm text-gray-600">{selectedContact.organization}</div>
+                  )}
+                  {selectedContact.email && (
+                    <div className="flex items-center">
+                      <Mail className="h-3 w-3 mr-2" />
+                      {selectedContact.email}
+                    </div>
+                  )}
+                  {selectedContact.phone && (
+                    <div className="flex items-center">
+                      <Phone className="h-3 w-3 mr-2" />
+                      {selectedContact.phone}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create/Edit Contact Dialog */}
+      {showContactDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white">
+              <h2 className="text-xl font-bold text-gray-900">
+                {selectedContact ? 'Edit Contact' : 'Add New Contact'}
+              </h2>
+              <button
+                onClick={() => setShowContactDialog(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+                  <input
+                    type="text"
+                    value={contactForm.first_name}
+                    onChange={(e) => setContactForm(prev => ({ ...prev, first_name: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                  <input
+                    type="text"
+                    value={contactForm.last_name}
+                    onChange={(e) => setContactForm(prev => ({ ...prev, last_name: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Designation</label>
+                  <input
+                    type="text"
+                    value={contactForm.designation}
+                    onChange={(e) => setContactForm(prev => ({ ...prev, designation: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                    placeholder="e.g., HR Manager"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                  <select
+                    value={contactForm.gender}
+                    onChange={(e) => setContactForm(prev => ({ ...prev, gender: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                  >
+                    <option value="">Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Organization</label>
+                <input
+                  type="text"
+                  value={contactForm.organization}
+                  onChange={(e) => setContactForm(prev => ({ ...prev, organization: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                  placeholder="e.g., Company Name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={contactForm.email}
+                  onChange={(e) => setContactForm(prev => ({ ...prev, email: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                <input
+                  type="tel"
+                  value={contactForm.phone}
+                  onChange={(e) => setContactForm(prev => ({ ...prev, phone: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                />
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end space-x-3 sticky bottom-0 bg-white">
+              <button
+                onClick={() => setShowContactDialog(false)}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                disabled={isSaving}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveContact}
+                disabled={isSaving || !contactForm.first_name.trim()}
+                className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+              >
+                {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+                <span>
+                  {isSaving
+                    ? 'Saving...'
+                    : selectedContact
+                    ? 'Update Contact'
+                    : 'Create Contact'}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ContactSearchSection;
