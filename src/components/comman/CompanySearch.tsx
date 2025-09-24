@@ -27,6 +27,23 @@ type CompanySearchSectionProps = {
   selectedCompany: SimplifiedCompany | null;
   onEdit: () => void;
   onRemove: () => void;
+ 
+};
+
+// -------- Company Form State --------
+type CompanyFormState = {
+  company_name: string;
+  country: string;
+  email: string;
+  website: string;
+};
+
+// Initial state for company form
+const initialCompanyFormState: CompanyFormState = {
+  company_name: '',
+  country: '',
+  email: '',
+  website: '',
 };
 
 // -------- Component --------
@@ -51,12 +68,8 @@ const CompanySearchSection: React.FC<CompanySearchSectionProps> = ({
     width: 0,
   });
 
-  const [companyForm, setCompanyForm] = useState({
-    company_name: '',
-    country: '',
-    email: '',
-    website: '',
-  });
+  // Use separate state for company form to avoid conflicts
+  const [companyForm, setCompanyForm] = useState<CompanyFormState>(initialCompanyFormState);
 
   // Calculate dropdown position
   const calculateDropdownPosition = useCallback(() => {
@@ -178,10 +191,10 @@ const CompanySearchSection: React.FC<CompanySearchSectionProps> = ({
     e.preventDefault();
     e.stopPropagation();
     if (selectedCompany) {
+      // Reset form with selected company data
       setCompanyForm({
         company_name: selectedCompany.company_name,
         country: selectedCompany.country,
-       
         email: selectedCompany.email || '',
         website: selectedCompany.website || '',
       });
@@ -191,6 +204,7 @@ const CompanySearchSection: React.FC<CompanySearchSectionProps> = ({
   };
 
   const handleCreateCompany = () => {
+    // Reset form with new company data
     setCompanyForm({
       company_name: searchQuery || '',
       country: '',
@@ -236,12 +250,19 @@ const CompanySearchSection: React.FC<CompanySearchSectionProps> = ({
       onCompanySelect(simplifiedCompany);
       setSearchQuery(companyName);
       setShowCompanyDialog(false);
-      setCompanyForm({ company_name: '', country: '', email: '', website: '' });
+      // Reset form after successful save
+      setCompanyForm(initialCompanyFormState);
     } catch (error) {
       alert('Failed to save company. Please try again.');
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleCloseCompanyDialog = () => {
+    setShowCompanyDialog(false);
+    // Reset form when closing dialog
+    setCompanyForm(initialCompanyFormState);
   };
 
   const hasValidCompany = Boolean(selectedCompany);
@@ -413,7 +434,7 @@ const CompanySearchSection: React.FC<CompanySearchSectionProps> = ({
                 {selectedCompany ? 'Edit Company' : 'Add New Company'}
               </h2>
               <button
-                onClick={() => setShowCompanyDialog(false)}
+                onClick={handleCloseCompanyDialog}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
               >
                 <X className="h-5 w-5 text-gray-500" />
@@ -423,52 +444,39 @@ const CompanySearchSection: React.FC<CompanySearchSectionProps> = ({
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Company Name *</label>
                 <input
-                  type="text"
-                  value={companyForm.company_name}
-                  onChange={(e) => setCompanyForm(prev => ({ ...prev, company_name: e.target.value }))}
+  type="text"
+  value={companyForm.company_name}
+  onChange={(e) => {
+    const value = e.target.value;
+    // Capitalize first letter only
+    const formattedValue = value.charAt(0).toUpperCase() + value.slice(1);
+    setCompanyForm(prev => ({ ...prev, company_name: formattedValue }));
+  }}
+  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+  required
+/>
+
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Country *</label>
+                <select
+                  value={companyForm.country}
+                  onChange={(e) => setCompanyForm(prev => ({ ...prev, country: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                   required
-                />
-              </div>
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Country *</label>
-                  <select
-                    value={companyForm.country}
-                    onChange={(e) => setCompanyForm(prev => ({ ...prev, country: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-                    required
-                  >
-                    <option value="">Select Country</option>
-                    <option value="India">India</option>
-                    <option value="United States">United States</option>
-                    <option value="United Kingdom">United Kingdom</option>
-                    <option value="Canada">Canada</option>
-                    <option value="Australia">Australia</option>
-                    <option value="Germany">Germany</option>
-                    <option value="France">France</option>
-                    <option value="Japan">Japan</option>
-                    <option value="Singapore">Singapore</option>
-                    <option value="Netherlands">Netherlands</option>
-                  </select>
-                </div>
-                {/* <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Default Currency</label>
-                  <select
-                    value={companyForm.default_currency}
-                    onChange={(e) => setCompanyForm(prev => ({ ...prev, default_currency: e.target.value }))}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-                  >
-                    <option value="USD">USD</option>
-                    <option value="EUR">EUR</option>
-                    <option value="GBP">GBP</option>
-                    <option value="INR">INR</option>
-                    <option value="CAD">CAD</option>
-                    <option value="AUD">AUD</option>
-                    <option value="JPY">JPY</option>
-                    <option value="SGD">SGD</option>
-                  </select>
-                </div> */}
+                >
+                  <option value="">Select Country</option>
+                  <option value="India">India</option>
+                  <option value="United States">United States</option>
+                  <option value="United Kingdom">United Kingdom</option>
+                  <option value="Canada">Canada</option>
+                  <option value="Australia">Australia</option>
+                  <option value="Germany">Germany</option>
+                  <option value="France">France</option>
+                  <option value="Japan">Japan</option>
+                  <option value="Singapore">Singapore</option>
+                  <option value="Netherlands">Netherlands</option>
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Website</label>
@@ -482,18 +490,31 @@ const CompanySearchSection: React.FC<CompanySearchSectionProps> = ({
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input
-                  type="email"
-                  value={companyForm.email}
-                  onChange={(e) => setCompanyForm(prev => ({ ...prev, email: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-                  placeholder="info@company.com"
-                />
+               <input
+  type="email"
+  value={companyForm.email}
+  onChange={(e) => {
+    const value = e.target.value;
+    // Email regex pattern
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // Only update state if empty or valid email
+    if (value === '' || emailRegex.test(value)) {
+      setCompanyForm(prev => ({ ...prev, email: value }));
+    }
+  }}
+  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+  placeholder="info@company.com"
+/>
+
+              </div>
+              <div>
+                
               </div>
             </div>
+
             <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end space-x-3 sticky bottom-0 bg-white">
               <button
-                onClick={() => setShowCompanyDialog(false)}
+                onClick={handleCloseCompanyDialog}
                 className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
                 disabled={isSaving}
               >

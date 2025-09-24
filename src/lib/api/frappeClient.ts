@@ -146,70 +146,157 @@ export const frappeAPI = {
     }
   },
 
-  checkFirstLogin: async (username: string) => {
-    try {
-      // Check user's last login to determine if it's first login
-      const response = await frappeClient.get(
-        `resource/User/${encodeURIComponent(username)}?fields=["last_login","creation"]`
-      );
+checkFirstLogin: async (username: string) => {
+
+  
+  try {
+    // First check User Settings
+ 
+    const response = await frappeClient.get(
+      `/resource/User Setting/${encodeURIComponent(username)}`
+    );
+  
+    
+    if (response.data && response.data.data) {
       
-      if (response.data && response.data.data) {
-        const user = response.data.data;
-        // If last_login is null, it's first login
-        const requiresPasswordReset = !user.last_login;
+      
+      // Handle both array and object responses
+      const userSettings = Array.isArray(response.data.data) ? response.data.data[0] : response.data.data;
+      
+      if (userSettings) {
+        
+        
+        const requiresPasswordReset = userSettings.first_password === 1 || userSettings.first_password === '1';
+        
+
         
         return {
           success: true,
-          requiresPasswordReset
+          requiresPasswordReset,
+          userSettings
         };
       }
+    }
+    
+    
+    
+    // Fallback: check User table
+    const userResponse = await frappeClient.get(
+      `/resource/User/${username}?fields=["last_login"]`
+    );
+    
+    
+    
+    if (userResponse.data && userResponse.data.data) {
+      const requiresPasswordReset = !userResponse.data.data.last_login;
+ 
       
       return {
         success: true,
-        requiresPasswordReset: false
-      };
-    } catch (error) {
-      console.error('Error checking first login:', error);
-      return {
-        success: false,
-        requiresPasswordReset: false
+        requiresPasswordReset,
+        lastLogin: userResponse.data.data.last_login
       };
     }
-  },
+    
+   
+    return {
+      success: true,
+      requiresPasswordReset: false
+    };
+    
+  } catch (error) {
 
-  resetFirstTimePassword: async (username: string, newPassword: string) => {
-    try {
-      if (!newPassword || newPassword.length < 8) {
-        throw new Error('Password must be at least 8 characters long');
-      }
+    
+    // Enhanced error logging
+    if (axios.isAxiosError(error)) {
+      console.error('🌐 Axios error details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        url: error.config?.url,
+        method: error.config?.method
+      });
+    }
+    
+    let errorMessage = 'Error checking first login status';
+    if (axios.isAxiosError(error)) {
+      errorMessage = error.response?.data?.message || error.message;
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    
+    return {
+      success: false,
+      requiresPasswordReset: false,
+      error: errorMessage
+    };
+  }
+},
 
-      // Use the correct Frappe endpoint for password reset
-      const response = await frappeClient.post('method/frappe.core.doctype.user.user.update_password', {
-        old_password: '', // Empty for first-time reset
+ resetFirstTimePassword: async (username: string, newPassword: string) => {
+  try {
+    // Validate password strength
+    if (!newPassword || newPassword.length < 8) {
+      throw new Error('Password must be at least 8 characters long');
+    }
+
+    // Step 1: Update the user's password
+    const passwordUpdateResponse = await frappeClient.put(
+      `/resource/User/${encodeURIComponent(username)}`,
+      {
         new_password: newPassword
+      }
+    );
+
+    if (passwordUpdateResponse.status !== 200) {
+      throw new Error('Failed to update password');
+    }
+
+    // Step 2: Update the first_password flag to 0
+    try {
+      const flagUpdateResponse = await frappeClient.put(
+        `/resource/User Setting/${encodeURIComponent(username)}`,
+        {
+          first_password: 0
+        }
+      );
+
+      console.log('Password reset successful:', {
+        username,
+        passwordUpdate: passwordUpdateResponse.status,
+        flagUpdate: flagUpdateResponse.status
       });
 
-      if (response.data && response.data.message === 'Password Updated') {
-        return {
-          success: true,
-          message: 'Password updated successfully'
-        };
-      }
-
       return {
-        success: false,
-        error: response.data?.message || 'Failed to update password'
+        success: true,
+        message: 'Password updated successfully'
       };
-    } catch (error) {
-      console.error('Password reset error:', error);
+    } catch (flagError) {
+      console.warn('Password updated but failed to update flag:', flagError);
+      // Password was updated successfully, but flag update failed
+      // This is still considered a success since the password was changed
       return {
-        success: false,
-        error: axios.isAxiosError(error) ? 
-          (error.response?.data?.message || error.message) : 
-          'Password reset failed'
+        success: true,
+        message: 'Password updated successfully',
+        warning: 'Flag update failed but password was changed'
       };
     }
-  },
+  } catch (error) {
+    console.error('Password reset error:', error);
+    
+    let errorMessage = 'Password reset failed';
+    if (axios.isAxiosError(error)) {
+      errorMessage = error.response?.data?.message || error.message;
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    
+    return {
+      success: false,
+      error: errorMessage
+    };
+  }
+},
 
   logout: async () => {
     try {
@@ -254,12 +341,12 @@ export const frappeAPI = {
     }
   },
 
-  // getAllLeads: async (email: string) => {
-  //   return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Lead?filters=[["lead_owner", "=", "${email}"]]&order_by=creation%20desc`);
-  // },
-   getAllLeads: async () => {
-    return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Lead`);
+  getAllLeads: async (email: string) => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Lead?filters=[["lead_owner", "=", "${email}"]]&order_by=creation%20desc`);
   },
+  //  getAllLeads: async () => {
+  //   return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Lead`);
+  // },
 
   getLeadById: async (leadId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Lead/${leadId}`);

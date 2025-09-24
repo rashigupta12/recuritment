@@ -1,8 +1,9 @@
-'use client';
-import { frappeAPI } from '@/lib/api/frappeClient';
-import { Edit, Loader2, Mail, Phone, Plus, User, X } from 'lucide-react';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+/*eslint-disable  @typescript-eslint/no-explicit-any*/
+"use client";
+import { frappeAPI } from "@/lib/api/frappeClient";
+import { Edit, Loader2, Mail, Phone, Plus, User, X } from "lucide-react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 // -------- Type Definitions --------
 type Email = { email_id: string; is_primary: number };
@@ -45,17 +46,42 @@ type ContactSearchSectionProps = {
   onRemove: () => void;
 };
 
+// -------- Contact Form State --------
+type ContactFormState = {
+  first_name: string;
+  last_name: string;
+  designation: string;
+  gender: string;
+  email: string;
+  phone: string;
+  organization: string;
+};
+
+// Initial state for contact form
+const initialContactFormState: ContactFormState = {
+  first_name: "",
+  last_name: "",
+  designation: "",
+  gender: "",
+  email: "",
+  phone: "",
+  organization: "",
+};
+
 // -------- Meta Extraction Utility --------
 function extractContactMeta(contacts: ContactType[]): ContactMeta {
-console.log(contacts)
+  console.log(contacts);
   const designations = new Set<string>();
   const genders = new Set<string>();
   const organizations = new Set<string>();
 
-  contacts.forEach(contact => {
-    if (contact.designation && contact.designation.trim()) designations.add(contact.designation.trim());
-    if (contact.gender && contact.gender.trim()) genders.add(contact.gender.trim());
-    if (contact.organization && contact.organization.trim()) organizations.add(contact.organization.trim());
+  contacts.forEach((contact) => {
+    if (contact.designation && contact.designation.trim())
+      designations.add(contact.designation.trim());
+    if (contact.gender && contact.gender.trim())
+      genders.add(contact.gender.trim());
+    if (contact.organization && contact.organization.trim())
+      organizations.add(contact.organization.trim());
   });
 
   return {
@@ -75,7 +101,7 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<ContactType[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -87,15 +113,10 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
     width: 0,
   });
 
-  const [contactForm, setContactForm] = useState({
-    first_name: '',
-    last_name: '',
-    designation: '',
-    gender: '',
-    email: '',
-    phone: '',
-    organization: '',
-  });
+  // Use separate state for contact form to avoid conflicts
+  const [contactForm, setContactForm] = useState<ContactFormState>(
+    initialContactFormState
+  );
 
   const [contactMeta, setContactMeta] = useState<ContactMeta>({
     uniqueDesignations: [],
@@ -108,7 +129,8 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
     if (!inputRef.current) return;
     const inputRect = inputRef.current.getBoundingClientRect();
     const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-    const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+    const scrollLeft =
+      window.pageXOffset || document.documentElement.scrollLeft;
     setDropdownPosition({
       top: inputRect.bottom + scrollTop,
       left: inputRect.left + scrollLeft,
@@ -120,11 +142,11 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
     if (showDropdown) {
       calculateDropdownPosition();
       const handleResize = () => calculateDropdownPosition();
-      window.addEventListener('resize', handleResize);
-      window.addEventListener('scroll', handleResize);
+      window.addEventListener("resize", handleResize);
+      window.addEventListener("scroll", handleResize);
       return () => {
-        window.removeEventListener('resize', handleResize);
-        window.removeEventListener('scroll', handleResize);
+        window.removeEventListener("resize", handleResize);
+        window.removeEventListener("scroll", handleResize);
       };
     }
   }, [showDropdown, calculateDropdownPosition]);
@@ -140,26 +162,37 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
       }
     };
     if (showDropdown) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
+      return () =>
+        document.removeEventListener("mousedown", handleClickOutside);
     }
   }, [showDropdown]);
 
   // Helpers
   const getPrimaryEmail = (contact: ContactType): string => {
-    const primaryEmail = contact.email_ids.find(email => email.is_primary === 1);
-    return primaryEmail?.email_id || (contact.email_ids.length > 0 ? contact.email_ids[0].email_id : '');
+    const primaryEmail = contact.email_ids.find(
+      (email) => email.is_primary === 1
+    );
+    return (
+      primaryEmail?.email_id ||
+      (contact.email_ids.length > 0 ? contact.email_ids[0].email_id : "")
+    );
   };
 
   const getPrimaryPhone = (contact: ContactType): string => {
-    const primaryPhone = contact.phone_nos.find(phone => phone.is_primary_phone === 1);
-    return primaryPhone?.phone || (contact.phone_nos.length > 0 ? contact.phone_nos[0].phone : '');
+    const primaryPhone = contact.phone_nos.find(
+      (phone) => phone.is_primary_phone === 1
+    );
+    return (
+      primaryPhone?.phone ||
+      (contact.phone_nos.length > 0 ? contact.phone_nos[0].phone : "")
+    );
   };
 
   const getFullName = (contact: ContactType): string => {
     return contact.name && contact.name.trim()
       ? contact.name
-      : `${contact.first_name ?? ''} ${contact.last_name ?? ''}`.trim();
+      : `${contact.first_name ?? ""} ${contact.last_name ?? ""}`.trim();
   };
 
   // Search contacts
@@ -167,7 +200,11 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
     if (!query.trim()) {
       setSearchResults([]);
       setShowDropdown(false);
-      setContactMeta({ uniqueDesignations: [], uniqueGenders: [], uniqueOrganizations: [] });
+      setContactMeta({
+        uniqueDesignations: [],
+        uniqueGenders: [],
+        uniqueOrganizations: [],
+      });
       return;
     }
     setIsSearching(true);
@@ -175,20 +212,30 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
     try {
       const response = await frappeAPI.makeAuthenticatedRequest(
         "GET",
-        `/method/recruitment_app.contact_search.search_contacts?search_term=${encodeURIComponent(query)}`
+        `/method/recruitment_app.contact_search.search_contacts?search_term=${encodeURIComponent(
+          query
+        )}`
       );
-      if (response.message?.status === 'success') {
+      if (response.message?.status === "success") {
         const data: ContactType[] = response.message.data || [];
-        console.log(data)
+        console.log(data);
         setSearchResults(data);
         setContactMeta(extractContactMeta(data));
       } else {
         setSearchResults([]);
-        setContactMeta({ uniqueDesignations: [], uniqueGenders: [], uniqueOrganizations: [] });
+        setContactMeta({
+          uniqueDesignations: [],
+          uniqueGenders: [],
+          uniqueOrganizations: [],
+        });
       }
     } catch (error) {
       setSearchResults([]);
-      setContactMeta({ uniqueDesignations: [], uniqueGenders: [], uniqueOrganizations: [] });
+      setContactMeta({
+        uniqueDesignations: [],
+        uniqueGenders: [],
+        uniqueOrganizations: [],
+      });
     } finally {
       setIsSearching(false);
     }
@@ -214,11 +261,11 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
       phone: getPrimaryPhone(contact),
       contactId: contact.name,
       // Store additional fields for editing
-      designation: contact.designation || '',
-      gender: contact.gender || '',
-      organization: contact.organization || '',
-      first_name: contact.first_name || '',
-      last_name: contact.last_name || '',
+      designation: contact.designation || "",
+      gender: contact.gender || "",
+      organization: contact.organization || "",
+      first_name: contact.first_name || "",
+      last_name: contact.last_name || "",
     };
     onContactSelect(simplifiedContact);
     setSearchQuery(getFullName(contact));
@@ -237,7 +284,7 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
   const handleClearContact = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setSearchQuery('');
+    setSearchQuery("");
     setSearchResults([]);
     setShowDropdown(false);
     onRemove();
@@ -248,17 +295,22 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
     e.stopPropagation();
     if (selectedContact) {
       // Use the stored contact data if available, otherwise parse from name
-      const firstName = selectedContact.first_name || selectedContact.name.split(' ')[0] || '';
-      const lastName = selectedContact.last_name || selectedContact.name.split(' ').slice(1).join(' ') || '';
-      
+      const firstName =
+        selectedContact.first_name || selectedContact.name.split(" ")[0] || "";
+      const lastName =
+        selectedContact.last_name ||
+        selectedContact.name.split(" ").slice(1).join(" ") ||
+        "";
+
+      // Reset form with selected contact data
       setContactForm({
         first_name: firstName,
         last_name: lastName,
-        designation: selectedContact.designation || '',
-        gender: selectedContact.gender || '',
+        designation: selectedContact.designation || "",
+        gender: selectedContact.gender || "",
         email: selectedContact.email,
         phone: selectedContact.phone,
-        organization: selectedContact.organization || '',
+        organization: selectedContact.organization || "",
       });
     }
     setShowContactDialog(true);
@@ -266,72 +318,102 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
   };
 
   const handleCreateContact = () => {
-    const [firstName, ...lastNameParts] = searchQuery.split(' ');
+    const [firstName, ...lastNameParts] = searchQuery.split(" ");
+    // Reset form with new contact data
     setContactForm({
       first_name: firstName || searchQuery,
-      last_name: lastNameParts.join(' ') || '',
-      designation: '',
-      gender: '',
-      email: '',
-      phone: '',
-      organization: '',
+      last_name: lastNameParts.join(" ") || "",
+      designation: "",
+      gender: "",
+      email: "",
+      phone: "",
+      organization: "",
     });
     setShowContactDialog(true);
     setShowDropdown(false);
   };
+// Only showing the main corrections inside handleSaveContact and input handlers
+const handleSaveContact = async () => {
+  if (!contactForm.first_name.trim()) return;
 
-  const handleSaveContact = async () => {
-    try {
-      setIsSaving(true);
+  try {
+    setIsSaving(true);
 
-      const contactData = {
-        first_name: contactForm.first_name,
-        last_name: contactForm.last_name,
-        designation: contactForm.designation,
-        gender: contactForm.gender,
-        organization: contactForm.organization,
-        email_ids: contactForm.email
-          ? [{ email_id: contactForm.email, is_primary: 1 }]
-          : [],
-        phone_nos: contactForm.phone
-          ? [{ phone: contactForm.phone, is_primary_phone: 1 }]
-          : [],
-      };
+    const contactData: any = {
+      first_name: contactForm.first_name.trim(),
+      last_name: contactForm.last_name.trim(),
+      designation: contactForm.designation.trim() || null,
+      gender: contactForm.gender || null,
+      organization: contactForm.organization.trim() || null,
+      email_ids: contactForm.email
+        ? [
+            {
+              email_id: contactForm.email.trim(),
+              is_primary: 1,
+              parenttype: "Contact",
+              parentfield: "email_ids",
+            },
+          ]
+        : [],
+      phone_nos: contactForm.phone
+        ? [
+            {
+              phone: contactForm.phone.trim(),
+              is_primary_phone: 1,
+              parenttype: "Contact",
+              parentfield: "phone_nos",
+            },
+          ]
+        : [],
+    };
 
-      let contactId: string;
-      let contactName: string;
+    let contactId: string;
+    let contactName: string;
 
-      if (selectedContact?.contactId) {
-        await frappeAPI.updateContact(selectedContact.contactId, contactData);
-        contactId = selectedContact.contactId;
-        contactName = selectedContact.name;
-      } else {
-        const response = await frappeAPI.createContact(contactData);
-        contactId = response.data.name;
-        contactName = `${contactForm.first_name} ${contactForm.last_name}`.trim();
-      }
-
-      const simplifiedContact: SimplifiedContact = {
-        name: contactName,
-        email: contactForm.email,
-        phone: contactForm.phone,
-        contactId,
-        // Include the additional fields in the updated contact
-        designation: contactForm.designation,
-        gender: contactForm.gender,
-        organization: contactForm.organization,
-        first_name: contactForm.first_name,
-        last_name: contactForm.last_name,
-      };
-      onContactSelect(simplifiedContact);
-      setSearchQuery(contactName);
-      setShowContactDialog(false);
-      setContactForm({ first_name: '', last_name: '', designation: '', gender: '', email: '', phone: '', organization: '' });
-    } catch (error) {
-      alert('Failed to save contact. Please try again.');
-    } finally {
-      setIsSaving(false);
+    if (selectedContact?.contactId) {
+      // Update existing contact
+      await frappeAPI.updateContact(selectedContact.contactId, contactData);
+      contactId = selectedContact.contactId;
+      contactName = `${contactForm.first_name} ${contactForm.last_name}`.trim();
+    } else {
+      // Create new contact
+      const response = await frappeAPI.createContact(contactData);
+      contactId = response.data.name;
+      contactName = `${contactForm.first_name} ${contactForm.last_name}`.trim();
     }
+
+    const simplifiedContact: SimplifiedContact = {
+      name: contactName,
+      email: contactForm.email,
+      phone: contactForm.phone,
+      contactId,
+      designation: contactForm.designation,
+      gender: contactForm.gender,
+      organization: contactForm.organization,
+      first_name: contactForm.first_name,
+      last_name: contactForm.last_name,
+    };
+
+    onContactSelect(simplifiedContact);
+    setSearchQuery(contactName);
+    setShowContactDialog(false);
+    setContactForm(initialContactFormState);
+  } catch (error) {
+    console.error(error);
+    alert("Failed to save contact. Please try again.");
+  } finally {
+    setIsSaving(false);
+  }
+};
+
+
+
+
+
+  const handleCloseContactDialog = () => {
+    setShowContactDialog(false);
+    // Reset form when closing dialog
+    setContactForm(initialContactFormState);
   };
 
   const hasValidContact = Boolean(selectedContact);
@@ -363,21 +445,31 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-900 truncate">{getFullName(contact)}</p>
+                  <p className="font-medium text-gray-900 truncate">
+                    {getFullName(contact)}
+                  </p>
                   <div className="text-xs text-gray-500 mt-1 space-y-1">
                     {contact.designation && (
-                      <div className="text-sm text-gray-600">{contact.designation}</div>
+                      <div className="text-sm text-gray-600">
+                        {contact.designation}
+                      </div>
                     )}
                     {contact.organization && (
-                      <div className="text-sm text-gray-600">{contact.organization}</div>
+                      <div className="text-sm text-gray-600">
+                        {contact.organization}
+                      </div>
                     )}
                     {contact.gender && (
-                      <div className="flex items-center"><span className="mr-2">{contact.gender}</span></div>
+                      <div className="flex items-center">
+                        <span className="mr-2">{contact.gender}</span>
+                      </div>
                     )}
                     {getPrimaryEmail(contact) && (
                       <div className="flex items-center">
                         <Mail className="h-3 w-3 mr-1 flex-shrink-0" />
-                        <span className="truncate">{getPrimaryEmail(contact)}</span>
+                        <span className="truncate">
+                          {getPrimaryEmail(contact)}
+                        </span>
                       </div>
                     )}
                     {getPrimaryPhone(contact) && (
@@ -481,25 +573,33 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
             </div>
           </div>
         </div>
-        {showDropdown && typeof document !== 'undefined' && createPortal(<DropdownContent />, document.body)}
+        {showDropdown &&
+          typeof document !== "undefined" &&
+          createPortal(<DropdownContent />, document.body)}
       </div>
 
       {/* Selected Contact Display */}
       {selectedContact && (
-        <div className="border border-primary/20 rounded-lg p-4 bg-primary/5 animate-in fade-in-50">
+        <div className="border border-primary/20 rounded-lg p-4 py-2 bg-primary/5 animate-in fade-in-50">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+              {/* <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                 <User className="h-5 w-5 text-primary" />
-              </div>
+              </div> */}
               <div>
-                <h3 className="font-medium text-gray-900">{selectedContact.name}</h3>
+                <h3 className="font-medium text-gray-900">
+                  {selectedContact.name}
+                </h3>
                 <div className="text-sm text-gray-600 space-y-1">
                   {selectedContact.designation && (
-                    <div className="text-sm text-gray-600">{selectedContact.designation}</div>
+                    <div className="text-sm text-gray-600">
+                      {selectedContact.designation}
+                    </div>
                   )}
                   {selectedContact.organization && (
-                    <div className="text-sm text-gray-600">{selectedContact.organization}</div>
+                    <div className="text-sm text-gray-600">
+                      {selectedContact.organization}
+                    </div>
                   )}
                   {selectedContact.email && (
                     <div className="flex items-center">
@@ -526,10 +626,10 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white">
               <h2 className="text-xl font-bold text-gray-900">
-                {selectedContact ? 'Edit Contact' : 'Add New Contact'}
+                {selectedContact ? "Edit Contact" : "Add New Contact"}
               </h2>
               <button
-                onClick={() => setShowContactDialog(false)}
+                onClick={handleCloseContactDialog}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
               >
                 <X className="h-5 w-5 text-gray-500" />
@@ -538,41 +638,83 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
             <div className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    First Name *
+                  </label>
                   <input
                     type="text"
                     value={contactForm.first_name}
-                    onChange={(e) => setContactForm(prev => ({ ...prev, first_name: e.target.value }))}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Capitalize first letter only
+                      const formattedValue =
+                        value.charAt(0).toUpperCase() + value.slice(1);
+                      setContactForm((prev) => ({
+                        ...prev,
+                        first_name: formattedValue,
+                      }));
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Last Name
+                  </label>
                   <input
                     type="text"
                     value={contactForm.last_name}
-                    onChange={(e) => setContactForm(prev => ({ ...prev, last_name: e.target.value }))}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Capitalize first letter only
+                      const formattedValue =
+                        value.charAt(0).toUpperCase() + value.slice(1);
+                      setContactForm((prev) => ({
+                        ...prev,
+                        last_name: formattedValue,
+                      }));
+                    }}
+                    // onChange={(e) => setContactForm(prev => ({ ...prev, last_name: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                   />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Designation</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Designation
+                  </label>
                   <input
                     type="text"
                     value={contactForm.designation}
-                    onChange={(e) => setContactForm(prev => ({ ...prev, designation: e.target.value }))}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Capitalize first letter only
+                      const formattedValue =
+                        value.charAt(0).toUpperCase() + value.slice(1);
+                      setContactForm((prev) => ({
+                        ...prev,
+                        designation: formattedValue,
+                      }));
+                    }}
+                    // onChange={(e) => setContactForm(prev => ({ ...prev, designation: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                     placeholder="e.g., HR Manager"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Gender
+                  </label>
                   <select
                     value={contactForm.gender}
-                    onChange={(e) => setContactForm(prev => ({ ...prev, gender: e.target.value }))}
+                    onChange={(e) =>
+                      setContactForm((prev) => ({
+                        ...prev,
+                        gender: e.target.value,
+                      }))
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                   >
                     <option value="">Select Gender</option>
@@ -582,7 +724,7 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
                   </select>
                 </div>
               </div>
-              <div>
+              {/* <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Organization</label>
                 <input
                   type="text"
@@ -591,29 +733,52 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                   placeholder="e.g., Company Name"
                 />
-              </div>
+              </div> */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
+                </label>
                 <input
                   type="email"
                   value={contactForm.email}
-                  onChange={(e) => setContactForm(prev => ({ ...prev, email: e.target.value }))}
+                  onChange={(e) => {
+                    setContactForm((prev) => ({
+                      ...prev,
+                      email: e.target.value,
+                    }));
+                  }}
+                  onBlur={() => {
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!emailRegex.test(contactForm.email)) {
+                      alert("Please enter a valid email address");
+                    }
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                 />
               </div>
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone
+                </label>
                 <input
                   type="tel"
                   value={contactForm.phone}
-                  onChange={(e) => setContactForm(prev => ({ ...prev, phone: e.target.value }))}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Allow only digits, up to 10 characters
+                    const phoneRegex = /^\d{0,10}$/;
+                    if (phoneRegex.test(value)) {
+                      setContactForm((prev) => ({ ...prev, phone: value }));
+                    }
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                 />
               </div>
             </div>
             <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end space-x-3 sticky bottom-0 bg-white">
               <button
-                onClick={() => setShowContactDialog(false)}
+                onClick={handleCloseContactDialog}
                 className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
                 disabled={isSaving}
               >
@@ -627,10 +792,10 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
                 {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
                 <span>
                   {isSaving
-                    ? 'Saving...'
+                    ? "Saving..."
                     : selectedContact
-                    ? 'Update Contact'
-                    : 'Create Contact'}
+                    ? "Update Contact"
+                    : "Create Contact"}
                 </span>
               </button>
             </div>

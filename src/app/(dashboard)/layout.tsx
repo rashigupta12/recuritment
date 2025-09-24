@@ -280,14 +280,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   Dashboard
                 </h1>
                 <p className="text-sm text-gray-500">
-                  Welcome back, {user.full_name.split(' ')[0]}
+                  Welcome , {user.full_name.split(' ')[0]}
                 </p>
               </div>
             </div>
 
             <div className="flex items-center space-x-4">
               {/* Search */}
-              <div className="hidden md:block">
+              {/* <div className="hidden md:block">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <input
@@ -296,15 +296,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-opacity-50 focus:border-transparent text-sm focus:ring-[var(--brand-primary)]"
                   />
                 </div>
-              </div>
+              </div> */}
 
               {/* Notifications */}
-              <Button variant="ghost" size="sm" className="relative">
+              {/* <Button variant="ghost" size="sm" className="relative">
                 <Bell className="h-5 w-5" />
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
                   3
                 </span>
-              </Button>
+              </Button> */}
 
               {/* User Menu */}
               <DropdownMenu >
@@ -337,7 +337,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                       {ROLE_DISPLAY_NAMES[currentRole]}
                     </Badge>
                   </div>
-                  <DropdownMenuSeparator />
+                  {/* <DropdownMenuSeparator />
                   <DropdownMenuItem>
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
@@ -345,7 +345,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   <DropdownMenuItem>
                     <User className="mr-2 h-4 w-4" />
                     <span>Profile</span>
-                  </DropdownMenuItem>
+                  </DropdownMenuItem> */}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="text-red-600">
                     <LogOut className="mr-2 h-4 w-4" />
