@@ -377,7 +377,15 @@ checkFirstLogin: async (username: string) => {
    updateCompany: async (companyId: string, companyData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('PUT', `/resource/Company/${companyId}`, companyData);
   },
+
+  getAllOpportunity: async (email: string) => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Opportunity?filters= [["custom_assigned_to_" ,"=","${email}"]]`);
+  },
+  getOpportunityBYId: async (TodoId: string) => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Opportunity/${TodoId}`);
+  },
   
+
 };
 
 export default frappeClient;

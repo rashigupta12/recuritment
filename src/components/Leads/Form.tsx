@@ -2,9 +2,12 @@
 import CompanySearchSection from "@/components/comman/CompanySearch";
 import ContactSearchSection from "@/components/comman/ContactSearch";
 import IndustrySearchSection from "@/components/comman/IndustrySearchSection";
+import ConfirmationDialog from "../comman/ConfirmationDialog";
 import { frappeAPI } from "@/lib/api/frappeClient";
 import { Lead, useLeadStore } from "@/stores/leadStore";
 import {
+  ArrowLeft,
+  Briefcase,
   Building2,
   Factory,
   IndianRupee,
@@ -13,7 +16,7 @@ import {
   User,
   Users,
 } from "lucide-react";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import AccordionSection from "./AccordionSection";
 
 // Import the types from the search components to ensure consistency
@@ -46,11 +49,12 @@ type IndustryType = {
 type LeadFormProps = {
   onClose: () => void;
   editLead?: Lead | null;
+  onUnsavedChanges?: (hasChanges: boolean) => void;
 };
 
 type SectionKey = "contact" | "company" | "industry" | "details";
 
-const LeadForm: React.FC<LeadFormProps> = ({ onClose, editLead }) => {
+const LeadForm: React.FC<LeadFormProps> = ({ onClose, editLead, onUnsavedChanges }) => {
   const {
     formData,
     setContact,
@@ -60,18 +64,87 @@ const LeadForm: React.FC<LeadFormProps> = ({ onClose, editLead }) => {
     resetForm,
     buildLeadPayload,
   } = useLeadStore();
+  
   const [openSections, setOpenSections] = useState<{
     contact: boolean;
     company: boolean;
     industry: boolean;
     details: boolean;
   }>({ contact: true, company: false, industry: false, details: false });
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showLeaveConfirmation, setShowLeaveConfirmation] = useState(false);
+  const [showContractConfirmation, setShowContractConfirmation] = useState(false);
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+  const [pendingStageChange, setPendingStageChange] = useState<string | null>(null);
+  const [isFormSubmitted, setIsFormSubmitted] = useState(false);
+
+  // Updated offerings and stages
+  const offerings = [
+    "Lateral - All Levels",
+    "Lateral - Executive", 
+    "Lateral - Upto Sr Level",
+    "RPO",
+    "MSP",
+    "Contingent",
+    "Contract"
+  ];
+
+  const stages = [
+    "Prospecting",
+    "Lead Qualification",
+    "Needs Analysis / Discovery",
+    "Presentation / Proposal",
+    "Contract",
+    "Onboarded",
+    "Follow-Up / Relationship Management"
+  ];
+
+  // Check if form has changes
+  const checkFormChanges = useCallback(() => {
+    return formData.contact !== null || 
+           formData.company !== null || 
+           formData.industry !== null ||
+           formData.custom_average_salary > 0 ||
+           formData.custom_fee > 0 ||
+           formData.custom_expected_close_date !== "" ||
+           formData.custom_stage !== "Prospecting" ||
+           formData.custom_offerings !== "Lateral - All Levels" ||
+           formData.custom_estimated_hiring_ > 0;
+  }, [formData]);
+
+  // Update hasUnsavedChanges whenever form data changes
+  useEffect(() => {
+    // Don't track changes if form has been submitted successfully
+    if (isFormSubmitted) return;
+    
+    const hasChanges = checkFormChanges();
+    setHasUnsavedChanges(hasChanges);
+    // Notify parent component about unsaved changes
+    onUnsavedChanges?.(hasChanges);
+  }, [checkFormChanges, onUnsavedChanges, isFormSubmitted]);
+
+  // Set up event listeners for page unload
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges && !isFormSubmitted) {
+        e.preventDefault();
+        e.returnValue = "You have unsaved changes. Are you sure you want to leave?";
+        return e.returnValue;
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [hasUnsavedChanges, isFormSubmitted]);
 
   // Reset form data when component mounts or editLead changes
   useEffect(() => {
     resetForm();
+    setIsFormSubmitted(false); // Reset the submitted flag when form reloads
     
     // If editing, populate form with existing data
     if (editLead) {
@@ -113,39 +186,22 @@ const LeadForm: React.FC<LeadFormProps> = ({ onClose, editLead }) => {
           industry: editLead.industry,
         });
       }
-
-      // Populate form fields
-      updateFormField("expectedHiringVolume", editLead.custom_expected_hiring_volume || 0);
-      updateFormField("budget", editLead.custom_budgetinr || 0);
-      updateFormField("city", editLead.city || "");
-      updateFormField("state", editLead.state || "");
-      updateFormField("country", editLead.country || "");
+      // Set new fields using the store
+      updateFormField("custom_stage", editLead.custom_stage || "Prospecting");
+      updateFormField("custom_offerings", editLead.custom_offerings || "Lateral - All Levels");
+      updateFormField("custom_estimated_hiring_", editLead.custom_estimated_hiring_ || 0);
+      updateFormField("custom_average_salary", editLead.custom_average_salary || 0);
+      updateFormField("custom_fee", editLead.custom_fee || 0);
+      updateFormField("custom_deal_value", editLead.custom_deal_value || 0);
+      updateFormField("custom_expected_close_date", editLead.custom_expected_close_date || "");
     }
   }, [resetForm, editLead, setContact, setCompany, setIndustry, updateFormField]);
 
-  // Track changes to form
-  useEffect(() => {
-    setHasUnsavedChanges(
-      !!formData.contact || 
-      !!formData.company || 
-      !!formData.industry || 
-      formData.expectedHiringVolume > 0 ||
-      formData.budget > 0 ||
-      !!formData.city ||
-      !!formData.state ||
-      !!formData.country
-    );
-  }, [formData]);
-
   const toggleSection = (section: SectionKey) => {
     setOpenSections((prev) => {
-      // Close all previous sections when opening a new one
       const sectionOrder: SectionKey[] = ["contact", "company", "industry", "details"];
-      const currentIndex = sectionOrder.indexOf(section);
-      
       const newState = { ...prev };
       
-      // If clicking on already open section, just toggle it
       if (prev[section]) {
         newState[section] = false;
         return newState;
@@ -163,28 +219,61 @@ const LeadForm: React.FC<LeadFormProps> = ({ onClose, editLead }) => {
     });
   };
 
+  // Handle stage change with contract confirmation
+  const handleStageChange = (newStage: string) => {
+    if (newStage === "Contract" && formData.custom_stage !== "Contract") {
+      setPendingStageChange(newStage);
+      setShowContractConfirmation(true);
+    } else {
+      updateFormField("custom_stage", newStage);
+    }
+  };
+
+  // Handle contract confirmation
+  const handleConfirmContract = () => {
+    if (pendingStageChange) {
+      updateFormField("custom_stage", pendingStageChange);
+      setPendingStageChange(null);
+    }
+    setShowContractConfirmation(false);
+  };
+
+  const handleCancelContract = () => {
+    setPendingStageChange(null);
+    setShowContractConfirmation(false);
+  };
+
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
       
-      if (editLead) {
-        // Update existing lead logic would go here
-        // For now, we'll treat it as create
-        console.log("Updating lead:", editLead.name);
-      }
-      
       const payload = buildLeadPayload();
-      const response = await frappeAPI.createLead(payload);
+      
+      let response;
 
-      // Reset form and close
-      resetForm();
+      if (editLead && editLead.name) {
+        // Update existing lead
+        console.log("Updating lead:", editLead.name);
+        response = await frappeAPI.updateLead(editLead.name, payload);
+      } else {
+        // Create new lead
+        response = await frappeAPI.createLead(payload);
+      }
+
+      // Mark form as successfully submitted to prevent change tracking
+      setIsFormSubmitted(true);
+      
+      // Clear unsaved changes state and notify parent
       setHasUnsavedChanges(false);
+      onUnsavedChanges?.(false);
+      
+      // Reset form and close WITHOUT confirmation
+      resetForm();
+      
+      // Call onClose directly without going through confirmation
       onClose();
 
       console.log("Lead created/updated successfully:", response);
-
-      // Show success message
-      alert(`Lead ${editLead ? 'updated' : 'created'} successfully!`);
     } catch (error) {
       console.error(`Error ${editLead ? 'updating' : 'creating'} lead:`, error);
       alert(`Failed to ${editLead ? 'update' : 'create'} lead. Please try again.`);
@@ -193,11 +282,54 @@ const LeadForm: React.FC<LeadFormProps> = ({ onClose, editLead }) => {
     }
   };
 
+  // Enhanced handlers with confirmation
+  const handleCloseWithConfirmation = (action: () => void) => {
+    if (hasUnsavedChanges && !isFormSubmitted) {
+      setPendingAction(() => action);
+      setShowLeaveConfirmation(true);
+    } else {
+      action();
+    }
+  };
+
+  const handleBackClick = () => {
+    // If form was successfully submitted, close without confirmation
+    if (isFormSubmitted) {
+      onClose();
+    } else {
+      handleCloseWithConfirmation(onClose);
+    }
+  };
+
+  const handleCancel = () => {
+    // If form was successfully submitted, close without confirmation
+    if (isFormSubmitted) {
+      onClose();
+    } else {
+      handleCloseWithConfirmation(onClose);
+    }
+  };
+
+  // Confirmation dialog handlers
+  const handleConfirmLeave = () => {
+    setShowLeaveConfirmation(false);
+    setHasUnsavedChanges(false);
+    onUnsavedChanges?.(false);
+    if (pendingAction) {
+      pendingAction();
+    }
+    setPendingAction(null);
+  };
+
+  const handleCancelLeave = () => {
+    setShowLeaveConfirmation(false);
+    setPendingAction(null);
+  };
+
   const canSubmit = formData.contact && formData.company && formData.industry;
 
   // Handler functions to convert between store types and component types
   const handleContactSelect = (contact: SimplifiedContact) => {
-    // Convert SimplifiedContact to your store's contact type
     const storeContact = {
       name: contact.name,
       email: contact.email,
@@ -213,7 +345,6 @@ const LeadForm: React.FC<LeadFormProps> = ({ onClose, editLead }) => {
   };
 
   const handleCompanySelect = (company: SimplifiedCompany) => {
-    // Convert SimplifiedCompany to your store's company type
     const storeCompany = {
       name: company.name,
       company_name: company.company_name,
@@ -226,9 +357,8 @@ const LeadForm: React.FC<LeadFormProps> = ({ onClose, editLead }) => {
   };
 
   const handleIndustrySelect = (industry: IndustryType) => {
-    // Convert IndustryType to your store's industry type
     const storeIndustry = {
-      name: industry.industry, // Map 'industry' field to 'name' field
+      name: industry.industry,
       industry: industry.industry,
     };
     setIndustry(storeIndustry);
@@ -254,8 +384,7 @@ const LeadForm: React.FC<LeadFormProps> = ({ onClose, editLead }) => {
     if (!formData.company) return null;
     return {
       name: formData.company.name || "",
-      company_name:
-        formData.company.company_name || formData.company.name || "",
+      company_name: formData.company.company_name || formData.company.name || "",
       email: formData.company.email || "",
       website: formData.company.website || "",
       country: formData.company.country || "",
@@ -270,224 +399,290 @@ const LeadForm: React.FC<LeadFormProps> = ({ onClose, editLead }) => {
     };
   };
 
-  const handleCancel = () => {
-    resetForm();
-    setHasUnsavedChanges(false);
-    onClose();
-  };
-
   return (
-    <div className="space-y-3">
-      {/* Grid Layout for Accordions */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        {/* Column 1 */}
-        <div className="space-y-3">
-          {/* Contact Section */}
-          <AccordionSection
-            title="Contact Information"
-            icon={User}
-            isOpen={openSections.contact}
-            onToggle={() => toggleSection("contact")}
-            completed={!!formData.contact}
-            compact={true}
-          >
-            <ContactSearchSection
-              selectedContact={getSelectedContact()}
-              onContactSelect={handleContactSelect}
-              onEdit={() => {
-                /* Open contact edit modal */
-              }}
-              onRemove={() => setContact(null)}
-            />
-          </AccordionSection>
+    <div className="max-w-6xl mx-auto bg-white">
+      {/* Leave Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={showLeaveConfirmation}
+        onConfirm={handleConfirmLeave}
+        onCancel={handleCancelLeave}
+        message="You have unsaved changes. Are you sure you want to leave? Your changes will be lost."
+      />
 
-          {/* Company Section */}
-          <AccordionSection
-            title="Organization Information"
-            icon={Building2}
-            isOpen={openSections.company}
-            onToggle={() => toggleSection("company")}
-            completed={!!formData.company}
-            compact={true}
-          >
-            <CompanySearchSection
-              selectedCompany={getSelectedCompany()}
-              onCompanySelect={handleCompanySelect}
-              onEdit={() => {
-                /* Open company edit modal */
-              }}
-              onRemove={() => setCompany(null)}
-            />
-          </AccordionSection>
-        </div>
+      {/* Contract Stage Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={showContractConfirmation}
+        onConfirm={handleConfirmContract}
+        onCancel={handleCancelContract}
+        message="Warning: Once you move to 'Contract' stage, you won't be able to make changes anymore. Are you sure you want to proceed?"
+      />
+      
+      {/* Header */}
+      <div className="pb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleBackClick}
+              className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors"
+            >
+              <span className="w-8 h-8 flex items-center justify-center rounded-full border border-primary">
+                <ArrowLeft className="h-4 w-4" />
+              </span>
+            </button>
 
-        {/* Column 2 */}
-        <div className="space-y-3">
-          {/* Industry Section */}
-          <AccordionSection
-            title="Industry Selection"
-            icon={Factory}
-            isOpen={openSections.industry}
-            onToggle={() => toggleSection("industry")}
-            completed={!!formData.industry}
-            compact={true}
-          >
-            <IndustrySearchSection
-              selectedIndustry={getSelectedIndustry()}
-              onIndustrySelect={handleIndustrySelect}
-            />
-          </AccordionSection>
+            <h2 className="text-xl font-semibold text-gray-900">
+              {editLead ? "Edit Lead" : "Create New Lead"}
+            </h2>
+            {hasUnsavedChanges && !isFormSubmitted && (
+              <span className="text-xs text-orange-600 bg-orange-100 px-2 py-1 rounded-full">
+                Unsaved Changes
+              </span>
+            )}
+            {isFormSubmitted && (
+              <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
+                Submitted Successfully
+              </span>
+            )}
+          </div>
 
-          {/* Lead Details Section */}
-          <AccordionSection
-            title="Lead Details"
-            icon={Users}
-            isOpen={openSections.details}
-            onToggle={() => toggleSection("details")}
-            completed={
-              formData.expectedHiringVolume > 0 &&
-              !!formData.city &&
-              formData.budget > 0
-            }
-            compact={true}
-          >
-            <div className="grid grid-cols-1 gap-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Expected Hiring Volume
-                  </label>
-                  <div className="relative">
-                    <Users className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-400" />
-                    <input
-                      type="number"
-                      value={
-                        formData.expectedHiringVolume === 0
-                          ? ""
-                          : formData.expectedHiringVolume
-                      }
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        updateFormField(
-                          "expectedHiringVolume",
-                          value === "" ? 0 : parseInt(value, 10)
-                        );
-                      }}
-                      className="w-full pl-7 pr-3 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-primary/20 focus:border-primary outline-none"
-                      placeholder="e.g., 10"
-                      min="0"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Expected Revenue (INR)
-                  </label>
-                  <div className="relative">
-                    <IndianRupee className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-400" />
-                    <input
-                      type="number"
-                      value={formData.budget === 0 ? "" : formData.budget}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        updateFormField(
-                          "budget",
-                          value === "" ? 0 : parseInt(value, 10)
-                        );
-                      }}
-                      className="w-full pl-7 pr-3 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-primary/20 focus:border-primary outline-none"
-                      placeholder="e.g., 500000"
-                      min="0"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    City
-                  </label>
-                  <div className="relative">
-                    <MapPin className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-400" />
-                    <input
-                      type="text"
-                      value={formData.city}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        const capitalized =
-                          value.charAt(0).toUpperCase() + value.slice(1);
-                        updateFormField("city", capitalized);
-                      }}
-                      className="w-full pl-7 pr-3 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-primary/20 focus:border-primary outline-none"
-                      placeholder="e.g., Mumbai"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    State
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.state}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      const capitalized =
-                        value.charAt(0).toUpperCase() + value.slice(1);
-                      updateFormField("state", capitalized);
-                    }}
-                    className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-primary/20 focus:border-primary outline-none"
-                    placeholder="e.g., Maharashtra"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Country
-                </label>
-                <input
-                  type="text"
-                  value={formData.country}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    const capitalized =
-                      value.charAt(0).toUpperCase() + value.slice(1);
-                    updateFormField("country", capitalized);
-                  }}
-                  className="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-primary/20 focus:border-primary outline-none"
-                  placeholder="e.g., India"
-                />
-              </div>
-            </div>
-          </AccordionSection>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleCancel}
+              className="px-6 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSubmit}
+              disabled={!canSubmit || isSubmitting}
+              className="px-6 py-2 text-sm bg-primary text-white rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+            >
+              {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+              <span>
+                {isSubmitting
+                  ? `${editLead ? "Updating" : "Creating"}...`
+                  : `${editLead ? "Update" : "Create"} Lead`}
+              </span>
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Form Actions */}
-      <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
-        <button
-          onClick={handleCancel}
-          className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={handleSubmit}
-          disabled={!canSubmit || isSubmitting}
-          className="px-4 py-2 text-sm bg-primary text-white rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
-        >
-          {isSubmitting && <Loader2 className="h-3 w-3 animate-spin" />}
-          <span>
-            {isSubmitting 
-              ? `${editLead ? 'Updating' : 'Creating'}...` 
-              : `${editLead ? 'Update' : 'Create'} Lead`
-            }
-          </span>
-        </button>
+      {/* Form Content */}
+      <div className="grid grid-cols-12 gap-6">
+        {/* Left Column - Client Information */}
+        <div className="col-span-12 lg:col-span-6">
+          <div className="space-y-3">
+            {/* Contact Section */}
+            <AccordionSection
+              title="Contact Information"
+              icon={User}
+              isOpen={openSections.contact}
+              onToggle={() => toggleSection("contact")}
+              completed={!!formData.contact}
+              compact={true}
+            >
+              <ContactSearchSection
+                selectedContact={getSelectedContact()}
+                onContactSelect={handleContactSelect}
+                onEdit={() => {
+                  /* Open contact edit modal */
+                }}
+                onRemove={() => setContact(null)}
+              />
+            </AccordionSection>
+
+            {/* Company Section */}
+            <AccordionSection
+              title="Organization Information"
+              icon={Building2}
+              isOpen={openSections.company}
+              onToggle={() => toggleSection("company")}
+              completed={!!formData.company}
+              compact={true}
+            >
+              <CompanySearchSection
+                selectedCompany={getSelectedCompany()}
+                onCompanySelect={handleCompanySelect}
+                onEdit={() => {
+                  /* Open company edit modal */
+                }}
+                onRemove={() => setCompany(null)}
+              />
+            </AccordionSection>
+
+            {/* Industry Section */}
+            <AccordionSection
+              title="Industry Selection"
+              icon={Factory}
+              isOpen={openSections.industry}
+              onToggle={() => toggleSection("industry")}
+              completed={!!formData.industry}
+              compact={true}
+            >
+              <IndustrySearchSection
+                selectedIndustry={getSelectedIndustry()}
+                onIndustrySelect={handleIndustrySelect}
+              />
+            </AccordionSection>
+          </div>
+        </div>
+
+        {/* Right Column - Deal & Financial Information */}
+        <div className="col-span-12 lg:col-span-6">
+          <div className="space-y-3">
+            {/* Deal/Sales Details */}
+            <div className="bg-blue-50 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-4">
+                <Briefcase className="h-4 w-4 text-blue-600" />
+                <h3 className="font-medium text-gray-900">Deal / Sales Details</h3>
+              </div>
+
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Stage
+                    </label>
+                    <select
+                      value={formData.custom_stage}
+                      onChange={(e) => handleStageChange(e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      {stages.map((stg) => (
+                        <option key={stg} value={stg}>
+                          {stg}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Offering
+                    </label>
+                    <select
+                      value={formData.custom_offerings}
+                      onChange={(e) => updateFormField("custom_offerings", e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      {offerings.map((offer) => (
+                        <option key={offer} value={offer}>
+                          {offer}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Hiring Metrics */}
+            <div className="bg-green-50 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-4">
+                <IndianRupee className="h-4 w-4 text-green-600" />
+                <h3 className="font-medium text-gray-900">Hiring & Financial Details</h3>
+              </div>
+
+              <div className="space-y-3">
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Estimated Hiring
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.custom_estimated_hiring_ === 0 ? "" : formData.custom_estimated_hiring_}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        updateFormField("custom_estimated_hiring_", value === "" ? 0 : parseInt(value, 10));
+                      }}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
+                      placeholder="e.g., 50"
+                      min="0"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Avg Salary (INR)
+                    </label>
+                    <input
+  type="text"
+  value={
+    formData.custom_average_salary === 0
+      ? ""
+      : formData.custom_average_salary.toLocaleString("en-IN")
+  }
+  onChange={(e) => {
+    const value = e.target.value.replace(/,/g, ""); // Remove commas
+    updateFormField(
+      "custom_average_salary",
+      value === "" ? 0 : parseFloat(value)
+    );
+  }}
+  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
+  placeholder="e.g., 8,00,000"
+/>
+
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Fee (%)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={formData.custom_fee === 0 ? "" : formData.custom_fee}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        updateFormField("custom_fee", value === "" ? 0 : parseFloat(value));
+                      }}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
+                      placeholder="e.g., 15.5"
+                      min="0"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">
+    Deal Value (INR)
+  </label>
+  <input
+    type="text"
+    value={
+      formData.custom_deal_value === 0
+        ? ""
+        : Math.round(formData.custom_deal_value).toLocaleString("en-IN")
+    }
+    readOnly
+    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-gray-50 text-gray-600"
+    placeholder="Auto-calculated"
+  />
+  <p className="text-xs text-gray-500 mt-1">
+    (Fee (%) × Estimated Hiring × Avg Salary) ÷ 100
+  </p>
+</div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Expected Close Date
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.custom_expected_close_date}
+                      onChange={(e) => updateFormField("custom_expected_close_date", e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

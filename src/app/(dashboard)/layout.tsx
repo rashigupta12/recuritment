@@ -16,6 +16,7 @@ import {
   ChevronDown,
   ChevronRight,
   FolderOpen,
+  Home,
   LogOut,
   Menu,
   Search,
@@ -46,44 +47,41 @@ type NavigationItem = {
 
 // Define navigation items based on roles
 const getNavigationItems = (role: AllowedRole): NavigationItem[] => {
-  const baseItems: NavigationItem[] = [
-    // { icon: Home, label: 'Dashboard', href: '/dashboard', active: true },
-    // { icon: BarChart3, label: 'Analytics', href: '/analytics' },
-    // { icon: Calendar, label: 'Calendar', href: '/calendar' },
-    // { icon: MessageSquare, label: 'Messages', href: '/messages', badge: '3' },
-  ];
-
+  const roleBasePath = `/dashboard/${role.toLowerCase().replace(/\s+/g, '-')}`;
+  
   const roleSpecificItems: { [key in AllowedRole]: NavigationItem[] } = {
     'Sales User': [
-      { icon: Target, label: 'Leads', href: '/dashboard/sales-user/leads' },
-      // { icon: Users, label: 'Customers', href: '/customers' },
-      // { icon: TrendingUp, label: 'Pipeline', href: '/pipeline' },
+      { icon: Home, label: 'Dashboard', href: roleBasePath },
+      { icon: Target, label: 'Leads', href: `${roleBasePath}/leads` },
     ],
     'Sales Manager': [
-      { icon: Target, label: 'Leads', href: '/leads' },
-      { icon: Users, label: 'Team', href: '/team' },
-      { icon: TrendingUp, label: 'Reports', href: '/reports' },
-      { icon: Briefcase, label: 'Deals', href: '/deals' },
+      // { icon: Home, label: 'Dashboard', href: roleBasePath },
+      { icon: Target, label: 'Leads', href: `${roleBasePath}/leads` },
+      // { icon: Target, label: 'Opportunity', href: `${roleBasePath}/opportunity` },
+      // { icon: TrendingUp, label: 'Quotation', href: `${roleBasePath}/quotation` },
     ],
     'Projects Manager': [
-      { icon: FolderOpen, label: 'Projects', href: '/projects' },
-      { icon: Users, label: 'Team', href: '/team' },
-      { icon: Calendar, label: 'Timeline', href: '/timeline' },
-      { icon: BarChart3, label: 'Reports', href: '/reports' },
+      { icon: Home, label: 'Dashboard', href: roleBasePath },
+      { icon: FolderOpen, label: 'Projects', href: `${roleBasePath}/projects` },
+      // { icon: Users, label: 'Team', href: `${roleBasePath}/team` },
+      // { icon: Calendar, label: 'Timeline', href: `${roleBasePath}/timeline` },
+      // { icon: BarChart3, label: 'Reports', href: `${roleBasePath}/reports` },
     ],
     'Projects User': [
-      { icon: FolderOpen, label: 'My Projects', href: '/my-projects' },
-      { icon: Calendar, label: 'Tasks', href: '/tasks' },
-      { icon: Users, label: 'Team', href: '/team' },
+      { icon: Home, label: 'Dashboard', href: roleBasePath },
+      { icon: FolderOpen, label: 'My Projects', href: `${roleBasePath}/my-projects` },
+      // { icon: Calendar, label: 'Tasks', href: `${roleBasePath}/tasks` },
+      // { icon: Users, label: 'Team', href: `${roleBasePath}/team` },
     ],
     'Delivery Manager': [
-      { icon: FolderOpen, label: 'Deliveries', href: '/deliveries' },
-      { icon: Users, label: 'Resources', href: '/resources' },
-      { icon: BarChart3, label: 'Performance', href: '/performance' },
+      { icon: Home, label: 'Dashboard', href: roleBasePath },
+      { icon: FolderOpen, label: 'Deliveries', href: `${roleBasePath}/deliveries` },
+      // { icon: Users, label: 'Resources', href: `${roleBasePath}/resources` },
+      // { icon: BarChart3, label: 'Performance', href: `${roleBasePath}/performance` },
     ],
   };
 
-  return [...baseItems, ...roleSpecificItems[role]];
+  return roleSpecificItems[role];
 };
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
@@ -112,6 +110,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   const handleLogout = async () => {
     await logout();
+  };
+
+  // Improved active state logic
+  const isNavItemActive = (href: string): boolean => {
+    // Exact match for dashboard home pages
+    if (href.endsWith(`/dashboard/${currentRole.toLowerCase().replace(/\s+/g, '-')}`)) {
+      return pathname === href;
+    }
+    
+    // For sub-pages, check if pathname starts with the href
+    return pathname === href || (pathname.startsWith(href + '/') && href !== '/dashboard');
   };
 
   return (
@@ -189,7 +198,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Navigation */}
         <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
           {navigationItems.map((item, index) => {
-            const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
+            const isActive = isNavItemActive(item.href);
             return (
               <Link
                 key={index}
@@ -280,7 +289,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   Dashboard
                 </h1>
                 <p className="text-sm text-gray-500">
-                  Welcome , {user.full_name.split(' ')[0]}
+                  Welcome, {user.full_name.split(' ')[0]}
                 </p>
               </div>
             </div>
@@ -307,7 +316,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               </Button> */}
 
               {/* User Menu */}
-              <DropdownMenu >
+              <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full -top-1">
                     <Avatar className="h-8 w-8">

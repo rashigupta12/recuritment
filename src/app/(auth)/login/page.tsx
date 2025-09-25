@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { ROLE_ROUTES } from '@/lib/constants/roles';
 import { useTheme } from '@/components/providers/ThemeProvider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,74 +13,133 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Eye, EyeOff, Shield, Users, Zap, CheckCircle } from 'lucide-react';
 import Image from 'next/image';
 
-export default function LoginPage() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  
-  const { login, error, clearError, isAuthenticated, currentRole } = useAuth();
+const LoginPage = () => {
+  const { login, user, currentRole, isAuthenticated, loading, error, clearError } = useAuth();
   const { brandConfig } = useTheme();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  const [formData, setFormData] = useState({
+    username: '',
+    password: ''
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  // Get message from URL params (e.g., after password reset)
+  useEffect(() => {
+    const urlMessage = searchParams.get('message');
+    if (urlMessage) {
+      setMessage(urlMessage);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Check if user is already authenticated and redirect
+  // Redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated && currentRole) {
-      console.log('User already authenticated, redirecting to dashboard');
-      const roleRoutes: Record<string, string> = {
-        'Sales User': '/dashboard/sales-user',
-        'Sales Manager': '/dashboard/sales-manager',
-        'Projects Manager': '/dashboard/projects-manager',
-        'Projects User': '/dashboard/projects-user',
-        'Delivery Manager': '/dashboard/delivery-manager',
-      };
-      
-      const redirectTo = roleRoutes[currentRole] || '/dashboard/sales-user';
-      router.replace(redirectTo);
+    if (!loading && isAuthenticated && currentRole && user) {
+      console.log('Already authenticated, redirecting to dashboard');
+      router.replace(ROLE_ROUTES[currentRole]);
     }
-  }, [isAuthenticated, currentRole, router]);
+  }, [isAuthenticated, currentRole, user, loading, router]);
+
+  // Clear errors when user starts typing
+  useEffect(() => {
+    if (error) {
+      clearError();
+    }
+    setLocalError(null);
+  }, [formData.username, formData.password, error, clearError]);
+
+  const validateForm = (): boolean => {
+    if (!formData.username.trim()) {
+      setLocalError('Username is required');
+      return false;
+    }
+    
+    if (!formData.password) {
+      setLocalError('Password is required');
+      return false;
+    }
+    
+    if (formData.password.length < 6) {
+      setLocalError('Password must be at least 6 characters');
+      return false;
+    }
+    
+    return true;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username || !password) return;
+    
+    if (!validateForm()) {
+      return;
+    }
 
-    setIsLoading(true);
-    clearError();
-
+    setIsLoggingIn(true);
+    setLocalError(null);
+    setMessage(null);
+    
     try {
-      console.log('Attempting login...');
-      const result = await login(username, password);
+      console.log('Attempting login for:', formData.username);
       
-      console.log('Login result:', result);
+      const result = await login(formData.username.trim(), formData.password);
       
       if (result.success) {
         if (result.requiresPasswordReset) {
-          console.log('Password reset required, redirecting...');
+          console.log('Password reset required, redirecting');
           router.replace('/first-time-password-reset');
-        } else {
-          console.log('Login successful, waiting for role-based redirect...');
-          // The AuthContext will handle the redirect, but add a backup
-          setTimeout(() => {
-            console.log('Backup redirect triggered');
-            router.replace('/dashboard');
-          }, 1000);
         }
+        // If successful login without password reset, the AuthContext will handle redirection
       } else {
-        console.error('Login failed:', result.error);
+        setLocalError(result.error || 'Login failed. Please check your credentials.');
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Login submission error:', error);
+      setLocalError('An unexpected error occurred. Please try again.');
     } finally {
-      setIsLoading(false);
+      setIsLoggingIn(false);
     }
   };
 
-  // Don't show login form if user is already authenticated
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Show loading if auth is still checking
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[var(--brand-background)] via-[var(--brand-muted)] to-[var(--brand-background)]">
+        <div className="text-center">
+          <div className="relative">
+            <div className="loading-spinner mx-auto mb-6"></div>
+            <div className="absolute inset-0 animate-ping opacity-20">
+              <div className="loading-spinner mx-auto"></div>
+            </div>
+          </div>
+          <h3 className="text-xl font-semibold text-[var(--brand-foreground)] mb-2">
+            Loading...
+          </h3>
+          <p className="text-[var(--brand-muted-foreground)]">
+            Please wait while we check your session
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // If already authenticated, show redirecting message
   if (isAuthenticated && currentRole) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[var(--brand-background)] via-[var(--brand-muted)] to-[var(--brand-background)]">
@@ -108,6 +168,8 @@ export default function LoginPage() {
       </div>
     );
   }
+
+  const displayError = localError || error;
 
   return (
     <div className="min-h-screen flex">
@@ -157,40 +219,39 @@ export default function LoginPage() {
 
             {/* Main heading */}
             <h2 className="text-4xl font-bold mb-6 leading-tight">
-  INTELLIGENT TALENT
-  <span className="block bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
-    FOR YOUR GROWTH
-  </span>
-</h2>
+              INTELLIGENT TALENT
+              <span className="block bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
+                FOR YOUR GROWTH
+              </span>
+            </h2>
 
-<p className="text-lg text-white/90 mb-8 leading-relaxed">
-  At HEVHIRE, we blend AI-driven automation with human expertise to deliver 
-  faster, smarter, and globally scalable hiring solutions — ensuring every 
-  match is both technically precise and culturally aligned.
-</p>
+            <p className="text-lg text-white/90 mb-8 leading-relaxed">
+              At HEVHIRE, we blend AI-driven automation with human expertise to deliver 
+              faster, smarter, and globally scalable hiring solutions — ensuring every 
+              match is both technically precise and culturally aligned.
+            </p>
 
-{/* Features list */}
-<div className="space-y-4">
-  <div className="flex items-center space-x-3">
-    <div className="w-6 h-6 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-      <CheckCircle className="w-4 h-4" />
-    </div>
-    <span className="text-white/90">AI-powered candidate screening</span>
-  </div>
-  <div className="flex items-center space-x-3">
-    <div className="w-6 h-6 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-      <Users className="w-4 h-4" />
-    </div>
-    <span className="text-white/90">Precise cultural & technical fit</span>
-  </div>
-  <div className="flex items-center space-x-3">
-    <div className="w-6 h-6 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-      <Zap className="w-4 h-4" />
-    </div>
-    <span className="text-white/90">Dedicated global support</span>
-  </div>
-</div>
-
+            {/* Features list */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-6 h-6 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                  <CheckCircle className="w-4 h-4" />
+                </div>
+                <span className="text-white/90">AI-powered candidate screening</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-6 h-6 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                  <Users className="w-4 h-4" />
+                </div>
+                <span className="text-white/90">Precise cultural & technical fit</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="w-6 h-6 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                  <Zap className="w-4 h-4" />
+                </div>
+                <span className="text-white/90">Dedicated global support</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -220,6 +281,20 @@ export default function LoginPage() {
             </p>
           </div>
 
+          {/* Success Message */}
+          {message && (
+            <Alert className="border-green-200 bg-green-50">
+              <AlertDescription className="text-green-800">{message}</AlertDescription>
+            </Alert>
+          )}
+
+          {/* Error Message */}
+          {displayError && (
+            <Alert variant="destructive" className="border-red-200 bg-red-50">
+              <AlertDescription className="text-red-800">{displayError}</AlertDescription>
+            </Alert>
+          )}
+
           {/* Login Card */}
           <Card className="border-0 shadow-2xl bg-white/80 backdrop-blur-sm">
             <CardHeader className="space-y-2 pb-8">
@@ -242,28 +317,24 @@ export default function LoginPage() {
             </CardHeader>
             
             <CardContent className="pb-8">
-              {error && (
-                <Alert variant="destructive" className="mb-6 border-red-200 bg-red-50">
-                  <AlertDescription className="text-red-800">{error}</AlertDescription>
-                </Alert>
-              )}
-
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-3">
                   <Label 
                     htmlFor="username" 
                     className="text-[var(--brand-foreground)] font-medium text-sm"
                   >
-                    Username or Email
+                    Username
                   </Label>
                   <Input
                     id="username"
+                    name="username"
                     type="text"
-                    placeholder="Enter your credentials"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    autoComplete="username"
+                    placeholder="Enter your username"
+                    value={formData.username}
+                    onChange={handleInputChange}
                     required
-                    disabled={isLoading}
+                    disabled={isLoggingIn}
                     className="h-12 border-gray-200 focus:border-[var(--brand-primary)] focus:ring-[var(--brand-primary)]/20 rounded-lg text-base"
                   />
                 </div>
@@ -278,19 +349,21 @@ export default function LoginPage() {
                   <div className="relative">
                     <Input
                       id="password"
+                      name="password"
                       type={showPassword ? 'text' : 'password'}
+                      autoComplete="current-password"
                       placeholder="Enter your password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      value={formData.password}
+                      onChange={handleInputChange}
                       required
-                      disabled={isLoading}
+                      disabled={isLoggingIn}
                       className="h-12 pr-12 border-gray-200 focus:border-[var(--brand-primary)] focus:ring-[var(--brand-primary)]/20 rounded-lg text-base"
                     />
                     <button
                       type="button"
                       className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-[var(--brand-primary)] transition-colors"
                       onClick={() => setShowPassword(!showPassword)}
-                      disabled={isLoading}
+                      disabled={isLoggingIn}
                     >
                       {showPassword ? (
                         <EyeOff className="h-5 w-5" />
@@ -303,27 +376,27 @@ export default function LoginPage() {
 
                 <Button
                   type="submit"
-                  disabled={isLoading || !username || !password}
+                  disabled={isLoggingIn || !formData.username.trim() || !formData.password}
                   className="w-full h-12 text-base font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{
                     backgroundColor: brandConfig.colors.primary,
                     color: 'white'
                   }}
                   onMouseEnter={(e) => {
-                    if (!isLoading && username && password) {
+                    if (!isLoggingIn && formData.username.trim() && formData.password) {
                       e.currentTarget.style.backgroundColor = brandConfig.colors.secondary;
                     }
                   }}
                   onMouseLeave={(e) => {
-                    if (!isLoading && username && password) {
+                    if (!isLoggingIn && formData.username.trim() && formData.password) {
                       e.currentTarget.style.backgroundColor = brandConfig.colors.primary;
                     }
                   }}
                 >
-                  {isLoading ? (
+                  {isLoggingIn ? (
                     <div className="flex items-center justify-center">
                       <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      <span>Signing you in...</span>
+                      <span>Signing in...</span>
                     </div>
                   ) : (
                     <div className="flex items-center justify-center">
@@ -339,7 +412,7 @@ export default function LoginPage() {
           {/* Footer */}
           <div className="text-center space-y-4">
             <p className="text-sm text-[var(--brand-muted-foreground)]">
-              Need access? Contact your system administrator
+              Having trouble? Contact your system administrator
             </p>
             
             {/* Trust indicators */}
@@ -362,4 +435,6 @@ export default function LoginPage() {
       </div>
     </div>
   );
-}
+};
+
+export default LoginPage;

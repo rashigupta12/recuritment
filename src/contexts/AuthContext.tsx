@@ -4,7 +4,7 @@
 import { frappeAPI } from '@/lib/api/frappeClient';
 import { AllowedRole, getAllowedRoles, ROLE_ROUTES } from '@/lib/constants/roles';
 import { useRouter } from 'next/navigation';
-import { ReactNode, createContext, useContext, useEffect, useState } from 'react';
+import { ReactNode, createContext, useContext, useEffect, useState, useCallback } from 'react';
 
 interface AuthUser {
   username: string;
@@ -12,6 +12,8 @@ interface AuthUser {
   email: string;
   roles: string[];
   requiresPasswordReset: boolean;
+  authenticated: boolean;
+  loginTime: number;
 }
 
 interface AuthContextType {
@@ -21,6 +23,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   loading: boolean;
   error: string | null;
+  sessionValid: boolean;
   login: (username: string, password: string) => Promise<{
     success: boolean;
     requiresPasswordReset?: boolean;
@@ -33,6 +36,7 @@ interface AuthContextType {
   switchRole: (role: AllowedRole) => void;
   logout: () => Promise<void>;
   clearError: () => void;
+  validateSession: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -49,15 +53,28 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-// Helper function to set cookies that middleware can read
-function setCookie(name: string, value: string, days: number = 7) {
+// Session timeout (24 hours)
+const SESSION_TIMEOUT = 24 * 60 * 60 * 1000;
+
+// Helper function to set secure cookies
+function setCookie(name: string, value: string, days: number = 1) {
   const expires = new Date();
   expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
-  document.cookie = `${name}=${value}; expires=${expires.toUTCString()}; path=/; SameSite=Lax`;
+  document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires.toUTCString()}; path=/; SameSite=Lax; Secure`;
 }
 
 function deleteCookie(name: string) {
   document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax`;
+}
+
+function clearAllAuthData(username?: string) {
+  localStorage.removeItem('frappe_user');
+  deleteCookie('frappe_user');
+  
+  if (username) {
+    localStorage.removeItem(`currentRole_${username}`);
+    deleteCookie(`currentRole_${username}`);
+  }
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
@@ -66,26 +83,88 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [availableRoles, setAvailableRoles] = useState<AllowedRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sessionValid, setSessionValid] = useState(false);
   const router = useRouter();
 
-  const isAuthenticated = !!user && !user.requiresPasswordReset && !!currentRole;
+  // Strict authentication check
+  const isAuthenticated = !!(
+    user && 
+    user.authenticated === true && 
+    user.requiresPasswordReset === false && 
+    currentRole && 
+    availableRoles.length > 0 &&
+    sessionValid
+  );
 
-  // Check auth status on mount
-  useEffect(() => {
-    checkAuthStatus();
+  // Session validation
+  const validateSession = useCallback(async (): Promise<boolean> => {
+    try {
+      const sessionCheck = await frappeAPI.checkSession();
+      
+      if (!sessionCheck.authenticated) {
+        console.log('Session validation failed - not authenticated');
+        setSessionValid(false);
+        return false;
+      }
+
+      // Check session age
+      const storedUser = localStorage.getItem('frappe_user');
+      if (storedUser) {
+        const userData = JSON.parse(storedUser);
+        const sessionAge = Date.now() - (userData.loginTime || 0);
+        
+        if (sessionAge > SESSION_TIMEOUT) {
+          console.log('Session expired due to timeout');
+          setSessionValid(false);
+          return false;
+        }
+      }
+
+      setSessionValid(true);
+      return true;
+    } catch (error) {
+      console.error('Session validation error:', error);
+      setSessionValid(false);
+      return false;
+    }
   }, []);
+
+  // Periodic session validation
+  useEffect(() => {
+    if (user && !user.requiresPasswordReset) {
+      const interval = setInterval(() => {
+        validateSession().then(valid => {
+          if (!valid) {
+            logout();
+          }
+        });
+      }, 5 * 60 * 1000); // Check every 5 minutes
+
+      return () => clearInterval(interval);
+    }
+  }, [user, validateSession]);
 
   // Persist current role and set cookie for middleware
   useEffect(() => {
-    if (currentRole && user?.username) {
+    if (currentRole && user?.username && user.authenticated) {
       localStorage.setItem(`currentRole_${user.username}`, currentRole);
       setCookie(`currentRole_${user.username}`, currentRole);
     }
-  }, [currentRole, user?.username]);
+  }, [currentRole, user?.username, user?.authenticated]);
 
   const checkAuthStatus = async () => {
     try {
       setLoading(true);
+      setError(null);
+      
+      // First validate session
+      const isValid = await validateSession();
+      if (!isValid) {
+        console.log('Session validation failed during auth check');
+        clearAllAuthData();
+        return;
+      }
+
       const sessionCheck = await frappeAPI.checkSession();
       
       if (sessionCheck.authenticated) {
@@ -97,17 +176,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
         console.log('Session check - frappe roles:', frappeRoles);
         
         // Check if password reset is required
-        if (sessionCheck.details?.requiresPasswordReset) {
-          const passwordResetUser = {
+        const firstLoginCheck = await frappeAPI.checkFirstLogin(username);
+        
+        if (firstLoginCheck.requiresPasswordReset) {
+          console.log('Password reset required for user:', username);
+          
+          const passwordResetUser: AuthUser = {
             username,
             full_name: userData?.full_name || username,
             email: userData?.email || username,
             roles: [],
             requiresPasswordReset: true,
+            authenticated: false,
+            loginTime: Date.now()
           };
           
           setUser(passwordResetUser);
           setCookie('frappe_user', JSON.stringify(passwordResetUser));
+          setSessionValid(false);
           return;
         }
 
@@ -116,8 +202,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         console.log('Allowed roles after mapping:', allowedRoles);
         
         if (allowedRoles.length === 0) {
+          console.error('No valid roles found for user:', username);
           await logout();
-          setError('No valid roles assigned to your account. Please check the console for available roles.');
+          setError('No valid roles assigned to your account. Please contact your administrator.');
           return;
         }
 
@@ -131,12 +218,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
         
         setCurrentRole(initialRole);
 
-        const finalUser = {
+        const finalUser: AuthUser = {
           username,
           full_name: userData?.full_name || username,
           email: userData?.email || username,
           roles: frappeRoles.map((r: any) => typeof r === 'string' ? r : (r.role || r.name || '')),
           requiresPasswordReset: false,
+          authenticated: true,
+          loginTime: Date.now()
         };
 
         setUser(finalUser);
@@ -148,16 +237,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
         console.log('Authentication successful:', { finalUser, initialRole, allowedRoles });
       } else {
         console.log('Session check failed - not authenticated');
+        clearAllAuthData();
+        setSessionValid(false);
       }
     } catch (error) {
       console.error('Auth check failed:', error);
+      clearAllAuthData();
       setUser(null);
       setCurrentRole(null);
       setAvailableRoles([]);
+      setSessionValid(false);
     } finally {
       setLoading(false);
     }
   };
+
+  // Check auth status on mount
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
 
   const login = async (username: string, password: string) => {
     try {
@@ -165,6 +263,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setError(null);
       
       console.log('Starting login process for:', username);
+      
+      // Clear any existing auth data
+      clearAllAuthData();
+      
       const response = await frappeAPI.login(username, password);
       console.log('Login response:', response);
       
@@ -174,16 +276,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
         console.log('First login check:', firstLoginCheck);
         
         if (firstLoginCheck.requiresPasswordReset) {
-          const passwordResetUser = {
+          const passwordResetUser: AuthUser = {
             username,
             full_name: response.user?.full_name || username,
             email: response.user?.email || username,
             roles: [],
             requiresPasswordReset: true,
+            authenticated: false,
+            loginTime: Date.now()
           };
           
           setUser(passwordResetUser);
           setCookie('frappe_user', JSON.stringify(passwordResetUser));
+          setSessionValid(false);
           
           return { success: true, requiresPasswordReset: true };
         }
@@ -208,15 +313,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const initialRole = allowedRoles[0];
         setCurrentRole(initialRole);
         
-        const finalUser = {
+        const finalUser: AuthUser = {
           username,
           full_name: response.user?.full_name || username,
           email: response.user?.email || username,
           roles: rawRoles.map((r: any) => typeof r === 'string' ? r : (r.role || r.name || '')),
           requiresPasswordReset: false,
+          authenticated: true,
+          loginTime: Date.now()
         };
 
         setUser(finalUser);
+        setSessionValid(true);
         
         // Set cookies for middleware
         setCookie('frappe_user', JSON.stringify(finalUser));
@@ -235,6 +343,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       return { success: false, error: response.error || 'Login failed' };
     } catch (error) {
       console.error('Login error:', error);
+      clearAllAuthData();
       const errorMessage = error instanceof Error ? error.message : 'Login failed';
       setError(errorMessage);
       return { success: false, error: errorMessage };
@@ -252,45 +361,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const result = await frappeAPI.resetFirstTimePassword(username, newPassword);
       
       if (result.success) {
-        console.log('Password reset successful, re-logging in...');
-        // Re-login with new password
-        const loginResult = await frappeAPI.login(username, newPassword);
+        console.log('Password reset successful');
         
-        if (loginResult.success) {
-          const rawRoles = loginResult.details?.roles || loginResult.user?.roles || [];
-          const allowedRoles = getAllowedRoles(rawRoles);
-          
-          if (allowedRoles.length === 0) {
-            return { success: false, error: 'No valid roles assigned to your account.' };
-          }
-          
-          setAvailableRoles(allowedRoles);
-          const initialRole = allowedRoles[0];
-          setCurrentRole(initialRole);
-          
-          const finalUser = {
-            username,
-            full_name: loginResult.user?.full_name || username,
-            email: loginResult.user?.email || username,
-            roles: rawRoles.map((r: any) => typeof r === 'string' ? r : (r.role || r.name || '')),
-            requiresPasswordReset: false,
-          };
+        // Clear all auth data and force re-login
+        clearAllAuthData(username);
+        setUser(null);
+        setCurrentRole(null);
+        setAvailableRoles([]);
+        setSessionValid(false);
+        
+        // Redirect to login page for fresh authentication
+        setTimeout(() => {
+          router.push('/login?message=Password updated successfully. Please log in again.');
+        }, 100);
 
-          setUser(finalUser);
-          
-          // Set cookies for middleware
-          setCookie('frappe_user', JSON.stringify(finalUser));
-          setCookie(`currentRole_${username}`, initialRole);
-          
-          console.log('Password reset and login successful, redirecting to:', ROLE_ROUTES[initialRole]);
-          
-          // Force redirect immediately
-          setTimeout(() => {
-            router.push(ROLE_ROUTES[initialRole]);
-          }, 100);
-
-          return { success: true };
-        }
+        return { success: true };
       }
       
       return { success: false, error: result.error || 'Password reset failed' };
@@ -305,7 +390,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const switchRole = (role: AllowedRole) => {
-    if (availableRoles.includes(role)) {
+    if (availableRoles.includes(role) && user?.authenticated) {
       setCurrentRole(role);
       if (user) {
         localStorage.setItem(`currentRole_${user.username}`, role);
@@ -319,19 +404,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const logout = async () => {
     try {
+      setLoading(true);
+      
+      // Call API logout
       await frappeAPI.logout();
-      if (user?.username) {
-        localStorage.removeItem(`currentRole_${user.username}`);
-        deleteCookie(`currentRole_${user.username}`);
-      }
-      deleteCookie('frappe_user');
+      
+      // Clear all auth data
+      clearAllAuthData(user?.username);
+      
     } catch (error) {
       console.error('Logout error:', error);
+      // Still clear local data even if API call fails
+      clearAllAuthData(user?.username);
     } finally {
+      // Reset all state
       setUser(null);
       setCurrentRole(null);
       setAvailableRoles([]);
       setError(null);
+      setSessionValid(false);
+      setLoading(false);
+      
+      // Always redirect to login
       router.push('/login');
     }
   };
@@ -345,11 +439,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isAuthenticated,
     loading,
     error,
+    sessionValid,
     login,
     resetPassword,
     switchRole,
     logout,
     clearError,
+    validateSession,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

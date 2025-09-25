@@ -121,22 +121,21 @@ const LeadsManagement = () => {
   if (currentView === 'add' || currentView === 'edit') {
     return (
       <>
-        <LeadsHeader
+        {/* <LeadsHeader
           searchQuery=""
           onSearchChange={() => {}}
           onAddLead={() => {}}
           showBackButton={true}
           onBack={handleBack}
-        />
-        <LeadsFormView
-          currentView={currentView}
-          selectedLead={selectedLead}
-          showConfirmation={showConfirmation}
-          onBack={handleBack}
-          onFormClose={handleFormClose}
-          onConfirmBack={handleConfirmBack}
-          onCancelBack={handleCancelBack}
-        />
+        /> */}
+       
+<LeadsFormView
+  currentView={currentView}
+  selectedLead={selectedLead}
+  onBack={handleBack}
+  onFormClose={handleFormClose}
+  // Remove onConfirmBack and onCancelBack as well since LeadsFormView handles them internally
+/>
       </>
     );
   }

@@ -10,8 +10,8 @@ interface LeadsStatsProps {
 export const LeadsStats = ({ leads }: LeadsStatsProps) => {
   const totalLeads = leads.length;
   const uniqueCompanies = new Set(leads.map((l) => l.company_name)).size;
-  const totalRevenue = leads.reduce((sum, lead) => sum + (lead.custom_budgetinr || 0), 0);
-  const expectedHires = leads.reduce((sum, lead) => sum + (lead.custom_expected_hiring_volume || 0), 0);
+  const totalRevenue = leads.reduce((sum, lead) => sum + (lead.custom_deal_value || 0), 0);
+  const expectedHires = leads.reduce((sum, lead) => sum + (lead.custom_estimated_hiring_ || 0), 0);
 
   const statCards = [
     {

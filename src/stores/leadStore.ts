@@ -33,6 +33,7 @@ export interface Industry {
 }
 
 export interface Lead {
+  custom_lead_owner_name: string
   mobile_no: string
   id?: string
   custom_full_name: string
@@ -51,6 +52,14 @@ export interface Lead {
   lead_name?: string
   email_id?: string
   name?: string
+  // New fields
+  custom_stage?: string
+  custom_offerings?: string
+  custom_estimated_hiring_?: number
+  custom_average_salary?: number
+  custom_fee?: number
+  custom_deal_value?: number
+  custom_expected_close_date?: string
 }
 
 export interface LeadFormData {
@@ -62,6 +71,14 @@ export interface LeadFormData {
   budget: number
   state: string
   country: string
+  // New fields integrated into form data
+  custom_stage: string
+  custom_offerings: string
+  custom_estimated_hiring_: number
+  custom_average_salary: number
+  custom_fee: number
+  custom_deal_value: number
+  custom_expected_close_date: string
 }
 
 interface LeadStore {
@@ -92,8 +109,11 @@ interface LeadStore {
   setCurrentStep: (step: number) => void
   setFormOpen: (open: boolean) => void
   
-  // Helper to build final payload
+  // Helper to build final payload with automatic deal value calculation
   buildLeadPayload: () => Partial<Lead>
+  
+  // Helper to calculate deal value automatically
+  calculateDealValue: () => number
 }
 
 const initialFormData: LeadFormData = {
@@ -104,7 +124,15 @@ const initialFormData: LeadFormData = {
   city: '',
   budget: 0,
   state: '',
-  country: 'India'
+  country: 'India',
+  // New fields with default values
+  custom_stage: 'Prospecting',
+  custom_offerings: 'Lateral - All Levels',
+  custom_estimated_hiring_: 0,
+  custom_average_salary: 0,
+  custom_fee: 0,
+  custom_deal_value: 0,
+  custom_expected_close_date: ''
 }
 
 export const useLeadStore = create<LeadStore>()(
@@ -185,9 +213,24 @@ export const useLeadStore = create<LeadStore>()(
       
       updateFormField: (field, value) =>
         set(
-          (state) => ({
-            formData: { ...state.formData, [field]: value }
-          }),
+          (state) => {
+            const newFormData = { ...state.formData, [field]: value }
+            
+            // Auto-calculate deal value when relevant fields change
+            if (field === 'custom_fee' || field === 'custom_estimated_hiring_' || field === 'custom_average_salary') {
+              const fee = field === 'custom_fee' ? value : newFormData.custom_fee
+              const hiring = field === 'custom_estimated_hiring_' ? value : newFormData.custom_estimated_hiring_
+              const salary = field === 'custom_average_salary' ? value : newFormData.custom_average_salary
+              
+              // Calculate: fee * hiring * salary / 100 (assuming fee is in percentage)
+              const dealValue = (fee && hiring && salary) ? (fee * hiring * salary) / 100 : 0
+              newFormData.custom_deal_value = dealValue
+            }
+            
+            return {
+              formData: newFormData
+            }
+          },
           false,
           'updateFormField'
         ),
@@ -205,6 +248,19 @@ export const useLeadStore = create<LeadStore>()(
       setCurrentStep: (step) => set({ currentStep: step }, false, 'setCurrentStep'),
       setFormOpen: (open) => set({ isFormOpen: open }, false, 'setFormOpen'),
 
+      // Helper to calculate deal value
+      calculateDealValue: () => {
+        const { formData } = get()
+        const { custom_fee, custom_estimated_hiring_, custom_average_salary } = formData
+        
+        if (!custom_fee || !custom_estimated_hiring_ || !custom_average_salary) {
+          return 0
+        }
+        
+        // Calculate: fee * hiring * salary / 100 (assuming fee is in percentage)
+        return (custom_fee * custom_estimated_hiring_ * custom_average_salary) / 100
+      },
+
       // Helper to build final lead payload
       buildLeadPayload: () => {
         const { formData } = get()
@@ -214,6 +270,7 @@ export const useLeadStore = create<LeadStore>()(
         }
 
         return {
+          // Original fields
           custom_full_name: formData.contact.name,
           custom_phone_number: formData.contact.phone,
           custom_email_address: formData.contact.email,
@@ -225,7 +282,15 @@ export const useLeadStore = create<LeadStore>()(
           custom_budgetinr: formData.budget,
           website: formData.company.website,
           state: formData.state,
-          country: formData.country
+          country: formData.country,
+          // New fields
+          custom_stage: formData.custom_stage,
+          custom_offerings: formData.custom_offerings,
+          custom_estimated_hiring_: formData.custom_estimated_hiring_,
+          custom_average_salary: formData.custom_average_salary,
+          custom_fee: formData.custom_fee,
+          custom_deal_value: formData.custom_deal_value,
+          custom_expected_close_date: formData.custom_expected_close_date
         }
       }
     }),

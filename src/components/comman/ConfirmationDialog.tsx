@@ -1,5 +1,5 @@
 "use client";
-// Confirmation Dialog Component
+
 interface ConfirmationDialogProps {
   isOpen: boolean;
   onConfirm: () => void;
@@ -26,11 +26,12 @@ const ConfirmationDialog = ({ isOpen, onConfirm, onCancel, message }: Confirmati
             onClick={onConfirm}
             className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
           >
-            Yes
+            Yes, Leave
           </button>
         </div>
       </div>
     </div>
   );
 };
-export default ConfirmationDialog
+
+export default ConfirmationDialog;

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { useTheme } from '@/components/providers/ThemeProvider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,55 +17,200 @@ interface PasswordRequirement {
   met: boolean;
 }
 
-export default function PasswordResetPage() {
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const { user, resetPassword, error, clearError } = useAuth();
+const FirstTimePasswordResetPage = () => {
+  const { user, resetPassword, logout, loading, error, clearError } = useAuth();
   const { brandConfig } = useTheme();
   const router = useRouter();
+  
+  const [formData, setFormData] = useState({
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  // Security check: redirect if user doesn't need password reset
+  useEffect(() => {
+    if (!loading) {
+      if (!user) {
+        console.log('No user found, redirecting to login');
+        router.replace('/login');
+        return;
+      }
+      
+      if (!user.requiresPasswordReset) {
+        console.log('Password reset not required, redirecting to login');
+        router.replace('/login');
+        return;
+      }
+    }
+  }, [user, loading, router]);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Clear errors when user starts typing
+  useEffect(() => {
+    if (error) {
+      clearError();
+    }
+    setLocalError(null);
+  }, [formData.newPassword, formData.confirmPassword, error, clearError]);
 
   const passwordRequirements: PasswordRequirement[] = [
-    { text: 'At least 8 characters', met: newPassword.length >= 8 },
-    { text: 'Contains uppercase letter', met: /[A-Z]/.test(newPassword) },
-    { text: 'Contains lowercase letter', met: /[a-z]/.test(newPassword) },
-    { text: 'Contains number', met: /\d/.test(newPassword) },
-    { text: 'Contains special character', met: /[!@#$%^&*(),.?":{}|<>]/.test(newPassword) },
+    { text: 'At least 8 characters', met: formData.newPassword.length >= 8 },
+    { text: 'Contains uppercase letter', met: /[A-Z]/.test(formData.newPassword) },
+    { text: 'Contains lowercase letter', met: /[a-z]/.test(formData.newPassword) },
+    { text: 'Contains number', met: /\d/.test(formData.newPassword) },
+    { text: 'Contains special character', met: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\?]/.test(formData.newPassword) },
   ];
 
   const allRequirementsMet = passwordRequirements.every(req => req.met);
-  const passwordsMatch = newPassword === confirmPassword && newPassword.length > 0;
+  const passwordsMatch = formData.newPassword === formData.confirmPassword && formData.newPassword.length > 0;
+
+  const validatePassword = (): boolean => {
+    const { newPassword, confirmPassword } = formData;
+    
+    if (!newPassword) {
+      setLocalError('New password is required');
+      return false;
+    }
+    
+    if (newPassword.length < 8) {
+      setLocalError('Password must be at least 8 characters long');
+      return false;
+    }
+    
+    if (!/[A-Z]/.test(newPassword)) {
+      setLocalError('Password must contain at least one uppercase letter');
+      return false;
+    }
+    
+    if (!/[a-z]/.test(newPassword)) {
+      setLocalError('Password must contain at least one lowercase letter');
+      return false;
+    }
+    
+    if (!/\d/.test(newPassword)) {
+      setLocalError('Password must contain at least one number');
+      return false;
+    }
+    
+    if (!confirmPassword) {
+      setLocalError('Please confirm your password');
+      return false;
+    }
+    
+    if (newPassword !== confirmPassword) {
+      setLocalError('Passwords do not match');
+      return false;
+    }
+    
+    return true;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!allRequirementsMet || !passwordsMatch || !user?.username) {
+    if (!user?.username) {
+      setLocalError('User session invalid. Please log in again.');
+      return;
+    }
+    
+    if (!validatePassword()) {
       return;
     }
 
-    setIsLoading(true);
-    clearError();
-
+    setIsResetting(true);
+    setLocalError(null);
+    
     try {
-      const result = await resetPassword(user.username, newPassword);
+      console.log('Attempting password reset for:', user.username);
       
-      if (result.success) {
-        router.push('/dashboard');
+      const result = await resetPassword(user.username, formData.newPassword);
+      
+      if (!result.success) {
+        setLocalError(result.error || 'Password reset failed. Please try again.');
       }
+      // If successful, the AuthContext will handle redirection to login
     } catch (error) {
-      console.error('Password reset error:', error);
+      console.error('Password reset submission error:', error);
+      setLocalError('An unexpected error occurred. Please try again.');
     } finally {
-      setIsLoading(false);
+      setIsResetting(false);
     }
   };
 
-  if (!user?.requiresPasswordReset) {
-    router.push('/login');
-    return null;
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleCancel = async () => {
+    await logout();
+  };
+
+  // Show loading if auth is still checking
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[var(--brand-background)] via-[var(--brand-muted)] to-[var(--brand-background)]">
+        <div className="text-center">
+          <div className="relative">
+            <div className="loading-spinner mx-auto mb-6"></div>
+            <div className="absolute inset-0 animate-ping opacity-20">
+              <div className="loading-spinner mx-auto"></div>
+            </div>
+          </div>
+          <h3 className="text-xl font-semibold text-[var(--brand-foreground)] mb-2">
+            Loading...
+          </h3>
+          <p className="text-[var(--brand-muted-foreground)]">
+            Please wait while we check your session
+          </p>
+        </div>
+      </div>
+    );
   }
+
+  // Security check: don't show page if user doesn't exist or doesn't need reset
+  if (!user || !user.requiresPasswordReset) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[var(--brand-background)] via-[var(--brand-muted)] to-[var(--brand-background)]">
+        <div className="text-center">
+          <div className="relative">
+            <div className="loading-spinner mx-auto mb-6"></div>
+            <div className="absolute inset-0 animate-ping opacity-20">
+              <div className="loading-spinner mx-auto"></div>
+            </div>
+          </div>
+          <h3 className="text-xl font-semibold text-[var(--brand-foreground)] mb-2">
+            Redirecting...
+          </h3>
+          <p className="text-[var(--brand-muted-foreground)]">
+            Please wait while we redirect you
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
+        <div className="loading-spinner"></div>
+      </div>
+    );
+  }
+
+  const displayError = localError || error;
+  const isFormValid = allRequirementsMet && passwordsMatch;
 
   return (
     <div className="min-h-screen flex">
@@ -94,7 +239,7 @@ export default function PasswordResetPage() {
         </div>
 
         {/* Content */}
-        <div className="relative z-10 flex flex-col justify- p-12 py-5 text-white">
+        <div className="relative z-10 flex flex-col justify-center p-12 text-white">
           <div className="max-w-md">
             {/* Logo */}
             <div className="mb-8">
@@ -169,7 +314,7 @@ export default function PasswordResetPage() {
           {/* Mobile header */}
           <div className="lg:hidden text-center">
             <div className="flex justify-center mb-4">
-              {/* <div className="relative w-16 h-16 bg-[var(--brand-primary)] rounded-2xl flex items-center justify-center shadow-lg">
+              <div className="relative w-16 h-16 bg-[var(--brand-primary)] rounded-2xl flex items-center justify-center shadow-lg">
                 <Image
                   src={brandConfig.logo}
                   alt={brandConfig.name}
@@ -178,7 +323,7 @@ export default function PasswordResetPage() {
                   className="object-contain filter brightness-0 invert"
                   priority
                 />
-              </div> */}
+              </div>
             </div>
             <h2 className="text-2xl font-bold text-[var(--brand-foreground)]">
               Welcome {user.full_name}!
@@ -188,12 +333,19 @@ export default function PasswordResetPage() {
             </p>
           </div>
 
+          {/* Error Message */}
+          {displayError && (
+            <Alert variant="destructive" className="border-red-200 bg-red-50">
+              <AlertDescription className="text-red-800">{displayError}</AlertDescription>
+            </Alert>
+          )}
+
           {/* Password Reset Card */}
           <Card className="border-0 shadow-2xl bg-white/80 backdrop-blur-sm">
             <CardHeader className="space-y-2 pb-6">
               <div className="hidden lg:block text-center">
                 <div className="flex justify-center mb-4">
-                  {/* <div 
+                  <div 
                     className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg relative"
                     style={{ backgroundColor: brandConfig.colors.primary }}
                   >
@@ -201,7 +353,7 @@ export default function PasswordResetPage() {
                     <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
                       <Check className="w-2 h-2 text-white" />
                     </div>
-                  </div> */}
+                  </div>
                 </div>
               </div>
               <CardTitle className="text-2xl font-bold text-center text-[var(--brand-foreground)]">
@@ -213,12 +365,6 @@ export default function PasswordResetPage() {
             </CardHeader>
             
             <CardContent className="pb-8">
-              {error && (
-                <Alert variant="destructive" className="mb-6 border-red-200 bg-red-50">
-                  <AlertDescription className="text-red-800">{error}</AlertDescription>
-                </Alert>
-              )}
-
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-3">
                   <Label htmlFor="newPassword" className="text-[var(--brand-foreground)] font-medium text-sm">
@@ -227,19 +373,21 @@ export default function PasswordResetPage() {
                   <div className="relative">
                     <Input
                       id="newPassword"
+                      name="newPassword"
                       type={showNewPassword ? 'text' : 'password'}
+                      autoComplete="new-password"
                       placeholder="Create a strong password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
+                      value={formData.newPassword}
+                      onChange={handleInputChange}
                       required
-                      disabled={isLoading}
+                      disabled={isResetting}
                       className="h-12 pr-12 border-gray-200 focus:border-[var(--brand-primary)] focus:ring-[var(--brand-primary)]/20 rounded-lg text-base"
                     />
                     <button
                       type="button"
                       className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-[var(--brand-primary)] transition-colors"
                       onClick={() => setShowNewPassword(!showNewPassword)}
-                      disabled={isLoading}
+                      disabled={isResetting}
                     >
                       {showNewPassword ? (
                         <EyeOff className="h-5 w-5" />
@@ -257,19 +405,21 @@ export default function PasswordResetPage() {
                   <div className="relative">
                     <Input
                       id="confirmPassword"
+                      name="confirmPassword"
                       type={showConfirmPassword ? 'text' : 'password'}
+                      autoComplete="new-password"
                       placeholder="Confirm your password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      value={formData.confirmPassword}
+                      onChange={handleInputChange}
                       required
-                      disabled={isLoading}
+                      disabled={isResetting}
                       className="h-12 pr-12 border-gray-200 focus:border-[var(--brand-primary)] focus:ring-[var(--brand-primary)]/20 rounded-lg text-base"
                     />
                     <button
                       type="button"
                       className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-[var(--brand-primary)] transition-colors"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      disabled={isLoading}
+                      disabled={isResetting}
                     >
                       {showConfirmPassword ? (
                         <EyeOff className="h-5 w-5" />
@@ -278,7 +428,7 @@ export default function PasswordResetPage() {
                       )}
                     </button>
                   </div>
-                  {confirmPassword.length > 0 && (
+                  {formData.confirmPassword.length > 0 && (
                     <div className={`text-sm flex items-center gap-2 mt-2 ${passwordsMatch ? 'text-green-600' : 'text-red-600'}`}>
                       {passwordsMatch ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
                       {passwordsMatch ? 'Passwords match' : 'Passwords do not match'}
@@ -324,37 +474,49 @@ export default function PasswordResetPage() {
                   </div>
                 </div>
 
-                <Button
-                  type="submit"
-                  disabled={isLoading || !allRequirementsMet || !passwordsMatch}
-                  className="w-full h-12 text-base font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{
-                    backgroundColor: brandConfig.colors.primary,
-                    color: 'white'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isLoading && allRequirementsMet && passwordsMatch) {
-                      e.currentTarget.style.backgroundColor = brandConfig.colors.secondary;
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isLoading && allRequirementsMet && passwordsMatch) {
-                      e.currentTarget.style.backgroundColor = brandConfig.colors.primary;
-                    }
-                  }}
-                >
-                  {isLoading ? (
-                    <div className="flex items-center justify-center">
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      <span>Setting up your password...</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center">
-                      <RefreshCw className="mr-2 h-5 w-5" />
-                      <span>Complete Setup & Continue</span>
-                    </div>
-                  )}
-                </Button>
+                <div className="space-y-3">
+                  <Button
+                    type="submit"
+                    disabled={isResetting || !isFormValid}
+                    className="w-full h-12 text-base font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{
+                      backgroundColor: brandConfig.colors.primary,
+                      color: 'white'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isResetting && isFormValid) {
+                        e.currentTarget.style.backgroundColor = brandConfig.colors.secondary;
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isResetting && isFormValid) {
+                        e.currentTarget.style.backgroundColor = brandConfig.colors.primary;
+                      }
+                    }}
+                  >
+                    {isResetting ? (
+                      <div className="flex items-center justify-center">
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        <span>Updating Password...</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center">
+                        <RefreshCw className="mr-2 h-5 w-5" />
+                        <span>Update Password</span>
+                      </div>
+                    )}
+                  </Button>
+                  
+                  <Button
+                    type="button"
+                    onClick={handleCancel}
+                    disabled={isResetting}
+                    variant="outline"
+                    className="w-full h-12 text-base font-semibold rounded-lg transition-all duration-200"
+                  >
+                    Cancel & Logout
+                  </Button>
+                </div>
               </form>
             </CardContent>
           </Card>
@@ -362,7 +524,7 @@ export default function PasswordResetPage() {
           {/* Footer */}
           <div className="text-center space-y-4">
             <p className="text-sm text-[var(--brand-muted-foreground)]">
-              This is a one-time setup. Your password will be securely encrypted.
+              This is a one-time password reset. After updating, you &pos;ll need to log in again.
             </p>
             
             {/* Trust indicators */}
@@ -385,4 +547,6 @@ export default function PasswordResetPage() {
       </div>
     </div>
   );
-}
+};
+
+export default FirstTimePasswordResetPage;

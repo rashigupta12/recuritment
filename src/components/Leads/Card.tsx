@@ -9,6 +9,8 @@ import {
   MapPin,
   Phone,
   Users,
+  UsersIcon,
+  Globe,
 } from "lucide-react";
 
 interface LeadCardProps {
@@ -23,12 +25,15 @@ const LeadCard = ({ lead, onView, onEdit }: LeadCardProps) => {
       {/* Header with name and actions */}
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">
-            {lead.custom_full_name || lead.lead_name || "Unnamed Lead"}
+          <h3 className="text-lg font-semibold text-gray-900 capitalize">
+            {lead.custom_full_name || lead.lead_name || "-"}
           </h3>
-          <p className="text-sm text-gray-500">
-            {lead.company_name || "No company"}
-          </p>
+          <div className="text-sm text-gray-500 normal-case mt-1">
+            {lead.custom_email_address || "-"}
+          </div>
+          <div className="text-sm text-gray-500">
+            {lead.custom_phone_number || "-"}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {onEdit && (
@@ -52,55 +57,105 @@ const LeadCard = ({ lead, onView, onEdit }: LeadCardProps) => {
         </div>
       </div>
 
-      {/* Contact Information */}
+      {/* Company Information */}
       <div className="space-y-2 mb-4">
-        {lead.custom_email_address && (
-          <div className="flex items-center text-sm text-gray-600">
-            <Mail className="h-4 w-4 mr-2 text-gray-400" />
-            <span className="truncate">{lead.custom_email_address}</span>
+        <div className="flex items-center text-sm text-gray-900">
+          <Building2 className="h-4 w-4 mr-2 text-gray-400" />
+          <span className="truncate">{lead.company_name || "-"}</span>
+        </div>
+        
+        {lead.website && (
+          <div className="flex items-center text-sm text-blue-500">
+            <Globe className="h-4 w-4 mr-2 text-gray-400" />
+            <a
+              href={
+                lead.website.startsWith("http")
+                  ? lead.website
+                  : `https://${lead.website}`
+              }
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:underline normal-case"
+            >
+              {lead.website}
+            </a>
           </div>
         )}
-        {lead.custom_phone_number && (
-          <div className="flex items-center text-sm text-gray-600">
-            <Phone className="h-4 w-4 mr-2 text-gray-400" />
-            <span>{lead.custom_phone_number}</span>
-          </div>
-        )}
-        {(lead.city || lead.state || lead.country) && (
-          <div className="flex items-center text-sm text-gray-600">
-            <MapPin className="h-4 w-4 mr-2 text-gray-400" />
-            <span className="truncate">
-              {[lead.city, lead.state, lead.country].filter(Boolean).join(", ")}
-            </span>
-          </div>
-        )}
+        
+        <div className="flex items-center text-sm text-gray-600">
+          <Factory className="h-4 w-4 mr-2 text-gray-400" />
+          <span>{lead.industry || "-"}</span>
+        </div>
       </div>
 
-      {/* Business Information */}
+      {/* Stage and Offerings */}
       <div className="grid grid-cols-2 gap-4 py-3 border-t border-gray-100">
         <div>
-          <div className="flex items-center text-sm text-gray-600">
-            <Factory className="h-4 w-4 mr-2 text-gray-400" />
-            <span className="truncate">{lead.industry || "No industry"}</span>
+          <div className="text-xs text-gray-500 uppercase font-medium">Stage</div>
+          <div className="text-sm text-gray-900 capitalize">
+            {lead.custom_stage || "-"}
           </div>
         </div>
         <div>
-          <div className="flex items-center text-sm text-gray-600">
-            <Users className="h-4 w-4 mr-2 text-gray-400" />
-            <span>{lead.custom_expected_hiring_volume || "0"} hires</span>
+          <div className="text-xs text-gray-500 uppercase font-medium">Offerings</div>
+          <div className="text-sm text-gray-900">
+            {lead.custom_offerings || "-"}
           </div>
         </div>
       </div>
 
-      {/* Budget */}
-      {lead.custom_budgetinr && (
-        <div className="mt-3 pt-3 border-t border-gray-100">
-          <div className="flex items-center text-sm font-medium text-gray-900">
-            <IndianRupee className="h-4 w-4 mr-2 text-gray-400" />
-            <span>₹{lead.custom_budgetinr.toLocaleString()}</span>
+      {/* Salary and Hiring */}
+      {(lead.custom_average_salary || lead.custom_estimated_hiring_) && (
+        <div className="grid grid-cols-2 gap-4 py-3 border-t border-gray-100">
+          <div>
+            <div className="flex items-center text-sm text-gray-900">
+              <IndianRupee className="h-4 w-4 mr-1 text-gray-400" />
+              <span>{lead.custom_average_salary || "-"}</span>
+            </div>
+            <div className="text-xs text-gray-500">Avg Salary</div>
+          </div>
+          <div>
+            <div className="flex items-center text-sm text-gray-900">
+              <UsersIcon className="h-4 w-4 mr-1 text-gray-400" />
+              <span>{lead.custom_estimated_hiring_ || "-"}</span>
+            </div>
+            <div className="text-xs text-gray-500">Est. Hiring</div>
           </div>
         </div>
       )}
+
+      {/* Fee and Deal Value */}
+      <div className="grid grid-cols-2 gap-4 py-3 border-t border-gray-100">
+        <div>
+          <div className="text-xs text-gray-500 uppercase font-medium">Fee</div>
+          <div className="text-sm text-gray-900">
+            {lead.custom_fee ? `${lead.custom_fee}%` : "-"}
+          </div>
+        </div>
+        <div>
+          <div className="text-xs text-gray-500 uppercase font-medium">Deal Value</div>
+          <div className="flex items-center text-sm text-gray-900">
+            {lead.custom_deal_value ? (
+              <>
+                <IndianRupee className="h-4 w-4 mr-1 text-gray-400" />
+                <span>{lead.custom_deal_value}</span>
+              </>
+            ) : (
+              "-"
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Lead Owner */}
+      <div className="mt-3 pt-3 border-t border-gray-100">
+        <div className="text-xs text-gray-500 uppercase font-medium">Lead Owner</div>
+        <div className="text-sm text-gray-900">
+          {lead.custom_lead_owner_name || "-"}
+        </div>
+      </div>
+
+     
     </div>
   );
 };
