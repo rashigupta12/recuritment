@@ -32,14 +32,14 @@ export const LeadsFormView = ({
   };
 
   // Handle back navigation with confirmation
-  const handleBackClick = () => {
-    if (hasUnsavedChanges) {
-      setPendingAction(() => onBack);
-      setShowConfirmation(true);
-    } else {
-      onBack();
-    }
-  };
+  // const handleBackClick = () => {
+  //   if (hasUnsavedChanges) {
+  //     setPendingAction(() => onBack);
+  //     setShowConfirmation(true);
+  //   } else {
+  //     onBack();
+  //   }
+  // };
 
   // Confirmation handlers
   const handleConfirmBack = () => {

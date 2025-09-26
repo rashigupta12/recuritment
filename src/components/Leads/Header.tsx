@@ -17,7 +17,7 @@ export const LeadsHeader = ({
   onAddLead,
   showBackButton = false,
   onBack,
-  title = "Leads Management",
+  // title = "Leads Management",
 }: LeadsHeaderProps) => {
   return (
     <div className="bg-white border-gray-200">

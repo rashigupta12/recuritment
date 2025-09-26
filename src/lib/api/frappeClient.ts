@@ -11,6 +11,15 @@ const frappeClient = axios.create({
     Accept: "application/json",
   },
 });
+
+const frappeFileClient = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_dev_prod_FRAPPE_BASE_URL,
+  timeout: 30000, // Longer timeout for file uploads
+  withCredentials: true,
+  headers: {
+    // Don't set Content-Type for multipart - let browser handle it
+  }
+});
 // Request interceptor
 frappeClient.interceptors.request.use(
   (config) => {
@@ -377,6 +386,11 @@ checkFirstLogin: async (username: string) => {
    updateCompany: async (companyId: string, companyData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('PUT', `/resource/Company/${companyId}`, companyData);
   },
+    getAllLeadsbyContract: async (email:string) => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Lead?filters=[["custom_stage", "=", "onboarded"] , ["lead_owner", "=", "${email}"]]`);
+  },
+ 
+
 
   getAllOpportunity: async (email: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Opportunity?filters= [["custom_assigned_to_" ,"=","${email}"]]`);
@@ -384,6 +398,90 @@ checkFirstLogin: async (username: string) => {
   getOpportunityBYId: async (TodoId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Opportunity/${TodoId}`);
   },
+
+  createStaffingPlan: async(StaffingData :Record<string, unknown>)=>{
+ return await frappeAPI.makeAuthenticatedRequest('POST', '/resource/Staffing Plan', StaffingData);
+  }, 
+  updateStaffingPLan: async (StaffingId: string, StaffingData: Record<string, unknown>) => {
+    return await frappeAPI.makeAuthenticatedRequest('PUT', `/resource/Company/${StaffingId}`, StaffingData);
+  },
+   upload: async (file: File, options: {
+    is_private?: boolean;
+    folder?: string;
+    doctype?: string;
+    docname?: string;
+    method?: string;
+  } = {}) => {
+    if (!file || !(file instanceof File)) {
+      throw new Error('Invalid file object');
+    }
+
+    const formData = new FormData();
+    formData.append("file", file, file.name);
+    formData.append('is_private', options.is_private ? '1' : '0');
+    formData.append('folder', options.folder || 'Home');
+
+    if (options.doctype) {
+      formData.append('doctype', options.doctype);
+    }
+    if (options.docname) {
+      formData.append('docname', options.docname);
+    }
+    if (options.method) {
+      formData.append('method', options.method);
+    }
+
+
+
+    try {
+      const response = await frappeFileClient.post('/method/upload_file', formData, {
+        timeout: 30000,
+        headers: {
+          // Remove any Content-Type header to let browser set multipart boundary
+        },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            console.log(`📈 Upload progress: ${percentCompleted}%`);
+          }
+        }
+      });
+
+
+      return {
+        success: true,
+        data: response.data,
+        file_url: response.data.message?.file_url || response.data.file_url,
+        file_name: response.data.message?.file_name || response.data.file_name
+      };
+
+    } catch (error) {
+      console.error('🔍 Error details:', error);
+
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data?.message ||
+          error.response?.data?.exc ||
+          error.message;
+        const errorDetails = {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data
+        };
+        return {
+          success: false,
+          error: errorMessage,
+          details: errorDetails
+        };
+      }
+
+      return {
+        success: false,
+        error: (error as Error).message,
+        details: error
+      };
+    }
+  }
+
   
 
 };

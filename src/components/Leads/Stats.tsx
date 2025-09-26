@@ -32,7 +32,7 @@ export const LeadsStats = ({ leads }: LeadsStatsProps) => {
     },
     {
       title: "Total Revenue",
-      value: `₹${totalRevenue.toLocaleString()}`,
+      value: `₹${totalRevenue.toLocaleString("en-IN")}`,
       icon: IndianRupee,
       color: "purple",
       bgColor: "bg-purple-100",

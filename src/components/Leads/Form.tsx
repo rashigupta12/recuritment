@@ -2,7 +2,6 @@
 import CompanySearchSection from "@/components/comman/CompanySearch";
 import ContactSearchSection from "@/components/comman/ContactSearch";
 import IndustrySearchSection from "@/components/comman/IndustrySearchSection";
-import ConfirmationDialog from "../comman/ConfirmationDialog";
 import { frappeAPI } from "@/lib/api/frappeClient";
 import { Lead, useLeadStore } from "@/stores/leadStore";
 import {
@@ -12,11 +11,11 @@ import {
   Factory,
   IndianRupee,
   Loader2,
-  MapPin,
-  User,
-  Users,
+  User
 } from "lucide-react";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useCallback, useEffect, useState } from "react";
+import ConfirmationDialog from "../comman/ConfirmationDialog";
+import SuccessDialog from "../comman/SuccessDialog";
 import AccordionSection from "./AccordionSection";
 
 // Import the types from the search components to ensure consistency
@@ -54,7 +53,11 @@ type LeadFormProps = {
 
 type SectionKey = "contact" | "company" | "industry" | "details";
 
-const LeadForm: React.FC<LeadFormProps> = ({ onClose, editLead, onUnsavedChanges }) => {
+const LeadForm: React.FC<LeadFormProps> = ({
+  onClose,
+  editLead,
+  onUnsavedChanges,
+}) => {
   const {
     formData,
     setContact,
@@ -64,31 +67,35 @@ const LeadForm: React.FC<LeadFormProps> = ({ onClose, editLead, onUnsavedChanges
     resetForm,
     buildLeadPayload,
   } = useLeadStore();
-  
+
   const [openSections, setOpenSections] = useState<{
     contact: boolean;
     company: boolean;
     industry: boolean;
     details: boolean;
   }>({ contact: true, company: false, industry: false, details: false });
-  
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showLeaveConfirmation, setShowLeaveConfirmation] = useState(false);
-  const [showContractConfirmation, setShowContractConfirmation] = useState(false);
+  const [showContractConfirmation, setShowContractConfirmation] =
+    useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
-  const [pendingStageChange, setPendingStageChange] = useState<string | null>(null);
+  const [pendingStageChange, setPendingStageChange] = useState<string | null>(
+    null
+  );
   const [isFormSubmitted, setIsFormSubmitted] = useState(false);
+  const [autoFetchOrganization, setAutoFetchOrganization] = useState<string | null>(null);
 
   // Updated offerings and stages
   const offerings = [
     "Lateral - All Levels",
-    "Lateral - Executive", 
+    "Lateral - Executive",
     "Lateral - Upto Sr Level",
     "RPO",
     "MSP",
     "Contingent",
-    "Contract"
+    "Contract",
   ];
 
   const stages = [
@@ -98,27 +105,29 @@ const LeadForm: React.FC<LeadFormProps> = ({ onClose, editLead, onUnsavedChanges
     "Presentation / Proposal",
     "Contract",
     "Onboarded",
-    "Follow-Up / Relationship Management"
+    "Follow-Up / Relationship Management",
   ];
 
   // Check if form has changes
   const checkFormChanges = useCallback(() => {
-    return formData.contact !== null || 
-           formData.company !== null || 
-           formData.industry !== null ||
-           formData.custom_average_salary > 0 ||
-           formData.custom_fee > 0 ||
-           formData.custom_expected_close_date !== "" ||
-           formData.custom_stage !== "Prospecting" ||
-           formData.custom_offerings !== "Lateral - All Levels" ||
-           formData.custom_estimated_hiring_ > 0;
+    return (
+      formData.contact !== null ||
+      formData.company !== null ||
+      formData.industry !== null ||
+      formData.custom_average_salary > 0 ||
+      formData.custom_fee > 0 ||
+      formData.custom_expected_close_date !== "" ||
+      formData.custom_stage !== "Prospecting" ||
+      formData.custom_offerings !== "Lateral - All Levels" ||
+      formData.custom_estimated_hiring_ > 0
+    );
   }, [formData]);
 
   // Update hasUnsavedChanges whenever form data changes
   useEffect(() => {
     // Don't track changes if form has been submitted successfully
     if (isFormSubmitted) return;
-    
+
     const hasChanges = checkFormChanges();
     setHasUnsavedChanges(hasChanges);
     // Notify parent component about unsaved changes
@@ -130,14 +139,15 @@ const LeadForm: React.FC<LeadFormProps> = ({ onClose, editLead, onUnsavedChanges
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasUnsavedChanges && !isFormSubmitted) {
         e.preventDefault();
-        e.returnValue = "You have unsaved changes. Are you sure you want to leave?";
+        e.returnValue =
+          "You have unsaved changes. Are you sure you want to leave?";
         return e.returnValue;
       }
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
     };
   }, [hasUnsavedChanges, isFormSubmitted]);
 
@@ -145,15 +155,23 @@ const LeadForm: React.FC<LeadFormProps> = ({ onClose, editLead, onUnsavedChanges
   useEffect(() => {
     resetForm();
     setIsFormSubmitted(false); // Reset the submitted flag when form reloads
-    
+
     // If editing, populate form with existing data
     if (editLead) {
       // Populate contact information
-      if (editLead.custom_full_name || editLead.custom_email_address || editLead.custom_phone_number) {
-        const nameParts = (editLead.custom_full_name || editLead.lead_name || "").split(" ");
+      if (
+        editLead.custom_full_name ||
+        editLead.custom_email_address ||
+        editLead.custom_phone_number
+      ) {
+        const nameParts = (
+          editLead.custom_full_name ||
+          editLead.lead_name ||
+          ""
+        ).split(" ");
         const firstName = nameParts[0] || "";
         const lastName = nameParts.slice(1).join(" ") || "";
-        
+
         setContact({
           name: editLead.custom_full_name || editLead.lead_name || "",
           email: editLead.custom_email_address || "",
@@ -188,40 +206,64 @@ const LeadForm: React.FC<LeadFormProps> = ({ onClose, editLead, onUnsavedChanges
       }
       // Set new fields using the store
       updateFormField("custom_stage", editLead.custom_stage || "Prospecting");
-      updateFormField("custom_offerings", editLead.custom_offerings || "Lateral - All Levels");
-      updateFormField("custom_estimated_hiring_", editLead.custom_estimated_hiring_ || 0);
-      updateFormField("custom_average_salary", editLead.custom_average_salary || 0);
+      updateFormField(
+        "custom_offerings",
+        editLead.custom_offerings || "Lateral - All Levels"
+      );
+      updateFormField(
+        "custom_estimated_hiring_",
+        editLead.custom_estimated_hiring_ || 0
+      );
+      updateFormField(
+        "custom_average_salary",
+        editLead.custom_average_salary || 0
+      );
       updateFormField("custom_fee", editLead.custom_fee || 0);
       updateFormField("custom_deal_value", editLead.custom_deal_value || 0);
-      updateFormField("custom_expected_close_date", editLead.custom_expected_close_date || "");
+      updateFormField(
+        "custom_expected_close_date",
+        editLead.custom_expected_close_date || ""
+      );
     }
-  }, [resetForm, editLead, setContact, setCompany, setIndustry, updateFormField]);
+  }, [
+    resetForm,
+    editLead,
+    setContact,
+    setCompany,
+    setIndustry,
+    updateFormField,
+  ]);
 
   const toggleSection = (section: SectionKey) => {
     setOpenSections((prev) => {
-      const sectionOrder: SectionKey[] = ["contact", "company", "industry", "details"];
+      const sectionOrder: SectionKey[] = [
+        "contact",
+        "company",
+        "industry",
+        "details",
+      ];
       const newState = { ...prev };
-      
+
       if (prev[section]) {
         newState[section] = false;
         return newState;
       }
-      
+
       // Close all sections first
-      sectionOrder.forEach(key => {
+      sectionOrder.forEach((key) => {
         newState[key] = false;
       });
-      
+
       // Open the clicked section
       newState[section] = true;
-      
+
       return newState;
     });
   };
 
   // Handle stage change with contract confirmation
   const handleStageChange = (newStage: string) => {
-    if (newStage === "Contract" && formData.custom_stage !== "Contract") {
+    if (newStage === "Onboarded" && formData.custom_stage !== "onboarded") {
       setPendingStageChange(newStage);
       setShowContractConfirmation(true);
     } else {
@@ -246,9 +288,9 @@ const LeadForm: React.FC<LeadFormProps> = ({ onClose, editLead, onUnsavedChanges
   const handleSubmit = async () => {
     try {
       setIsSubmitting(true);
-      
+
       const payload = buildLeadPayload();
-      
+
       let response;
 
       if (editLead && editLead.name) {
@@ -262,21 +304,23 @@ const LeadForm: React.FC<LeadFormProps> = ({ onClose, editLead, onUnsavedChanges
 
       // Mark form as successfully submitted to prevent change tracking
       setIsFormSubmitted(true);
-      
+
       // Clear unsaved changes state and notify parent
       setHasUnsavedChanges(false);
       onUnsavedChanges?.(false);
-      
+
       // Reset form and close WITHOUT confirmation
       resetForm();
-      
+
       // Call onClose directly without going through confirmation
       onClose();
 
       console.log("Lead created/updated successfully:", response);
     } catch (error) {
-      console.error(`Error ${editLead ? 'updating' : 'creating'} lead:`, error);
-      alert(`Failed to ${editLead ? 'update' : 'create'} lead. Please try again.`);
+      console.error(`Error ${editLead ? "updating" : "creating"} lead:`, error);
+      alert(
+        `Failed to ${editLead ? "update" : "create"} lead. Please try again.`
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -342,6 +386,9 @@ const LeadForm: React.FC<LeadFormProps> = ({ onClose, editLead, onUnsavedChanges
       last_name: contact.last_name,
     };
     setContact(storeContact);
+     if (contact.organization && contact.organization.trim()) {
+    setAutoFetchOrganization(contact.organization.trim());
+  }
   };
 
   const handleCompanySelect = (company: SimplifiedCompany) => {
@@ -380,17 +427,20 @@ const LeadForm: React.FC<LeadFormProps> = ({ onClose, editLead, onUnsavedChanges
     };
   };
 
-  const getSelectedCompany = (): SimplifiedCompany | null => {
-    if (!formData.company) return null;
-    return {
-      name: formData.company.name || "",
-      company_name: formData.company.company_name || formData.company.name || "",
-      email: formData.company.email || "",
-      website: formData.company.website || "",
-      country: formData.company.country || "",
-      companyId: formData.company.companyId,
-    };
+const getSelectedCompany = (): SimplifiedCompany | null => {
+  if (!formData.company) return null;
+  
+  // Ensure all required fields are properly mapped
+  return {
+    name: formData.company.name || "",
+    company_name: formData.company.company_name || formData.company.name || "",
+    email: formData.company.email || "",
+    website: formData.company.website || "",
+    country: formData.company.country || "",
+    companyId: formData.company.companyId,
+
   };
+};
 
   const getSelectedIndustry = (): IndustryType | null => {
     if (!formData.industry) return null;
@@ -410,13 +460,13 @@ const LeadForm: React.FC<LeadFormProps> = ({ onClose, editLead, onUnsavedChanges
       />
 
       {/* Contract Stage Confirmation Dialog */}
-      <ConfirmationDialog
+      <SuccessDialog
         isOpen={showContractConfirmation}
         onConfirm={handleConfirmContract}
         onCancel={handleCancelContract}
-        message="Warning: Once you move to 'Contract' stage, you won't be able to make changes anymore. Are you sure you want to proceed?"
+        message="Once you move to 'Onboarded' stage, you won't be able to make changes anymore. Are you sure you want to proceed?"
       />
-      
+
       {/* Header */}
       <div className="pb-4">
         <div className="flex items-center justify-between">
@@ -502,13 +552,14 @@ const LeadForm: React.FC<LeadFormProps> = ({ onClose, editLead, onUnsavedChanges
               compact={true}
             >
               <CompanySearchSection
-                selectedCompany={getSelectedCompany()}
-                onCompanySelect={handleCompanySelect}
-                onEdit={() => {
-                  /* Open company edit modal */
-                }}
-                onRemove={() => setCompany(null)}
-              />
+  selectedCompany={getSelectedCompany()}
+  onCompanySelect={handleCompanySelect}
+  onEdit={() => { /* Open company edit modal */ }}
+  onRemove={() => setCompany(null)}
+  // NEW: Pass auto-fetch organization
+  autoFetchOrganization={autoFetchOrganization}
+  onAutoFetchComplete={() => setAutoFetchOrganization(null)} // Reset after completion
+/>
             </AccordionSection>
 
             {/* Industry Section */}
@@ -535,7 +586,9 @@ const LeadForm: React.FC<LeadFormProps> = ({ onClose, editLead, onUnsavedChanges
             <div className="bg-blue-50 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-4">
                 <Briefcase className="h-4 w-4 text-blue-600" />
-                <h3 className="font-medium text-gray-900">Deal / Sales Details</h3>
+                <h3 className="font-medium text-gray-900">
+                  Deal / Sales Details
+                </h3>
               </div>
 
               <div className="space-y-3">
@@ -563,7 +616,9 @@ const LeadForm: React.FC<LeadFormProps> = ({ onClose, editLead, onUnsavedChanges
                     </label>
                     <select
                       value={formData.custom_offerings}
-                      onChange={(e) => updateFormField("custom_offerings", e.target.value)}
+                      onChange={(e) =>
+                        updateFormField("custom_offerings", e.target.value)
+                      }
                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                     >
                       {offerings.map((offer) => (
@@ -581,7 +636,9 @@ const LeadForm: React.FC<LeadFormProps> = ({ onClose, editLead, onUnsavedChanges
             <div className="bg-green-50 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-4">
                 <IndianRupee className="h-4 w-4 text-green-600" />
-                <h3 className="font-medium text-gray-900">Hiring & Financial Details</h3>
+                <h3 className="font-medium text-gray-900">
+                  Hiring & Financial Details
+                </h3>
               </div>
 
               <div className="space-y-3">
@@ -592,10 +649,17 @@ const LeadForm: React.FC<LeadFormProps> = ({ onClose, editLead, onUnsavedChanges
                     </label>
                     <input
                       type="number"
-                      value={formData.custom_estimated_hiring_ === 0 ? "" : formData.custom_estimated_hiring_}
+                      value={
+                        formData.custom_estimated_hiring_ === 0
+                          ? ""
+                          : formData.custom_estimated_hiring_
+                      }
                       onChange={(e) => {
                         const value = e.target.value;
-                        updateFormField("custom_estimated_hiring_", value === "" ? 0 : parseInt(value, 10));
+                        updateFormField(
+                          "custom_estimated_hiring_",
+                          value === "" ? 0 : parseInt(value, 10)
+                        );
                       }}
                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
                       placeholder="e.g., 50"
@@ -608,23 +672,24 @@ const LeadForm: React.FC<LeadFormProps> = ({ onClose, editLead, onUnsavedChanges
                       Avg Salary (INR)
                     </label>
                     <input
-  type="text"
-  value={
-    formData.custom_average_salary === 0
-      ? ""
-      : formData.custom_average_salary.toLocaleString("en-IN")
-  }
-  onChange={(e) => {
-    const value = e.target.value.replace(/,/g, ""); // Remove commas
-    updateFormField(
-      "custom_average_salary",
-      value === "" ? 0 : parseFloat(value)
-    );
-  }}
-  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
-  placeholder="e.g., 8,00,000"
-/>
-
+                      type="text"
+                      value={
+                        formData.custom_average_salary === 0
+                          ? ""
+                          : formData.custom_average_salary.toLocaleString(
+                              "en-IN"
+                            )
+                      }
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/,/g, ""); // Remove commas
+                        updateFormField(
+                          "custom_average_salary",
+                          value === "" ? 0 : parseFloat(value)
+                        );
+                      }}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
+                      placeholder="e.g., 8,00,000"
+                    />
                   </div>
 
                   <div>
@@ -634,10 +699,15 @@ const LeadForm: React.FC<LeadFormProps> = ({ onClose, editLead, onUnsavedChanges
                     <input
                       type="number"
                       step="0.1"
-                      value={formData.custom_fee === 0 ? "" : formData.custom_fee}
+                      value={
+                        formData.custom_fee === 0 ? "" : formData.custom_fee
+                      }
                       onChange={(e) => {
                         const value = e.target.value;
-                        updateFormField("custom_fee", value === "" ? 0 : parseFloat(value));
+                        updateFormField(
+                          "custom_fee",
+                          value === "" ? 0 : parseFloat(value)
+                        );
                       }}
                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
                       placeholder="e.g., 15.5"
@@ -648,24 +718,26 @@ const LeadForm: React.FC<LeadFormProps> = ({ onClose, editLead, onUnsavedChanges
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-  <label className="block text-sm font-medium text-gray-700 mb-1">
-    Deal Value (INR)
-  </label>
-  <input
-    type="text"
-    value={
-      formData.custom_deal_value === 0
-        ? ""
-        : Math.round(formData.custom_deal_value).toLocaleString("en-IN")
-    }
-    readOnly
-    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-gray-50 text-gray-600"
-    placeholder="Auto-calculated"
-  />
-  <p className="text-xs text-gray-500 mt-1">
-    (Fee (%) × Estimated Hiring × Avg Salary) ÷ 100
-  </p>
-</div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Deal Value (INR)
+                    </label>
+                    <input
+                      type="text"
+                      value={
+                        formData.custom_deal_value === 0
+                          ? ""
+                          : Math.round(
+                              formData.custom_deal_value
+                            ).toLocaleString("en-IN")
+                      }
+                      readOnly
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-gray-50 text-gray-600"
+                      placeholder="Auto-calculated"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      (Fee (%) × Estimated Hiring × Avg Salary) ÷ 100
+                    </p>
+                  </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -674,7 +746,12 @@ const LeadForm: React.FC<LeadFormProps> = ({ onClose, editLead, onUnsavedChanges
                     <input
                       type="date"
                       value={formData.custom_expected_close_date}
-                      onChange={(e) => updateFormField("custom_expected_close_date", e.target.value)}
+                      onChange={(e) =>
+                        updateFormField(
+                          "custom_expected_close_date",
+                          e.target.value
+                        )
+                      }
                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>

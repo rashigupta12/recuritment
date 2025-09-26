@@ -1,3 +1,4 @@
+/*eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { frappeAPI } from "@/lib/api/frappeClient";
 import {
@@ -29,6 +30,26 @@ type SimplifiedCompany = {
   website: string;
   country: string;
   companyId?: string;
+  default_currency?: string;
+  phone?: string;
+  tax_id?: string;
+  abbr?: string;
+  domain?: string;
+};
+
+// NEW: Full company data type from API response
+type FullCompanyData = {
+  name: string;
+  company_name: string;
+  country: string;
+  default_currency?: string;
+  email?: string;
+  website?: string;
+  phone?: string;
+  tax_id?: string;
+  abbr?: string;
+  domain?: string;
+  [key: string]: any; // Allow additional fields
 };
 
 type CompanySearchSectionProps = {
@@ -36,6 +57,9 @@ type CompanySearchSectionProps = {
   selectedCompany: SimplifiedCompany | null;
   onEdit: () => void;
   onRemove: () => void;
+  // NEW: Add prop for auto-fetching organization
+  autoFetchOrganization?: string | null;
+  onAutoFetchComplete?: () => void;
 };
 
 // -------- Company Form State --------
@@ -44,6 +68,11 @@ type CompanyFormState = {
   country: string;
   email: string;
   website: string;
+  phone: string;
+  default_currency: string;
+  tax_id: string;
+  abbr: string;
+  domain: string;
 };
 
 // Initial state for company form
@@ -52,6 +81,11 @@ const initialCompanyFormState: CompanyFormState = {
   country: "",
   email: "",
   website: "",
+  phone: "",
+  default_currency: "",
+  tax_id: "",
+  abbr: "",
+  domain: "",
 };
 
 // -------- Component --------
@@ -60,6 +94,8 @@ const CompanySearchSection: React.FC<CompanySearchSectionProps> = ({
   selectedCompany,
   // onEdit,
   onRemove,
+  autoFetchOrganization, // NEW: Auto-fetch organization prop
+  onAutoFetchComplete, // NEW: Callback when auto-fetch completes
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -70,6 +106,7 @@ const CompanySearchSection: React.FC<CompanySearchSectionProps> = ({
   const [showDropdown, setShowDropdown] = useState(false);
   const [showCompanyDialog, setShowCompanyDialog] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isAutoFetching, setIsAutoFetching] = useState(false); // NEW: Auto-fetch loading state
   const [dropdownPosition, setDropdownPosition] = useState({
     top: 0,
     left: 0,
@@ -80,6 +117,65 @@ const CompanySearchSection: React.FC<CompanySearchSectionProps> = ({
   const [companyForm, setCompanyForm] = useState<CompanyFormState>(
     initialCompanyFormState
   );
+
+
+useEffect(() => {
+  const fetchOrganizationData = async (organizationName: string) => {
+    try {
+      setIsAutoFetching(true);
+      console.log(`Fetching organization data for: ${organizationName}`);
+      
+      // Call the specific API endpoint for company details
+      const response = await frappeAPI.makeAuthenticatedRequest(
+        "GET",
+        `/resource/Company/${encodeURIComponent(organizationName)}`
+      );
+
+      if (response.data) {
+        const fullCompanyData: FullCompanyData = response.data;
+        console.log('Full company data received:', fullCompanyData);
+
+        // Create simplified company with all available fields
+        const autoFetchedCompany: SimplifiedCompany = {
+          name: fullCompanyData.name,
+          company_name: fullCompanyData.company_name,
+          email: fullCompanyData.email || "",
+          website: fullCompanyData.website || "",
+          country: fullCompanyData.country || "",
+          companyId: fullCompanyData.name,
+          // Include additional fields
+          default_currency: fullCompanyData.default_currency || "",
+          phone: fullCompanyData.phone || "",
+          tax_id: fullCompanyData.tax_id || "",
+          abbr: fullCompanyData.abbr || "",
+          domain: fullCompanyData.domain || "",
+        };
+
+        // FIX: Call onCompanySelect to properly select the company
+        onCompanySelect(autoFetchedCompany);
+        setSearchQuery(fullCompanyData.company_name);
+        
+        console.log(`Successfully auto-fetched organization: ${organizationName}`);
+      } else {
+        console.warn(`No data found for organization: ${organizationName}`);
+        // If no data found, just set the search query but don't select
+        setSearchQuery(organizationName);
+      }
+    } catch (error) {
+      console.error(`Failed to auto-fetch organization data for ${organizationName}:`, error);
+      // On error, just set the search query but don't select
+      setSearchQuery(organizationName);
+    } finally {
+      setIsAutoFetching(false);
+      // Notify parent that auto-fetch is complete
+      onAutoFetchComplete?.();
+    }
+  };
+
+  if (autoFetchOrganization && autoFetchOrganization.trim()) {
+    fetchOrganizationData(autoFetchOrganization.trim());
+  }
+}, [autoFetchOrganization, onCompanySelect, onAutoFetchComplete]);
 
   // Calculate dropdown position
   const calculateDropdownPosition = useCallback(() => {
@@ -205,12 +301,17 @@ const CompanySearchSection: React.FC<CompanySearchSectionProps> = ({
     e.preventDefault();
     e.stopPropagation();
     if (selectedCompany) {
-      // Reset form with selected company data
+      // Reset form with selected company data including new fields
       setCompanyForm({
         company_name: selectedCompany.company_name,
         country: selectedCompany.country,
         email: selectedCompany.email || "",
         website: selectedCompany.website || "",
+        phone: selectedCompany.phone || "",
+        default_currency: selectedCompany.default_currency || "",
+        tax_id: selectedCompany.tax_id || "",
+        abbr: selectedCompany.abbr || "",
+        domain: selectedCompany.domain || "",
       });
     }
     setShowCompanyDialog(true);
@@ -224,6 +325,11 @@ const CompanySearchSection: React.FC<CompanySearchSectionProps> = ({
       country: "",
       email: "",
       website: "",
+      phone: "",
+      default_currency: "",
+      tax_id: "",
+      abbr: "",
+      domain: "",
     });
     setShowCompanyDialog(true);
     setShowDropdown(false);
@@ -238,6 +344,11 @@ const CompanySearchSection: React.FC<CompanySearchSectionProps> = ({
         country: companyForm.country,
         email: companyForm.email || null,
         website: companyForm.website || null,
+        phone: companyForm.phone || null,
+        default_currency: companyForm.default_currency || null,
+        tax_id: companyForm.tax_id || null,
+        abbr: companyForm.abbr || null,
+        domain: companyForm.domain || null,
       };
 
       let companyId: string;
@@ -260,6 +371,11 @@ const CompanySearchSection: React.FC<CompanySearchSectionProps> = ({
         website: companyForm.website,
         country: companyForm.country,
         companyId,
+        phone: companyForm.phone,
+        default_currency: companyForm.default_currency,
+        tax_id: companyForm.tax_id,
+        abbr: companyForm.abbr,
+        domain: companyForm.domain,
       };
       onCompanySelect(simplifiedCompany);
       setSearchQuery(companyName);
@@ -373,13 +489,14 @@ const CompanySearchSection: React.FC<CompanySearchSectionProps> = ({
               onChange={handleSearchChange}
               onFocus={handleInputFocus}
               className="w-full pl-10 pr-20 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors"
+              disabled={isAutoFetching} // NEW: Disable input during auto-fetch
             />
 
-            <div className="absolute right-2 flex items-center space-x-1 z-10">
-              {isSearching && (
+            <div className="absolute right-2 flex items-center space-x-1 ">
+              {(isSearching || isAutoFetching) && (
                 <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
               )}
-              {!isSearching && (hasValidCompany || searchQuery.trim()) && (
+              {!isSearching && !isAutoFetching && (hasValidCompany || searchQuery.trim()) && (
                 <>
                   {hasValidCompany && (
                     <button
@@ -404,6 +521,15 @@ const CompanySearchSection: React.FC<CompanySearchSectionProps> = ({
             </div>
           </div>
         </div>
+
+        {/* NEW: Auto-fetch status */}
+        {isAutoFetching && (
+          <div className="mt-2 text-sm text-blue-600 flex items-center">
+            <Loader2 className="h-3 w-3 animate-spin mr-1" />
+            Auto-fetching organization details...
+          </div>
+        )}
+
         {showDropdown &&
           typeof document !== "undefined" &&
           createPortal(<DropdownContent />, document.body)}
@@ -414,9 +540,6 @@ const CompanySearchSection: React.FC<CompanySearchSectionProps> = ({
         <div className="border border-primary/20 rounded-lg p-4 bg-primary/5 animate-in fade-in-50">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              {/* <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                <Building2 className="h-5 w-5 text-primary" />
-              </div> */}
               <div>
                 <h3 className="font-medium text-gray-900">
                   {selectedCompany.company_name}
@@ -438,6 +561,17 @@ const CompanySearchSection: React.FC<CompanySearchSectionProps> = ({
                       {selectedCompany.email}
                     </div>
                   )}
+                  {/* NEW: Display additional fields if available */}
+                  {selectedCompany.default_currency && (
+                    <div className="text-sm text-gray-600">
+                      Currency: {selectedCompany.default_currency}
+                    </div>
+                  )}
+                  {selectedCompany.phone && (
+                    <div className="text-sm text-gray-600">
+                      Phone: {selectedCompany.phone}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -448,7 +582,7 @@ const CompanySearchSection: React.FC<CompanySearchSectionProps> = ({
       {/* Create/Edit Company Dialog */}
       {showCompanyDialog && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white">
               <h2 className="text-xl font-bold text-gray-900">
                 {selectedCompany ? "Edit Company" : "Add New Company"}
@@ -470,7 +604,6 @@ const CompanySearchSection: React.FC<CompanySearchSectionProps> = ({
                   value={companyForm.company_name}
                   onChange={(e) => {
                     const value = e.target.value;
-                    // Capitalize first letter only
                     const formattedValue =
                       value.charAt(0).toUpperCase() + value.slice(1);
                     setCompanyForm((prev) => ({
@@ -482,34 +615,40 @@ const CompanySearchSection: React.FC<CompanySearchSectionProps> = ({
                   required
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Country *
-                </label>
-                <select
-                  value={companyForm.country}
-                  onChange={(e) =>
-                    setCompanyForm((prev) => ({
-                      ...prev,
-                      country: e.target.value,
-                    }))
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-                  required
-                >
-                  <option value="">Select Country</option>
-                  <option value="India">India</option>
-                  <option value="United States">United States</option>
-                  <option value="United Kingdom">United Kingdom</option>
-                  <option value="Canada">Canada</option>
-                  <option value="Australia">Australia</option>
-                  <option value="Germany">Germany</option>
-                  <option value="France">France</option>
-                  <option value="Japan">Japan</option>
-                  <option value="Singapore">Singapore</option>
-                  <option value="Netherlands">Netherlands</option>
-                </select>
+              
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Country *
+                  </label>
+                  <select
+                    value={companyForm.country}
+                    onChange={(e) =>
+                      setCompanyForm((prev) => ({
+                        ...prev,
+                        country: e.target.value,
+                      }))
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                    required
+                  >
+                    <option value="">Select Country</option>
+                    <option value="India">India</option>
+                    <option value="United States">United States</option>
+                    <option value="United Kingdom">United Kingdom</option>
+                    <option value="Canada">Canada</option>
+                    <option value="Australia">Australia</option>
+                    <option value="Germany">Germany</option>
+                    <option value="France">France</option>
+                    <option value="Japan">Japan</option>
+                    <option value="Singapore">Singapore</option>
+                    <option value="Netherlands">Netherlands</option>
+                  </select>
+                </div>
+                
+                
               </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Website
@@ -527,21 +666,26 @@ const CompanySearchSection: React.FC<CompanySearchSectionProps> = ({
                   placeholder="https://example.com"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email
-                </label>
-                <input
-  type="email"
-  value={companyForm.email}
-  onChange={(e) => 
-    setCompanyForm((prev) => ({ ...prev, email: e.target.value }))
-  }
-  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-  placeholder="info@company.com"
-/>
 
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={companyForm.email}
+                    onChange={(e) => 
+                      setCompanyForm((prev) => ({ ...prev, email: e.target.value }))
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                    placeholder="info@company.com"
+                  />
+                </div>
+                
+              
               </div>
+
               
             </div>
 

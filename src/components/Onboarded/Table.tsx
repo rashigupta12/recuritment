@@ -6,6 +6,7 @@ import {
   IndianRupee,
   Users2Icon,
   UsersIcon,
+  FileText,
 } from "lucide-react";
 import { Lead } from "@/stores/leadStore";
 
@@ -13,12 +14,14 @@ interface LeadsTableProps {
   leads: Lead[];
   onViewLead: (lead: Lead) => void;
   onEditLead: (lead: Lead) => void;
+  onCreateContract: (lead: Lead) => void; // New prop for contract creation
 }
 
 export const LeadsTable = ({
   leads,
   onViewLead,
   onEditLead,
+  onCreateContract,
 }: LeadsTableProps) => {
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
@@ -49,7 +52,6 @@ export const LeadsTable = ({
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Owner
             </th>
-
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
               Actions
             </th>
@@ -62,6 +64,7 @@ export const LeadsTable = ({
               lead={lead}
               onView={() => onViewLead(lead)}
               onEdit={() => onEditLead(lead)}
+              onCreateContract={() => onCreateContract(lead)}
             />
           ))}
         </tbody>
@@ -70,18 +73,19 @@ export const LeadsTable = ({
   );
 };
 
+
 // components/Leads/LeadsTableRow.tsx
 interface LeadsTableRowProps {
   lead: Lead;
   onView: () => void;
   onEdit: () => void;
+  onCreateContract: () => void;
 }
 
 // Helper function to split and format text with line breaks
 const formatTextWithLines = (text: string | null | undefined) => {
   if (!text) return <span>-</span>;
   
-  // Split by spaces, hyphens, and slashes
   const words = text.split(/[\-/]+/)
     .filter(word => word.length > 0)
     .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
@@ -97,7 +101,22 @@ const formatTextWithLines = (text: string | null | undefined) => {
   );
 };
 
-const LeadsTableRow = ({ lead, onView, onEdit }: LeadsTableRowProps) => {
+const LeadsTableRow = ({ 
+  lead, 
+  onView, 
+  onEdit, 
+  onCreateContract 
+}: LeadsTableRowProps) => {
+  // Check if lead is eligible for contract creation
+  const canCreateContract = lead.custom_stage === "Contract" || 
+                           lead.custom_stage === "Onboarded" ||
+                           lead.custom_stage === "Follow-Up / Relationship Management";
+
+  // Check if lead can be edited
+  const canEdit = lead.custom_stage !== "Contract" &&
+                  lead.custom_stage !== "Onboarded" &&
+                  lead.custom_stage !== "Follow-Up / Relationship Management";
+
   return (
     <tr className="hover:bg-gray-50">
       <td className="px-4 py-2 whitespace-nowrap">
@@ -194,22 +213,40 @@ const LeadsTableRow = ({ lead, onView, onEdit }: LeadsTableRowProps) => {
         </div>
       </td>
       <td className="px-6 py-2 whitespace-nowrap">
-        <div className="flex items-center gap-3">
-          {
-          lead.custom_stage !== "Onboarded" &&
-          lead.custom_stage !== "Follow-Up / Relationship Management" ? (
-            <EditIcon
-              className="text-green-500 h-5 w-5 cursor-pointer hover:text-green-600 transition-colors"
-              onClick={onEdit}
-            />
-          ) : (
-            <div className="h-5 w-5"></div> // optional placeholder to keep spacing
+        <div className="flex items-center gap-2">
+          {/* Contract Button - Show for eligible leads */}
+          {canCreateContract && (
+            <button
+              onClick={onCreateContract}
+              className="flex items-center gap-1 bg-primary hover:bg-secondary text-white px-2 py-1 rounded text-xs transition-colors whitespace-nowrap"
+              title="Create Staffing Plan"
+            >
+              {/* <FileText className="h-3 w-3" /> */}
+              <span>Create Requirement</span>
+            </button>
           )}
 
-          <Eye
-            className="h-5 w-5 text-blue-400 cursor-pointer hover:text-blue-600 transition-colors"
+          {/* Edit Button */}
+          {canEdit ? (
+            <button
+              onClick={onEdit}
+              className="p-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors"
+              title="Edit Lead"
+            >
+              <EditIcon className="h-4 w-4" />
+            </button>
+          ) : (
+            <div className="w-4 h-4"></div> // Spacer for consistent alignment
+          )}
+
+          {/* View Button */}
+          {/* <button
             onClick={onView}
-          />
+            className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+            title="View Lead Details"
+          >
+            <Eye className="h-4 w-4" />
+          </button> */}
         </div>
       </td>
     </tr>

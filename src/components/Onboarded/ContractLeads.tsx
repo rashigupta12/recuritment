@@ -4,15 +4,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import { frappeAPI } from "@/lib/api/frappeClient";
 import { Lead, useLeadStore } from "@/stores/leadStore";
 import { useEffect, useState } from "react";
-import LeadDetailModal from "./Details";
-import { LoadingState } from "./LoadingState";
-import { LeadsHeader } from "./Header";
-import { LeadsFormView } from "./FormView";
-import { LeadsStats } from "./Stats";
-import { LeadsTable } from "./Table";
-import { LeadsEmptyState, LeadsMobileView } from "./MobileView";
+import { LoadingState } from "../Leads/LoadingState";
+import { LeadsEmptyState, LeadsMobileView } from "../Leads/MobileView";
+import LeadDetailModal from "../Leads/Details";
 
-const LeadsManagement = () => {
+import { useRouter } from "next/navigation";
+import { LeadsTable } from "./Table";
+
+const ContractLeads = () => {
   const { leads, setLeads, loading, setLoading } = useLeadStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -25,12 +24,13 @@ const LeadsManagement = () => {
     "list"
   );
   const { user } = useAuth();
+  const router = useRouter();
 
   // Function to fetch leads
   const fetchLeads = async (email: string) => {
     try {
       setLoading(true);
-      const response = await frappeAPI.getAllLeads(email);
+      const response = await frappeAPI.getAllLeadsbyContract(email);
       const leadList = response.data || [];
 
       const detailedLeads = await Promise.all(
@@ -113,46 +113,45 @@ const LeadsManagement = () => {
     setCurrentView("edit");
   };
 
+  // Fixed navigation function for App Router
+  const handleCreateContract = (lead: Lead) => {
+    // Navigate to staffing plan page with the selected lead using App Router syntax
+    router.push(`/dashboard/sales-manager/requirements/create?leadId=${lead.name}`);
+  };
+
   // Render loading state
   if (loading) {
     return <LoadingState />;
   }
 
-  // Render form view (add or edit)
-  if (currentView === "add" || currentView === "edit") {
-    return (
-      <>
-        {/* <LeadsHeader
-          searchQuery=""
-          onSearchChange={() => {}}
-          onAddLead={() => {}}
-          showBackButton={true}
-          onBack={handleBack}
-        /> */}
-
-        <LeadsFormView
-          currentView={currentView}
-          selectedLead={selectedLead}
-          onBack={handleBack}
-          onFormClose={handleFormClose}
-          // Remove onConfirmBack and onCancelBack as well since LeadsFormView handles them internally
-        />
-      </>
-    );
-  }
-
   // Render list view
   return (
     <div className="min-h-screen bg-gray-50">
-      <LeadsHeader
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        onAddLead={handleAddLead}
-      />
-
-      <LeadsStats leads={leads} />
-
       <div className="w-full mx-auto py-2">
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Onboarded Leads</h1>
+          {/* <p className="text-gray-600">Manage your contract-ready leads and create staffing plans</p> */}
+        </div>
+
+        {/* Search Bar */}
+        <div className="mb-4">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search leads by name, company, email, industry, or city..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+
         {/* Desktop Table View */}
         {filteredLeads.length > 0 ? (
           <>
@@ -161,6 +160,7 @@ const LeadsManagement = () => {
                 leads={filteredLeads}
                 onViewLead={handleViewLead}
                 onEditLead={handleEditLead}
+                onCreateContract={handleCreateContract}
               />
             </div>
 
@@ -173,16 +173,7 @@ const LeadsManagement = () => {
           </>
         ) : (
           <>
-            <LeadsEmptyState
-              searchQuery={searchQuery}
-              onAddLead={handleAddLead}
-              isMobile={false}
-            />
-            <LeadsEmptyState
-              searchQuery={searchQuery}
-              onAddLead={handleAddLead}
-              isMobile={true}
-            />
+          
           </>
         )}
       </div>
@@ -191,8 +182,36 @@ const LeadsManagement = () => {
       {showModal && (
         <LeadDetailModal lead={selectedLead} onClose={handleCloseModal} />
       )}
+
+      {/* Confirmation Dialog */}
+      {showConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-sm mx-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              Confirm Navigation
+            </h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Are you sure you want to go back? Any unsaved changes will be lost.
+            </p>
+            <div className="flex space-x-3">
+              <button
+                onClick={handleConfirmBack}
+                className="flex-1 bg-red-600 text-white px-3 py-2 rounded text-sm hover:bg-red-700 transition-colors"
+              >
+                Yes, go back
+              </button>
+              <button
+                onClick={handleCancelBack}
+                className="flex-1 bg-gray-300 text-gray-700 px-3 py-2 rounded text-sm hover:bg-gray-400 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default LeadsManagement;
+export default ContractLeads;

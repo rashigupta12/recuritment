@@ -44,6 +44,8 @@ type ContactSearchSectionProps = {
   selectedContact: SimplifiedContact | null;
   onEdit: () => void;
   onRemove: () => void;
+  // NEW: Add callback for organization auto-fetch
+  onOrganizationAutoFetch?: (organizationName: string) => void;
 };
 
 // -------- Contact Form State --------
@@ -97,6 +99,7 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
   selectedContact,
   // onEdit,
   onRemove,
+  onOrganizationAutoFetch, // NEW: Organization auto-fetch callback
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -254,6 +257,9 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
     setSearchQuery(e.target.value);
   };
 
+  
+
+  // UPDATED: Enhanced contact selection with auto-organization fetch
   const handleContactSelect = (contact: ContactType) => {
     const simplifiedContact: SimplifiedContact = {
       name: getFullName(contact),
@@ -267,10 +273,18 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
       first_name: contact.first_name || "",
       last_name: contact.last_name || "",
     };
+
+    // First, update the selected contact
     onContactSelect(simplifiedContact);
     setSearchQuery(getFullName(contact));
     setShowDropdown(false);
     setSearchResults([]);
+
+    // NEW: Auto-fetch organization if contact has one
+    if (contact.organization && contact.organization.trim() && onOrganizationAutoFetch) {
+      console.log(`Auto-fetching organization: ${contact.organization}`);
+      onOrganizationAutoFetch(contact.organization.trim());
+    }
   };
 
   const handleInputFocus = () => {
@@ -332,83 +346,85 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
     setShowContactDialog(true);
     setShowDropdown(false);
   };
-// Only showing the main corrections inside handleSaveContact and input handlers
-const handleSaveContact = async () => {
-  if (!contactForm.first_name.trim()) return;
 
-  try {
-    setIsSaving(true);
+  const handleSaveContact = async () => {
+    if (!contactForm.first_name.trim()) return;
 
-    const contactData: any = {
-      first_name: contactForm.first_name.trim(),
-      last_name: contactForm.last_name.trim(),
-      designation: contactForm.designation.trim() || null,
-      gender: contactForm.gender || null,
-      organization: contactForm.organization.trim() || null,
-      email_ids: contactForm.email
-        ? [
-            {
-              email_id: contactForm.email.trim(),
-              is_primary: 1,
-              parenttype: "Contact",
-              parentfield: "email_ids",
-            },
-          ]
-        : [],
-      phone_nos: contactForm.phone
-        ? [
-            {
-              phone: contactForm.phone.trim(),
-              is_primary_phone: 1,
-              parenttype: "Contact",
-              parentfield: "phone_nos",
-            },
-          ]
-        : [],
-    };
+    try {
+      setIsSaving(true);
 
-    let contactId: string;
-    let contactName: string;
+      const contactData: any = {
+        first_name: contactForm.first_name.trim(),
+        last_name: contactForm.last_name.trim(),
+        designation: contactForm.designation.trim() || null,
+        gender: contactForm.gender || null,
+        organization: contactForm.organization.trim() || null,
+        email_ids: contactForm.email
+          ? [
+              {
+                email_id: contactForm.email.trim(),
+                is_primary: 1,
+                parenttype: "Contact",
+                parentfield: "email_ids",
+              },
+            ]
+          : [],
+        phone_nos: contactForm.phone
+          ? [
+              {
+                phone: contactForm.phone.trim(),
+                is_primary_phone: 1,
+                parenttype: "Contact",
+                parentfield: "phone_nos",
+              },
+            ]
+          : [],
+      };
 
-    if (selectedContact?.contactId) {
-      // Update existing contact
-      await frappeAPI.updateContact(selectedContact.contactId, contactData);
-      contactId = selectedContact.contactId;
-      contactName = `${contactForm.first_name} ${contactForm.last_name}`.trim();
-    } else {
-      // Create new contact
-      const response = await frappeAPI.createContact(contactData);
-      contactId = response.data.name;
-      contactName = `${contactForm.first_name} ${contactForm.last_name}`.trim();
+      let contactId: string;
+      let contactName: string;
+
+      if (selectedContact?.contactId) {
+        // Update existing contact
+        await frappeAPI.updateContact(selectedContact.contactId, contactData);
+        contactId = selectedContact.contactId;
+        contactName = `${contactForm.first_name} ${contactForm.last_name}`.trim();
+      } else {
+        // Create new contact
+        const response = await frappeAPI.createContact(contactData);
+        contactId = response.data.name;
+        contactName = `${contactForm.first_name} ${contactForm.last_name}`.trim();
+      }
+
+      const simplifiedContact: SimplifiedContact = {
+        name: contactName,
+        email: contactForm.email,
+        phone: contactForm.phone,
+        contactId,
+        designation: contactForm.designation,
+        gender: contactForm.gender,
+        organization: contactForm.organization,
+        first_name: contactForm.first_name,
+        last_name: contactForm.last_name,
+      };
+
+      onContactSelect(simplifiedContact);
+      setSearchQuery(contactName);
+      setShowContactDialog(false);
+      setContactForm(initialContactFormState);
+
+      // NEW: Auto-fetch organization after saving if organization was added
+      if (contactForm.organization.trim() && onOrganizationAutoFetch) {
+        console.log(`Auto-fetching organization after save: ${contactForm.organization}`);
+        onOrganizationAutoFetch(contactForm.organization.trim());
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Failed to save contact. Please try again.");
+    } finally {
+      setIsSaving(false);
     }
-
-    const simplifiedContact: SimplifiedContact = {
-      name: contactName,
-      email: contactForm.email,
-      phone: contactForm.phone,
-      contactId,
-      designation: contactForm.designation,
-      gender: contactForm.gender,
-      organization: contactForm.organization,
-      first_name: contactForm.first_name,
-      last_name: contactForm.last_name,
-    };
-
-    onContactSelect(simplifiedContact);
-    setSearchQuery(contactName);
-    setShowContactDialog(false);
-    setContactForm(initialContactFormState);
-  } catch (error) {
-    console.error(error);
-    alert("Failed to save contact. Please try again.");
-  } finally {
-    setIsSaving(false);
-  }
-};
-
-
-
-
+  };
 
   const handleCloseContactDialog = () => {
     setShowContactDialog(false);
@@ -455,8 +471,8 @@ const handleSaveContact = async () => {
                       </div>
                     )}
                     {contact.organization && (
-                      <div className="text-sm text-gray-600">
-                        {contact.organization}
+                      <div className="text-sm text-gray-600 font-medium">
+                        📍 {contact.organization}
                       </div>
                     )}
                     {contact.gender && (
@@ -583,9 +599,6 @@ const handleSaveContact = async () => {
         <div className="border border-primary/20 rounded-lg p-4 py-2 bg-primary/5 animate-in fade-in-50">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              {/* <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                <User className="h-5 w-5 text-primary" />
-              </div> */}
               <div>
                 <h3 className="font-medium text-gray-900">
                   {selectedContact.name}
@@ -597,8 +610,8 @@ const handleSaveContact = async () => {
                     </div>
                   )}
                   {selectedContact.organization && (
-                    <div className="text-sm text-gray-600">
-                      {selectedContact.organization}
+                    <div className="text-sm text-gray-600 font-medium">
+                      📍 {selectedContact.organization}
                     </div>
                   )}
                   {selectedContact.email && (
@@ -675,7 +688,6 @@ const handleSaveContact = async () => {
                         last_name: formattedValue,
                       }));
                     }}
-                    // onChange={(e) => setContactForm(prev => ({ ...prev, last_name: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                   />
                 </div>
@@ -698,7 +710,6 @@ const handleSaveContact = async () => {
                         designation: formattedValue,
                       }));
                     }}
-                    // onChange={(e) => setContactForm(prev => ({ ...prev, designation: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                     placeholder="e.g., HR Manager"
                   />
@@ -724,16 +735,27 @@ const handleSaveContact = async () => {
                   </select>
                 </div>
               </div>
-              {/* <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Organization</label>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Organization
+                </label>
                 <input
                   type="text"
                   value={contactForm.organization}
-                  onChange={(e) => setContactForm(prev => ({ ...prev, organization: e.target.value }))}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Capitalize first letter only
+                    const formattedValue =
+                      value.charAt(0).toUpperCase() + value.slice(1);
+                    setContactForm((prev) => ({
+                      ...prev,
+                      organization: formattedValue,
+                    }));
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                   placeholder="e.g., Company Name"
                 />
-              </div> */}
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Email
@@ -749,7 +771,7 @@ const handleSaveContact = async () => {
                   }}
                   onBlur={() => {
                     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                    if (!emailRegex.test(contactForm.email)) {
+                    if (contactForm.email && !emailRegex.test(contactForm.email)) {
                       alert("Please enter a valid email address");
                     }
                   }}

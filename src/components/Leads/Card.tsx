@@ -4,13 +4,9 @@ import {
   EditIcon,
   Eye,
   Factory,
-  IndianRupee,
-  Mail,
-  MapPin,
-  Phone,
-  Users,
-  UsersIcon,
   Globe,
+  IndianRupee,
+  UsersIcon
 } from "lucide-react";
 
 interface LeadCardProps {
