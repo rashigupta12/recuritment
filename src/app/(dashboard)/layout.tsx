@@ -69,6 +69,10 @@ const getNavigationItems = (role: AllowedRole): NavigationItem[] => {
       { icon: Home, label: 'Dashboard', href: roleBasePath },
       { icon: FolderOpen, label: 'Deliveries', href: `${roleBasePath}/deliveries` },
     ],
+    'Recruiter':[
+      { icon: Home, label: 'Dashboard', href: roleBasePath },
+      { icon: FolderOpen, label: 'Deliveries', href: `${roleBasePath}/deliveries` },
+    ],
   };
 
   return roleSpecificItems[role];
