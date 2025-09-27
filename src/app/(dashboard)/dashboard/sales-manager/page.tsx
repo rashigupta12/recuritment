@@ -1,28 +1,20 @@
+/*eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import React, { useState, useEffect } from 'react';
 import {
-  TrendingUp,
-  Users,
-  Target,
-  DollarSign,
-  Calendar,
-  ArrowUpRight,
   ArrowDownRight,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  FileText,
-  Building,
-  Phone,
-  Mail,
-  UserPlus,
+  ArrowUpRight,
   Briefcase,
-  Star,
-  BarChart3,
-  PieChart,
-  Activity
+  Calendar,
+  CheckCircle,
+  DollarSign,
+  FileText,
+  Target,
+  TrendingUp,
+  UserPlus,
+  Users
 } from 'lucide-react';
+import React, { useState } from 'react';
 
 // Type definitions
 interface Lead {
