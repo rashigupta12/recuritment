@@ -56,7 +56,6 @@ const getNavigationItems = (role: AllowedRole): NavigationItem[] => {
       { icon: Users, label: 'Onboarded', href: `${roleBasePath}/contract` },
       { icon: TrendingUp, label: 'Requirements', href: `${roleBasePath}/requirements` },
       { icon: FolderOpen, label: 'Todos', href: `${roleBasePath}/todos` },
-
     ],
     'Projects Manager': [
       { icon: Home, label: 'Dashboard', href: roleBasePath },
@@ -94,6 +93,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     const savedCollapsedState = localStorage.getItem('sidebar-collapsed');
     if (savedCollapsedState) {
       setSidebarCollapsed(JSON.parse(savedCollapsedState));
+    } else {
+      // Default to collapsed for better space efficiency
+      setSidebarCollapsed(true);
     }
 
     window.addEventListener('resize', handleResize);
@@ -135,105 +137,78 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     return pathname === href || (pathname.startsWith(href + '/') && href !== '/dashboard');
   };
 
-  const sidebarWidth = sidebarCollapsed ? 'w-16' : 'w-64';
-  const contentMargin = sidebarCollapsed ? 'ml-16' : 'ml-64';
+  // Dynamic styles for sidebar width
+  const sidebarStyles = {
+    width: sidebarCollapsed ? '4rem' : '14rem' // 64px collapsed, 224px expanded
+  };
 
   return (
     <TooltipProvider>
-      <div className="flex h-screen bg-gray-50">
+      <div className="flex min-h-screen bg-gray-50/50">
         {/* Desktop Sidebar */}
-        <div className={`hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 ${sidebarWidth} bg-white border-r border-gray-200 transition-all duration-300 ease-in-out`}>
-          {/* Sidebar Header */}
-          <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
-            <Link href="/dashboard" className={`flex items-center space-x-2 ${sidebarCollapsed ? 'justify-center' : ''}`}>
+        <div 
+          className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 bg-white/95 backdrop-blur-sm border-r border-gray-200/60 shadow-sm transition-all duration-300 ease-in-out"
+          style={sidebarStyles}
+        >
+          {/* Sidebar Header - Compact */}
+          <div className="flex items-center justify-center h-14 px-3 border-b border-gray-200/60 flex-shrink-0">
+            <Link href="/dashboard" className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'space-x-2'}`}>
               <div 
-                className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm"
                 style={{ backgroundColor: brandConfig.colors.primary }}
               >
                 <Image
                   src={brandConfig.logo}
                   alt={brandConfig.name}
-                  width={20}
-                  height={20}
+                  width={18}
+                  height={18}
                   className="object-contain filter brightness-0 invert"
                 />
               </div>
               {!sidebarCollapsed && (
-                <span className="text-xl font-bold text-gray-900 truncate">
+                <span className="text-lg font-bold text-gray-900 truncate">
                   {brandConfig.name}
                 </span>
               )}
             </Link>
-            
+          </div>
+
+          {/* Toggle Button - Floating */}
+          <div className="relative flex-shrink-0">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="h-8 w-8 p-0 flex-shrink-0"
+              className="absolute -right-3 top-2 h-6 w-6 p-0 bg-white border border-gray-200 shadow-sm hover:shadow-md z-10 rounded-full"
             >
               {sidebarCollapsed ? (
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-3 w-3" />
               ) : (
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-3 w-3" />
               )}
             </Button>
           </div>
 
-          {/* User Info */}
-          <div className={`p-4 border-b border-gray-200 ${sidebarCollapsed ? 'px-2' : 'px-4'}`}>
-            <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'space-x-3'}`}>
-              <Avatar className="h-10 w-10 flex-shrink-0">
-                <AvatarFallback 
-                  className="text-white font-semibold"
-                  style={{ backgroundColor: brandConfig.colors.primary }}
-                >
-                  {user.full_name.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              
-              {!sidebarCollapsed && (
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    {user.full_name}
-                  </p>
-                  <p className="text-xs text-gray-500 truncate">
-                    {user.email}
-                  </p>
-                  <div className="mt-2">
-                    <Badge 
-                      variant="secondary" 
-                      className="text-xs"
-                      style={{ 
-                        backgroundColor: `${brandConfig.colors.primary}15`,
-                        color: brandConfig.colors.primary,
-                        border: `1px solid ${brandConfig.colors.primary}30`
-                      }}
-                    >
-                      {ROLE_DISPLAY_NAMES[currentRole]}
-                    </Badge>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Navigation */}
-          <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
+          {/* Navigation - More compact */}
+          <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto min-h-0">
             {navigationItems.map((item, index) => {
               const isActive = isNavItemActive(item.href);
               const NavItem = (
                 <Link
                   key={index}
                   href={item.href}
-                  className={`group flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+                  className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                     isActive
-                      ? 'text-white shadow-sm transform scale-105'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 hover:scale-102'
+                      ? 'text-white shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/80'
                   } ${sidebarCollapsed ? 'justify-center' : ''}`}
-                  style={isActive ? { backgroundColor: brandConfig.colors.primary } : {}}
+                  style={isActive ? { 
+                    backgroundColor: brandConfig.colors.primary,
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                  } : {}}
                   onClick={() => setSidebarOpen(false)}
                 >
-                  <item.icon className={`h-5 w-5 flex-shrink-0 ${
+                  <item.icon className={`h-4 w-4 flex-shrink-0 ${
                     isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-600'
                   } ${sidebarCollapsed ? '' : 'mr-3'}`} />
                   
@@ -243,7 +218,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                       {item.badge && (
                         <Badge 
                           variant="destructive" 
-                          className="ml-2 h-5 w-5 flex items-center justify-center p-0 text-xs flex-shrink-0"
+                          className="ml-2 h-4 w-4 flex items-center justify-center p-0 text-xs flex-shrink-0"
                         >
                           {item.badge}
                         </Badge>
@@ -276,16 +251,70 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             })}
           </nav>
 
-          {/* Role Switcher - Bottom of sidebar */}
+          {/* User Info - Compact */}
+          <div className={`p-3 border-t border-gray-200/60 flex-shrink-0 ${sidebarCollapsed ? 'px-2' : 'px-3'}`}>
+            {sidebarCollapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex justify-center">
+                    <Avatar className="h-8 w-8 cursor-pointer">
+                      <AvatarFallback 
+                        className="text-white font-semibold text-xs"
+                        style={{ backgroundColor: brandConfig.colors.primary }}
+                      >
+                        {user.full_name.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="ml-2">
+                  <p className="font-medium">{user.full_name}</p>
+                  <p className="text-xs text-gray-500">{user.email}</p>
+                  <Badge variant="secondary" className="text-xs mt-1">
+                    {ROLE_DISPLAY_NAMES[currentRole]}
+                  </Badge>
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <Avatar className="h-8 w-8 flex-shrink-0">
+                  <AvatarFallback 
+                    className="text-white font-semibold text-xs"
+                    style={{ backgroundColor: brandConfig.colors.primary }}
+                  >
+                    {user.full_name.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-gray-900 truncate">
+                    {user.full_name}
+                  </p>
+                  <Badge 
+                    variant="secondary" 
+                    className="text-xs mt-0.5"
+                    style={{ 
+                      backgroundColor: `${brandConfig.colors.primary}15`,
+                      color: brandConfig.colors.primary,
+                      border: `1px solid ${brandConfig.colors.primary}30`
+                    }}
+                  >
+                    {ROLE_DISPLAY_NAMES[currentRole]}
+                  </Badge>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Role Switcher - Compact */}
           {availableRoles.length > 1 && (
-            <div className={`p-4 border-t border-gray-200 ${sidebarCollapsed ? 'px-2' : 'px-4'}`}>
+            <div className={`p-2 border-t border-gray-200/60 flex-shrink-0 ${sidebarCollapsed ? 'px-2' : 'px-3'}`}>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   {sidebarCollapsed ? (
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button variant="outline" className="w-full h-10 p-0">
-                          <User className="h-4 w-4" />
+                        <Button variant="outline" className="w-full h-8 p-0" size="sm">
+                          <User className="h-3 w-3" />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent side="right" className="ml-2">
@@ -293,12 +322,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                       </TooltipContent>
                     </Tooltip>
                   ) : (
-                    <Button variant="outline" className="w-full justify-between">
+                    <Button variant="outline" className="w-full justify-between h-8 text-xs" size="sm">
                       <div className="flex items-center">
-                        <User className="h-4 w-4 mr-2" />
-                        <span className="text-sm">Switch Role</span>
+                        <User className="h-3 w-3 mr-2" />
+                        <span>Switch Role</span>
                       </div>
-                      <ChevronDown className="h-4 w-4" />
+                      <ChevronDown className="h-3 w-3" />
                     </Button>
                   )}
                 </DropdownMenuTrigger>
@@ -328,169 +357,183 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
 
         {/* Mobile Sidebar */}
-        <div className={`lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out ${
+        <div className={`lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 shadow-lg transform transition-transform duration-300 ease-in-out ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}>
-          {/* Mobile Sidebar Content (same as desktop but without collapse functionality) */}
-          <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200">
-            <Link href="/dashboard" className="flex items-center space-x-2">
-              <div 
-                className="w-8 h-8 rounded-lg flex items-center justify-center"
-                style={{ backgroundColor: brandConfig.colors.primary }}
-              >
-                <Image
-                  src={brandConfig.logo}
-                  alt={brandConfig.name}
-                  width={20}
-                  height={20}
-                  className="object-contain filter brightness-0 invert"
-                />
-              </div>
-              <span className="text-xl font-bold text-gray-900">
-                {brandConfig.name}
-              </span>
-            </Link>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSidebarOpen(false)}
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
-
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center space-x-3">
-              <Avatar className="h-10 w-10">
-                <AvatarFallback 
-                  className="text-white font-semibold"
+          <div className="flex flex-col h-full">
+            <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 flex-shrink-0">
+              <Link href="/dashboard" className="flex items-center space-x-2">
+                <div 
+                  className="w-8 h-8 rounded-lg flex items-center justify-center"
                   style={{ backgroundColor: brandConfig.colors.primary }}
                 >
-                  {user.full_name.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">
-                  {user.full_name}
-                </p>
-                <p className="text-xs text-gray-500 truncate">
-                  {user.email}
-                </p>
+                  <Image
+                    src={brandConfig.logo}
+                    alt={brandConfig.name}
+                    width={20}
+                    height={20}
+                    className="object-contain filter brightness-0 invert"
+                  />
+                </div>
+                <span className="text-xl font-bold text-gray-900">
+                  {brandConfig.name}
+                </span>
+              </Link>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSidebarOpen(false)}
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+
+            <div className="p-6 border-b border-gray-200 flex-shrink-0">
+              <div className="flex items-center space-x-3">
+                <Avatar className="h-10 w-10">
+                  <AvatarFallback 
+                    className="text-white font-semibold"
+                    style={{ backgroundColor: brandConfig.colors.primary }}
+                  >
+                    {user.full_name.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">
+                    {user.full_name}
+                  </p>
+                  <p className="text-xs text-gray-500 truncate">
+                    {user.email}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3">
+                <Badge 
+                  variant="secondary" 
+                  className="text-xs"
+                  style={{ 
+                    backgroundColor: `${brandConfig.colors.primary}15`,
+                    color: brandConfig.colors.primary,
+                    border: `1px solid ${brandConfig.colors.primary}30`
+                  }}
+                >
+                  {ROLE_DISPLAY_NAMES[currentRole]}
+                </Badge>
               </div>
             </div>
-            <div className="mt-3">
-              <Badge 
-                variant="secondary" 
-                className="text-xs"
-                style={{ 
-                  backgroundColor: `${brandConfig.colors.primary}15`,
-                  color: brandConfig.colors.primary,
-                  border: `1px solid ${brandConfig.colors.primary}30`
-                }}
-              >
-                {ROLE_DISPLAY_NAMES[currentRole]}
-              </Badge>
-            </div>
-          </div>
 
-          <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
-            {navigationItems.map((item, index) => {
-              const isActive = isNavItemActive(item.href);
-              return (
-                <Link
-                  key={index}
-                  href={item.href}
-                  className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                    isActive
-                      ? 'text-white shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
-                  style={isActive ? { backgroundColor: brandConfig.colors.primary } : {}}
-                  onClick={() => setSidebarOpen(false)}
-                >
-                  <item.icon className={`mr-3 h-5 w-5 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-500'}`} />
-                  <span className="flex-1">{item.label}</span>
-                  {item.badge && (
-                    <Badge 
-                      variant="destructive" 
-                      className="ml-auto h-5 w-5 flex items-center justify-center p-0 text-xs"
-                    >
-                      {item.badge}
-                    </Badge>
-                  )}
-                </Link>
-              );
-            })}
-          </nav>
+            <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto min-h-0">
+              {navigationItems.map((item, index) => {
+                const isActive = isNavItemActive(item.href);
+                return (
+                  <Link
+                    key={index}
+                    href={item.href}
+                    className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      isActive
+                        ? 'text-white shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
+                    style={isActive ? { backgroundColor: brandConfig.colors.primary } : {}}
+                    onClick={() => setSidebarOpen(false)}
+                  >
+                    <item.icon className={`mr-3 h-5 w-5 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-gray-500'}`} />
+                    <span className="flex-1">{item.label}</span>
+                    {item.badge && (
+                      <Badge 
+                        variant="destructive" 
+                        className="ml-auto h-5 w-5 flex items-center justify-center p-0 text-xs"
+                      >
+                        {item.badge}
+                      </Badge>
+                    )}
+                  </Link>
+                );
+              })}
+            </nav>
 
-          {availableRoles.length > 1 && (
-            <div className="p-4 border-t border-gray-200">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between">
-                    <div className="flex items-center">
-                      <User className="h-4 w-4 mr-2" />
-                      <span className="text-sm">Switch Role</span>
+            {availableRoles.length > 1 && (
+              <div className="p-4 border-t border-gray-200 flex-shrink-0">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between">
+                      <div className="flex items-center">
+                        <User className="h-4 w-4 mr-2" />
+                        <span className="text-sm">Switch Role</span>
+                      </div>
+                      <ChevronDown className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                      Available Roles
                     </div>
-                    <ChevronDown className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <div className="px-2 py-1.5 text-sm text-muted-foreground">
-                    Available Roles
-                  </div>
-                  <DropdownMenuSeparator />
-                  {availableRoles.map((role) => (
-                    <DropdownMenuItem
-                      key={role}
-                      onClick={() => handleRoleSwitch(role)}
-                      className={role === currentRole ? 'bg-accent' : ''}
-                    >
-                      {ROLE_DISPLAY_NAMES[role]}
-                      {role === currentRole && (
-                        <Badge variant="secondary" className="ml-auto text-xs">
-                          Active
-                        </Badge>
-                      )}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          )}
+                    <DropdownMenuSeparator />
+                    {availableRoles.map((role) => (
+                      <DropdownMenuItem
+                        key={role}
+                        onClick={() => handleRoleSwitch(role)}
+                        className={role === currentRole ? 'bg-accent' : ''}
+                      >
+                        {ROLE_DISPLAY_NAMES[role]}
+                        {role === currentRole && (
+                          <Badge variant="secondary" className="ml-auto text-xs">
+                            Active
+                          </Badge>
+                        )}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Main Content */}
-        <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out ${window.innerWidth >= 1024 ? contentMargin : ''}`}>
+        <div 
+          className="flex-1 flex flex-col min-h-screen lg:ml-16 transition-all duration-300 ease-in-out"
+          style={{ 
+            marginLeft: typeof window !== 'undefined' && window.innerWidth >= 1024 
+              ? (sidebarCollapsed ? '4rem' : '14rem') 
+              : '0' 
+          }}
+        >
           {/* Header */}
-          <header className="bg-white border-b border-gray-200 px-6 py-3">
+          <header className="bg-white/95 backdrop-blur-sm border-b border-gray-200/60 px-4 py-2.5 shadow-sm flex-shrink-0">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 {/* Mobile menu button */}
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="lg:hidden"
+                  className="lg:hidden h-8 w-8 p-0"
                   onClick={() => setSidebarOpen(true)}
                 >
-                  <Menu className="h-5 w-5" />
+                  <Menu className="h-4 w-4" />
                 </Button>
 
-                <div>
-                  <h1 className="text-xl font-semibold text-gray-900">
-                    Dashboard
-                  </h1>
+                <div className="flex items-center space-x-3">
+                  {/* Show company name when sidebar is collapsed on desktop */}
+                  {sidebarCollapsed && (
+                    <div className="hidden lg:flex items-center space-x-2">
+                      <span className="text-lg font-semibold text-gray-900 pl-2">
+                        {brandConfig.name}
+                      </span>
+                      <div className="w-px h-6 bg-gray-300 mx-2"></div>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-3">
                 {/* User Menu */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <Button variant="ghost" className="relative h-8 w-8 rounded-full p-0">
                       <Avatar className="h-8 w-8">
                         <AvatarFallback 
-                          className="text-white font-semibold"
+                          className="text-white font-semibold text-sm"
                           style={{ backgroundColor: brandConfig.colors.primary }}
                         >
                           {user.full_name.charAt(0).toUpperCase()}
@@ -526,9 +569,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
           </header>
 
-          {/* Main Content Area */}
-          <main className="flex-1 overflow-y-auto bg-gray-50">
-            <div className="p-6">
+          {/* Main Content Area - FIXED for scrolling */}
+          <main className="flex-1 bg-gray-50/50 overflow-auto">
+            <div className="p-4 sm:p-6 lg:p-5 min-h-full">
               {children}
             </div>
           </main>
@@ -537,7 +580,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Mobile sidebar overlay */}
         {sidebarOpen && (
           <div 
-            className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
+            className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm lg:hidden"
             onClick={() => setSidebarOpen(false)}
           />
         )}

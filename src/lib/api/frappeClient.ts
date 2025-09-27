@@ -389,6 +389,7 @@ checkFirstLogin: async (username: string) => {
     getAllLeadsbyContract: async (email:string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Lead?filters=[["custom_stage", "=", "onboarded"] , ["lead_owner", "=", "${email}"]]`);
   },
+
  
 
 
@@ -405,6 +406,18 @@ checkFirstLogin: async (username: string) => {
   updateStaffingPLan: async (StaffingId: string, StaffingData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('PUT', `/resource/Company/${StaffingId}`, StaffingData);
   },
+  getAllTodos: async (email: string) => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/ToDo?filters=[["allocated_to" ,"=","${email}"]]`);
+  },
+  getTodoBYId: async (TodoId: string) => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/ToDo/${TodoId}`);
+  },
+   getStaffingPlanById: async (PlanId: string) => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/ToDo/${PlanId}`);
+  },
+
+
+  
    upload: async (file: File, options: {
     is_private?: boolean;
     folder?: string;

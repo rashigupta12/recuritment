@@ -450,7 +450,7 @@ const getSelectedCompany = (): SimplifiedCompany | null => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto bg-white">
+    <div className="w-full mx-auto bg-white">
       {/* Leave Confirmation Dialog */}
       <ConfirmationDialog
         isOpen={showLeaveConfirmation}
