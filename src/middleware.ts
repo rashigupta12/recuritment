@@ -8,6 +8,7 @@ const ROLE_ROUTES: Record<string, string> = {
   'Projects Manager': '/dashboard/projects-manager',
   'Projects User': '/dashboard/projects-user',
   'Delivery Manager': '/dashboard/delivery-manager',
+  'Recruiter':'/dashboard/recruiter'
 };
 
 export function middleware(request: NextRequest) {
