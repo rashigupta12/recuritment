@@ -1,4 +1,3 @@
-// components/ApplicantForm.tsx
 'use client';
 
 import { useState } from 'react';
@@ -28,7 +27,7 @@ interface FormData {
   phone_number: string;
   country: string;
   job_title: string;
-  resume_attachment: File | null;
+  resume_attachment: string; // Changed to string for file URL
   custom_experience: ExperienceData[];
   custom_education: EducationData[];
 }
@@ -44,7 +43,7 @@ export default function ApplicantForm() {
     phone_number: '',
     country: 'India',
     job_title: 'HR-OPN-2025-0010',
-    resume_attachment: null,
+    resume_attachment: '', // Initialize as empty string
     custom_experience: [{
       company_name: '',
       designation: '',
@@ -77,9 +76,8 @@ export default function ApplicantForm() {
     
     if (files) {
       const file = files[0];
-      setFormData({ ...formData, resume_attachment: file });
       if (file) {
-        handleResumeUpload(file); // Trigger autofill on file upload
+        handleResumeUpload(file); // Trigger upload and autofill
       }
     } else if (type === 'checkbox') {
       setFormData({ ...formData, [name]: checked ? 1 : 0 });
@@ -92,104 +90,77 @@ export default function ApplicantForm() {
     }
   };
 
-
-// Improved handleResumeUpload function with better error handling and debugging
-const handleResumeUpload = async (file: File) => {
-  setIsAutofilling(true);
-  setAutofillError('');
-  
-  try {
-    console.log('Starting resume upload and autofill process...');
-    console.log('File details:', {
-      name: file.name,
-      size: file.size,
-      type: file.type,
-      lastModified: file.lastModified
-    });
-
-    // Create FormData to send the file directly
-    const uploadFormData = new FormData();
-    uploadFormData.append('file', file);
-    uploadFormData.append('fileName', file.name);
-    uploadFormData.append('jobTitle', formData.job_title);
-
-    console.log('FormData created, sending request to /api/jobapplicant');
-
-    // Call the API endpoint
-    const response = await fetch('/api/jobapplicant', {
-      method: 'POST',
-      body: uploadFormData
-    });
-
-    console.log('Response received:', {
-      status: response.status,
-      statusText: response.statusText,
-      headers: Object.fromEntries(response.headers.entries())
-    });
-
-    // Check if response is ok
-    if (!response.ok) {
-      console.error('Response not ok:', response.status, response.statusText);
-      
-      // Try to get error data
-      let errorData;
-      try {
-        const responseText = await response.text();
-        console.log('Raw response text:', responseText);
-        
-        // Try to parse as JSON
-        try {
-          errorData = JSON.parse(responseText);
-        } catch (parseError) {
-          console.error('Failed to parse error response as JSON:', parseError);
-          throw new Error(`Server error (${response.status}): ${responseText || response.statusText}`);
-        }
-      } catch (textError) {
-        console.error('Failed to read response text:', textError);
-        throw new Error(`Server error (${response.status}): ${response.statusText}`);
-      }
-      
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-    }
-
-    // Parse successful response
-    let result;
+  // Handle resume upload and autofill
+  const handleResumeUpload = async (file: File) => {
+    setIsAutofilling(true);
+    setAutofillError('');
+    
     try {
-      const responseText = await response.text();
-      console.log('Successful response text length:', responseText.length);
-      
-      if (!responseText) {
-        throw new Error('Empty response from server');
+      console.log('Starting resume upload and autofill process...');
+      console.log('File details:', {
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        lastModified: file.lastModified
+      });
+
+      // Step 1: Upload file to Frappe server
+      console.log('Uploading file to Frappe server...');
+      const uploadResponse = await frappeAPI.upload(file, {
+        is_private: false,
+        folder: 'Home',
+        
+      });
+
+      if (!uploadResponse.success || !uploadResponse.file_url) {
+        throw new Error(uploadResponse.error || 'Failed to upload resume to server');
       }
-      
-      result = JSON.parse(responseText);
-      console.log('Parsed response successfully:', result);
-    } catch (parseError) {
-      console.error('Failed to parse successful response:', parseError);
-      throw new Error('Invalid response from server. Please try again.');
-    }
 
-    // Validate response structure
-    if (!result.success || !result.data) {
-      console.error('Invalid response structure:', result);
-      throw new Error('Invalid response format from server');
-    }
+      const fileUrl = uploadResponse.file_url;
+      console.log('File uploaded successfully, URL:', fileUrl);
 
-    const { data } = result;
-    console.log('Extracted data from response:', data);
+      // Step 2: Call autofill API with file
+      const uploadFormData = new FormData();
+      uploadFormData.append('file', file);
+      uploadFormData.append('fileName', file.name);
+      uploadFormData.append('jobTitle', formData.job_title);
 
-    // Update form data with API response
-    setFormData(prevFormData => {
-      const newFormData = {
+      console.log('Sending request to /api/jobapplicant for autofill');
+      const response = await fetch('/api/jobapplicant', {
+        method: 'POST',
+        body: uploadFormData
+      });
+
+      console.log('Autofill response:', {
+        status: response.status,
+        statusText: response.statusText
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('Autofill response parsed:', result);
+
+      if (!result.success || !result.data) {
+        throw new Error('Invalid response format from server');
+      }
+
+      const { data } = result;
+
+      // Update form data with API response and file URL
+      setFormData(prevFormData => ({
         ...prevFormData,
         applicant_name: data.applicant_name || '',
         email_id: data.email_id || '',
         phone_number: data.phone_number || '',
         country: data.country || 'India',
         job_title: data.job_title || prevFormData.job_title,
-        resume_attachment: file,
+        resume_attachment: fileUrl, // Store file URL
         custom_experience: data.custom_experience && data.custom_experience.length > 0
-          ? data.custom_experience.map((exp:any) => ({
+          ? data.custom_experience.map((exp: any) => ({
               company_name: exp.company_name || '',
               designation: exp.designation || '',
               start_date: exp.start_date || '',
@@ -218,43 +189,20 @@ const handleResumeUpload = async (file: File) => {
               year_of_passing: '',
               percentagecgpa: ''
             }]
-      };
-      
-      console.log('Updated form data:', newFormData);
-      return newFormData;
-    });
+      }));
 
-    setErrors({});
-    console.log('Resume autofill completed successfully');
+      console.log('Form data updated with file URL and autofill data');
+      setErrors({});
 
-  } catch (error:any) {
-    console.error('Autofill error details:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
-    });
-    
-    let userFriendlyMessage = error.message;
-    
-    // Provide more specific error messages
-    if (error.message.includes('Failed to fetch')) {
-      userFriendlyMessage = 'Network error. Please check your internet connection and try again.';
-    } else if (error.message.includes('unexpected end of JSON input')) {
-      userFriendlyMessage = 'Server returned invalid data. Please try again or contact support.';
-    } else if (error.message.includes('NetworkError')) {
-      userFriendlyMessage = 'Network error. Please try again.';
+    } catch (error: any) {
+      console.error('Autofill error:', {
+        message: error.message,
+        stack: error.stack
+      });
+      setAutofillError(`Failed to process resume: ${error.message}`);
+    } finally {
+      setIsAutofilling(false);
     }
-    
-    setAutofillError(`Failed to autofill form: ${userFriendlyMessage}`);
-  } finally {
-    setIsAutofilling(false);
-  }
-};
-
-  // Placeholder for file upload logic
-  const uploadFileToServer = async (file: File): Promise<{ url: string }> => {
-    throw new Error('File upload service not implemented. Please configure a file storage service.');
-    
   };
 
   // Handle experience field changes
@@ -365,20 +313,16 @@ const handleResumeUpload = async (file: File) => {
           phone_number: formData.phone_number,
           country: formData.country,
           job_title: formData.job_title,
-          resume_attachment: formData.resume_attachment ? formData.resume_attachment.name : null,
+          resume_attachment: formData.resume_attachment, // Send file URL
           custom_experience: formData.custom_experience,
           custom_education: formData.custom_education
         }
       };
 
+      console.log('Submitting applicant data:', payload);
       const response = await frappeAPI.createApplicants(payload.data);
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      console.log('Form submitted successfully:', result);
+      console.log('Frappe API response:', response);
       setSubmitted(true);
       
       setFormData({
@@ -387,7 +331,7 @@ const handleResumeUpload = async (file: File) => {
         phone_number: '',
         country: 'India',
         job_title: 'HR-OPN-2025-0010',
-        resume_attachment: null,
+        resume_attachment: '',
         custom_experience: [{
           company_name: '',
           designation: '',
@@ -552,7 +496,7 @@ const handleResumeUpload = async (file: File) => {
                     <p className="text-sm text-gray-600">Click to upload or drag and drop</p>
                     <p className="text-xs text-gray-500 mt-1">PDF, DOCX, or TXT up to 16MB</p>
                     {formData.resume_attachment && (
-                      <p className="text-sm text-green-600 mt-2">✓ {formData.resume_attachment.name}</p>
+                      <p className="text-sm text-green-600 mt-2">✓ Resume uploaded</p>
                     )}
                     {isAutofilling && (
                       <p className="text-sm text-blue-600 mt-2 flex items-center justify-center gap-2">
