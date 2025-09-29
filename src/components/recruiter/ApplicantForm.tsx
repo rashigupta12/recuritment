@@ -109,7 +109,6 @@ export default function ApplicantForm() {
       const uploadResponse = await frappeAPI.upload(file, {
         is_private: false,
         folder: 'Home',
-        
       });
 
       if (!uploadResponse.success || !uploadResponse.file_url) {
@@ -325,6 +324,7 @@ export default function ApplicantForm() {
       console.log('Frappe API response:', response);
       setSubmitted(true);
       
+      // Reset form data
       setFormData({
         applicant_name: '',
         email_id: '',
@@ -357,30 +357,11 @@ export default function ApplicantForm() {
     }
   };
 
-  // Reset form after submission
-  const resetForm = () => {
+  // Close modal and reset form
+  const closeModal = () => {
     setSubmitted(false);
     setAutofillError('');
   };
-
-  // Success message after submission
-  if (submitted) {
-    return (
-      <div className="min-h-screen bg-gray-50 py-8 px-4">
-        <div className="w-full max-w-4xl mx-auto bg-white rounded-lg shadow-md p-6 text-center">
-          <CheckCircle className="w-12 h-12 text-green-600 mx-auto mb-4" />
-          <h2 className="text-2xl font-semibold text-gray-900 mb-2">Application Submitted</h2>
-          <p className="text-gray-600 mb-6">Thank you for your application. We'll review it and contact you within 3-5 business days.</p>
-          <button
-            onClick={resetForm}
-            className="w-full max-w-xs bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors font-medium"
-          >
-            Submit Another Application
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
@@ -723,6 +704,25 @@ export default function ApplicantForm() {
             </button>
           </div>
         </div>
+
+        {/* Success Modal */}
+        {submitted && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
+              <div className="flex flex-col items-center">
+                <CheckCircle className="w-12 h-12 text-green-600 mb-4" />
+                <h2 className="text-2xl font-semibold text-gray-900 mb-2">Application Submitted Successfully</h2>
+                
+                <button
+                  onClick={closeModal}
+                  className="w-full max-w-xs bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors font-medium"
+                >
+                  Submit Another Application
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

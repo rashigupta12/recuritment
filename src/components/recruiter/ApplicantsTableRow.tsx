@@ -1,5 +1,3 @@
-import { EditIcon, Eye } from 'lucide-react';
-
 export interface JobApplicant {
   name: string;
   applicant_name?: string;
@@ -93,7 +91,7 @@ export const ApplicantsTableRow = ({
         </div>
       </td>
       <td className="md:table-cell px-3 py-2 flex flex-col gap-0.5">
-        <div className="text-sm text-gray-900 line-clamp-2 max-w-[120px]" title={applicant.job_title}>
+        <div className="text-xs text-gray-900 line-clamp-2 max-w-[120px]" title={applicant.job_title}>
           {applicant.job_title || '-'}
         </div>
         <div className="text-xs text-gray-500">
@@ -107,22 +105,7 @@ export const ApplicantsTableRow = ({
           {formatTextWithLines(applicant.status)}
         </span>
       </td>
-      <td className="md:table-cell px-3 py-2">
-        {applicant.resume_attachment ? (
-          <a
-            href={`${process.env.NEXT_PUBLIC_FRAPPE_BASE_URL}${applicant.resume_attachment}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-600 hover:underline text-xs"
-            onClick={(e) => e.stopPropagation()}
-            aria-label="View resume"
-          >
-            View Resume
-          </a>
-        ) : (
-          <span className="text-gray-400">-</span>
-        )}
-      </td>
+      
       <td className="md:table-cell px-3 py-2">
         {applicant.custom_experience?.length ? (
           <ul className="list-none text-xs text-gray-900 space-y-0.5">
@@ -149,7 +132,23 @@ export const ApplicantsTableRow = ({
           <span className="text-gray-400">-</span>
         )}
       </td>
-      
+      <td className="md:table-cell px-3 py-2">
+        {applicant.resume_attachment ? (
+          <a
+            href={`${process.env.NEXT_PUBLIC_FRAPPE_BASE_URL}${applicant.resume_attachment}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:underline text-xs"
+            onClick={(e) => e.stopPropagation()}
+            aria-label="View resume"
+          >
+            View Resume
+          </a>
+        ) : (
+          <span className="text-gray-400">-</span>
+        )}
+      </td>
     </tr>
   );
 };
+
