@@ -1,10 +1,10 @@
-import TodosList from '@/components/Todos/TodosList'
+import FileUploadComponent from '@/components/comman/Fileuploading'
 import React from 'react'
 
-const Todos = () => {
+const Image = () => {
   return (
-   <TodosList/>
+   <FileUploadComponent/>
   )
 }
 
-export default Todos
+export default Image

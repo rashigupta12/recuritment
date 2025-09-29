@@ -435,82 +435,142 @@ checkFirstLogin: async (username: string) => {
 
 
   
-   upload: async (file: File, options: {
-    is_private?: boolean;
-    folder?: string;
-    doctype?: string;
-    docname?: string;
-    method?: string;
-  } = {}) => {
-    if (!file || !(file instanceof File)) {
-      throw new Error('Invalid file object');
-    }
+// Fixed upload method for frappeClient
+upload: async (file: File, options: {
+  is_private?: boolean;
+  folder?: string;
+  doctype?: string;
+  docname?: string;
+  fieldname?: string;
+} = {}) => {
+  console.log('🚀 Upload started:', { 
+    fileName: file.name, 
+    fileSize: file.size, 
+    fileType: file.type,
+    options 
+  });
 
-    const formData = new FormData();
-    formData.append("file", file, file.name);
+  if (!file || !(file instanceof File)) {
+    console.error('❌ Invalid file object');
+    throw new Error('Invalid file object');
+  }
+
+  const formData = new FormData();
+  
+  // CRITICAL: Append file first with exact name
+  formData.append("file", file);
+  
+  // Add options - use correct data types
+  if (options.is_private !== undefined) {
     formData.append('is_private', options.is_private ? '1' : '0');
-    formData.append('folder', options.folder || 'Home');
-
-    if (options.doctype) {
-      formData.append('doctype', options.doctype);
+  }
+  
+  if (options.folder) {
+    formData.append('folder', options.folder);
+  }
+  
+  // If attaching to document, provide both doctype and docname
+  if (options.doctype && options.docname) {
+    formData.append('doctype', options.doctype);
+    formData.append('docname', options.docname);
+    
+    if (options.fieldname) {
+      formData.append('fieldname', options.fieldname);
     }
-    if (options.docname) {
-      formData.append('docname', options.docname);
-    }
-    if (options.method) {
-      formData.append('method', options.method);
-    }
+  }
 
+  // Debug: Log FormData contents
+  console.log('📦 FormData entries:');
+  for (const [key, value] of formData.entries()) {
+    console.log(`  ${key}:`, value instanceof File ? `File(${value.name})` : value);
+  }
 
-
-    try {
-      const response = await frappeFileClient.post('/method/upload_file', formData, {
-        timeout: 30000,
-        headers: {
-          // Remove any Content-Type header to let browser set multipart boundary
-        },
-        onUploadProgress: (progressEvent) => {
-          if (progressEvent.total) {
-            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            console.log(`📈 Upload progress: ${percentCompleted}%`);
-          }
+  try {
+    console.log('📤 Sending upload request to:', `${frappeFileClient.defaults.baseURL}/method/upload_file`);
+    
+    const response = await frappeFileClient.post('/method/upload_file', formData, {
+      timeout: 60000, // Increase timeout
+      headers: {
+        // Let browser set Content-Type with boundary
+        // DO NOT set Content-Type manually for multipart/form-data
+      },
+      onUploadProgress: (progressEvent) => {
+        if (progressEvent.total) {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          console.log(`📈 Upload progress: ${percentCompleted}%`);
         }
+      }
+    });
+
+    console.log('✅ Upload response received:', {
+      status: response.status,
+      statusText: response.statusText,
+      data: response.data
+    });
+
+    // Handle response structure - Frappe returns data in 'message' property
+    const fileData = response.data.message || response.data;
+    
+    if (!fileData || !fileData.file_url) {
+      console.error('❌ Invalid response structure:', response.data);
+      throw new Error('Invalid response from server - no file_url found');
+    }
+
+    const result = {
+      success: true,
+      data: fileData,
+      file_url: fileData.file_url,
+      file_name: fileData.file_name || file.name,
+      name: fileData.name // Document name in Frappe
+    };
+
+    console.log('✅ Upload successful:', result);
+    return result;
+
+  } catch (error) {
+    console.error('❌ Upload failed:', error);
+
+    if (axios.isAxiosError(error)) {
+      console.error('❌ Axios error details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        url: error.config?.url,
+        headers: error.config?.headers,
+        data: error.response?.data,
+        message: error.message,
+        code: error.code
       });
 
-
-      return {
-        success: true,
-        data: response.data,
-        file_url: response.data.message?.file_url || response.data.file_url,
-        file_name: response.data.message?.file_name || response.data.file_name
-      };
-
-    } catch (error) {
-      console.error('🔍 Error details:', error);
-
-      if (axios.isAxiosError(error)) {
-        const errorMessage = error.response?.data?.message ||
-          error.response?.data?.exc ||
-          error.message;
-        const errorDetails = {
-          status: error.response?.status,
-          statusText: error.response?.statusText,
-          data: error.response?.data
-        };
-        return {
-          success: false,
-          error: errorMessage,
-          details: errorDetails
-        };
+      // Extract meaningful error message
+      let errorMessage = 'Upload failed';
+      
+      if (error.response?.data) {
+        errorMessage = error.response.data.message || 
+                      error.response.data.exc || 
+                      error.response.data._error_message ||
+                      errorMessage;
+      } else if (error.message) {
+        errorMessage = error.message;
       }
 
       return {
         success: false,
-        error: (error as Error).message,
-        details: error
+        error: errorMessage,
+        details: {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          serverMessage: error.response?.data
+        }
       };
     }
+
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+      details: error
+    };
   }
+}
 
   
 

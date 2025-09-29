@@ -72,7 +72,7 @@ const getNavigationItems = (role: AllowedRole): NavigationItem[] => {
         href: `${roleBasePath}/requirements`,
       },
       { icon: Users, label: "openings", href: `${roleBasePath}/opening` },
-      { icon: FolderOpen, label: "Allocations", href: `${roleBasePath}/allocations` },
+      { icon: FolderOpen, label: "Allocations", href: `${roleBasePath}/todos` },
     ],
     "Projects Manager": [
       { icon: Home, label: "Dashboard", href: roleBasePath },
