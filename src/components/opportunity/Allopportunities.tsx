@@ -1,10 +1,9 @@
 /*eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '@/contexts/AuthContext';
 import { frappeAPI } from '@/lib/api/frappeClient';
-import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation';
-import { IndianRupee } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface Opportunity {
   custom_expected_revenue: any;

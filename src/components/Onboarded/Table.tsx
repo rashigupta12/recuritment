@@ -1,14 +1,11 @@
 // components/Leads/LeadsTable.tsx
+import { Lead } from "@/stores/leadStore";
 import {
   EditIcon,
-  Eye,
   Factory,
   IndianRupee,
-  Users2Icon,
-  UsersIcon,
-  FileText,
+  UsersIcon
 } from "lucide-react";
-import { Lead } from "@/stores/leadStore";
 
 interface LeadsTableProps {
   leads: Lead[];
