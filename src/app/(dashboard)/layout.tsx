@@ -71,8 +71,8 @@ const getNavigationItems = (role: AllowedRole): NavigationItem[] => {
         label: "Requirements",
         href: `${roleBasePath}/requirements`,
       },
-      { icon: Users, label: "openings", href: `${roleBasePath}/opening` },
-      { icon: FolderOpen, label: "Allocations", href: `${roleBasePath}/allocations` },
+      // { icon: Users, label: "openings", href: `${roleBasePath}/opening` },
+      // { icon: FolderOpen, label: "Allocations", href: `${roleBasePath}/allocations` },
     ],
     "Projects Manager": [
       { icon: Home, label: "Dashboard", href: roleBasePath },
@@ -98,7 +98,9 @@ const getNavigationItems = (role: AllowedRole): NavigationItem[] => {
       { icon: Home, label: 'Dashboard', href: roleBasePath },
       {icon:FolderOpen,label:'Todos',href:`${roleBasePath}/todos`},
       { icon: FolderOpen, label: 'Applicants', href: `${roleBasePath}/applicants` },
-      {icon:FolderOpen,label:'View Applicants',href:`${roleBasePath}/viewapplicant`}
+      {icon:FolderOpen,label:'View Applicants',href:`${roleBasePath}/viewapplicant`},
+       {icon:FolderOpen,label:'Shortlisted',href:`${roleBasePath}/shortlisted-candidates`}
+
       
     ],
   };

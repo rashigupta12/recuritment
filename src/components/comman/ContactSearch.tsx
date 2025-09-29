@@ -25,7 +25,6 @@ type SimplifiedContact = {
   email: string;
   phone: string;
   contactId?: string;
-  // Add additional fields to store the full contact data
   designation?: string;
   gender?: string;
   organization?: string;
@@ -44,11 +43,9 @@ type ContactSearchSectionProps = {
   selectedContact: SimplifiedContact | null;
   onEdit: () => void;
   onRemove: () => void;
-  // NEW: Add callback for organization auto-fetch
   onOrganizationAutoFetch?: (organizationName: string) => void;
 };
 
-// -------- Contact Form State --------
 type ContactFormState = {
   first_name: string;
   last_name: string;
@@ -59,7 +56,6 @@ type ContactFormState = {
   organization: string;
 };
 
-// Initial state for contact form
 const initialContactFormState: ContactFormState = {
   first_name: "",
   last_name: "",
@@ -70,9 +66,156 @@ const initialContactFormState: ContactFormState = {
   organization: "",
 };
 
+// -------- Designation Dropdown Component --------
+const DesignationDropdown: React.FC<{
+  value: string;
+  onChange: (designation: string) => void;
+}> = ({ value, onChange }) => {
+  const triggerRef = useRef<HTMLInputElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const [searchQuery, setSearchQuery] = useState(value || "");
+  const [results, setResults] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [pos, setPos] = useState({ top: 0, left: 0, width: 200 });
+
+  const fetchDesignations = useCallback(async (query: string) => {
+    if (!query.trim()) {
+      setResults([]);
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await frappeAPI.makeAuthenticatedRequest(
+        "GET",
+        `/method/recruitment_app.search_designation.search_designation?search_term=${encodeURIComponent(
+          query
+        )}`
+      );
+      if (res.message?.status === "success") {
+        setResults(res.message.data.map((d: any) => d.designation_name));
+      } else {
+        setResults([]);
+      }
+    } catch (err) {
+      console.error("Designation search error", err);
+      setResults([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const calculatePos = () => {
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setPos({
+        top: rect.bottom + window.scrollY + 4,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+      });
+    }
+  };
+
+  useEffect(() => {
+    setSearchQuery(value || "");
+  }, [value]);
+
+  useEffect(() => {
+    if (isOpen) {
+      calculatePos();
+      const handle = (e: MouseEvent) => {
+        if (
+          dropdownRef.current &&
+          !dropdownRef.current.contains(e.target as Node) &&
+          !triggerRef.current?.contains(e.target as Node)
+        ) {
+          setIsOpen(false);
+        }
+      };
+      document.addEventListener("mousedown", handle);
+      window.addEventListener("scroll", calculatePos, true);
+      window.addEventListener("resize", calculatePos);
+      return () => {
+        document.removeEventListener("mousedown", handle);
+        window.removeEventListener("scroll", calculatePos, true);
+        window.removeEventListener("resize", calculatePos);
+      };
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchQuery) {
+        fetchDesignations(searchQuery);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, fetchDesignations]);
+
+  return (
+    <>
+      <input
+        ref={triggerRef}
+        type="text"
+        value={searchQuery}
+        onChange={(e) => {
+          const value = e.target.value;
+          const formattedValue =
+            value.charAt(0).toUpperCase() + value.slice(1);
+          setSearchQuery(formattedValue);
+          setIsOpen(true);
+        }}
+        onFocus={() => {
+          if (searchQuery) {
+            setIsOpen(true);
+          }
+        }}
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+        placeholder="e.g., HR Manager"
+      />
+
+      {isOpen &&
+        createPortal(
+          <div
+            ref={dropdownRef}
+            className="fixed bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto z-[9999]"
+            style={{ top: pos.top, left: pos.left, width: pos.width }}
+          >
+            {loading ? (
+              <div className="flex items-center justify-center p-3 text-sm text-gray-500">
+                <Loader2 className="h-4 w-4 animate-spin mr-2" /> Searching...
+              </div>
+            ) : results.length > 0 ? (
+              results.map((d) => (
+                <div
+                  key={d}
+                  onMouseDown={() => {
+                    setSearchQuery(d);
+                    onChange(d);
+                    setIsOpen(false);
+                  }}
+                  className={`px-3 py-2 cursor-pointer hover:bg-gray-100 ${
+                    d === value ? "bg-blue-50" : ""
+                  }`}
+                >
+                  {d}
+                </div>
+              ))
+            ) : searchQuery ? (
+              <div className="p-3 text-sm text-gray-500">
+                No designations found
+              </div>
+            ) : null}
+          </div>,
+          document.body
+        )}
+    </>
+  );
+};
+
 // -------- Meta Extraction Utility --------
 function extractContactMeta(contacts: ContactType[]): ContactMeta {
-  console.log(contacts);
   const designations = new Set<string>();
   const genders = new Set<string>();
   const organizations = new Set<string>();
@@ -93,13 +236,12 @@ function extractContactMeta(contacts: ContactType[]): ContactMeta {
   };
 }
 
-// -------- Component --------
+// -------- Main Component --------
 const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
   onContactSelect,
   selectedContact,
-  // onEdit,
   onRemove,
-  onOrganizationAutoFetch, // NEW: Organization auto-fetch callback
+  onOrganizationAutoFetch,
 }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -116,7 +258,6 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
     width: 0,
   });
 
-  // Use separate state for contact form to avoid conflicts
   const [contactForm, setContactForm] = useState<ContactFormState>(
     initialContactFormState
   );
@@ -127,7 +268,6 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
     uniqueOrganizations: [],
   });
 
-  // Calculate dropdown position
   const calculateDropdownPosition = useCallback(() => {
     if (!inputRef.current) return;
     const inputRect = inputRef.current.getBoundingClientRect();
@@ -171,7 +311,6 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
     }
   }, [showDropdown]);
 
-  // Helpers
   const getPrimaryEmail = (contact: ContactType): string => {
     const primaryEmail = contact.email_ids.find(
       (email) => email.is_primary === 1
@@ -198,7 +337,6 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
       : `${contact.first_name ?? ""} ${contact.last_name ?? ""}`.trim();
   };
 
-  // Search contacts
   const searchContacts = useCallback(async (query: string) => {
     if (!query.trim()) {
       setSearchResults([]);
@@ -221,7 +359,6 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
       );
       if (response.message?.status === "success") {
         const data: ContactType[] = response.message.data || [];
-        console.log(data);
         setSearchResults(data);
         setContactMeta(extractContactMeta(data));
       } else {
@@ -244,7 +381,6 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
     }
   }, []);
 
-  // Debounced search
   useEffect(() => {
     const handler = setTimeout(() => {
       searchContacts(searchQuery);
@@ -252,21 +388,16 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
     return () => clearTimeout(handler);
   }, [searchQuery, searchContacts]);
 
-  // Handlers
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
   };
 
-  
-
-  // UPDATED: Enhanced contact selection with auto-organization fetch
   const handleContactSelect = (contact: ContactType) => {
     const simplifiedContact: SimplifiedContact = {
       name: getFullName(contact),
       email: getPrimaryEmail(contact),
       phone: getPrimaryPhone(contact),
       contactId: contact.name,
-      // Store additional fields for editing
       designation: contact.designation || "",
       gender: contact.gender || "",
       organization: contact.organization || "",
@@ -274,15 +405,16 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
       last_name: contact.last_name || "",
     };
 
-    // First, update the selected contact
     onContactSelect(simplifiedContact);
     setSearchQuery(getFullName(contact));
     setShowDropdown(false);
     setSearchResults([]);
 
-    // NEW: Auto-fetch organization if contact has one
-    if (contact.organization && contact.organization.trim() && onOrganizationAutoFetch) {
-      console.log(`Auto-fetching organization: ${contact.organization}`);
+    if (
+      contact.organization &&
+      contact.organization.trim() &&
+      onOrganizationAutoFetch
+    ) {
       onOrganizationAutoFetch(contact.organization.trim());
     }
   };
@@ -308,7 +440,6 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
     e.preventDefault();
     e.stopPropagation();
     if (selectedContact) {
-      // Use the stored contact data if available, otherwise parse from name
       const firstName =
         selectedContact.first_name || selectedContact.name.split(" ")[0] || "";
       const lastName =
@@ -316,7 +447,6 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
         selectedContact.name.split(" ").slice(1).join(" ") ||
         "";
 
-      // Reset form with selected contact data
       setContactForm({
         first_name: firstName,
         last_name: lastName,
@@ -333,7 +463,6 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
 
   const handleCreateContact = () => {
     const [firstName, ...lastNameParts] = searchQuery.split(" ");
-    // Reset form with new contact data
     setContactForm({
       first_name: firstName || searchQuery,
       last_name: lastNameParts.join(" ") || "",
@@ -385,12 +514,10 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
       let contactName: string;
 
       if (selectedContact?.contactId) {
-        // Update existing contact
         await frappeAPI.updateContact(selectedContact.contactId, contactData);
         contactId = selectedContact.contactId;
         contactName = `${contactForm.first_name} ${contactForm.last_name}`.trim();
       } else {
-        // Create new contact
         const response = await frappeAPI.createContact(contactData);
         contactId = response.data.name;
         contactName = `${contactForm.first_name} ${contactForm.last_name}`.trim();
@@ -413,9 +540,7 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
       setShowContactDialog(false);
       setContactForm(initialContactFormState);
 
-      // NEW: Auto-fetch organization after saving if organization was added
       if (contactForm.organization.trim() && onOrganizationAutoFetch) {
-        console.log(`Auto-fetching organization after save: ${contactForm.organization}`);
         onOrganizationAutoFetch(contactForm.organization.trim());
       }
     } catch (error) {
@@ -428,13 +553,11 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
 
   const handleCloseContactDialog = () => {
     setShowContactDialog(false);
-    // Reset form when closing dialog
     setContactForm(initialContactFormState);
   };
 
   const hasValidContact = Boolean(selectedContact);
 
-  // -------- Dropdown Component --------
   const DropdownContent = () => (
     <div
       ref={dropdownRef}
@@ -520,7 +643,6 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
           Start typing to search contacts...
         </div>
       )}
-      {/* Display extracted meta below dropdown for quick view or filter UI */}
       {(contactMeta.uniqueDesignations.length > 0 ||
         contactMeta.uniqueGenders.length > 0 ||
         contactMeta.uniqueOrganizations.length > 0) && (
@@ -542,10 +664,8 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
     </div>
   );
 
-  // -------- Render --------
   return (
     <div className="space-y-4">
-      {/* Search Field */}
       <div className="w-full">
         <div className="relative">
           <div className="flex items-center">
@@ -557,7 +677,7 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
               value={searchQuery}
               onChange={handleSearchChange}
               onFocus={handleInputFocus}
-              className="w-full pl-10 pr-20 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors"
+              className="w-full pl-10 pr-20 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors capitalize"
             />
 
             <div className="absolute right-2 flex items-center space-x-1 z-10">
@@ -594,7 +714,6 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
           createPortal(<DropdownContent />, document.body)}
       </div>
 
-      {/* Selected Contact Display */}
       {selectedContact && (
         <div className="border border-primary/20 rounded-lg p-4 py-2 bg-primary/5 animate-in fade-in-50">
           <div className="flex items-center justify-between">
@@ -633,7 +752,6 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
         </div>
       )}
 
-      {/* Create/Edit Contact Dialog */}
       {showContactDialog && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
@@ -659,7 +777,6 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
                     value={contactForm.first_name}
                     onChange={(e) => {
                       const value = e.target.value;
-                      // Capitalize first letter only
                       const formattedValue =
                         value.charAt(0).toUpperCase() + value.slice(1);
                       setContactForm((prev) => ({
@@ -680,7 +797,6 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
                     value={contactForm.last_name}
                     onChange={(e) => {
                       const value = e.target.value;
-                      // Capitalize first letter only
                       const formattedValue =
                         value.charAt(0).toUpperCase() + value.slice(1);
                       setContactForm((prev) => ({
@@ -697,21 +813,11 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Designation
                   </label>
-                  <input
-                    type="text"
+                  <DesignationDropdown
                     value={contactForm.designation}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      // Capitalize first letter only
-                      const formattedValue =
-                        value.charAt(0).toUpperCase() + value.slice(1);
-                      setContactForm((prev) => ({
-                        ...prev,
-                        designation: formattedValue,
-                      }));
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-                    placeholder="e.g., HR Manager"
+                    onChange={(designation) =>
+                      setContactForm((prev) => ({ ...prev, designation }))
+                    }
                   />
                 </div>
                 <div>
@@ -737,27 +843,6 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Organization
-                </label>
-                <input
-                  type="text"
-                  value={contactForm.organization}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    // Capitalize first letter only
-                    const formattedValue =
-                      value.charAt(0).toUpperCase() + value.slice(1);
-                    setContactForm((prev) => ({
-                      ...prev,
-                      organization: formattedValue,
-                    }));
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-                  placeholder="e.g., Company Name"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Email
                 </label>
                 <input
@@ -771,7 +856,10 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
                   }}
                   onBlur={() => {
                     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                    if (contactForm.email && !emailRegex.test(contactForm.email)) {
+                    if (
+                      contactForm.email &&
+                      !emailRegex.test(contactForm.email)
+                    ) {
                       alert("Please enter a valid email address");
                     }
                   }}
@@ -788,7 +876,6 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
                   value={contactForm.phone}
                   onChange={(e) => {
                     const value = e.target.value;
-                    // Allow only digits, up to 10 characters
                     const phoneRegex = /^\d{0,10}$/;
                     if (phoneRegex.test(value)) {
                       setContactForm((prev) => ({ ...prev, phone: value }));

@@ -186,10 +186,12 @@ const LeadsTableRow = ({
       <td className="px-4 py-2 whitespace-nowrap">
         {lead.custom_fee ? (
           <div className="text-sm text-gray-900 flex items-center">
-            {lead.custom_fee}%
+            {lead.custom_fee }%
           </div>
         ) : (
-          "-"
+          <div className="text-sm text-gray-900 flex items-center">
+            {lead.custom_fixed_charges}
+          </div>
         )}
       </td>
       <td className="px-4 py-2 whitespace-nowrap">

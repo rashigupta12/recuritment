@@ -434,7 +434,7 @@ const StaffingPlanCreator: React.FC = () => {
                             Vac
                           </th>
                           <th className="p-3 font-medium w-[60px] text-center">
-                            AVG.SAL(PA)
+                            AVG.SAL(LPA)
                           </th>
                           <th className="p-3 font-medium w-[60px] text-center">
                             Exp (Yrs)

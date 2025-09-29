@@ -416,7 +416,7 @@ checkFirstLogin: async (username: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Staffing Plan/${PlanId}`);
   },
   getAllCustomers: async(email:string)=>{
-    return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Customer?filters=[["owner" ,"=","${email}"]]`);
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Customer?filters=[["owner" ,"=","${email}"]]&order_by=creation desc`);
   },
   getCustomerBYId: async (CustomerId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Customer/${CustomerId}`);
@@ -432,6 +432,14 @@ checkFirstLogin: async (username: string) => {
   getApplicantBYId: async (name:string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Job Applicant/${name}`);
   },
+  getAllShortlistedCandidates: async (email: string , status:string) => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Job Applicant?filters=[["owner","=","${email}"],["status","=","${status}"]]&order_by=creation desc`);
+  },
+   getJobOpeningById: async (jobopeningId: string) => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Job Opening/${jobopeningId}`);
+  },
+  
+  
 
 
   

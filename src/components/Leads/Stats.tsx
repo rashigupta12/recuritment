@@ -1,11 +1,12 @@
-
-// components/Leads/LeadsStats.tsx
 import { Building2, IndianRupee, Users } from "lucide-react";
 import { Lead } from "@/stores/leadStore";
+import { formatToIndianCurrency } from "./helper";
 
 interface LeadsStatsProps {
   leads: Lead[];
 }
+
+
 
 export const LeadsStats = ({ leads }: LeadsStatsProps) => {
   const totalLeads = leads.length;
@@ -18,7 +19,6 @@ export const LeadsStats = ({ leads }: LeadsStatsProps) => {
       title: "Total Leads",
       value: totalLeads,
       icon: Users,
-      color: "blue",
       bgColor: "bg-blue-100",
       textColor: "text-blue-600"
     },
@@ -26,15 +26,13 @@ export const LeadsStats = ({ leads }: LeadsStatsProps) => {
       title: "Companies",
       value: uniqueCompanies,
       icon: Building2,
-      color: "green",
       bgColor: "bg-green-100",
       textColor: "text-green-600"
     },
     {
       title: "Total Revenue",
-      value: `₹${totalRevenue.toLocaleString("en-IN")}`,
+      value: formatToIndianCurrency(totalRevenue),
       icon: IndianRupee,
-      color: "purple",
       bgColor: "bg-purple-100",
       textColor: "text-purple-600"
     },
@@ -42,7 +40,6 @@ export const LeadsStats = ({ leads }: LeadsStatsProps) => {
       title: "Expected Hires",
       value: expectedHires,
       icon: Users,
-      color: "orange",
       bgColor: "bg-orange-100",
       textColor: "text-orange-600"
     }

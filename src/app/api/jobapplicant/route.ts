@@ -1,3 +1,4 @@
+/*eslint-disable @typescript-eslint/no-explicit-any */
 //  /api/jobapplicant/route.ts
 import { NextRequest, NextResponse } from "next/server";
 
@@ -8,14 +9,14 @@ const MAX_FILE_SIZE = 16 * 1024 * 1024; // 16MB
 const MAX_TEXT_LENGTH = 15000;
 const MIN_TEXT_LENGTH = 100;
 
-const SUPPORTED_MIME_TYPES = {
+const SUPPORTED_MIME_TYPES: Record<string, string> = {
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
   "application/pdf": "pdf",
   "text/plain": "txt",
 };
 
-function determineFileType(fileUrl:any, contentType:any, fileName:any) {
-  if (contentType && SUPPORTED_MIME_TYPES[contentType]) {
+function determineFileType(fileUrl: string, contentType: string, fileName: string): string {
+  if (contentType && contentType in SUPPORTED_MIME_TYPES) {
     return SUPPORTED_MIME_TYPES[contentType];
   }
   const url = fileName || fileUrl;
@@ -28,7 +29,7 @@ function determineFileType(fileUrl:any, contentType:any, fileName:any) {
   }
 }
 
-async function extractTextFromPDF(buffer:any) {
+async function extractTextFromPDF(buffer: Buffer) {
   try {
     const { default: pdfParse } = await import("pdf-parse/lib/pdf-parse.js");
     console.log("Extracting text from PDF buffer, size:", buffer.length);
@@ -47,17 +48,18 @@ async function extractTextFromPDF(buffer:any) {
       pages: data.numpages,
       metadata: data.info,
     };
-  } catch (error:any) {
+  } catch (error) {
     console.error("PDF extraction error:", error);
-    throw new Error(`Failed to extract text from PDF: ${error.message}`);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    throw new Error(`Failed to extract text from PDF: ${errorMessage}`);
   }
 }
 
-async function extractTextFromWord(buffer:any) {
+async function extractTextFromWord(buffer: Buffer) {
   try {
     const mammoth = (await import("mammoth")).default;
     console.log("Extracting text from Word buffer, size:", buffer.length);
-    const result = await mammoth.extractRawText({ buffer, options: { includeDefaultStyleMap: true } });
+    const result = await mammoth.extractRawText({ buffer });
     if (!result.value || result.value.trim().length === 0) {
       throw new Error("No text found in the Word document.");
     }
@@ -72,11 +74,12 @@ async function extractTextFromWord(buffer:any) {
     };
   } catch (error) {
     console.error("Word extraction error:", error);
-    throw new Error(`Failed to extract text from Word document: ${error.message}`);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    throw new Error(`Failed to extract text from Word document: ${errorMessage}`);
   }
 }
 
-function validateAndCleanText(text, filename) {
+function validateAndCleanText(text: string, filename: string): string {
   if (!text || typeof text !== "string") {
     throw new Error("Invalid text extracted from document");
   }
@@ -91,7 +94,7 @@ function validateAndCleanText(text, filename) {
   return trimmedText;
 }
 
-const createAutofillPrompt = (resumeText) => `
+const createAutofillPrompt = (resumeText: string): string => `
 You are an expert resume parser. Extract information from the provided resume and return a JSON object matching the exact structure below. Fill in all fields based on the resume content, and leave fields empty ("" for strings, [] for arrays, 0 for numbers) if the information is not found. Pay special attention to identifying the current company (set "current_company": 1 if the position is ongoing, otherwise 0).
 
 Return ONLY valid JSON in this structure:
@@ -136,7 +139,7 @@ Resume Content:
 ${resumeText}
 `;
 
-async function callMistralAPIForAutofill(resumeText, retries = 2) {
+async function callMistralAPIForAutofill(resumeText: string, retries = 2) {
   const prompt = createAutofillPrompt(resumeText);
 
   for (let attempt = 0; attempt <= retries; attempt++) {
@@ -172,7 +175,8 @@ async function callMistralAPIForAutofill(resumeText, retries = 2) {
         const cleanJsonString = jsonString.replace(/^```json\n?/, "").replace(/\n?```$/, "");
         parsedJSON = JSON.parse(cleanJsonString);
       } catch (parseError) {
-        throw new Error(`Invalid JSON response from AI: ${parseError.message}`);
+        const errorMessage = parseError instanceof Error ? parseError.message : "Unknown parse error";
+        throw new Error(`Invalid JSON response from AI: ${errorMessage}`);
       }
 
       return {
@@ -188,7 +192,7 @@ async function callMistralAPIForAutofill(resumeText, retries = 2) {
 }
 
 // Main POST handler with enhanced debugging
-export async function POST(request) {
+export async function POST(request: NextRequest) {
   const startTime = Date.now();
   
   try {
@@ -206,7 +210,7 @@ export async function POST(request) {
     }
 
     // Parse FormData with error handling
-    let formData;
+    let formData: FormData;
     try {
       formData = await request.formData();
       console.log("FormData parsed successfully");
@@ -247,8 +251,8 @@ export async function POST(request) {
     }
 
     // Convert File to Buffer with error handling
-    let arrayBuffer;
-    let fileBuffer;
+    let arrayBuffer: ArrayBuffer;
+    let fileBuffer: Buffer;
     try {
       arrayBuffer = await file.arrayBuffer();
       fileBuffer = Buffer.from(arrayBuffer);
@@ -273,21 +277,22 @@ export async function POST(request) {
     }
 
     // Determine file type
-    let fileType;
+    let fileType: string;
     try {
       const contentType = file.type;
       fileType = determineFileType(fileName, contentType, fileName);
       console.log(`File type determined: ${fileType} (content-type: ${contentType})`);
     } catch (typeError) {
       console.error("Unsupported file type:", typeError);
+      const errorMessage = typeError instanceof Error ? typeError.message : "Unknown file type error";
       return NextResponse.json(
-        { error: typeError.message },
+        { error: errorMessage },
         { status: 415 }
       );
     }
 
     // Extract text based on file type
-    let extractionResult;
+    let extractionResult: { text: string; pages?: number; metadata?: any; warnings?: any[] };
     try {
       console.log(`Starting text extraction for ${fileType}...`);
       switch (fileType) {
@@ -306,30 +311,36 @@ export async function POST(request) {
       console.log("Text extraction completed successfully");
     } catch (extractionError) {
       console.error("Text extraction failed:", extractionError);
+      const errorMessage = extractionError instanceof Error ? extractionError.message : "Unknown extraction error";
       return NextResponse.json(
-        { error: `Failed to extract text from ${fileType.toUpperCase()} file: ${extractionError.message}` },
+        { error: `Failed to extract text from ${fileType.toUpperCase()} file: ${errorMessage}` },
         { status: 400 }
       );
     }
 
     // Validate and clean text
-    let resumeText;
+    let resumeText: string;
     try {
       resumeText = validateAndCleanText(extractionResult.text, fileName);
       console.log(`Text validated and cleaned: ${resumeText.length} characters`);
     } catch (validationError) {
       console.error("Text validation failed:", validationError);
+      const errorMessage = validationError instanceof Error ? validationError.message : "Validation error";
       return NextResponse.json(
-        { error: validationError.message },
+        { error: errorMessage },
         { status: 400 }
       );
     }
 
     // Call Mistral API for autofill JSON
-    let structuredData, tokensUsed;
+    let structuredData: any;
+    let tokensUsed: number;
     try {
       console.log("Calling Mistral API...");
       const apiResult = await callMistralAPIForAutofill(resumeText);
+      if (!apiResult) {
+        throw new Error("No result returned from Mistral API");
+      }
       structuredData = apiResult.structuredData;
       tokensUsed = apiResult.tokensUsed;
       console.log("Mistral API call successful");
@@ -369,29 +380,33 @@ export async function POST(request) {
   } catch (error) {
     console.error("=== AUTOFILL APPLICATION PROCESSING ERROR ===");
     console.error("Error details:", error);
-    console.error("Error stack:", error.stack);
+    if (error instanceof Error) {
+      console.error("Error stack:", error.stack);
+    }
 
     // Determine error type and status
     let statusCode = 500;
     let errorMessage = "An unexpected error occurred while processing the resume.";
 
-    if (error.message.includes("Mistral API error") || error.message.includes("Invalid JSON response")) {
-      statusCode = 502;
-      errorMessage = "AI service unavailable or returned invalid data.";
-    } else if (error.message.includes("File too large")) {
-      statusCode = 413;
-      errorMessage = error.message;
-    } else if (error.message.includes("Unsupported file type")) {
-      statusCode = 415;
-      errorMessage = error.message;
-    } else if (error.message.includes("Failed to extract") || error.message.includes("too short")) {
-      statusCode = 400;
-      errorMessage = error.message;
+    if (error instanceof Error) {
+      if (error.message.includes("Mistral API error") || error.message.includes("Invalid JSON response")) {
+        statusCode = 502;
+        errorMessage = "AI service unavailable or returned invalid data.";
+      } else if (error.message.includes("File too large")) {
+        statusCode = 413;
+        errorMessage = error.message;
+      } else if (error.message.includes("Unsupported file type")) {
+        statusCode = 415;
+        errorMessage = error.message;
+      } else if (error.message.includes("Failed to extract") || error.message.includes("too short")) {
+        statusCode = 400;
+        errorMessage = error.message;
+      }
     }
 
     const errorResponse = {
       error: errorMessage,
-      details: process.env.NODE_ENV === "development" ? error.message : undefined,
+      details: process.env.NODE_ENV === "development" && error instanceof Error ? error.message : undefined,
       timestamp: new Date().toISOString(),
     };
 
