@@ -71,8 +71,10 @@ const getNavigationItems = (role: AllowedRole): NavigationItem[] => {
     ],
     'Recruiter':[
       { icon: Home, label: 'Dashboard', href: roleBasePath },
-      { icon: FolderOpen, label: 'applicants', href: `${roleBasePath}/applicants` },
+      {icon:FolderOpen,label:'Todos',href:`${roleBasePath}/todos`},
+      { icon: FolderOpen, label: 'Applicants', href: `${roleBasePath}/applicants` },
       {icon:FolderOpen,label:'View Applicants',href:`${roleBasePath}/viewapplicant`}
+      
     ],
   };
 
