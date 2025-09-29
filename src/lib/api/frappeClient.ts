@@ -423,6 +423,16 @@ checkFirstLogin: async (username: string) => {
   },
   
 
+  createApplicants: async(ApplicantData :Record<string, unknown>)=>{
+ return await frappeAPI.makeAuthenticatedRequest('POST', '/resource/Job Applicant', ApplicantData);
+  },
+  getAllApplicants: async (email: string) => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Job Applicant`);
+  },
+  getApplicantBYId: async (name:string) => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Job Applicant/${name}`);
+  },
+
 
   
    upload: async (file: File, options: {
