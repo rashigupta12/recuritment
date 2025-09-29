@@ -415,6 +415,13 @@ checkFirstLogin: async (username: string) => {
    getStaffingPlanById: async (PlanId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Staffing Plan/${PlanId}`);
   },
+  getAllCustomers: async(email:string)=>{
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Customer?filters=[["owner" ,"=","${email}"]]`);
+  },
+  getCustomerBYId: async (CustomerId: string) => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Customer/${CustomerId}`);
+  },
+  
 
 
   

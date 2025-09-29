@@ -1,5 +1,4 @@
 'use client'
-/*eslint-disable  @typescript-eslint/no-explicit-any*/
 import { frappeAPI } from "@/lib/api/frappeClient";
 import {
   Building,
@@ -7,7 +6,6 @@ import {
   Mail,
   Phone,
   Search,
-  User,
   X
 } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";

@@ -33,6 +33,8 @@ export interface Industry {
 }
 
 export interface Lead {
+  owner: string
+  lead_owner: string
   custom_lead_owner_name: string
   mobile_no: string
   id?: string
