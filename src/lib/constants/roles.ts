@@ -4,7 +4,8 @@ export type AllowedRole =
   | 'Sales Manager' 
   | 'Projects Manager'
   | 'Projects User'
-  | 'Delivery Manager';
+  | 'Delivery Manager'
+  |'Recruiter';
 
 export const ROLE_ROUTES: Record<AllowedRole, string> = {
   'Sales User': '/dashboard/sales-user',
@@ -12,6 +13,7 @@ export const ROLE_ROUTES: Record<AllowedRole, string> = {
   'Projects Manager': '/dashboard/projects-manager',
   'Projects User': '/dashboard/projects-user',
   'Delivery Manager': '/dashboard/delivery-manager',
+  'Recruiter':'/dashboard/recruiter'
 };
 
 export const ROLE_DISPLAY_NAMES: Record<AllowedRole, string> = {
@@ -20,6 +22,7 @@ export const ROLE_DISPLAY_NAMES: Record<AllowedRole, string> = {
   'Projects Manager': 'Projects Manager',
   'Projects User': 'Projects User',
   'Delivery Manager': 'Delivery Manager',
+  'Recruiter':'Recruiter'
 };
 
 export const ROLE_PERMISSIONS: Record<AllowedRole, string[]> = {
@@ -28,6 +31,7 @@ export const ROLE_PERMISSIONS: Record<AllowedRole, string[]> = {
   'Projects Manager': ['projects:*', 'jobcards:*', 'teams:manage'],
   'Projects User': ['projects:read', 'jobcards:read', 'jobcards:update'],
   'Delivery Manager': ['delivery:*', 'schedules:*', 'reports:delivery'],
+  'Recruiter':['recruiter:*', 'schedules:*', 'reports:delivery']
 };
 
 export const getAllowedRoles = (frappeRoles: any[]): AllowedRole[] => {
@@ -66,8 +70,9 @@ export const getAllowedRoles = (frappeRoles: any[]): AllowedRole[] => {
     'Projects Manager': 'Projects Manager',
     'Projects User': 'Projects User',
     'Delivery Manager': 'Delivery Manager',
+    'Recruiter':'Recruiter',
     
-    'Employee': 'Sales User', // Example mapping
+    // 'Employee': 'Sales User', // Example mapping
     // Check your Frappe system for actual role names and map them here
   };
   
