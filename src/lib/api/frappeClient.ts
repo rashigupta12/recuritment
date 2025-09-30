@@ -1,6 +1,7 @@
 // src/api/frappeclient
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from "axios";
+import { get } from "http";
 
 const frappeClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_dev_prod_FRAPPE_BASE_URL,
@@ -438,7 +439,10 @@ checkFirstLogin: async (username: string) => {
    getJobOpeningById: async (jobopeningId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Job Opening/${jobopeningId}`);
   },
-  
+  getTaggedApplicantsByJobId: async (jobId: string , email:string) => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Job Applicant?filters=[["owner","=","${email}"],[["job_title","=","${jobId}"],["status","=","Tagged"]]&order_by=creation desc`);
+
+  },
   
 
 
