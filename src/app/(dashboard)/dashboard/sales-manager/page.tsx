@@ -53,11 +53,7 @@ interface ChartDataPoint {
   conversions: number;
 }
 
-interface PipelineStage {
-  stage: string;
-  count: number;
-  value: number;
-}
+
 
 interface StatCardProps {
   title: string;
@@ -369,7 +365,7 @@ const MiniChart: React.FC<MiniChartProps> = ({ data, type = 'bar' }) => {
 
 export default function SalesManagerDashboard() {
   const [data, setData] = useState(mockData);
-  const [activeTab, setActiveTab] = useState('overview');
+  // const [activeTab, setActiveTab] = useState('overview');
 
   return (
     <div className="space-y-6 w-full mx-auto">

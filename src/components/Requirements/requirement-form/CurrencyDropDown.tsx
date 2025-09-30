@@ -134,13 +134,13 @@ const CurrencyDropdown: React.FC<CurrencyDropdownProps> = ({
     currency.symbol?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const getCurrencyDisplay = (currencyCode: string) => {
-    const currency = currencies.find(c => c.name === currencyCode);
-    if (currency) {
-      return currency.symbol ? `${currency.name} (${currency.symbol})` : currency.name;
-    }
-    return currencyCode;
-  };
+  // const getCurrencyDisplay = (currencyCode: string) => {
+  //   const currency = currencies.find(c => c.name === currencyCode);
+  //   if (currency) {
+  //     return currency.symbol ? `${currency.name} (${currency.symbol})` : currency.name;
+  //   }
+  //   return currencyCode;
+  // };
 
   const handleCurrencySelect = (currencyCode: string) => {
     onChange(currencyCode);
@@ -148,10 +148,10 @@ const CurrencyDropdown: React.FC<CurrencyDropdownProps> = ({
     setSearchTerm('');
   };
 
-  const getSymbolForCurrency = (currencyCode: string) => {
-    const currency = currencies.find(c => c.name === currencyCode);
-    return currency?.symbol || currencyCode;
-  };
+  // const getSymbolForCurrency = (currencyCode: string) => {
+  //   const currency = currencies.find(c => c.name === currencyCode);
+  //   return currency?.symbol || currencyCode;
+  // };
 
   return (
     <>
@@ -164,11 +164,11 @@ const CurrencyDropdown: React.FC<CurrencyDropdownProps> = ({
           className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <span className="flex items-center space-x-2">
-            {value && (
+            {/* {value && (
               <span className="font-medium text-gray-700">
                 {getSymbolForCurrency(value)}
               </span>
-            )}
+            )} */}
             <span>{value || 'Select Currency'}</span>
           </span>
           <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
@@ -221,11 +221,11 @@ const CurrencyDropdown: React.FC<CurrencyDropdownProps> = ({
                     }`}
                   >
                     <div className="flex items-center space-x-2">
-                      {currency.symbol && (
+                      {/* {currency.symbol && (
                         <span className="font-medium text-gray-700 w-6 text-center">
                           {currency.symbol}
                         </span>
-                      )}
+                      )} */}
                       <div className="text-left">
                         <div className="text-sm font-medium text-gray-900">
                           {currency.name}
@@ -254,7 +254,7 @@ const CurrencyDropdown: React.FC<CurrencyDropdownProps> = ({
           </div>
 
           {/* Footer with common currencies quick access */}
-          {!searchTerm && (
+          {/* {!searchTerm && (
             <div className="border-t p-2">
               <div className="text-xs text-gray-500 mb-1">Common Currencies</div>
               <div className="flex flex-wrap gap-1">
@@ -269,7 +269,7 @@ const CurrencyDropdown: React.FC<CurrencyDropdownProps> = ({
                 ))}
               </div>
             </div>
-          )}
+          )} */}
         </div>
       )}
     </>

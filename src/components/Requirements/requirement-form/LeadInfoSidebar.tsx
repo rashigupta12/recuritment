@@ -1,5 +1,5 @@
 'use client'
-/*eslint-disable  @typescript-eslint/no-explicit-any*/
+
 import {
   Briefcase,
   Building,
@@ -9,7 +9,6 @@ import {
   Phone,
   Target,
   TrendingUp,
-  User,
   Users
 } from "lucide-react";
 import React from "react";
@@ -22,7 +21,7 @@ export const LeadInfoSidebar: React.FC<{ lead: LeadType }> = ({ lead }) => {
   return (
     <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-3 border border-blue-100">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-900">Selected Lead</h3>
+      
         <span className="text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded">
           {lead.name}
         </span>

@@ -29,6 +29,7 @@ export type Assignment = {
 };
 
 export type StaffingPlanItem = {
+  location: string;
   currency: string;
   designation: string;
   vacancies: number;
@@ -68,7 +69,8 @@ export const initialStaffingPlanItem: StaffingPlanItem = {
   min_experience_reqyrs: 0,
   job_description: "",
   attachmentsoptional: "",
-  assign_to: ""
+  assign_to: "",
+  location: ""
 };
 
 export const initialStaffingPlanForm: StaffingPlanForm = {

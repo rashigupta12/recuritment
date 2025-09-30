@@ -14,7 +14,7 @@ interface LeadsFormViewProps {
 export const LeadsFormView = ({
   currentView,
   selectedLead,
-  onBack,
+  // onBack,
   onFormClose
 }: LeadsFormViewProps) => {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);

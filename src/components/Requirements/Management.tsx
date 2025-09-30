@@ -11,8 +11,7 @@ import {
   Save,
   Trash2,
   Upload,
-  User,
-  Users,
+  Users
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -26,9 +25,9 @@ import {
   StaffingPlanItem,
 } from "./helper";
 import { LeadSearchSection } from "./LeadSerach";
-import { LeadInfoSidebar } from "./requirement-form/LeadInfoSidebar";
-import { MultiUserAssignment } from "./requirement-form/MultiUserAssignment";
 import CurrencyDropdown from "./requirement-form/CurrencyDropDown";
+import DesignationDropdown from "./requirement-form/DesignationDropdown";
+import LocationDropdown from "./requirement-form/LocationDropdown";
 
 // Main Component
 const StaffingPlanCreator: React.FC = () => {
@@ -48,7 +47,7 @@ const StaffingPlanCreator: React.FC = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [originalPlanId, setOriginalPlanId] = useState<string>("");
   const [error, setError] = useState<string>("");
-  const [showAssignDropdown, setShowAssignDropdown] = useState(false);
+  // const [showAssignDropdown, setShowAssignDropdown] = useState(false);
 
   useEffect(() => {
     const handleInitialLoad = async () => {
@@ -217,13 +216,13 @@ const StaffingPlanCreator: React.FC = () => {
   };
 
   // Assign User (for overall plan assignment)
-  const handleAssignUser = async (userEmail: string, userName: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      custom_assign_to: userEmail,
-      assigned_to_full_name: userName,
-    }));
-  };
+  // const handleAssignUser = async (userEmail: string, userName: string) => {
+  //   setFormData((prev) => ({
+  //     ...prev,
+  //     custom_assign_to: userEmail,
+  //     assigned_to_full_name: userName,
+  //   }));
+  // };
 
   // Form Submission
   const handleSubmit = async () => {
@@ -247,18 +246,18 @@ const StaffingPlanCreator: React.FC = () => {
         to_date: formData.to_date,
         custom_assign_to: formData.custom_assign_to || "",
         staffing_details: formData.staffing_details.map((item) => ({
-          currency: item.currency,
-          designation: capitalizeWords(item.designation),
-          vacancies: item.vacancies,
-          estimated_cost_per_position: item.estimated_cost_per_position,
-          number_of_positions: item.number_of_positions,
-          min_experience_reqyrs: item.min_experience_reqyrs,
-          job_description: `<div class="ql-editor read-mode"><p>${capitalizeWords(
-            item.job_description
-          )}</p></div>`,
-          attachmentsoptional: item.attachmentsoptional || "",
-          assign_to: item.assign_to || "", // Include the assign_to field
-        })),
+  currency: item.currency,
+  designation: capitalizeWords(item.designation),
+  vacancies: item.vacancies,
+  estimated_cost_per_position: item.estimated_cost_per_position,
+  number_of_positions: item.number_of_positions,
+  min_experience_reqyrs: item.min_experience_reqyrs,
+  job_description: `<div class="ql-editor read-mode"><p>${capitalizeWords(item.job_description)}</p></div>`,
+  attachmentsoptional: item.attachmentsoptional || "",
+  assign_to: item.assign_to || "",
+  location: item.location || "", // <-- ADD THIS LINE
+}))
+,
       };
 
       let response;
@@ -431,22 +430,25 @@ const StaffingPlanCreator: React.FC = () => {
                           <th className="p-3 font-medium w-[180px]">
                             Designation
                           </th>
-                          <th className="p-3 font-medium w-[100px]">
-                            Vacancies
+                          <th className="p-3 font-medium w-[60px] text-center">
+                            Vac
                           </th>
-                          <th className="p-3 font-medium w-[120px]">
-                            Salary
+                          <th className="p-3 font-medium w-[60px] text-center">
+                            AVG.SAL(LPA)
                           </th>
-                          <th className="p-3 font-medium w-[100px]">
-                            Min Exp (Yrs)
+                          <th className="p-3 font-medium w-[60px] text-center">
+                            Exp (Yrs)
                           </th>
-                          <th className="p-3 font-medium w-[100px]">
+                          <th className="p-3 font-medium w-[80px] text-center">
                             Currency
                           </th>
-                          <th className="p-3 font-medium w-[200px]">
-                            Assign To
+                          <th className="p-3 font-medium w-[180px]">
+                            Location
                           </th>
-                          <th className="p-3 font-medium w-[120px]">
+                          {/* <th className="p-3 font-medium w-[100px]">
+                            Assign To
+                          </th> */}
+                          <th className="p-3 font-medium w-[100px]">
                             Attachment
                           </th>
                           <th className="p-3 font-medium w-[80px] text-center">
@@ -462,30 +464,16 @@ const StaffingPlanCreator: React.FC = () => {
                           >
                             {/* Designation */}
                             <td className="p-3">
-                              <input
-                                type="text"
+                              <DesignationDropdown
                                 value={item.designation}
-                                onChange={(e) =>
-                                  updateStaffingItem(
-                                    index,
-                                    "designation",
-                                    e.target.value
-                                  )
+                                onChange={(val) =>
+                                  updateStaffingItem(index, "designation", val)
                                 }
-                                onBlur={(e) =>
-                                  updateStaffingItem(
-                                    index,
-                                    "designation",
-                                    capitalizeWords(e.target.value)
-                                  )
-                                }
-                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                                placeholder="e.g., Software Developer"
                               />
                             </td>
 
                             {/* Vacancies */}
-                            <td className="p-3">
+                            <td className="p-3 text-center">
                               <input
                                 type="number"
                                 value={item.vacancies || ""}
@@ -496,14 +484,14 @@ const StaffingPlanCreator: React.FC = () => {
                                     parseInt(e.target.value) || 0
                                   )
                                 }
-                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                                className="w-[60px] text-center px-1 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
                                 min="0"
                                 placeholder="0"
                               />
                             </td>
 
-                            {/* Salary */}
-                            <td className="p-3">
+                            {/* Salary in LPA */}
+                            <td className="p-3 text-center">
                               <input
                                 type="number"
                                 value={item.estimated_cost_per_position || ""}
@@ -514,13 +502,13 @@ const StaffingPlanCreator: React.FC = () => {
                                     parseInt(e.target.value) || 0
                                   )
                                 }
-                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                                className="w-[60px] text-center px-1 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
                                 placeholder="0"
                               />
                             </td>
 
                             {/* Min Experience */}
-                            <td className="p-3">
+                            <td className="p-3 text-center">
                               <input
                                 type="number"
                                 value={item.min_experience_reqyrs || ""}
@@ -531,7 +519,7 @@ const StaffingPlanCreator: React.FC = () => {
                                     parseFloat(e.target.value) || 0
                                   )
                                 }
-                                className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                                className="w-[60px] text-center px-1 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
                                 step="0.5"
                                 placeholder="0"
                                 min="0"
@@ -539,29 +527,47 @@ const StaffingPlanCreator: React.FC = () => {
                             </td>
 
                             {/* Currency */}
-                            <td className="p-3">
+                            <td className="p-3 text-center w-[80px]">
                               <CurrencyDropdown
                                 value={item.currency}
                                 onChange={(currency) =>
-                                  updateStaffingItem(index, "currency", currency)
+                                  updateStaffingItem(
+                                    index,
+                                    "currency",
+                                    currency
+                                  )
                                 }
                               />
                             </td>
 
-                            {/* Multi-User Assignment - Removed relative positioning */}
-                            <td className="p-3">
+                            {/* Location */}
+                            <td className="p-3 w-[180px]">
+                              <LocationDropdown
+                                value={item.location || ""}
+                                onChange={(val) =>
+                                  updateStaffingItem(index, "location", val)
+                                }
+                              />
+                            </td>
+
+                            {/* Multi-User Assignment */}
+                            {/* <td className="p-3 w-[100px]">
                               <MultiUserAssignment
                                 assignTo={item.assign_to}
                                 totalVacancies={item.vacancies}
                                 onAssignToChange={(assignTo) =>
-                                  updateStaffingItem(index, "assign_to", assignTo)
+                                  updateStaffingItem(
+                                    index,
+                                    "assign_to",
+                                    assignTo
+                                  )
                                 }
                                 itemIndex={index}
                               />
-                            </td>
+                            </td> */}
 
                             {/* Attachment */}
-                            <td className="p-3">
+                            <td className="p-3 w-[100px]">
                               <div className="flex items-center space-x-2">
                                 <label className="flex items-center space-x-2 cursor-pointer text-blue-600 hover:text-blue-800 transition-colors">
                                   <Upload className="h-4 w-4" />
@@ -588,8 +594,7 @@ const StaffingPlanCreator: React.FC = () => {
                             <td className="p-3 text-center">
                               <button
                                 onClick={() => removeStaffingItem(index)}
-                                className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                                disabled={formData.staffing_details.length === 1}
+                                className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
                                 title={
                                   formData.staffing_details.length === 1
                                     ? "Cannot remove the only requirement"
@@ -611,7 +616,7 @@ const StaffingPlanCreator: React.FC = () => {
         </div>
 
         {/* Sidebar */}
-        <div className="w-80 flex-shrink-0">
+        {/* <div className="w-80 flex-shrink-0">
           {isLoadingLead ? (
             <div className="bg-white rounded-lg shadow-sm border p-4 text-center">
               <Loader2 className="h-6 w-6 animate-spin text-blue-500 mx-auto mb-3" />
@@ -637,7 +642,7 @@ const StaffingPlanCreator: React.FC = () => {
               </p>
             </div>
           )}
-        </div>
+        </div> */}
       </div>
 
       {/* Success Toast */}

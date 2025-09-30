@@ -1,0 +1,185 @@
+'use client'
+import { frappeAPI } from '@/lib/api/frappeClient';
+import {
+  AlertCircle,
+  Check,
+  Loader2,
+  Search,
+  Trash2,
+  UserPlus,
+  X
+} from 'lucide-react';
+import React, { useCallback, useEffect, useState } from 'react';
+
+type Assignment = {
+  userEmail: string;
+  userName: string;
+  allocation: number;
+};
+
+type User = {
+  full_name: string;
+  email: string;
+};
+
+interface MultiUserAssignmentProps {
+  assignTo: string;
+  totalVacancies: number;
+  onAssignToChange: (assignTo: string) => void;
+  disabled?: boolean;
+}
+
+const parseAssignTo = (assignTo: string): Assignment[] => {
+  if (!assignTo) return [];
+  try {
+    return assignTo.split(',').map(item => {
+      const [userEmail, allocation] = item.trim().split('-');
+      return {
+        userEmail: userEmail.trim(),
+        userName: userEmail.split('@')[0],
+        allocation: parseInt(allocation) || 1
+      };
+    });
+  } catch {
+    return [];
+  }
+};
+
+const formatAssignTo = (assignments: Assignment[]): string =>
+  assignments
+    .filter(a => a.userEmail && a.allocation > 0)
+    .map(a => `${a.userEmail}-${a.allocation}`)
+    .join(', ');
+
+export const MultiUserAssignment: React.FC<MultiUserAssignmentProps> = ({
+  assignTo,
+  totalVacancies,
+  onAssignToChange,
+  disabled = false
+}) => {
+  const [users, setUsers] = useState<User[]>([]);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    setAssignments(parseAssignTo(assignTo));
+  }, [assignTo]);
+
+  useEffect(() => {
+    if (users.length > 0) {
+      setAssignments(prev =>
+        prev.map(a => {
+          const u = users.find(u => u.email === a.userEmail);
+          return u ? { ...a, userName: u.full_name } : a;
+        })
+      );
+    }
+  }, [users]);
+
+  const totalAllocated = assignments.reduce((sum, a) => sum + a.allocation, 0);
+  const remaining = totalVacancies - totalAllocated;
+
+  const loadUsers = async () => {
+    if (users.length > 0) return;
+    setIsLoading(true);
+    try {
+      const response = await frappeAPI.makeAuthenticatedRequest(
+        "GET",
+        "/resource/User?fields=[\"full_name\",\"email\"]&limit_page_length=50"
+      );
+      setUsers(response.data || []);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updateAssignments = useCallback((newA: Assignment[]) => {
+    setAssignments(newA);
+    onAssignToChange(formatAssignTo(newA));
+  }, [onAssignToChange]);
+
+  const addAssignment = (user: User) => {
+    updateAssignments([...assignments, { userEmail: user.email, userName: user.full_name, allocation: 1 }]);
+    setShowDropdown(false);
+    setSearchTerm('');
+  };
+
+  const removeAssignment = (i: number) => {
+    updateAssignments(assignments.filter((_, idx) => idx !== i));
+  };
+
+  if (totalVacancies === 0) {
+    return <div className="text-xs text-gray-400 text-center py-2">Set vacancies first</div>;
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="border rounded p-2 space-y-1 bg-gray-50">
+        {assignments.map((a, i) => (
+          <div key={a.userEmail} className="flex items-center justify-between text-xs bg-white rounded p-1">
+            <span className="truncate">{a.userName}</span>
+            <div className="flex items-center gap-1">
+              <input
+                type="number"
+                value={a.allocation}
+                onChange={(e) => {
+                  const newAlloc = parseInt(e.target.value) || 0;
+                  updateAssignments(assignments.map((x, j) => j === i ? { ...x, allocation: newAlloc } : x));
+                }}
+                className="w-12 px-1 py-0.5 border rounded text-center"
+                disabled={disabled}
+              />
+              <button onClick={() => removeAssignment(i)} disabled={disabled} className="text-gray-400 hover:text-red-600">
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          </div>
+        ))}
+        <div className="flex items-center justify-between text-xs pt-1">
+          <span className="text-gray-600">Allocated {totalAllocated}/{totalVacancies}</span>
+          {remaining > 0 && (
+            <button
+              onClick={() => { setShowDropdown(!showDropdown); if (!showDropdown) loadUsers(); }}
+              className="text-blue-600 hover:underline"
+              disabled={disabled}
+            >
+              + Assign
+            </button>
+          )}
+        </div>
+      </div>
+      {showDropdown && (
+        <div className="border rounded p-2 bg-white shadow max-h-48 overflow-y-auto">
+          <input
+            type="text"
+            value={searchTerm}
+            placeholder="Search users"
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full mb-2 border px-2 py-1 text-sm rounded"
+          />
+          {isLoading ? (
+            <div className="text-center py-4">
+              <Loader2 className="h-4 w-4 animate-spin inline text-blue-500" /> Loading...
+            </div>
+          ) : (
+            users.filter(u => 
+              (u.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+              u.email?.toLowerCase().includes(searchTerm.toLowerCase())) &&
+              !assignments.some(a => a.userEmail === u.email)
+            ).map(u => (
+              <button
+                key={u.email}
+                onClick={() => addAssignment(u)}
+                className="block w-full text-left px-2 py-1 hover:bg-gray-100 text-sm"
+              >
+                {u.full_name} ({u.email})
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+};

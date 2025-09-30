@@ -94,15 +94,15 @@ const LeadsManagement = () => {
     setShowConfirmation(true);
   };
 
-  const handleConfirmBack = () => {
-    setShowConfirmation(false);
-    setCurrentView(pendingView);
-  };
+  // const handleConfirmBack = () => {
+  //   setShowConfirmation(false);
+  //   setCurrentView(pendingView);
+  // };
 
-  const handleCancelBack = () => {
-    setShowConfirmation(false);
-    setPendingView("list");
-  };
+  // const handleCancelBack = () => {
+  //   setShowConfirmation(false);
+  //   setPendingView("list");
+  // };
 
   const handleAddLead = () => {
     setCurrentView("add");

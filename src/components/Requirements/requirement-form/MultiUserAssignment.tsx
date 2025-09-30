@@ -1,5 +1,5 @@
 'use client'
-/*eslint-disable  @typescript-eslint/no-explicit-any*/
+
 import { frappeAPI } from "@/lib/api/frappeClient";
 import {
   AlertCircle,
@@ -18,7 +18,7 @@ export const MultiUserAssignment: React.FC<MultiUserAssignmentProps> = ({
   totalVacancies,
   onAssignToChange,
   disabled = false,
-  itemIndex
+  // itemIndex
 }) => {
   const [users, setUsers] = useState<UserInfo[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);

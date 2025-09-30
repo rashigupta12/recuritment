@@ -33,6 +33,9 @@ export interface Industry {
 }
 
 export interface Lead {
+  custom_fixed_charges: number
+  owner: string
+  lead_owner: string
   custom_lead_owner_name: string
   mobile_no: string
   id?: string
@@ -63,6 +66,7 @@ export interface Lead {
 }
 
 export interface LeadFormData {
+  custom_fixed_charges: number
   contact: Contact | null
   company: Company | null
   industry: Industry | null
@@ -132,7 +136,8 @@ const initialFormData: LeadFormData = {
   custom_average_salary: 0,
   custom_fee: 0,
   custom_deal_value: 0,
-  custom_expected_close_date: ''
+  custom_expected_close_date: '',
+  custom_fixed_charges: 0
 }
 
 export const useLeadStore = create<LeadStore>()(
@@ -262,37 +267,39 @@ export const useLeadStore = create<LeadStore>()(
       },
 
       // Helper to build final lead payload
-      buildLeadPayload: () => {
-        const { formData } = get()
-        
-        if (!formData.contact || !formData.company || !formData.industry) {
-          throw new Error('Missing required form data')
-        }
+     // In your leadStore.ts, update the buildLeadPayload function:
+buildLeadPayload: () => {
+  const { formData } = get()
+  
+  if (!formData.contact || !formData.company || !formData.industry) {
+    throw new Error('Missing required form data')
+  }
 
-        return {
-          // Original fields
-          custom_full_name: formData.contact.name,
-          custom_phone_number: formData.contact.phone,
-          custom_email_address: formData.contact.email,
-          status: 'Lead',
-          company_name: formData.company.name,
-          custom_expected_hiring_volume: formData.expectedHiringVolume,
-          industry: formData.industry.name,
-          city: formData.city,
-          custom_budgetinr: formData.budget,
-          website: formData.company.website,
-          state: formData.state,
-          country: formData.country,
-          // New fields
-          custom_stage: formData.custom_stage,
-          custom_offerings: formData.custom_offerings,
-          custom_estimated_hiring_: formData.custom_estimated_hiring_,
-          custom_average_salary: formData.custom_average_salary,
-          custom_fee: formData.custom_fee,
-          custom_deal_value: formData.custom_deal_value,
-          custom_expected_close_date: formData.custom_expected_close_date
-        }
-      }
+  return {
+    // Original fields
+    custom_full_name: formData.contact.name,
+    custom_phone_number: formData.contact.phone,
+    custom_email_address: formData.contact.email,
+    status: 'Lead',
+    company_name: formData.company.name,
+    custom_expected_hiring_volume: formData.expectedHiringVolume,
+    industry: formData.industry.name,
+    city: formData.city,
+    custom_budgetinr: formData.budget,
+    website: formData.company.website,
+    state: formData.state,
+    country: formData.country,
+    // New fields
+    custom_stage: formData.custom_stage,
+    custom_offerings: formData.custom_offerings,
+    custom_estimated_hiring_: formData.custom_estimated_hiring_,
+    custom_average_salary: formData.custom_average_salary,
+    custom_fee: formData.custom_fee,
+    custom_fixed_charges: formData.custom_fixed_charges, // Add this line
+    custom_deal_value: formData.custom_deal_value,
+    custom_expected_close_date: formData.custom_expected_close_date
+  }
+}
     }),
     {
       name: 'lead-store'

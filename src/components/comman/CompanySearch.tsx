@@ -488,7 +488,7 @@ useEffect(() => {
               value={searchQuery}
               onChange={handleSearchChange}
               onFocus={handleInputFocus}
-              className="w-full pl-10 pr-20 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors"
+              className="w-full pl-10 pr-20 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors capitalize"
               disabled={isAutoFetching} // NEW: Disable input during auto-fetch
             />
 

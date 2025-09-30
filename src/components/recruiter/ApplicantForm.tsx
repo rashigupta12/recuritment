@@ -1,9 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
+/*eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { Upload, User, Mail, Phone, FileText, Briefcase, CheckCircle, GraduationCap, Building, MapPin, Plus, Trash2 } from 'lucide-react';
 import { frappeAPI } from '@/lib/api/frappeClient';
 
@@ -38,16 +36,18 @@ interface FormData {
 interface FormErrors {
   [key: string]: string;
 }
-
-export default function ApplicantForm() {
-  const searchParams = useSearchParams(); // Get query parameters
+interface ApplicantFormProps {
+  initialJobId?: string;
+  todoData?: any; //
+}
+export default function ApplicantForm({ initialJobId, todoData }: ApplicantFormProps) {
   const [formData, setFormData] = useState<FormData>({
     applicant_name: '',
     email_id: '',
     phone_number: '',
     country: 'India',
-    job_title: '', 
-    resume_attachment: '',
+    job_title: initialJobId || ' ',
+    resume_attachment: '', // Initialize as empty string
     custom_experience: [{
       company_name: '',
       designation: '',
@@ -71,15 +71,15 @@ export default function ApplicantForm() {
   const [autofillError, setAutofillError] = useState<string>('');
 
   const countries: string[] = ['India', 'United States', 'United Kingdom', 'Canada', 'Australia', 'Germany', 'France', 'Singapore', 'UAE', 'Other'];
-
-  // Update job_title from query parameter on mount
+  // ✅ initialJobId change होने पर formData update करें
   useEffect(() => {
-    const jobTitleFromUrl = searchParams.get('jobTitle');
-    if (jobTitleFromUrl) {
-      setFormData((prev) => ({ ...prev, job_title: jobTitleFromUrl }));
+    if (initialJobId) {
+      setFormData(prev => ({
+        ...prev,
+        job_title: initialJobId
+      }));
     }
-  }, [searchParams]);
-
+  }, [initialJobId]);
   // Handle input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -739,3 +739,7 @@ export default function ApplicantForm() {
     </div>
   );
 }
+
+// function useEffect(arg0: () => void, arg1: any[]) {
+//   throw new Error('Function not implemented.');
+// }

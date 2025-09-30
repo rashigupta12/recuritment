@@ -1,6 +1,7 @@
 // src/api/frappeclient
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from "axios";
+import { get } from "http";
 
 const frappeClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_dev_prod_FRAPPE_BASE_URL,
@@ -415,6 +416,13 @@ checkFirstLogin: async (username: string) => {
    getStaffingPlanById: async (PlanId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Staffing Plan/${PlanId}`);
   },
+  getAllCustomers: async(email:string)=>{
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Customer?filters=[["owner" ,"=","${email}"]]&order_by=creation desc`);
+  },
+  getCustomerBYId: async (CustomerId: string) => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Customer/${CustomerId}`);
+  },
+  
 
   createApplicants: async(ApplicantData :Record<string, unknown>)=>{
  return await frappeAPI.makeAuthenticatedRequest('POST', '/resource/Job Applicant', ApplicantData);
@@ -429,6 +437,17 @@ checkFirstLogin: async (username: string) => {
  return await frappeAPI.makeAuthenticatedRequest('POST', '/method/recruitment_app.create_bulk_applicants.create_bulk_applicants',assessment);
 
   },
+  getAllShortlistedCandidates: async (email: string , status:string) => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Job Applicant?filters=[["owner","=","${email}"],["status","=","${status}"]]&order_by=creation desc`);
+  },
+   getJobOpeningById: async (jobopeningId: string) => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Job Opening/${jobopeningId}`);
+  },
+  getTaggedApplicantsByJobId: async (jobId: string , email:string) => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Job Applicant?filters=[["owner","=","${email}"],[["job_title","=","${jobId}"],["status","=","Tagged"]]&order_by=creation desc`);
+
+  },
+  
 
   async updateApplicantStatus(name: string, data: { status: string }) {
   return await this.makeAuthenticatedRequest('PUT', `/resource/Job Applicant/${encodeURIComponent(name)}`, data);
