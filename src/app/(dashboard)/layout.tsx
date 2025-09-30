@@ -75,8 +75,9 @@ const getNavigationItems = (role: AllowedRole): NavigationItem[] => {
       // { icon: FolderOpen, label: 'Add Applicant', href: `${roleBasePath}/applicants` },
       {icon:Users,label:'View Applicants',href:`${roleBasePath}/viewapplicant`},
       {icon:Users,label:'Shortlisted Applicants',href:`${roleBasePath}/shortlistedapplicants`},
-      {icon:FolderOpen,label:'Add Multiple Applicants',href:`${roleBasePath}/addmultipleapplicants`}
-      
+      {icon:FolderOpen,label:'Add Multiple Applicants',href:`${roleBasePath}/addmultipleapplicants`},
+      {icon:Users,label:'Assesment Staged Applicants',href:`${roleBasePath}/assessmentStagedApplicants`}
+
     ],
   };
 

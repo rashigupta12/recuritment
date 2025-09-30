@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { JobApplicant } from '../../app/(dashboard)/dashboard/recruiter/viewapplicant/page';
-
-interface ShortlistedApplicantsTableRowProps {
+import { JobApplicant } from '../../app/(dashboard)/dashboard/recruiter/shortlistedapplicants/page';
+interface ApplicantsTableRowProps {
   applicant: JobApplicant;
+  isSelected: boolean;
+  onCheckboxChange: () => void;
 }
 
 // Helper function to split and format text with line breaks
@@ -39,17 +40,24 @@ const getStatusColor = (status: string | undefined) => {
   }
 };
 
-export const ApplicantsTableRow = ({
+export const ShortlistedApplicantsTableRow = ({
   applicant,
-}: ShortlistedApplicantsTableRowProps) => {
+  isSelected,
+  onCheckboxChange,
+}: ApplicantsTableRowProps) => {
   const handleRowClick = (e: React.MouseEvent<HTMLTableRowElement>) => {
     // Prevent navigation if clicking on interactive elements
     const target = e.target as HTMLElement;
-    if (target.tagName === 'A' || target.closest('a')) {
+    if (
+      target.tagName === 'INPUT' ||
+      target.tagName === 'A' ||
+      target.closest('a') ||
+      target.closest('input')
+    ) {
       return;
     }
     console.log('Row clicked for applicant:', applicant.name);
-   
+    
   };
 
   return (
@@ -59,6 +67,18 @@ export const ApplicantsTableRow = ({
       role="button"
       aria-label={`View applicant ${applicant.applicant_name || applicant.name}`}
     >
+      <td className="md:table-cell px-3 py-2">
+        <input
+          type="checkbox"
+          checked={isSelected}
+          onChange={(e) => {
+            e.stopPropagation();
+            onCheckboxChange();
+          }}
+          className="rounded text-blue-600 focus:ring-blue-500"
+          aria-label={`Select applicant ${applicant.applicant_name || applicant.name}`}
+        />
+      </td>
       <td className="md:table-cell px-3 py-2 flex flex-col gap-0.5">
         <div className="text-sm font-medium text-gray-900 truncate max-w-[120px]" title={applicant.applicant_name}>
           {applicant.applicant_name || '-'}
@@ -91,7 +111,7 @@ export const ApplicantsTableRow = ({
       <td className="md:table-cell px-3 py-2">
         {applicant.custom_experience?.length ? (
           <ul className="list-none text-xs text-gray-900 space-y-0.5">
-            {applicant.custom_experience.map((exp: any, i: number) => (
+            {applicant.custom_experience.map((exp:any, i:number) => (
               <li key={i} title={`${exp.designation} at ${exp.company_name}`}>
                 {exp.designation} at {exp.company_name} ({exp.start_date} - {exp.end_date || 'Present'})
               </li>
@@ -104,7 +124,7 @@ export const ApplicantsTableRow = ({
       <td className="md:table-cell px-3 py-2">
         {applicant.custom_education?.length ? (
           <ul className="list-none text-xs text-gray-900 space-y-0.5">
-            {applicant.custom_education.map((edu: any, i: number) => (
+            {applicant.custom_education.map((edu:any, i:number) => (
               <li key={i} title={`${edu.degree}, ${edu.institution}`}>
                 {edu.degree}, {edu.institution} ({edu.year_of_passing})
               </li>
@@ -130,7 +150,6 @@ export const ApplicantsTableRow = ({
           <span className="text-gray-400">-</span>
         )}
       </td>
-      
     </tr>
   );
 };

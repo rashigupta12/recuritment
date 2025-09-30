@@ -429,7 +429,10 @@ checkFirstLogin: async (username: string) => {
  return await frappeAPI.makeAuthenticatedRequest('POST', '/method/recruitment_app.bulk_create_assessment.bulk_create_assessments',assessment);
 
   },
-  
+
+  async updateApplicantStatus(name: string, data: { status: string }) {
+  return await this.makeAuthenticatedRequest('PUT', `/resource/Job Applicant/${encodeURIComponent(name)}`, data);
+},
 
   
    upload: async (file: File, options: {

@@ -1,7 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-
 'use client';
-
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -42,34 +40,14 @@ interface ApplicantDetailResponse {
   data: JobApplicant;
 }
 
-interface AssessmentResponse {
-  message?: {
-    status?: string;
-    created_assessments?: string[];
-    name?: string;
-  };
-  name?: string;
-  data?: {
-    name?: string;
-    id?: string;
-  };
-}
-
 export default function ViewApplicantPage() {
   const [applicants, setApplicants] = useState<JobApplicant[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [selectedApplicants, setSelectedApplicants] = useState<Set<string>>(new Set());
-  const [assessmentError, setAssessmentError] = useState<string | null>(null);
-  const [assessmentSuccess, setAssessmentSuccess] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [scheduledOn, setScheduledOn] = useState<string>('2025-09-29');
-  const [fromTime, setFromTime] = useState<string>('');
-  const [toTime, setToTime] = useState<string>('');
-  const [assessmentLink, setAssessmentLink] = useState<string>('');
-  const [assessmentRound, setAssessmentRound] = useState<string>('');
-  const [modalError, setModalError] = useState<string | null>(null);
+  const [selectedApplicants, setSelectedApplicants] = useState<string[]>([]);
+  const [selectedStatus, setSelectedStatus] = useState<string>('');
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -88,10 +66,12 @@ export default function ViewApplicantPage() {
 
         setIsAuthenticated(true);
         const email = session.user.email;
+        setUserEmail(email);
 
         // Fetch list of applicants
         const response = await frappeAPI.getAllApplicants(email);
         const result: ApiResponse = response;
+        console.log('getAllApplicants response:', result.data);
 
         if (!result.data || result.data.length === 0) {
           setApplicants([]);
@@ -100,18 +80,57 @@ export default function ViewApplicantPage() {
 
         // Fetch details for each applicant
         const detailedApplicants: JobApplicant[] = [];
+        const usedNames = new Set<string>();
         for (const applicant of result.data) {
+          if (!applicant.name) {
+            console.warn('Skipping applicant with missing name:', applicant);
+            continue;
+          }
+          // Ensure unique name
+          let uniqueName = applicant.name;
+          let suffix = 1;
+          while (usedNames.has(uniqueName)) {
+            uniqueName = `${applicant.name}-${suffix}`;
+            suffix++;
+          }
+          usedNames.add(uniqueName);
+
           try {
             const detailResponse = await frappeAPI.getApplicantBYId(applicant.name);
             const detail: ApplicantDetailResponse = detailResponse;
-            detailedApplicants.push(detail.data);
+            console.log(`Details for ${applicant.name}:`, detail.data);
+            detailedApplicants.push({
+              ...detail.data,
+              name: uniqueName, // Use unique name to avoid duplicates
+            });
           } catch (detailErr: any) {
             console.error(`Error fetching details for ${applicant.name}:`, detailErr);
-            detailedApplicants.push({
-              ...applicant,
-              applicant_name: 'Error fetching details',
-            });
+            if (detailErr?.exc_type === 'DoesNotExistError' || detailErr.response?.status === 404) {
+              console.warn(`Applicant ${applicant.name} not found in Frappe database`);
+              detailedApplicants.push({
+                ...applicant,
+                name: uniqueName, // Use unique name
+                applicant_name: applicant.applicant_name || 'N/A',
+                status: applicant.status || 'N/A',
+              });
+            } else {
+              detailedApplicants.push({
+                ...applicant,
+                name: uniqueName, // Use unique name
+                applicant_name: 'Error fetching details',
+              });
+            }
           }
+        }
+
+        // Check for duplicate names
+        const nameCounts = detailedApplicants.reduce((acc, curr) => {
+          acc[curr.name] = (acc[curr.name] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>);
+        console.log('Name counts:', nameCounts);
+        if (Object.values(nameCounts).some((count) => count > 1)) {
+          console.error('Duplicate names detected:', nameCounts);
         }
 
         setApplicants(detailedApplicants);
@@ -122,7 +141,7 @@ export default function ViewApplicantPage() {
           errorMessage = 'Session expired. Please log in again.';
           setIsAuthenticated(false);
           router.push('/login');
-        } else if (err.response?.status === 404) {
+        } else if (err.response?.status === 404 || err?.exc_type === 'DoesNotExistError') {
           errorMessage = 'Job Applicant resource not found. Please verify the API endpoint or contact support.';
         } else if (err.response?.data?.message) {
           errorMessage = err.response.data.message;
@@ -136,153 +155,139 @@ export default function ViewApplicantPage() {
     checkAuthAndFetchApplicants();
   }, [router]);
 
-  // Handlers for view and edit actions
-  const handleViewApplicant = (applicant: JobApplicant) => {
-    console.log('View applicant:', applicant.name);
-    router.push(`/applicants/${applicant.name}`);
+  // Handle checkbox selection
+  const handleSelectApplicant = (name: string) => {
+    setSelectedApplicants((prev) =>
+      prev.includes(name)
+        ? prev.filter((id) => id !== name)
+        : [...prev, name]
+    );
   };
 
-  const handleEditApplicant = (applicant: JobApplicant) => {
-    console.log('Edit applicant:', applicant.name);
-    router.push(`/applicants/${applicant.name}/edit`);
-  };
-
-  // Handler for checkbox changes
-  const handleCheckboxChange = (applicantId: string) => {
-    setSelectedApplicants((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(applicantId)) {
-        newSet.delete(applicantId);
-      } else {
-        newSet.add(applicantId);
-      }
-      return newSet;
-    });
-  };
-
-  // Handler for select all
-  const handleSelectAll = () => {
-    if (selectedApplicants.size === applicants.length) {
-      setSelectedApplicants(new Set());
-    } else {
-      setSelectedApplicants(new Set(applicants.map((applicant) => applicant.name)));
-    }
-  };
-
-  // Handler to open the modal
-  const handleOpenModal = () => {
-    if (selectedApplicants.size === 0) {
-      setAssessmentError('Please select at least one applicant to start the assessment.');
-      setAssessmentSuccess(null);
+  // Handle status change
+  const handleChangeStatus = async () => {
+    if (selectedApplicants.length === 0) {
+      toast.error('Please select at least one applicant.');
       return;
     }
-    setIsModalOpen(true);
-    setModalError(null);
-  };
-
-  // Handler to close the modal
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setScheduledOn('2025-09-29');
-    setFromTime('');
-    setToTime('');
-    setAssessmentLink('');
-    setAssessmentRound('');
-    setModalError(null);
-  };
-
-  // Handler for starting assessment
-  const handleStartAssessment = async () => {
-    if (!scheduledOn || !fromTime || !toTime || !assessmentLink || !assessmentRound) {
-      setModalError('Please fill in all assessment details.');
+    if (!selectedStatus) {
+      toast.error('Please select a status.');
       return;
     }
-
-    // Validate time: from_time should be before to_time
-    const fromTimeDate = new Date(`2025-09-29T${fromTime}`);
-    const toTimeDate = new Date(`2025-09-29T${toTime}`);
-    if (fromTimeDate >= toTimeDate) {
-      setModalError('From time must be earlier than to time.');
+    if (!userEmail) {
+      toast.error('User email not found. Please log in again.');
+      setIsAuthenticated(false);
+      router.push('/login');
       return;
     }
 
     try {
-      setAssessmentError(null);
-      setAssessmentSuccess(null);
-
-      // Prepare the payload for the Assessment API
-      const payload = {
-        applicants: Array.from(selectedApplicants),
-        scheduled_on: scheduledOn,
-        from_time: fromTime,
-        to_time: toTime,
-        assessment_link: assessmentLink,
-        assessment_round: assessmentRound,
-      };
-
-      // Use frappeAPI.createbulkAssemnet to create the assessment
-      const response = await frappeAPI.createbulkAssemnet(payload);
-
-      console.log('API Response:', response);
-
-      if (!response) {
-        throw new Error('No response received from the API.');
+      setLoading(true);
+      console.log('Selected applicants for status update:', selectedApplicants);
+      const failedUpdates: string[] = [];
+      for (const name of selectedApplicants) {
+        if (!name) {
+          console.warn('Skipping update: name is undefined or empty');
+          failedUpdates.push('Unknown (missing name)');
+          continue;
+        }
+        try {
+          console.log(`Sending PUT request to update status for ${name} to ${selectedStatus}`);
+          await frappeAPI.updateApplicantStatus(name, { status: selectedStatus });
+        } catch (err: any) {
+          console.error(`Failed to update status for ${name}:`, err);
+          if (err?.exc_type === 'DoesNotExistError' || err.response?.status === 404) {
+            failedUpdates.push(name);
+          } else {
+            throw err; // Rethrow other errors
+          }
+        }
       }
 
-      // Handle different possible response structures
-      let assessmentIds: string;
-      if (response.message?.created_assessments && Array.isArray(response.message.created_assessments)) {
-        // Handle { message: { status: "success", created_assessments: string[] } }
-        assessmentIds = response.message.created_assessments.join(', ');
-      } else if (response.message?.name) {
-        // Fallback: { message: { name: string } }
-        assessmentIds = response.message.name;
-      } else if (response.name) {
-        // Fallback: { name: string }
-        assessmentIds = response.name;
-      } else if (response.data && (response.data.name || response.data.id)) {
-        // Fallback: { data: { name: string } } or { data: { id: string } }
-        assessmentIds = response.data.name || response.data.id;
+      // Refresh applicants list
+      const response = await frappeAPI.getAllApplicants(userEmail);
+      const result: ApiResponse = response;
+      console.log('getAllApplicants refresh response:', result.data);
+      const detailedApplicants: JobApplicant[] = [];
+      const usedNames = new Set<string>();
+      for (const applicant of result.data) {
+        if (!applicant.name) {
+          console.warn('Skipping applicant with missing name:', applicant);
+          continue;
+        }
+        // Ensure unique name
+        let uniqueName = applicant.name;
+        let suffix = 1;
+        while (usedNames.has(uniqueName)) {
+          uniqueName = `${applicant.name}-${suffix}`;
+          suffix++;
+        }
+        usedNames.add(uniqueName);
+
+        try {
+          const detailResponse = await frappeAPI.getApplicantBYId(applicant.name);
+          const detail: ApplicantDetailResponse = detailResponse;
+          console.log(`Details for ${applicant.name} (refresh):`, detail.data);
+          detailedApplicants.push({
+            ...detail.data,
+            name: uniqueName, // Use unique name
+          });
+        } catch (detailErr: any) {
+          console.error(`Error fetching details for ${applicant.name}:`, detailErr);
+          if (detailErr?.exc_type === 'DoesNotExistError' || detailErr.response?.status === 404) {
+            console.warn(`Applicant ${applicant.name} not found in Frappe database`);
+            detailedApplicants.push({
+              ...applicant,
+              name: uniqueName, // Use unique name
+              applicant_name: applicant.applicant_name || 'N/A',
+              status: applicant.status || 'N/A',
+            });
+          } else {
+            detailedApplicants.push({
+              ...applicant,
+              name: uniqueName, // Use unique name
+              applicant_name: 'Error fetching details',
+            });
+          }
+        }
+      }
+
+      // Check for duplicate names after refresh
+      const nameCounts = detailedApplicants.reduce((acc, curr) => {
+        acc[curr.name] = (acc[curr.name] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      console.log('Name counts after refresh:', nameCounts);
+      if (Object.values(nameCounts).some((count) => count > 1)) {
+        console.error('Duplicate names detected after refresh:', nameCounts);
+      }
+
+      setApplicants(detailedApplicants);
+      setSelectedApplicants([]);
+      setSelectedStatus('');
+
+      if (failedUpdates.length > 0) {
+        toast.warning(
+          `Status updated for some applicants. Failed for: ${failedUpdates.join(', ')}. Applicant records may not exist or the endpoint may be incorrect.`
+        );
       } else {
-        throw new Error('Invalid response structure: Missing assessment ID(s).');
+        toast.success('Applicant statuses updated successfully.');
       }
-
-      setAssessmentSuccess(`Assessment(s) created successfully with ID(s): ${assessmentIds}`);
-      toast.success(`Assessment(s) created successfully with ID(s): ${assessmentIds}`);
-
-      // Close the modal
-      setIsModalOpen(false);
-
-      // Clear selected applicants and form fields
-      setSelectedApplicants(new Set());
-      setScheduledOn('2025-09-29');
-      setFromTime('');
-      setToTime('');
-      setAssessmentLink('');
-      setAssessmentRound('');
     } catch (err: any) {
-      console.error('Assessment creation error:', {
-        message: err.message,
-        status: err.response?.status,
-        response: err.response?.data,
-        rawResponse: err.response,
-      });
-      let errorMessage = 'Failed to create assessment. Please try again or contact support.';
-      if (err.message.includes('Missing assessment ID')) {
-        errorMessage = 'Invalid response from API: Missing assessment ID(s). Please contact support.';
-      } else if (err.response?.status === 404) {
-        errorMessage = 'Assessment API endpoint not found. Please verify the Frappe method or contact support.';
-      } else if (err.response?.status === 401 || err.response?.status === 403) {
-        errorMessage = 'Unauthorized access. Please log in again.';
+      console.error('Status update error:', err);
+      let errorMessage = 'Failed to update applicant statuses.';
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        errorMessage = 'Session expired or insufficient permissions. Please log in again.';
+        setIsAuthenticated(false);
         router.push('/login');
+      } else if (err.response?.status === 404 || err?.exc_type === 'DoesNotExistError') {
+        errorMessage = 'Job Applicant resource not found. Please verify the API endpoint or contact support.';
       } else if (err.response?.data?.message) {
         errorMessage = err.response.data.message;
-      } else if (err.message) {
-        errorMessage = err.message;
       }
-      setAssessmentError(errorMessage);
       toast.error(errorMessage);
-      setIsModalOpen(false);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -308,20 +313,31 @@ export default function ViewApplicantPage() {
     <div className="min-h-screen bg-gray-100 py-8 px-4">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-800 text-center">
+          <h1 className="text-3xl font-bold text-gray-800">
             Job Applicants
           </h1>
-          <button
-            onClick={handleOpenModal}
-            disabled={selectedApplicants.size === 0}
-            className={`px-4 py-2 rounded-lg text-white font-medium ${
-              selectedApplicants.size === 0
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-blue-600 hover:bg-blue-700'
-            }`}
-          >
-            Create Assessment
-          </button>
+          <div className="flex items-center space-x-2">
+            <select
+              className="px-2 py-1 border rounded text-sm"
+              value={selectedStatus}
+              onChange={(e) => setSelectedStatus(e.target.value)}
+            >
+              <option value="">Select Status</option>
+              <option value="open">Open</option>
+              <option value="Shortlisted">Shortlisted</option>
+              <option value="Assessment Stage">Assessment Stage</option>
+              <option value="Closed">Closed</option>
+              <option value="Rejected">Rejected</option>
+              <option value="Hired">Hired</option>
+            </select>
+            <button
+              className="px-4 py-1 bg-blue-600 text-white rounded text-sm"
+              onClick={handleChangeStatus}
+              disabled={selectedApplicants.length === 0 || !selectedStatus}
+            >
+              Update Status
+            </button>
+          </div>
         </div>
         {error && (
           <div className="mb-6 p-4 bg-red-100 text-red-700 rounded-lg text-center">
@@ -338,103 +354,16 @@ export default function ViewApplicantPage() {
             )}
           </div>
         )}
-        {assessmentError && (
-          <div className="mb-6 p-4 bg-red-100 text-red-700 rounded-lg text-center">
-            <p>{assessmentError}</p>
-          </div>
-        )}
-        {assessmentSuccess && (
-          <div className="mb-6 p-4 bg-green-100 text-green-700 rounded-lg text-center">
-            <p>{assessmentSuccess}</p>
-          </div>
-        )}
         {applicants.length === 0 ? (
           <p className="text-center text-gray-600">No applicants found.</p>
         ) : (
           <ApplicantsTable
             applicants={applicants}
-            onViewApplicant={handleViewApplicant}
-            onEditApplicant={handleEditApplicant}
             selectedApplicants={selectedApplicants}
-            onCheckboxChange={handleCheckboxChange}
-            onSelectAll={handleSelectAll}
+            onSelectApplicant={handleSelectApplicant}
           />
         )}
       </div>
-
-      {/* Modal for assessment details */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 id="modal-title" className="text-2xl font-bold text-gray-800 mb-4">Assessment Details</h2>
-            {modalError && (
-              <div className="mb-4 p-2 bg-red-100 text-red-700 rounded-lg text-center">
-                <p>{modalError}</p>
-              </div>
-            )}
-            <div className="grid grid-cols-1 gap-4">
-              <label>Date of assessment</label>
-              <input
-                type="date"
-                value={scheduledOn}
-                onChange={(e) => setScheduledOn(e.target.value)}
-                className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Scheduled Date"
-                required
-                min="2025-09-29"
-              />
-              <label>Start Time</label>
-              <input
-                type="time"
-                value={fromTime}
-                onChange={(e) => setFromTime(e.target.value)}
-                className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="From Time"
-                required
-              />
-              <label>End Time</label>
-              <input
-                type="time"
-                value={toTime}
-                onChange={(e) => setToTime(e.target.value)}
-                className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="To Time"
-                required
-              />
-              <input
-                type="url"
-                value={assessmentLink}
-                onChange={(e) => setAssessmentLink(e.target.value)}
-                className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Assessment Link"
-                required
-              />
-              <input
-                type="text"
-                value={assessmentRound}
-                onChange={(e) => setAssessmentRound(e.target.value)}
-                className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Assessment Round"
-                required
-              />
-            </div>
-            <div className="flex justify-end space-x-4 mt-6">
-              <button
-                onClick={handleCloseModal}
-                className="px-4 py-2 rounded-lg text-gray-700 bg-gray-200 hover:bg-gray-300"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleStartAssessment}
-                className="px-4 py-2 rounded-lg text-white bg-blue-600 hover:bg-blue-700"
-              >
-                Confirm
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
