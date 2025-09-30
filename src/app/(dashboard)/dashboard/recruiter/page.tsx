@@ -6,7 +6,7 @@ export default function ProjectsManagerDashboard() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold text-foreground">Recruiter Dashboard</h1>
-        <p className="text-muted-foreground">appliacants</p>
+        <p className="text-muted-foreground">applicants</p>
       </div>
       {/* Add projects manager specific content */}
     </div>

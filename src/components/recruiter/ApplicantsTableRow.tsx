@@ -1,33 +1,11 @@
-export interface JobApplicant {
-  name: string;
-  applicant_name?: string;
-  email_id?: string;
-  phone_number?: string;
-  country?: string;
-  job_title?: string;
-  designation?: string;
-  status?: string;
-  resume_attachment?: string;
-  custom_experience?: Array<{
-    company_name: string;
-    designation: string;
-    start_date: string;
-    end_date: string;
-    current_company: number;
-  }>;
-  custom_education?: Array<{
-    degree: string;
-    specialization: string;
-    institution: string;
-    year_of_passing: number;
-    percentagecgpa: number;
-  }>;
-}
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { JobApplicant } from '../../app/(dashboard)/dashboard/recruiter/viewapplicant/page';
 interface ApplicantsTableRowProps {
   applicant: JobApplicant;
   onView: () => void;
   onEdit: () => void;
+  isSelected: boolean;
+  onCheckboxChange: () => void;
 }
 
 // Helper function to split and format text with line breaks
@@ -68,14 +46,43 @@ export const ApplicantsTableRow = ({
   applicant,
   onView,
   onEdit,
+  isSelected,
+  onCheckboxChange,
 }: ApplicantsTableRowProps) => {
+  const handleRowClick = (e: React.MouseEvent<HTMLTableRowElement>) => {
+    // Prevent navigation if clicking on interactive elements
+    const target = e.target as HTMLElement;
+    if (
+      target.tagName === 'INPUT' ||
+      target.tagName === 'A' ||
+      target.closest('a') ||
+      target.closest('input')
+    ) {
+      return;
+    }
+    console.log('Row clicked for applicant:', applicant.name);
+    onView();
+  };
+
   return (
     <tr
-      className="md:table-row flex flex-col gap-2 p-3 border-b md:border-b-0 bg-white md:bg-transparent"
-      onClick={onView}
+      className="md:table-row flex flex-col gap-2 p-3 border-b md:border-b-0 bg-white md:bg-transparent hover:bg-gray-50 cursor-pointer"
+      onClick={handleRowClick}
       role="button"
       aria-label={`View applicant ${applicant.applicant_name || applicant.name}`}
     >
+      <td className="md:table-cell px-3 py-2">
+        <input
+          type="checkbox"
+          checked={isSelected}
+          onChange={(e) => {
+            e.stopPropagation();
+            onCheckboxChange();
+          }}
+          className="rounded text-blue-600 focus:ring-blue-500"
+          aria-label={`Select applicant ${applicant.applicant_name || applicant.name}`}
+        />
+      </td>
       <td className="md:table-cell px-3 py-2 flex flex-col gap-0.5">
         <div className="text-sm font-medium text-gray-900 truncate max-w-[120px]" title={applicant.applicant_name}>
           {applicant.applicant_name || '-'}
@@ -105,11 +112,10 @@ export const ApplicantsTableRow = ({
           {formatTextWithLines(applicant.status)}
         </span>
       </td>
-      
       <td className="md:table-cell px-3 py-2">
         {applicant.custom_experience?.length ? (
           <ul className="list-none text-xs text-gray-900 space-y-0.5">
-            {applicant.custom_experience.map((exp, i) => (
+            {applicant.custom_experience.map((exp:any, i:number) => (
               <li key={i} title={`${exp.designation} at ${exp.company_name}`}>
                 {exp.designation} at {exp.company_name} ({exp.start_date} - {exp.end_date || 'Present'})
               </li>
@@ -122,7 +128,7 @@ export const ApplicantsTableRow = ({
       <td className="md:table-cell px-3 py-2">
         {applicant.custom_education?.length ? (
           <ul className="list-none text-xs text-gray-900 space-y-0.5">
-            {applicant.custom_education.map((edu, i) => (
+            {applicant.custom_education.map((edu:any, i:number) => (
               <li key={i} title={`${edu.degree}, ${edu.institution}`}>
                 {edu.degree}, {edu.institution} ({edu.year_of_passing})
               </li>
@@ -151,4 +157,3 @@ export const ApplicantsTableRow = ({
     </tr>
   );
 };
-

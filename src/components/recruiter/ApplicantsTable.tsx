@@ -1,24 +1,44 @@
-import { ApplicantsTableRow, JobApplicant } from './ApplicantsTableRow';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
+import { JobApplicant } from '../../app/(dashboard)/dashboard/recruiter/viewapplicant/page';
+import { ApplicantsTableRow } from './ApplicantsTableRow';
 interface ApplicantsTableProps {
   applicants: JobApplicant[];
   onViewApplicant: (applicant: JobApplicant) => void;
   onEditApplicant: (applicant: JobApplicant) => void;
+  selectedApplicants: Set<string>;
+  onCheckboxChange: (applicantId: string) => void;
+  onSelectAll: () => void;
 }
 
 export const ApplicantsTable = ({
   applicants,
   onViewApplicant,
   onEditApplicant,
+  selectedApplicants,
+  onCheckboxChange,
+  onSelectAll,
 }: ApplicantsTableProps) => {
   // Reverse the applicants array to show newest first
   const sortedApplicants = [...applicants].reverse();
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 ">
+    <div className="bg-white rounded-lg border border-gray-200">
       <table className="w-full table-fixed">
         <thead className="bg-gray-300 text-gray-600">
           <tr>
+            <th className="w-1/12 px-3 py-4 text-left text-xs font-medium uppercase tracking-wider">
+              <input
+                type="checkbox"
+                checked={selectedApplicants.size === applicants.length && applicants.length > 0}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  onSelectAll();
+                }}
+                className="rounded text-blue-600 focus:ring-blue-500"
+                aria-label="Select all applicants"
+              />
+            </th>
             <th className="w-1/4 px-3 py-4 text-left text-xs font-medium uppercase tracking-wider">
               Applicant Info
             </th>
@@ -46,6 +66,8 @@ export const ApplicantsTable = ({
               applicant={applicant}
               onView={() => onViewApplicant(applicant)}
               onEdit={() => onEditApplicant(applicant)}
+              isSelected={selectedApplicants.has(applicant.name)}
+              onCheckboxChange={() => onCheckboxChange(applicant.name)}
             />
           ))}
         </tbody>

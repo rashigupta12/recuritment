@@ -8,7 +8,7 @@ const frappeClient = axios.create({
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
-    Accept: "application/json",
+    Accept: "application/json"
   },
 });
 
@@ -425,7 +425,11 @@ checkFirstLogin: async (username: string) => {
   getApplicantBYId: async (name:string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Job Applicant/${name}`);
   },
+  createbulkAssemnet:async(assessment:Record<string,unknown>)=>{
+ return await frappeAPI.makeAuthenticatedRequest('POST', '/method/recruitment_app.bulk_create_assessment.bulk_create_assessments',assessment);
 
+  },
+  
 
   
    upload: async (file: File, options: {

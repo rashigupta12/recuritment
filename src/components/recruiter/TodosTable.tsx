@@ -1,5 +1,6 @@
-// components/todos/TodosTable.tsx
 'use client';
+
+import { useRouter } from 'next/navigation';
 
 interface ToDo {
   name: string;
@@ -25,6 +26,8 @@ interface TodosTableProps {
 }
 
 export const TodosTable = ({ todos, onViewTodo, onEditTodo }: TodosTableProps) => {
+  const router = useRouter(); // Initialize useRouter for navigation
+
   // Get priority badge color
   const getPriorityColor = (priority: string = '') => {
     switch (priority.toLowerCase()) {
@@ -53,6 +56,11 @@ export const TodosTable = ({ todos, onViewTodo, onEditTodo }: TodosTableProps) =
     }
   };
 
+  const handleCreateApplicant = (todo: ToDo) => {
+    const jobTitle = todo.custom_job_id || '';
+    router.push(`/dashboard/recruiter/applicants?jobTitle=${encodeURIComponent(jobTitle)}`);
+  };
+
   return (
     <div className="bg-white shadow-sm rounded-lg overflow-hidden">
       <div className="overflow-x-auto">
@@ -74,9 +82,6 @@ export const TodosTable = ({ todos, onViewTodo, onEditTodo }: TodosTableProps) =
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Job ID
               </th>
-              {/* <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Reference
-              </th> */}
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Assigned By
               </th>
@@ -114,13 +119,6 @@ export const TodosTable = ({ todos, onViewTodo, onEditTodo }: TodosTableProps) =
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
                   {todo.custom_job_id || 'N/A'}
                 </td>
-                {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <div className="max-w-xs truncate">
-                    {todo.reference_type && todo.reference_name ? 
-                      `${todo.reference_type} - ${todo.reference_name}` : 'N/A'
-                    }
-                  </div>
-                </td> */}
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {todo.assigned_by_full_name || todo.assigned_by || 'N/A'}
                 </td>
@@ -137,6 +135,12 @@ export const TodosTable = ({ todos, onViewTodo, onEditTodo }: TodosTableProps) =
                       className="text-green-600 hover:text-green-900 transition-colors duration-200"
                     >
                       Edit
+                    </button>
+                    <button
+                      onClick={() => handleCreateApplicant(todo)}
+                      className="px-3 py-1 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
+                    >
+                      Create Applicant
                     </button>
                   </div>
                 </td>
