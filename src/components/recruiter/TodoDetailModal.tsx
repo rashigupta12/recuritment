@@ -299,7 +299,6 @@ export const TodoDetailModal = ({ todoId, onClose }: TodoDetailModalProps) => {
     }
   };
 
-  // Get status badge color
   const getStatusColor = (status: string = '') => {
     switch (status.toLowerCase()) {
       case 'open':
@@ -517,4 +516,4 @@ export const TodoDetailModal = ({ todoId, onClose }: TodoDetailModalProps) => {
       </div>
     </div>
   );
-};
+}

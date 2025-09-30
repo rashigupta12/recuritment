@@ -168,7 +168,7 @@ export default function ApplicantForm({ initialJobId, todoData }: ApplicantFormP
         email_id: data.email_id || '',
         phone_number: data.phone_number || '',
         country: data.country || 'India',
-        job_title: data.job_title || prevFormData.job_title,
+        job_title: data.job_title || prevFormData.job_title, // Preserve job_title from URL if autofill doesn't provide it
         resume_attachment: fileUrl, // Store file URL
         custom_experience: data.custom_experience && data.custom_experience.length > 0
           ? data.custom_experience.map((exp: any) => ({
@@ -342,7 +342,7 @@ export default function ApplicantForm({ initialJobId, todoData }: ApplicantFormP
         email_id: '',
         phone_number: '',
         country: 'India',
-        job_title: 'HR-OPN-2025-0010',
+        job_title: searchParams.get('jobTitle') || '', // Retain job_title from URL
         resume_attachment: '',
         custom_experience: [{
           company_name: '',
@@ -723,7 +723,7 @@ export default function ApplicantForm({ initialJobId, todoData }: ApplicantFormP
             <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
               <div className="flex flex-col items-center">
                 <CheckCircle className="w-12 h-12 text-green-600 mb-4" />
-                <h2 className="text-2xl font-semibold text-gray-900 mb-2">Application Submitted Successfully</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-2">Application Submitted Successfully</h2>
                 
                 <button
                   onClick={closeModal}
