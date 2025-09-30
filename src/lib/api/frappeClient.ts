@@ -426,7 +426,7 @@ checkFirstLogin: async (username: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Job Applicant/${name}`);
   },
   createbulkAssemnet:async(assessment:Record<string,unknown>)=>{
- return await frappeAPI.makeAuthenticatedRequest('POST', '/method/recruitment_app.bulk_create_assessment.bulk_create_assessments',assessment);
+ return await frappeAPI.makeAuthenticatedRequest('POST', '/method/recruitment_app.create_bulk_applicants.create_bulk_applicants',assessment);
 
   },
 
