@@ -98,9 +98,9 @@ const getNavigationItems = (role: AllowedRole): NavigationItem[] => {
       { icon: Home, label: 'Dashboard', href: roleBasePath },
       {icon:FolderOpen,label:'Todos',href:`${roleBasePath}/todos`},
       // { icon: FolderOpen, label: 'Add Applicant', href: `${roleBasePath}/applicants` },
-      {icon:Users,label:'View Applicants',href:`${roleBasePath}/viewapplicant`},
+      {icon:Users,label:'View All Applicants',href:`${roleBasePath}/viewapplicant`},
       {icon:Users,label:'Shortlisted Applicants',href:`${roleBasePath}/shortlistedapplicants`},
-      {icon:FolderOpen,label:'Add Multiple Applicants',href:`${roleBasePath}/addmultipleapplicants`},
+      // {icon:FolderOpen,label:'Add Multiple Applicants',href:`${roleBasePath}/addmultipleapplicants`},
       {icon:Users,label:'Assesment Staged Applicants',href:`${roleBasePath}/assessmentStagedApplicants`}
 
     ],
@@ -212,22 +212,24 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               }`}
             >
               <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm"
-                style={{ backgroundColor: brandConfig.colors.primary }}
+                className="rounded-lg flex items-center justify-center flex-shrink-0"
+                
               >
-                <Image
-                  src={brandConfig.logo}
-                  alt={brandConfig.name}
-                  width={18}
-                  height={18}
-                  className="object-contain filter brightness-0 invert"
-                />
+                {!sidebarCollapsed && (
+  <Image
+    src={brandConfig.logo}
+    alt={brandConfig.name}
+    width={150}
+    height={150}
+    className=""
+  />
+)}
               </div>
-              {!sidebarCollapsed && (
-                <span className="text-lg font-bold text-gray-900 truncate">
-                  {brandConfig.name}
-                </span>
-              )}
+              {/* {!sidebarCollapsed && (
+                // <span className="text-lg font-bold text-gray-900 truncate">
+                //   {brandConfig.name}
+                // </span>
+              )} */}
             </Link>
           </div>
 
@@ -614,14 +616,28 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
                 <div className="flex items-center space-x-3">
                   {/* Show company name when sidebar is collapsed on desktop */}
-                  {sidebarCollapsed && (
+                  {/* {sidebarCollapsed && (
                     <div className="hidden lg:flex items-center space-x-2">
                       <span className="text-lg font-semibold text-gray-900 pl-2">
                         {brandConfig.name}
                       </span>
                       <div className="w-px h-6 bg-gray-300 mx-2"></div>
                     </div>
-                  )}
+                  )} */}
+                  {sidebarCollapsed && (
+  <div className="hidden lg:flex items-center space-x-2">
+    <Image
+      src={brandConfig.logo}
+      alt={brandConfig.name}
+      width={150}   // chhoti size
+      height={150}
+      className="object-contain"
+    />
+   
+    
+  </div>
+)}
+
                 </div>
               </div>
 

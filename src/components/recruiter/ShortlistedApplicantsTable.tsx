@@ -47,9 +47,9 @@ export const ShortlistedApplicantsTable = ({
             <th className="w-1/6 px-3 py-4 text-left text-xs font-medium uppercase tracking-wider">
               Status
             </th>
-            <th className="w-1/5 px-3 py-4 text-left text-xs font-medium uppercase tracking-wider">
+            {/* <th className="w-1/5 px-3 py-4 text-left text-xs font-medium uppercase tracking-wider">
               Education
-            </th>
+            </th> */}
             <th className="w-1/5 px-3 py-4 text-left text-xs font-medium uppercase tracking-wider">
               Experience
             </th>

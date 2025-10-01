@@ -428,7 +428,7 @@ checkFirstLogin: async (username: string) => {
  return await frappeAPI.makeAuthenticatedRequest('POST', '/resource/Job Applicant', ApplicantData);
   },
   getAllApplicants: async (email: string) => {
-    return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Job Applicant`);
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Job Applicant?limit_page_length=0&order_by=creation desc`);
   },
   getApplicantBYId: async (name:string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Job Applicant/${name}`);
@@ -443,10 +443,12 @@ checkFirstLogin: async (username: string) => {
    getJobOpeningById: async (jobopeningId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Job Opening/${jobopeningId}`);
   },
-  getTaggedApplicantsByJobId: async (jobId: string , email:string) => {
-    return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Job Applicant?filters=[["owner","=","${email}"],[["job_title","=","${jobId}"],["status","=","Tagged"]]&order_by=creation desc`);
-
-  },
+  getTaggedApplicantsByJobId: async (jobId: string, email: string) => {
+  return await frappeAPI.makeAuthenticatedRequest(
+    'GET', 
+    `/resource/Job Applicant?filters=[["owner","=","${email}"],["job_title","=","${jobId}"],["status","=","Tagged"]]&order_by=creation desc`
+  );
+},
   
 
   async updateApplicantStatus(name: string, data: { status: string }) {

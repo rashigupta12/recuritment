@@ -1,5 +1,4 @@
-// // components/todos/TodosTable.tsx
-// 'use client';
+'use client';
 
 // interface ToDo {
 //   name: string;
@@ -178,7 +177,7 @@ interface TodosTableProps {
 }
 
 export const TodosTable = ({ todos, onViewTodo, onEditTodo }: TodosTableProps) => {
-  const router = useRouter(); // Initialize useRouter for navigation
+  // const router = useRouter(); // Initialize useRouter for navigation
 
   // Get priority badge color
   const getPriorityColor = (priority: string = '') => {
@@ -281,7 +280,7 @@ export const TodosTable = ({ todos, onViewTodo, onEditTodo }: TodosTableProps) =
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <div className="flex space-x-2">
                     <button
-                      onClick={() => handleCreateApplicant(todo)}
+                      // onClick={() => handleCreateApplicant(todo)}
                       className="px-3 py-1 text-sm font-medium text-white bg-green-600 border border-transparent rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200"
                     >
                       <LucideEdit size={16} />

@@ -30,7 +30,7 @@ export function ApplicantsTable({
             <th className="py-3 px-6 text-left">Phone</th>
             <th className="py-3 px-6 text-left">Job Title</th>
             <th className="py-3 px-6 text-left">Status</th>
-            <th className="py-3 px-6 text-left">Education</th>
+            {/* <th className="py-3 px-6 text-left">Education</th> */}
           </tr>
         </thead>
         <tbody className="text-gray-600 text-sm font-light">
@@ -53,7 +53,7 @@ export function ApplicantsTable({
               <td className="py-3 px-6 text-left">{applicant.phone_number || 'N/A'}</td>
               <td className="py-3 px-6 text-left">{applicant.job_title || 'N/A'}</td>
               <td className="py-3 px-6 text-left">{applicant.status || 'N/A'}</td>
-              <td className="py-3 px-6 text-left">
+              {/* <td className="py-3 px-6 text-left">
                 {applicant.custom_education && applicant.custom_education.length > 0 ? (
                   <ul className="list-disc list-inside">
                     {applicant.custom_education.map((edu, index) => (
@@ -65,7 +65,7 @@ export function ApplicantsTable({
                 ) : (
                   'N/A'
                 )}
-              </td>
+              </td> */}
             </tr>
           ))}
         </tbody>

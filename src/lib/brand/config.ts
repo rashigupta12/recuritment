@@ -60,7 +60,7 @@ export const getBrandConfig = (): BrandConfig => {
   const secondary = process.env.NEXT_PUBLIC_SECONDARY_COLOR || '#1d4ed8';
   
   return {
-    name: process.env.NEXT_PUBLIC_BRAND_NAME || 'EITS',
+    name: process.env.NEXT_PUBLIC_BRAND_NAME || 'HEVHIRE',
     logo: process.env.NEXT_PUBLIC_BRAND_LOGO || '/brands/default/logo.svg',
     favicon: process.env.NEXT_PUBLIC_BRAND_FAVICON || '/brands/default/favicon.ico',
     colors: {
