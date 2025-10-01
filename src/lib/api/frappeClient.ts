@@ -46,6 +46,89 @@ const frappeFileClient = axios.create({
     // Don't set Content-Type for multipart - let browser handle it
   }
 });
+
+frappeFileClient.interceptors.request.use(
+  (config) => {
+    console.log('File upload request:', {
+      url: config.url,
+      method: config.method,
+      baseURL: config.baseURL
+    });
+
+    // For development, add CORS headers
+
+      config.headers['Access-Control-Allow-Origin'] = 'http://localhost:3000';
+      config.headers['Access-Control-Allow-Credentials'] = 'true';
+
+    // Don't manually set browser-controlled headers
+    delete config.headers['Origin'];
+    delete config.headers['Referer'];
+
+    // Ensure Content-Type is not set for FormData (let browser handle it)
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
+
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+frappeFileClient.interceptors.response.use(
+  (response) => {
+    console.log('File upload response:', {
+      status: response.status,
+      url: response.config.url
+    });
+    
+    if (response.headers['set-cookie']) {
+      console.log('Cookies received:', response.headers['set-cookie']);
+    }
+    return response;
+  },
+  (error) => {
+    console.error('File Upload Error:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      message: error.response?.data?.message || error.message,
+      url: error.config?.url,
+      data: error.response?.data,
+      requestData: error.config?.data instanceof FormData ? 'FormData object' : error.config?.data
+    });
+
+    // Enhanced server down detection for file uploads
+    const isServerDown =
+      error.response?.status === 502 || // Bad Gateway
+      error.response?.status === 503 || // Service Unavailable
+      error.response?.status === 500 || // Internal Server Error
+      error.code === 'ERR_NETWORK' ||   // Network error
+      error.code === 'ECONNREFUSED' ||  // Connection refused
+      error.message?.includes('ERR_CONNECTION_REFUSED') ||
+      // Database connection errors
+      error.response?.data?.message?.includes('Can\'t connect to MySQL server') ||
+      error.response?.data?.message?.includes('Connection refused') ||
+      error.response?.data?.message?.includes('pymysql.err.OperationalError') ||
+      error.response?.data?.message?.includes('Database connection failed') ||
+      // Check for HTML error pages (Werkzeug debugger)
+      (error.response?.data && typeof error.response.data === 'string' && 
+       error.response.data.includes('Werkzeug Debugger')) ||
+      // Exception patterns
+      error.response?.data?.exc?.includes('OperationalError') ||
+      error.response?.data?.exc?.includes('Can\'t connect to MySQL');
+
+    if (isServerDown) {
+      window.dispatchEvent(new CustomEvent('serverDown', { detail: true }));
+    } else if (error.response?.status === 401 || error.response?.status === 403) {
+      localStorage.removeItem('frappe_user');
+      localStorage.removeItem('frappe_session');
+      // Optionally redirect to login
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 // Request interceptor
 frappeClient.interceptors.request.use(
   (config) => {
