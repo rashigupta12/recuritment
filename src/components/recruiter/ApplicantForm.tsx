@@ -71,7 +71,6 @@ export default function ApplicantForm({ initialJobId, todoData }: ApplicantFormP
   const [autofillError, setAutofillError] = useState<string>('');
 
   const countries: string[] = ['India', 'United States', 'United Kingdom', 'Canada', 'Australia', 'Germany', 'France', 'Singapore', 'UAE', 'Other'];
-  // ✅ initialJobId change होने पर formData update करें
   useEffect(() => {
     if (initialJobId) {
       setFormData(prev => ({
@@ -342,7 +341,7 @@ export default function ApplicantForm({ initialJobId, todoData }: ApplicantFormP
         email_id: '',
         phone_number: '',
         country: 'India',
-        job_title: searchParams.get('jobTitle') || '', // Retain job_title from URL
+        job_title: '', // Retain job_title from URL
         resume_attachment: '',
         custom_experience: [{
           company_name: '',

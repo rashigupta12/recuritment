@@ -24,13 +24,13 @@ export interface JobApplicant {
     end_date: string;
     current_company: number;
   }>;
-  custom_education?: Array<{
-    degree: string;
-    specialization: string;
-    institution: string;
-    year_of_passing: number;
-    percentagecgpa: number;
-  }>;
+  // custom_education?: Array<{
+  //   degree: string;
+  //   specialization: string;
+  //   institution: string;
+  //   year_of_passing: number;
+  //   percentagecgpa: number;
+  // }>;
 }
 
 interface ApiResponse {
@@ -56,12 +56,68 @@ export default function ViewApplicantPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all'); // State for status filter
   const router = useRouter();
 
+  const fetchApplicantsData = async (email: string) => {
+    const response = await frappeAPI.getAllApplicants(email);
+    const result: ApiResponse = response;
+    console.log('getAllApplicants response:', result.data);
+
+        if (!result.data || result.data.length === 0) {
+          setApplicants([]);
+          setFilteredApplicants([]);
+          return;
+        }
+
+    const detailedApplicants: JobApplicant[] = [];
+    const usedNames = new Set<string>();
+    
+    for (const applicant of result.data) {
+      if (!applicant.name) {
+        console.warn('Skipping applicant with missing name:', applicant);
+        continue;
+      }
+      
+      let uniqueName = applicant.name;
+      let suffix = 1;
+      while (usedNames.has(uniqueName)) {
+        uniqueName = `${applicant.name}-${suffix}`;
+        suffix++;
+      }
+      usedNames.add(uniqueName);
+
+      try {
+        const detailResponse = await frappeAPI.getApplicantBYId(applicant.name);
+        const detail: ApplicantDetailResponse = detailResponse;
+        detailedApplicants.push({
+          ...detail.data,
+          name: uniqueName,
+        });
+      } catch (detailErr: any) {
+        console.error(`Error fetching details for ${applicant.name}:`, detailErr);
+        if (detailErr?.exc_type === 'DoesNotExistError' || detailErr.response?.status === 404) {
+          detailedApplicants.push({
+            ...applicant,
+            name: uniqueName,
+            applicant_name: applicant.applicant_name || 'N/A',
+            status: applicant.status || 'N/A',
+          });
+        } else {
+          detailedApplicants.push({
+            ...applicant,
+            name: uniqueName,
+            applicant_name: 'Error fetching details',
+          });
+        }
+      }
+    }
+
+    return detailedApplicants;
+  };
+
   useEffect(() => {
     const checkAuthAndFetchApplicants = async () => {
       try {
         setLoading(true);
 
-        // Check user session
         const session = await frappeAPI.checkSession();
         if (!session.authenticated || !session.user?.email) {
           setError('Please log in to view applicants.');
@@ -74,72 +130,7 @@ export default function ViewApplicantPage() {
         const email = session.user.email;
         setUserEmail(email);
 
-        // Fetch list of applicants
-        const response = await frappeAPI.getAllApplicants(email);
-        const result: ApiResponse = response;
-        console.log('getAllApplicants response:', result.data);
-
-        if (!result.data || result.data.length === 0) {
-          setApplicants([]);
-          setFilteredApplicants([]);
-          return;
-        }
-
-        // Fetch details for each applicant
-        const detailedApplicants: JobApplicant[] = [];
-        const usedNames = new Set<string>();
-        for (const applicant of result.data) {
-          if (!applicant.name) {
-            console.warn('Skipping applicant with missing name:', applicant);
-            continue;
-          }
-          // Ensure unique name
-          let uniqueName = applicant.name;
-          let suffix = 1;
-          while (usedNames.has(uniqueName)) {
-            uniqueName = `${applicant.name}-${suffix}`;
-            suffix++;
-          }
-          usedNames.add(uniqueName);
-
-          try {
-            const detailResponse = await frappeAPI.getApplicantBYId(applicant.name);
-            const detail: ApplicantDetailResponse = detailResponse;
-            console.log(`Details for ${applicant.name}:`, detail.data);
-            detailedApplicants.push({
-              ...detail.data,
-              name: uniqueName, // Use unique name to avoid duplicates
-            });
-          } catch (detailErr: any) {
-            console.error(`Error fetching details for ${applicant.name}:`, detailErr);
-            if (detailErr?.exc_type === 'DoesNotExistError' || detailErr.response?.status === 404) {
-              console.warn(`Applicant ${applicant.name} not found in Frappe database`);
-              detailedApplicants.push({
-                ...applicant,
-                name: uniqueName, // Use unique name
-                applicant_name: applicant.applicant_name || 'N/A',
-                status: applicant.status || 'N/A',
-              });
-            } else {
-              detailedApplicants.push({
-                ...applicant,
-                name: uniqueName, // Use unique name
-                applicant_name: 'Error fetching details',
-              });
-            }
-          }
-        }
-
-        // Check for duplicate names
-        const nameCounts = detailedApplicants.reduce((acc, curr) => {
-          acc[curr.name] = (acc[curr.name] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>);
-        console.log('Name counts:', nameCounts);
-        if (Object.values(nameCounts).some((count) => count > 1)) {
-          console.error('Duplicate names detected:', nameCounts);
-        }
-
+        const detailedApplicants = await fetchApplicantsData(email);
         setApplicants(detailedApplicants);
         setFilteredApplicants(detailedApplicants); // Initialize filtered applicants
       } catch (err: any) {
@@ -191,9 +182,7 @@ export default function ViewApplicantPage() {
   // Handle checkbox selection
   const handleSelectApplicant = (name: string) => {
     setSelectedApplicants((prev) =>
-      prev.includes(name)
-        ? prev.filter((id) => id !== name)
-        : [...prev, name]
+      prev.includes(name) ? prev.filter((id) => id !== name) : [...prev, name]
     );
   };
 
@@ -224,85 +213,26 @@ export default function ViewApplicantPage() {
 
     try {
       setLoading(true);
-      console.log('Selected applicants for status update:', selectedApplicants);
       const failedUpdates: string[] = [];
+      
       for (const name of selectedApplicants) {
         if (!name) {
-          console.warn('Skipping update: name is undefined or empty');
           failedUpdates.push('Unknown (missing name)');
           continue;
         }
         try {
-          console.log(`Sending PUT request to update status for ${name} to ${selectedStatus}`);
           await frappeAPI.updateApplicantStatus(name, { status: selectedStatus });
         } catch (err: any) {
           console.error(`Failed to update status for ${name}:`, err);
           if (err?.exc_type === 'DoesNotExistError' || err.response?.status === 404) {
             failedUpdates.push(name);
           } else {
-            throw err; // Rethrow other errors
+            throw err;
           }
         }
       }
 
-      // Refresh applicants list
-      const response = await frappeAPI.getAllApplicants(userEmail);
-      const result: ApiResponse = response;
-      console.log('getAllApplicants refresh response:', result.data);
-      const detailedApplicants: JobApplicant[] = [];
-      const usedNames = new Set<string>();
-      for (const applicant of result.data) {
-        if (!applicant.name) {
-          console.warn('Skipping applicant with missing name:', applicant);
-          continue;
-        }
-        // Ensure unique name
-        let uniqueName = applicant.name;
-        let suffix = 1;
-        while (usedNames.has(uniqueName)) {
-          uniqueName = `${applicant.name}-${suffix}`;
-          suffix++;
-        }
-        usedNames.add(uniqueName);
-
-        try {
-          const detailResponse = await frappeAPI.getApplicantBYId(applicant.name);
-          const detail: ApplicantDetailResponse = detailResponse;
-          console.log(`Details for ${applicant.name} (refresh):`, detail.data);
-          detailedApplicants.push({
-            ...detail.data,
-            name: uniqueName, // Use unique name
-          });
-        } catch (detailErr: any) {
-          console.error(`Error fetching details for ${applicant.name}:`, detailErr);
-          if (detailErr?.exc_type === 'DoesNotExistError' || detailErr.response?.status === 404) {
-            console.warn(`Applicant ${applicant.name} not found in Frappe database`);
-            detailedApplicants.push({
-              ...applicant,
-              name: uniqueName, // Use unique name
-              applicant_name: applicant.applicant_name || 'N/A',
-              status: applicant.status || 'N/A',
-            });
-          } else {
-            detailedApplicants.push({
-              ...applicant,
-              name: uniqueName, // Use unique name
-              applicant_name: 'Error fetching details',
-            });
-          }
-        }
-      }
-
-      // Check for duplicate names after refresh
-      const nameCounts = detailedApplicants.reduce((acc, curr) => {
-        acc[curr.name] = (acc[curr.name] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-      console.log('Name counts after refresh:', nameCounts);
-      if (Object.values(nameCounts).some((count) => count > 1)) {
-        console.error('Duplicate names detected after refresh:', nameCounts);
-      }
-
+      const detailedApplicants = await fetchApplicantsData(userEmail);
       setApplicants(detailedApplicants);
       setFilteredApplicants(detailedApplicants); // Reset filtered applicants
       setSelectedApplicants([]);
@@ -311,7 +241,7 @@ export default function ViewApplicantPage() {
 
       if (failedUpdates.length > 0) {
         toast.warning(
-          `Status updated for some applicants. Failed for: ${failedUpdates.join(', ')}. Applicant records may not exist or the endpoint may be incorrect.`
+          `Status updated for some applicants. Failed for: ${failedUpdates.join(', ')}.`
         );
       } else {
         toast.success('Applicant status updated successfully.');
@@ -323,8 +253,6 @@ export default function ViewApplicantPage() {
         errorMessage = 'Session expired or insufficient permissions. Please log in again.';
         setIsAuthenticated(false);
         router.push('/login');
-      } else if (err.response?.status === 404 || err?.exc_type === 'DoesNotExistError') {
-        errorMessage = 'Job Applicant resource not found. Please verify the API endpoint or contact support.';
       } else if (err.response?.data?.message) {
         errorMessage = err.response.data.message;
       }
@@ -344,24 +272,54 @@ export default function ViewApplicantPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="text-2xl font-semibold text-gray-700">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-xl font-semibold text-gray-700">Loading applicants...</p>
+        </div>
       </div>
     );
   }
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="text-2xl font-semibold text-red-600">
-          Please log in to view applicants.
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="text-center bg-white p-8 rounded-lg shadow-lg">
+          <div className="text-6xl mb-4">🔒</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Authentication Required</h2>
+          <p className="text-gray-600">Please log in to view applicants.</p>
         </div>
       </div>
     );
   }
 
+  const getStatusColor = (status?: string) => {
+    switch (status?.toLowerCase()) {
+      case 'Open':
+        return 'bg-blue-100 text-blue-800';
+      case 'shortlisted':
+        return 'bg-purple-100 text-purple-800';
+      case 'assessment stage':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'hired':
+        return 'bg-green-100 text-green-800';
+      case 'rejected':
+        return 'bg-red-100 text-red-800';
+      case 'closed':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const statusCounts = applicants.reduce((acc, curr) => {
+    const status = curr.status || 'Unknown';
+    acc[status] = (acc[status] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
   return (
-    <div className="min-h-screen bg-gray-100 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-800">Job Applicants</h1>
@@ -404,18 +362,24 @@ export default function ViewApplicantPage() {
           </div>
         </div>
         {error && (
-          <div className="mb-6 p-4 bg-red-100 text-red-700 rounded-lg text-center">
-            <p>{error}</p>
-            {error.includes('not found') && (
-              <p className="mt-2 text-sm">
-                Possible issues:
-                <ul className="list-disc list-inside">
-                  <li>Verify the Frappe API base URL in your environment variables.</li>
-                  <li>Ensure the Job Applicant resource exists in your Frappe system.</li>
-                  <li>Contact your system administrator for API access details.</li>
-                </ul>
-              </p>
-            )}
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-6">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 text-2xl">⚠️</div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-red-800 mb-2">Error</h3>
+                <p className="text-red-700 mb-3">{error}</p>
+                {error.includes('not found') && (
+                  <div className="mt-3 text-sm text-red-600">
+                    <p className="font-medium mb-2">Possible issues:</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>Verify the Frappe API base URL in your environment variables</li>
+                      <li>Ensure the Job Applicant resource exists in your Frappe system</li>
+                      <li>Contact your system administrator for API access details</li>
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         )}
         {filteredApplicants.length === 0 ? (
@@ -496,3 +460,4 @@ export default function ViewApplicantPage() {
     </div>
   );
 }
+

@@ -35,10 +35,8 @@ export function ApplicantsTable({
             <th className="py-3 px-6 text-left">Name</th>
             <th className="py-3 px-6 text-left">Email</th>
             <th className="py-3 px-6 text-left">Phone</th>
-            {showStatus&&(
-                          <th className="py-3 px-6 text-left">Status</th>
-
-            )}
+            <th className="py-3 px-6 text-left">Job Title</th>
+            <th className="py-3 px-6 text-left">Status</th>
             {/* <th className="py-3 px-6 text-left">Education</th> */}
           </tr>
         </thead>
@@ -65,9 +63,8 @@ export function ApplicantsTable({
               <td className="py-3 px-6 text-left">{applicant.applicant_name || 'N/A'}</td>
               <td className="py-3 px-6 text-left">{applicant.email_id || 'N/A'}</td>
               <td className="py-3 px-6 text-left">{applicant.phone_number || 'N/A'}</td>
-     {showStatus&&(
-               <td className="py-3 px-6 text-left">{applicant.status || 'N/A'}</td>
-     )}
+              <td className="py-3 px-6 text-left">{applicant.job_title || 'N/A'}</td>
+              <td className="py-3 px-6 text-left">{applicant.status || 'N/A'}</td>
               {/* <td className="py-3 px-6 text-left">
                 {applicant.custom_education && applicant.custom_education.length > 0 ? (
                   <ul className="list-disc list-inside">
