@@ -240,12 +240,12 @@
 
 
 
-
-
 /*eslint-disable @typescript-eslint/no-explicit-any*/
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { frappeAPI } from '@/lib/api/frappeClient';
 import { ApplicantsTable } from '@/components/recruiter/ApplicantsTable';
 import EmailSendingPopup from './EmailSendingPopup';
@@ -287,23 +287,12 @@ export default function TaggedApplicants({ jobId, ownerEmail, todoData, refreshT
     const [applicants, setApplicants] = useState<JobApplicant[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
-    const [selectedApplicants, setSelectedApplicants] = useState<JobApplicant[]>([]);
-    const [showEmailPopup, setShowEmailPopup] = useState(false);
-
-    // Handle applicant selection
-    const handleSelectApplicant = (name: string) => {
-        setSelectedApplicants(prev => {
-            const applicant = applicants.find(app => app.name === name);
-            if (prev.find(app => app.name === name)) {
-                // If already selected, remove it
-                return prev.filter(app => app.name !== name);
-            } else if (applicant) {
-                // If not selected, add it
-                return [...prev, applicant];
-            }
-            return prev;
-        });
-    };
+    const [selectedApplicants, setSelectedApplicants] = useState<string[]>([]);
+    const [isStatusModalOpen, setIsStatusModalOpen] = useState<boolean>(false);
+    const [selectedStatus, setSelectedStatus] = useState<string>('');
+    const [modalError, setModalError] = useState<string | null>(null);
+    const [refreshKey, setRefreshKey] = useState<number>(0); // Local refresh trigger
+    const router = useRouter();
 
     useEffect(() => {
         const fetchApplicants = async () => {
@@ -363,12 +352,136 @@ export default function TaggedApplicants({ jobId, ownerEmail, todoData, refreshT
             setError('Job ID or owner email not provided');
             console.log('❌ Missing data:', { jobId, ownerEmail });
         }
-    }, [jobId, ownerEmail, refreshTrigger]);
+    }, [jobId, ownerEmail,  refreshTrigger, refreshKey]);
 
     // Handle view applicant
     const handleViewApplicant = (applicant: JobApplicant) => {
         console.log('View applicant:', applicant);
         // Implement view logic here
+    };
+
+    // Handler for checkbox changes
+    const handleCheckboxChange = (applicantId: string) => {
+        setSelectedApplicants((prev) => {
+            const newSelected = [...prev];
+            const index = newSelected.indexOf(applicantId);
+            if (index > -1) {
+                newSelected.splice(index, 1);
+            } else {
+                newSelected.push(applicantId);
+            }
+            return newSelected;
+        });
+    };
+
+    // Handler for select all
+    const handleSelectAll = () => {
+        if (selectedApplicants.length === applicants.length) {
+            setSelectedApplicants([]);
+        } else {
+            setSelectedApplicants(applicants.map((applicant) => applicant.name));
+        }
+    };
+
+    // Handler to open the status update modal
+    const handleOpenStatusModal = () => {
+        if (selectedApplicants.length === 0) {
+            toast.error('Please select at least one applicant.');
+            return;
+        }
+        setIsStatusModalOpen(true);
+        setSelectedStatus('');
+        setModalError(null);
+    };
+
+    // Handler to close the status modal
+    const handleCloseStatusModal = () => {
+        setIsStatusModalOpen(false);
+        setSelectedStatus('');
+        setModalError(null);
+    };
+
+    // Handler for confirming status change
+    const handleConfirmStatusChange = async () => {
+        if (!selectedStatus) {
+            setModalError('Please select a status.');
+            return;
+        }
+        if (!ownerEmail) {
+            toast.error('Owner email not found. Please try again.');
+            setIsStatusModalOpen(false);
+            return;
+        }
+
+        try {
+            setLoading(true);
+            console.log('Selected applicants for status update:', selectedApplicants);
+            const failedUpdates: string[] = [];
+            for (const name of selectedApplicants) {
+                if (!name) {
+                    console.warn('Skipping update: name is undefined or empty');
+                    failedUpdates.push('Unknown (missing name)');
+                    continue;
+                }
+                try {
+                    console.log(`Sending PUT request to update status for ${name} to ${selectedStatus}`);
+                    await frappeAPI.updateApplicantStatus(name, { status: selectedStatus });
+                } catch (err: any) {
+                    console.error(`Failed to update status for ${name}:`, err);
+                    if (err?.exc_type === 'DoesNotExistError' || err.response?.status === 404) {
+                        failedUpdates.push(name);
+                    } else {
+                        throw err; // Rethrow other errors
+                    }
+                }
+            }
+
+            // Refresh applicants list
+            const response: any = await frappeAPI.getTaggedApplicantsByJobId(jobId, ownerEmail);
+            const applicantNames = response.data || [];
+            const applicantsPromises = applicantNames.map(async (applicant: any) => {
+                try {
+                    const applicantDetail = await frappeAPI.getApplicantBYId(applicant.name);
+                    return applicantDetail.data;
+                } catch (err) {
+                    console.error(`Error fetching details for ${applicant.name}:`, err);
+                    return {
+                        name: applicant.name,
+                        email_id: applicant.email_id || 'Not available'
+                    };
+                }
+            });
+
+            const applicantsData = await Promise.all(applicantsPromises);
+            setApplicants(applicantsData.filter(applicant => applicant !== null));
+            setSelectedApplicants([]);
+            setSelectedStatus('');
+            setIsStatusModalOpen(false);
+            setRefreshKey((prev) => prev + 1); // Trigger local refresh
+
+            if (failedUpdates.length > 0) {
+                toast.warning(
+                    `Status updated for some applicants. Failed for: ${failedUpdates.join(', ')}. Applicant records may not exist or the endpoint may be incorrect.`
+                );
+            } else {
+                toast.success('Applicant status updated successfully.');
+            }
+        } catch (err: any) {
+            console.error('Status update error:', err);
+            let errorMessage = 'Failed to update applicant statuses.';
+            if (err.response?.status === 401 || err.response?.status === 403) {
+                errorMessage = 'Session expired or insufficient permissions. Please try again.';
+                router.push('/login');
+            } else if (err.response?.status === 404 || err?.exc_type === 'DoesNotExistError') {
+                errorMessage = 'Job Applicant resource not found. Please verify the API endpoint or contact support.';
+            } else if (err.response?.data?.message) {
+                errorMessage = err.response.data.message;
+            }
+            toast.error(errorMessage);
+            setIsStatusModalOpen(false);
+        } finally {
+            setLoading(false);
+        }
     };
 
     if (loading) {
@@ -403,7 +516,7 @@ export default function TaggedApplicants({ jobId, ownerEmail, todoData, refreshT
     return (
         <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-6">
             {/* Single Header Section */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-4 mb-6">
                 <div>
                     <h2 className="text-xl font-semibold text-gray-900">Tagged Applicants</h2>
                     <p className="text-gray-600 text-sm">
@@ -411,6 +524,17 @@ export default function TaggedApplicants({ jobId, ownerEmail, todoData, refreshT
                         {selectedApplicants.length > 0 && ` | Selected: ${selectedApplicants.length}`}
                     </p>
                 </div>
+                <button
+                    onClick={handleOpenStatusModal}
+                    disabled={selectedApplicants.length === 0}
+                    className={`px-3 py-1 text-white font-medium rounded-lg transition-colors ${
+                        selectedApplicants.length === 0
+                            ? 'bg-gray-400 cursor-not-allowed'
+                            : 'bg-blue-600 hover:bg-blue-700'
+                    }`}
+                >
+                    Update Status
+                </button>
                 
                 {/* Send Email Button - Only shows when applicants are selected */}
                 {selectedApplicants.length > 0 && (
@@ -423,29 +547,82 @@ export default function TaggedApplicants({ jobId, ownerEmail, todoData, refreshT
                 )}
             </div>
 
-            {/* Applicants Table with proper selection handler */}
-           <ApplicantsTable
-    applicants={applicants}
-    showCheckboxes={true}  // ✅ This enables the checkboxes
-    selectedApplicants={selectedApplicants.map(app => app.name)}  // ✅ Pass selected names
-    onSelectApplicant={handleSelectApplicant}  // ✅ Use the proper handler
-/>
-            {/* Email Sending Popup */}
-            {showEmailPopup && (
-                <EmailSendingPopup
-                    isOpen={showEmailPopup}
-                    onClose={() => setShowEmailPopup(false)}
-                    selectedApplicants={selectedApplicants}
-                    currentUserEmail={ownerEmail}
-                    jobId={jobId}
-                    onEmailSent={() => {
-                        setSelectedApplicants([]);
-                        setShowEmailPopup(false);
-                        // Optional: Add a success toast here
-                        console.log('Email sent successfully!');
-                    }}
-                />
+            <ApplicantsTable
+                applicants={applicants}
+                selectedApplicants={selectedApplicants}
+                onSelectApplicant={handleCheckboxChange}
+                showCheckboxes={true}
+                showStatus={true}
+            />
+
+            {/* Status Update Modal */}
+            {isStatusModalOpen && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="status-modal-title">
+                    <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                        <h2 id="status-modal-title" className="text-2xl font-bold text-gray-800 mb-4">
+                            Confirm Status Change
+                        </h2>
+                        {modalError && (
+                            <div className="mb-4 p-2 bg-red-100 text-red-700 rounded-lg text-center">
+                                <p>{modalError}</p>
+                            </div>
+                        )}
+                        <div className="mb-4">
+                            <label className="block text-gray-600 mb-2">Select New Status</label>
+                            <select
+                                className="px-4 py-2 border rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                value={selectedStatus}
+                                onChange={(e) => setSelectedStatus(e.target.value)}
+                            >
+                                <option value="">Select Status</option>
+                                <option value="Open">Open</option>
+                                <option value="Assessment Stage">Assessment Stage</option>
+                                <option value="Closed">Closed</option>
+                                <option value="Rejected">Rejected</option>
+                                <option value="Hired">Hired</option>
+                            </select>
+                        </div>
+                        <p className="text-gray-600 mb-4">
+                            {selectedStatus
+                                ? `You are about to change the status of the following applicants to ${selectedStatus}:`
+                                : 'Selected Applicants:'}
+                        </p>
+                        <ul className="list-disc list-inside mb-4">
+                            {selectedApplicants.map((name) => {
+                                const applicant = applicants.find((a) => a.name === name);
+                                return (
+                                    <li key={name} className="text-gray-600 flex justify-between">
+                                        <span>{applicant?.applicant_name || name}</span>
+                                        <span>{applicant?.email_id}</span>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                        <div className="flex justify-end space-x-4">
+                            <button
+                                onClick={handleCloseStatusModal}
+                                className="px-4 py-2 rounded-lg text-gray-700 bg-gray-200 hover:bg-gray-300"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleConfirmStatusChange}
+                                className="px-4 py-2 rounded-lg text-white bg-blue-600 hover:bg-blue-700"
+                            >
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
+
+            {/* Debug info - remove in production */}
+            {/* <div className="mt-4 p-3 bg-gray-50 rounded text-xs">
+                <p className="font-medium">Debug Info:</p>
+                <p>Job ID: {jobId}</p>
+                <p>Owner Email: {ownerEmail}</p>
+                <p>Applicants Count: {applicants.length}</p>
+            </div> */}
         </div>
     );
 }
