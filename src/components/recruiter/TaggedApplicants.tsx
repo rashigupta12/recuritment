@@ -44,7 +44,7 @@ export default function TaggedApplicants({ jobId, ownerEmail, todoData }: Props)
     const [applicants, setApplicants] = useState<JobApplicant[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
-    const [showMultipleApplicantsForm, setShowMultipleApplicantsForm] = useState(false);
+    // const [showMultipleApplicantsForm, setShowMultipleApplicantsForm] = useState(false);
 
     useEffect(() => {
         const fetchApplicants = async () => {
@@ -150,19 +150,19 @@ export default function TaggedApplicants({ jobId, ownerEmail, todoData }: Props)
 
     return (
         <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-6">
-            <div className="mb-6 flex items-center justify-between">
+            <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-xl font-semibold text-gray-900">Tagged Applicants</h2>
                     <p className="text-gray-600 text-sm">
                         Job: {jobId} | Total: {applicants.length} applicants
                     </p>
                 </div>
-                <button
+                {/* <button
                     onClick={() => setShowMultipleApplicantsForm(true)}
                     className="px-3 py-1 text-white bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium transition-colors"
                 >
                     + Add
-                </button>
+                </button> */}
             </div>
 
 
@@ -175,12 +175,12 @@ export default function TaggedApplicants({ jobId, ownerEmail, todoData }: Props)
                     // Implement selection logic if needed
                 }}
             />
-            {showMultipleApplicantsForm && (
+            {/* {showMultipleApplicantsForm && (
                 <MultipleApplicantsForm
                     initialJobId={jobId}
                     
                 />
-            )}
+            )} */}
 
             {/* Debug info - remove in production */}
             {/* <div className="mt-4 p-3 bg-gray-50 rounded text-xs">

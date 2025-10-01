@@ -1,7 +1,3 @@
-
-
-
-
 'use client';
 
 import { TodoDetailModal } from "@/components/recruiter/TodoDetailModal";
@@ -10,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { frappeAPI } from "@/lib/api/frappeClient";
 import TaggedApplicants from "@/components/recruiter/TaggedApplicants";
+import MultipleApplicantsForm from "@/components/recruiter/MultipleApplicantsForm";
 
 interface TodoData {
   name: string;
@@ -37,7 +34,7 @@ export default function TodoDetailPage() {
         setLoading(true);
         const todoDetails = await frappeAPI.getTodoBYId(todoId);
         const todo = todoDetails.data;
-        
+
         setTodoData(todo);
         if (todo.custom_job_id) {
           setJobId(todo.custom_job_id);
@@ -77,31 +74,28 @@ export default function TodoDetailPage() {
           <div className="flex justify-center space-x-4 py-3">
             <button
               onClick={() => setActiveTab('details')}
-              className={`px-4 py-1 rounded-full text-sm font-medium transition ${
-                activeTab === 'details'
+              className={`px-4 py-1 rounded-full text-sm font-medium transition ${activeTab === 'details'
                   ? "bg-blue-100 text-primary border border-primary"
                   : "text-gray-500 hover:text-gray-700"
-              }`}
+                }`}
             >
               Task Details
             </button>
             <button
               onClick={() => setActiveTab('applicants')}
-              className={`px-4 py-1 rounded-full text-sm font-medium transition ${
-                activeTab === 'applicants'
-                   ? "bg-blue-100 text-primary border border-primary"
+              className={`px-4 py-1 rounded-full text-sm font-medium transition ${activeTab === 'applicants'
+                  ? "bg-blue-100 text-primary border border-primary"
                   : "text-gray-500 hover:text-gray-700"
-              }`}
+                }`}
             >
               Tagged Applicants
             </button>
             <button
               onClick={() => setActiveTab('resume')}
-              className={`px-4 py-1 rounded-full text-sm font-medium transition ${
-                activeTab === 'resume'
-                   ? "bg-blue-100 text-primary border border-primary"
+              className={`px-4 py-1 rounded-full text-sm font-medium transition ${activeTab === 'resume'
+                  ? "bg-blue-100 text-primary border border-primary"
                   : "text-gray-500 hover:text-gray-700"
-              }`}
+                }`}
             >
               Resume Application
             </button>
@@ -112,20 +106,26 @@ export default function TodoDetailPage() {
       {/* Tab Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {activeTab === 'details' && (
-          <TodoDetailModal 
-            todoId={todoId} 
-            onClose={handleClose} 
+          <TodoDetailModal
+            todoId={todoId}
+            onClose={handleClose}
           />
         )}
 
         {activeTab === 'applicants' && (
-          <div className="">
+          <div className="space-y-0">
             <h1 className="text-2xl font-bold text-gray-900 mb-4"></h1>
             {jobId && todoData ? (
-              <TaggedApplicants
-                jobId={jobId}
-                ownerEmail={todoData.owner_email || 'recruiter@gennextit.com'}
-              />
+              <>
+                <MultipleApplicantsForm
+                  initialJobId={jobId}
+
+                />
+                <TaggedApplicants
+                  jobId={jobId}
+                  ownerEmail={todoData.owner_email || 'recruiter@gennextit.com'}
+                />
+              </>
             ) : (
               <p className="text-red-500">
                 Loading todo details or job ID not found.
@@ -139,7 +139,7 @@ export default function TodoDetailPage() {
             <div className="mb-6">
               <h1 className="text-2xl font-bold text-gray-900">Job Application Form</h1>
               <p className="text-gray-600 mt-2">
-                Applying for Job ID: 
+                Applying for Job ID:
                 {jobId ? (
                   <span className="font-semibold text-blue-600 ml-2">{jobId}</span>
                 ) : (
@@ -149,7 +149,7 @@ export default function TodoDetailPage() {
             </div>
 
             {jobId ? (
-              <ApplicantForm 
+              <ApplicantForm
                 initialJobId={jobId}
                 todoData={todoData}
               />

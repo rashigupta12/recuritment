@@ -351,17 +351,15 @@ export default function BulkApplicantForm({ initialJobId }: BulkApplicantFormPro
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
+    <div className="bg-gray-50 px-2 py-4">
       <div className="w-full mx-auto">
-        <h1 className="text-3xl font-semibold text-gray-900 mb-2 text-center">Create Job Applications</h1>
-        <p className="text-gray-600 mb-8 text-center">Upload resumes and submit the applications</p>
 
         <div className="space-y-6">
           {applicantRows.map((row, index) => (
             <div key={row.id} className="bg-white rounded-lg shadow-md p-6">
               {/* Row Header */}
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold text-gray-900">Applicant </h2>
+                <h2 className="text-xl font-semibold text-gray-900"> New Applicant </h2>
                 {applicantRows.length > 1 && (
                   <button
                     type="button"
@@ -560,8 +558,31 @@ export default function BulkApplicantForm({ initialJobId }: BulkApplicantFormPro
                     {row.errors.phone_number && <p className="text-red-600 text-sm mt-1">{row.errors.phone_number}</p>}
                   </div>
                 </div>
-              </div>
 
+                {/* <div className=""> */}
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={isSubmitting || applicantRows.some(row => row.isAutofilling)}
+                  className={`py-3 pt-4 px-8 rounded-md text-white font-medium flex items-center gap-2 ${isSubmitting || applicantRows.some(row => row.isAutofilling)
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-green-600 hover:bg-green-700'
+                    } transition-colors`}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-2 h-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Submitting {applicantRows.length} Applications...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      <span>Submit</span>
+                    </>
+                  )}
+                </button>
+                {/* </div> */}
+              </div>
               {/* Experience */}
               {/* <div className="mb-6">
                 <h3 className="text-md font-semibold text-gray-800 mb-3 flex items-center gap-2">
@@ -698,6 +719,7 @@ export default function BulkApplicantForm({ initialJobId }: BulkApplicantFormPro
                 </div>
               </div> */}
             </div>
+
           ))}
 
           {/* Add New Row Button */}
@@ -714,29 +736,7 @@ export default function BulkApplicantForm({ initialJobId }: BulkApplicantFormPro
           </div> */}
 
           {/* Submit Button */}
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={isSubmitting || applicantRows.some(row => row.isAutofilling)}
-              className={`py-3 px-8 rounded-md text-white font-medium flex items-center gap-2 ${isSubmitting || applicantRows.some(row => row.isAutofilling)
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : 'bg-green-600 hover:bg-green-700'
-                } transition-colors`}
-            >
-              {isSubmitting ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Submitting {applicantRows.length} Applications...</span>
-                </>
-              ) : (
-                <>
-                  <Send className="w-5 h-5" />
-                  <span>Submit Application</span>
-                </>
-              )}
-            </button>
-          </div>
+
         </div>
 
         {/* Success Modal */}
