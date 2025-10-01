@@ -449,7 +449,7 @@ export default function ViewApplicantPage() {
             </div>
 
             {/* Selected Count Badge */}
-            {selectedApplicants.length > 0 && (
+            {/* {selectedApplicants.length > 0 && (
               <div className="mt-4 flex items-center gap-2">
                 <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
                   {selectedApplicants.length} applicant{selectedApplicants.length > 1 ? 's' : ''} selected
@@ -461,7 +461,7 @@ export default function ViewApplicantPage() {
                   Clear selection
                 </button>
               </div>
-            )}
+            )} */}
           </div>
         </div>
 

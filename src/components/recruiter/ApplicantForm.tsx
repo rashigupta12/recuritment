@@ -71,7 +71,6 @@ export default function ApplicantForm({ initialJobId, todoData }: ApplicantFormP
   const [autofillError, setAutofillError] = useState<string>('');
 
   const countries: string[] = ['India', 'United States', 'United Kingdom', 'Canada', 'Australia', 'Germany', 'France', 'Singapore', 'UAE', 'Other'];
-  // ✅ initialJobId change होने पर formData update करें
   useEffect(() => {
     if (initialJobId) {
       setFormData(prev => ({

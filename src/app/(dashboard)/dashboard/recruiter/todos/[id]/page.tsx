@@ -1,8 +1,11 @@
+
+
+
+
 'use client';
 
 import { TodoDetailModal } from "@/components/recruiter/TodoDetailModal";
 import ApplicantForm from "@/components/recruiter/ApplicantForm";
-// import TaggedApplicants from "@/components/recruiter/TaggedApplicants"; // 👈 add this import
 import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { frappeAPI } from "@/lib/api/frappeClient";
@@ -13,7 +16,6 @@ interface TodoData {
   custom_job_id?: string;
   description?: string;
   owner_email: string;
-  // other todo fields
 }
 
 export default function TodoDetailPage() {
@@ -29,7 +31,6 @@ export default function TodoDetailPage() {
     router.back();
   };
 
-  // Fetch todo details
   useEffect(() => {
     const fetchTodoDetails = async () => {
       try {
@@ -71,35 +72,35 @@ export default function TodoDetailPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Tabs Navigation */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-8">
+      <div className="   sticky top-0 z-10">
+        <div className="max-w-7xl   mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-center space-x-4 py-3">
             <button
               onClick={() => setActiveTab('details')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              className={`px-4 py-1 rounded-full text-sm font-medium transition ${
                 activeTab === 'details'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? "bg-blue-100 text-primary border border-primary"
+                  : "text-gray-500 hover:text-gray-700"
               }`}
             >
               Task Details
             </button>
             <button
               onClick={() => setActiveTab('applicants')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              className={`px-4 py-1 rounded-full text-sm font-medium transition ${
                 activeTab === 'applicants'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                   ? "bg-blue-100 text-primary border border-primary"
+                  : "text-gray-500 hover:text-gray-700"
               }`}
             >
               Tagged Applicants
             </button>
             <button
               onClick={() => setActiveTab('resume')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+              className={`px-4 py-1 rounded-full text-sm font-medium transition ${
                 activeTab === 'resume'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                   ? "bg-blue-100 text-primary border border-primary"
+                  : "text-gray-500 hover:text-gray-700"
               }`}
             >
               Resume Application
@@ -117,34 +118,21 @@ export default function TodoDetailPage() {
           />
         )}
 
-        {/* {activeTab === 'applicants' && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Tagged Applicants</h1>
-            {jobId ? (
-              // <TaggedApplicants jobId={jobId} />
-
-              // tagged applicants component को यहाँ uncomment करें जब available हो
-              <TaggedApplicants jobId={jobId} ownerEmail={todoData?.owner_email|| 'recruiter@gennextit.com'} />
+        {activeTab === 'applicants' && (
+          <div className="">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4"></h1>
+            {jobId && todoData ? (
+              <TaggedApplicants
+                jobId={jobId}
+                ownerEmail={todoData.owner_email || 'recruiter@gennextit.com'}
+              />
             ) : (
-              <p className="text-red-500">No job ID found, cannot fetch applicants.</p>
+              <p className="text-red-500">
+                Loading todo details or job ID not found.
+              </p>
             )}
           </div>
-        )} */}
-{activeTab === 'applicants' && (
-  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-    <h1 className="text-2xl font-bold text-gray-900 mb-4">Tagged Applicants</h1>
-    {jobId && todoData ? (
-      <TaggedApplicants
-        jobId={jobId}
-        ownerEmail={todoData.owner_email } // safe now
-      />
-    ) : (
-      <p className="text-red-500">
-        Loading todo details or job ID not found.
-      </p>
-    )}
-  </div>
-)}
+        )}
 
         {activeTab === 'resume' && (
           <div>

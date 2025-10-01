@@ -423,7 +423,13 @@ checkFirstLogin: async (username: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Customer/${CustomerId}`);
   },
   
-
+createBulkApplicants: async (applicantsData: Array<Record<string, unknown>>) => {
+  return await frappeAPI.makeAuthenticatedRequest(
+    'POST', 
+    '/method/recruitment_app.create_bulk_applicants.create_bulk_applicants',
+    applicantsData
+  );
+},
   createApplicants: async(ApplicantData :Record<string, unknown>)=>{
  return await frappeAPI.makeAuthenticatedRequest('POST', '/resource/Job Applicant', ApplicantData);
   },
