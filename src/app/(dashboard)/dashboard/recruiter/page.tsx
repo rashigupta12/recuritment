@@ -2,11 +2,14 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { Search } from 'lucide-react';
-import { Pie, Bar } from 'react-chartjs-2';
+// import { Chart as ChartJS, ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale } from 'chart.js';
+import { Bar } from 'react-chartjs-2';
+// import FunnelChart from 'chartjs-chart-funnel';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale } from 'chart.js';
+// import FunnelChart from 'chartjs-chart-funnel';
 
 // Register Chart.js components
-ChartJS.register(ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale);
+ChartJS.register(ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale, FunnelChart);
 
 // Dummy data interfaces
 interface JobApplicant {
@@ -15,6 +18,7 @@ interface JobApplicant {
   email: string;
   job_title: string;
   status: 'Open' | 'Shortlisted' | 'Assessment Stage' | 'Interview Stage' | 'Closed' | 'Rejected' | 'Hired';
+  joined?: boolean; // Added for offer letter tracking
 }
 
 interface JobOpening {
@@ -37,20 +41,22 @@ interface Event {
   date: string;
 }
 
-// Dummy data
+// Updated dummy data with joined field
 const dummyApplicants: JobApplicant[] = [
   { id: '1', name: 'John Doe', email: 'john.doe@example.com', job_title: 'Software Engineer', status: 'Open' },
   { id: '2', name: 'Jane Smith', email: 'jane.smith@example.com', job_title: 'Product Manager', status: 'Shortlisted' },
   { id: '3', name: 'Alice Johnson', email: 'alice.j@example.com', job_title: 'Data Analyst', status: 'Assessment Stage' },
   { id: '4', name: 'Bob Wilson', email: 'bob.wilson@example.com', job_title: 'UX Designer', status: 'Interview Stage' },
-  { id: '5', name: 'Emma Brown', email: 'emma.brown@example.com', job_title: 'DevOps Engineer', status: 'Hired' },
+  { id: '5', name: 'Emma Brown', email: 'emma.brown@example.com', job_title: 'DevOps Engineer', status: 'Hired', joined: true },
   { id: '6', name: 'Michael Lee', email: 'michael.lee@example.com', job_title: 'Software Engineer', status: 'Rejected' },
   { id: '7', name: 'Sarah Davis', email: 'sarah.davis@example.com', job_title: 'Marketing Manager', status: 'Closed' },
   { id: '8', name: 'David Miller', email: 'david.miller@example.com', job_title: 'Data Scientist', status: 'Shortlisted' },
   { id: '9', name: 'Laura Taylor', email: 'laura.taylor@example.com', job_title: 'Product Manager', status: 'Assessment Stage' },
   { id: '10', name: 'James White', email: 'james.white@example.com', job_title: 'Software Engineer', status: 'Open' },
+  { id: '11', name: 'Emily Clark', email: 'emily.clark@example.com', job_title: 'Data Engineer', status: 'Hired', joined: false },
 ];
 
+// Dummy data for job openings, activities, and events unchanged
 const dummyJobOpenings: JobOpening[] = [
   { id: '1', title: 'Software Engineer', department: 'Engineering', status: 'Open', applicants: 5 },
   { id: '2', title: 'Product Manager', department: 'Product', status: 'Open', applicants: 3 },
@@ -70,13 +76,59 @@ const dummyEvents: Event[] = [
   { id: '2', title: 'Assessment for Jane Smith', date: '2025-10-03 2:00 PM' },
 ];
 
-// DashboardCards component
-const DashboardCards: React.FC<{ applicants: JobApplicant[]; jobOpenings: JobOpening[] }> = ({ applicants, jobOpenings }) => (
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-    <div className="bg-blue-600 text-white p-4 rounded-lg shadow-md">
-      <h3 className="text-lg font-semibold">Total Applicants</h3>
-      <p className="text-2xl">{applicants.length}</p>
+// OfferLetterTracking component
+const OfferLetterTracking: React.FC<{ applicants: JobApplicant[] }> = ({ applicants }) => {
+  const hiredApplicants = applicants.filter((a) => a.status === 'Hired');
+  const joinedCount = hiredApplicants.filter((a) => a.joined).length;
+
+  return (
+    <div className="bg-white shadow-md rounded-lg p-6 mb-6">
+      <h2 className="text-xl font-semibold text-blue-800 mb-4">Offer Letter Tracking</h2>
+      <div className="mb-4">
+        <p className="text-sm text-gray-600">
+          Offer Letters Sent: <span className="font-medium">{hiredApplicants.length}</span>
+        </p>
+        <p className="text-sm text-gray-600">
+          Joined: <span className="font-medium">{joinedCount}</span> ({((joinedCount / hiredApplicants.length) * 100 || 0).toFixed(1)}%)
+        </p>
+      </div>
+      {hiredApplicants.length === 0 ? (
+        <p className="text-center text-gray-600">No offer letters sent.</p>
+      ) : (
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-blue-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Name</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Job Title</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Joined</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {hiredApplicants.map((applicant) => (
+              <tr key={applicant.id} className="hover:bg-blue-50">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{applicant.name}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{applicant.job_title}</td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span
+                    className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      applicant.joined ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}
+                  >
+                    {applicant.joined ? 'Joined' : 'Not Joined'}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
+  );
+};
+
+// DashboardCards component (removed Total Applicants)
+const DashboardCards: React.FC<{ applicants: JobApplicant[]; jobOpenings: JobOpening[] }> = ({ applicants, jobOpenings }) => (
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
     <div className="bg-blue-600 text-white p-4 rounded-lg shadow-md">
       <h3 className="text-lg font-semibold">Active Job Openings</h3>
       <p className="text-2xl">{jobOpenings.filter((job) => job.status === 'Open').length}</p>
@@ -200,8 +252,8 @@ const JobOpeningsTable: React.FC<{ jobOpenings: JobOpening[] }> = ({ jobOpenings
   </div>
 );
 
-// StatusPieChart component
-const StatusPieChart: React.FC<{ applicants: JobApplicant[] }> = ({ applicants }) => {
+// StatusFunnelChart component
+const StatusFunnelChart: React.FC<{ applicants: JobApplicant[] }> = ({ applicants }) => {
   const statusCounts = applicants.reduce(
     (acc, applicant) => {
       acc[applicant.status] = (acc[applicant.status] || 0) + 1;
@@ -211,7 +263,7 @@ const StatusPieChart: React.FC<{ applicants: JobApplicant[] }> = ({ applicants }
   );
 
   const data = {
-    labels: ['Open', 'Shortlisted', 'Assessment Stage', 'Interview Stage', 'Closed', 'Rejected', 'Hired'],
+    labels: ['Open', 'Shortlisted', 'Assessment Stage', 'Interview Stage', 'Hired', 'Closed', 'Rejected'],
     datasets: [
       {
         data: [
@@ -219,18 +271,18 @@ const StatusPieChart: React.FC<{ applicants: JobApplicant[] }> = ({ applicants }
           statusCounts['Shortlisted'] || 0,
           statusCounts['Assessment Stage'] || 0,
           statusCounts['Interview Stage'] || 0,
+          statusCounts['Hired'] || 0,
           statusCounts['Closed'] || 0,
           statusCounts['Rejected'] || 0,
-          statusCounts['Hired'] || 0,
         ],
         backgroundColor: [
           '#E5E7EB', // Gray for Open
           '#3B82F6', // Blue for Shortlisted
           '#FBBF24', // Yellow for Assessment Stage
           '#F59E0B', // Amber for Interview Stage
+          '#10B981', // Green for Hired
           '#EF4444', // Red for Closed
           '#DC2626', // Darker red for Rejected
-          '#10B981', // Green for Hired
         ],
         borderColor: ['#FFFFFF'],
         borderWidth: 1,
@@ -240,6 +292,7 @@ const StatusPieChart: React.FC<{ applicants: JobApplicant[] }> = ({ applicants }
 
   const options = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: {
         position: 'right' as const,
@@ -261,9 +314,9 @@ const StatusPieChart: React.FC<{ applicants: JobApplicant[] }> = ({ applicants }
 
   return (
     <div className="bg-white shadow-md rounded-lg p-6">
-      <h3 className="text-lg font-semibold text-blue-800 mb-4">Applicant Status Distribution</h3>
-      <div className="max-w-md mx-auto">
-        <Pie data={data} options={options} />
+      <h3 className="text-lg font-semibold text-blue-800 mb-4">Applicant Status Funnel</h3>
+      <div className="h-96">
+        <FunnelChart data={data} options={options} />
       </div>
     </div>
   );
@@ -442,11 +495,7 @@ export default function RecruiterDashboard() {
     alert(`Edit job opening ${id} functionality would be implemented here.`);
   };
 
-  // Placeholder for quick actions
-  const handleCreateAssessment = () => {
-    alert('Create assessment functionality would be implemented here.');
-  };
-
+  // Placeholder for export data
   const handleExportData = () => {
     alert('Export data functionality would be implemented here.');
   };
@@ -455,6 +504,9 @@ export default function RecruiterDashboard() {
     <div className="min-h-screen bg-gray-100 py-8 px-4">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold text-blue-800 mb-8">Recruiter Dashboard</h1>
+
+        {/* Offer Letter Tracking */}
+        <OfferLetterTracking applicants={applicants} />
 
         {/* Overview Cards */}
         <DashboardCards applicants={applicants} jobOpenings={jobOpenings} />
@@ -496,12 +548,6 @@ export default function RecruiterDashboard() {
               Update Status
             </button>
             <button
-              onClick={handleCreateAssessment}
-              className="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-            >
-              Create Assessment
-            </button>
-            <button
               onClick={handleExportData}
               className="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
             >
@@ -530,7 +576,7 @@ export default function RecruiterDashboard() {
 
           {/* Right Column */}
           <div className="lg:col-span-1">
-            <StatusPieChart applicants={applicants} />
+            <StatusFunnelChart applicants={applicants} />
             <ScheduleOverview />
           </div>
         </div>
