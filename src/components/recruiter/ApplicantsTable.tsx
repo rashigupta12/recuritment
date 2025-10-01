@@ -78,7 +78,6 @@ export function ApplicantsTable({
                   'N/A'
                 )}
               </td> */}
-              </td> */}
             </tr>
           ))}
         </tbody>

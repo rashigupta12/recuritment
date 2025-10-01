@@ -6,7 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { frappeAPI } from "@/lib/api/frappeClient";
 import TaggedApplicants from "@/components/recruiter/TaggedApplicants";
-import MultipleApplicantsForm from "@/components/recruiter/MultipleApplicantsForm";
+// import MultipleApplicantsForm from "@/components/recruiter/MultipleApplicantsForm";
 
 interface TodoData {
   name: string;

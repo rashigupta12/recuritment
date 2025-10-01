@@ -6,7 +6,6 @@
 import { useEffect, useState } from 'react';
 import { frappeAPI } from '@/lib/api/frappeClient';
 import { ApplicantsTable } from '@/components/recruiter/ApplicantsTable';
-import MultipleApplicantsForm from './MultipleApplicantsForm';
 
 interface JobApplicant {
     name: string;

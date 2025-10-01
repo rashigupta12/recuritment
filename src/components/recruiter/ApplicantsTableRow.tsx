@@ -130,7 +130,7 @@ export const ApplicantsTableRow = ({
         ) : (
           <span className="text-gray-400">-</span>
         )}
-      </td> */}
+      </td> 
       
     </tr>
   );
