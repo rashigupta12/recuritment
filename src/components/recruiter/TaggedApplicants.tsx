@@ -37,9 +37,10 @@ interface Props {
     jobId: string;
     ownerEmail: string;
     todoData?: any;
+    refreshTrigger?: number; // ✅ New prop to trigger refresh
 }
 
-export default function TaggedApplicants({ jobId, ownerEmail, todoData }: Props) {
+export default function TaggedApplicants({ jobId, ownerEmail, todoData ,refreshTrigger}: Props) {
     const [applicants, setApplicants] = useState<JobApplicant[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -49,7 +50,7 @@ export default function TaggedApplicants({ jobId, ownerEmail, todoData }: Props)
         const fetchApplicants = async () => {
             try {
                 setLoading(true);
-                console.log("🔍 Fetching applicants for:", { jobId, ownerEmail });
+               
 
                 // Step 1: Get the list of applicant names/IDs
                 const response: any = await frappeAPI.getTaggedApplicantsByJobId(jobId, ownerEmail);
@@ -104,7 +105,7 @@ export default function TaggedApplicants({ jobId, ownerEmail, todoData }: Props)
             setError('Job ID or owner email not provided');
             console.log('❌ Missing data:', { jobId, ownerEmail });
         }
-    }, [jobId, ownerEmail]);
+    }, [jobId, ownerEmail,refreshTrigger]);
 
     // Handle view applicant
     const handleViewApplicant = (applicant: JobApplicant) => {

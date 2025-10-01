@@ -6,7 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { frappeAPI } from "@/lib/api/frappeClient";
 import TaggedApplicants from "@/components/recruiter/TaggedApplicants";
-// import MultipleApplicantsForm from "@/components/recruiter/MultipleApplicantsForm";
+import MultipleApplicantsForm from "@/components/recruiter/MultipleApplicantsForm";
 
 interface TodoData {
   name: string;
@@ -23,9 +23,16 @@ export default function TodoDetailPage() {
   const [jobId, setJobId] = useState<string>('');
   const [todoData, setTodoData] = useState<TodoData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshTrigger, setRefreshTrigger] = useState(0); // ✅ New state for refresh
 
   const handleClose = () => {
     router.back();
+  };
+
+  // ✅ New function to trigger refresh
+  const handleFormSubmitSuccess = () => {
+    console.log('🔄 Refreshing applicants list...');
+    setRefreshTrigger(prev => prev + 1);
   };
 
   useEffect(() => {
@@ -69,8 +76,8 @@ export default function TodoDetailPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Tabs Navigation */}
-      <div className="   sticky top-0 z-10">
-        <div className="max-w-7xl   mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-center space-x-4 py-3">
             <button
               onClick={() => setActiveTab('details')}
@@ -90,7 +97,7 @@ export default function TodoDetailPage() {
             >
               Tagged Applicants
             </button>
-            <button
+            {/* <button
               onClick={() => setActiveTab('resume')}
               className={`px-4 py-1 rounded-full text-sm font-medium transition ${activeTab === 'resume'
                   ? "bg-blue-100 text-primary border border-primary"
@@ -98,7 +105,7 @@ export default function TodoDetailPage() {
                 }`}
             >
               Resume Application
-            </button>
+            </button> */}
           </div>
         </div>
       </div>
@@ -119,11 +126,13 @@ export default function TodoDetailPage() {
               <>
                 <MultipleApplicantsForm
                   initialJobId={jobId}
-
+                  onFormSubmitSuccess={handleFormSubmitSuccess} // ✅ Pass callback
                 />
                 <TaggedApplicants
                   jobId={jobId}
                   ownerEmail={todoData.owner_email || 'recruiter@gennextit.com'}
+                  todoData={todoData}
+                  refreshTrigger={refreshTrigger} // ✅ Pass refresh trigger
                 />
               </>
             ) : (
