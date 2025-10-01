@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { frappeAPI } from '@/lib/api/frappeClient';
-import { AssessmentStagedApplicantsTable } from '@/components/recruiter/AssesmentStagedApplicantsTable';
+import { ApplicantsTable } from '@/components/recruiter/ApplicantsTable'; // Adjust path if needed
+import { Search } from 'lucide-react';
 
 export interface JobApplicant {
   name: string;
@@ -43,9 +43,11 @@ interface ApplicantDetailResponse {
 
 export default function AssessmentStagedApplicants() {
   const [applicants, setApplicants] = useState<JobApplicant[]>([]);
+  const [filteredApplicants, setFilteredApplicants] = useState<JobApplicant[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const router = useRouter();
 
   useEffect(() => {
@@ -71,6 +73,7 @@ export default function AssessmentStagedApplicants() {
 
         if (!result.data || result.data.length === 0) {
           setApplicants([]);
+          setFilteredApplicants([]);
           return;
         }
 
@@ -104,6 +107,7 @@ export default function AssessmentStagedApplicants() {
         }
 
         setApplicants(detailedApplicants);
+        setFilteredApplicants(detailedApplicants);
       } catch (err: any) {
         console.error('Fetch error:', err);
         let errorMessage = 'An error occurred while fetching applicants.';
@@ -124,6 +128,25 @@ export default function AssessmentStagedApplicants() {
 
     checkAuthAndFetchApplicants();
   }, [router]);
+
+  // Handle search filter
+  useEffect(() => {
+    let filtered = applicants;
+
+    // Apply search filter by applicant_name, email_id, and job_title
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (applicant) =>
+          (applicant.applicant_name?.toLowerCase().includes(query) || false) ||
+          (applicant.email_id?.toLowerCase().includes(query) || false) ||
+           (applicant.job_title?.toLowerCase().includes(query) || false)
+
+      );
+    }
+
+    setFilteredApplicants(filtered);
+  }, [applicants, searchQuery]);
 
   if (loading) {
     return (
@@ -146,11 +169,25 @@ export default function AssessmentStagedApplicants() {
   return (
     <div className="min-h-screen bg-gray-100 py-8 px-4">
       <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-800 text-center">
-            Assessment Stage Applicants
-          </h1>
-        </div>
+       <div className="flex items-center mb-6">
+  <div className="flex-1">
+    <h1 className="text-3xl font-bold text-gray-800">
+      Assessment Staged Applicants
+    </h1>
+  </div>
+  <div className="w-80">
+    <div className="relative">
+      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+      <input
+        type="text"
+        placeholder="Search by name, email, or job title..."
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        className="w-full pl-8 pr-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+      />
+    </div>
+  </div>
+</div>
         {error && (
           <div className="mb-6 p-4 bg-red-100 text-red-700 rounded-lg text-center">
             <p>{error}</p>
@@ -166,10 +203,10 @@ export default function AssessmentStagedApplicants() {
             )}
           </div>
         )}
-        {applicants.length === 0 ? (
+        {filteredApplicants.length === 0 ? (
           <p className="text-center text-gray-600">No Assessment Stage applicants found.</p>
         ) : (
-          <AssessmentStagedApplicantsTable applicants={applicants} />
+          <ApplicantsTable applicants={filteredApplicants} showCheckboxes={false} />
         )}
       </div>
     </div>

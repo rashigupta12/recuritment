@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { frappeAPI } from '@/lib/api/frappeClient';
 import { ApplicantsTable } from '@/components/recruiter/ApplicantsTable';
-import { Search, Filter, Download, RefreshCw, Users, CheckSquare } from 'lucide-react';
+import { Search } from 'lucide-react';
 
 export interface JobApplicant {
   name: string;
@@ -43,16 +43,17 @@ interface ApplicantDetailResponse {
 
 export default function ViewApplicantPage() {
   const [applicants, setApplicants] = useState<JobApplicant[]>([]);
-  const [filteredApplicants, setFilteredApplicants] = useState<JobApplicant[]>([]);
+  const [filteredApplicants, setFilteredApplicants] = useState<JobApplicant[]>([]); // New state for filtered applicants
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [selectedApplicants, setSelectedApplicants] = useState<string[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [modalError, setModalError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>(''); // New state for search query
+  const [statusFilter, setStatusFilter] = useState<string>('all'); // State for status filter
   const router = useRouter();
 
   const fetchApplicantsData = async (email: string) => {
@@ -60,9 +61,11 @@ export default function ViewApplicantPage() {
     const result: ApiResponse = response;
     console.log('getAllApplicants response:', result.data);
 
-    if (!result.data || result.data.length === 0) {
-      return [];
-    }
+        if (!result.data || result.data.length === 0) {
+          setApplicants([]);
+          setFilteredApplicants([]);
+          return;
+        }
 
     const detailedApplicants: JobApplicant[] = [];
     const usedNames = new Set<string>();
@@ -129,7 +132,7 @@ export default function ViewApplicantPage() {
 
         const detailedApplicants = await fetchApplicantsData(email);
         setApplicants(detailedApplicants);
-        setFilteredApplicants(detailedApplicants);
+        setFilteredApplicants(detailedApplicants); // Initialize filtered applicants
       } catch (err: any) {
         console.error('Fetch error:', err);
         let errorMessage = 'An error occurred while fetching applicants.';
@@ -151,64 +154,59 @@ export default function ViewApplicantPage() {
     checkAuthAndFetchApplicants();
   }, [router]);
 
-  // Filter applicants based on search and status
+  // Handle search and status filter
   useEffect(() => {
-    let filtered = [...applicants];
+    let filtered = applicants;
 
-    // Search filter
+    // Apply search filter
     if (searchQuery) {
+      const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
         (applicant) =>
-          applicant.applicant_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          applicant.email_id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          applicant.job_title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          applicant.designation?.toLowerCase().includes(searchQuery.toLowerCase())
+          applicant.applicant_name?.toLowerCase().includes(query) ||
+          applicant.email_id?.toLowerCase().includes(query) ||
+          applicant.job_title?.toLowerCase().includes(query)
       );
     }
 
-    // Status filter
+    // Apply status filter
     if (statusFilter !== 'all') {
-      filtered = filtered.filter((applicant) => applicant.status === statusFilter);
+      filtered = filtered.filter(
+        (applicant) => applicant.status?.toLowerCase() === statusFilter.toLowerCase()
+      );
     }
 
     setFilteredApplicants(filtered);
-  }, [searchQuery, statusFilter, applicants]);
+  }, [applicants, searchQuery, statusFilter]);
 
+  // Handle checkbox selection
   const handleSelectApplicant = (name: string) => {
     setSelectedApplicants((prev) =>
       prev.includes(name) ? prev.filter((id) => id !== name) : [...prev, name]
     );
   };
 
-  const handleRefresh = async () => {
-    if (!userEmail) return;
-    
-    try {
-      setIsRefreshing(true);
-      const detailedApplicants = await fetchApplicantsData(userEmail);
-      setApplicants(detailedApplicants);
-      setFilteredApplicants(detailedApplicants);
-      toast.success('Applicants list refreshed');
-    } catch (err: any) {
-      console.error('Refresh error:', err);
-      toast.error('Failed to refresh applicants list');
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
-  const handleChangeStatus = async () => {
+  // Handle opening the confirmation modal
+  const handleChangeStatus = () => {
     if (selectedApplicants.length === 0) {
       toast.error('Please select at least one applicant.');
       return;
     }
+    setIsModalOpen(true);
+    setSelectedStatus(''); // Reset status in modal
+    setModalError(null);
+  };
+
+  // Handle confirming the status change
+  const handleConfirmStatusChange = async () => {
     if (!selectedStatus) {
-      toast.error('Please select a status.');
+      setModalError('Please select a status.');
       return;
     }
     if (!userEmail) {
       toast.error('User email not found. Please log in again.');
       setIsAuthenticated(false);
+      setIsModalOpen(false);
       router.push('/login');
       return;
     }
@@ -236,16 +234,17 @@ export default function ViewApplicantPage() {
 
       const detailedApplicants = await fetchApplicantsData(userEmail);
       setApplicants(detailedApplicants);
-      setFilteredApplicants(detailedApplicants);
+      setFilteredApplicants(detailedApplicants); // Reset filtered applicants
       setSelectedApplicants([]);
       setSelectedStatus('');
+      setIsModalOpen(false); // Close the modal
 
       if (failedUpdates.length > 0) {
         toast.warning(
           `Status updated for some applicants. Failed for: ${failedUpdates.join(', ')}.`
         );
       } else {
-        toast.success('Applicant statuses updated successfully.');
+        toast.success('Applicant status updated successfully.');
       }
     } catch (err: any) {
       console.error('Status update error:', err);
@@ -258,9 +257,17 @@ export default function ViewApplicantPage() {
         errorMessage = err.response.data.message;
       }
       toast.error(errorMessage);
+      setIsModalOpen(false); // Close the modal on error
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle closing the modal
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedStatus('');
+    setModalError(null);
   };
 
   if (loading) {
@@ -314,158 +321,46 @@ export default function ViewApplicantPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
       <div className="max-w-7xl mx-auto">
-        {/* Header Section */}
-        <div className="mb-8">
-          {/* <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2 flex items-center gap-3">
-                <Users className="h-10 w-10 text-blue-600" />
-                Job Applicants
-              </h1>
-              <p className="text-gray-600">Manage and track all your job applicants</p>
-            </div>
-            <button
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
-            >
-              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-              Refresh
-            </button>
-          </div>
-
-         
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">Total Applicants</p>
-                  <p className="text-3xl font-bold text-gray-900">{applicants.length}</p>
-                </div>
-                <div className="p-3 bg-blue-50 rounded-lg">
-                  <Users className="h-6 w-6 text-blue-600" />
-                </div>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-gray-800">Job Applicants</h1>
+          <div className="flex items-center gap-4">
+            <div className="flex-1 w-full lg:w-auto">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by name, email, job title..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                />
               </div>
             </div>
-            
-            <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">Selected</p>
-                  <p className="text-3xl font-bold text-gray-900">{selectedApplicants.length}</p>
-                </div>
-                <div className="p-3 bg-purple-50 rounded-lg">
-                  <CheckSquare className="h-6 w-6 text-purple-600" />
-                </div>
-              </div>
+            <div className="flex items-center gap-3 w-full lg:w-auto">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white min-w-[150px]"
+              >
+                <option value="all">All</option>
+                <option value="Open">Open</option>
+                <option value="Shortlisted">Shortlisted</option>
+                <option value="Assessment Stage">Assessment Stage</option>
+                <option value="Interview Stage">Interview Stage</option>
+                <option value="Hired">Hired</option>
+                <option value="Rejected">Rejected</option>
+                <option value="Closed">Closed</option>
+              </select>
+              <button
+                onClick={handleChangeStatus}
+                disabled={selectedApplicants.length === 0}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium whitespace-nowrap"
+              >
+                Update Status
+              </button>
             </div>
-
-            <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">Shortlisted</p>
-                  <p className="text-3xl font-bold text-gray-900">{statusCounts['Shortlisted'] || 0}</p>
-                </div>
-                <div className="p-3 bg-green-50 rounded-lg">
-                  <Filter className="h-6 w-6 text-green-600" />
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">Hired</p>
-                  <p className="text-3xl font-bold text-gray-900">{statusCounts['Hired'] || 0}</p>
-                </div>
-                <div className="p-3 bg-yellow-50 rounded-lg">
-                  <Download className="h-6 w-6 text-yellow-600" />
-                </div>
-              </div>
-            </div>
-          </div> */}
-
-          {/* Filters and Actions Bar */}
-          {/* <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-2"> */}
-            <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-              {/* Search Bar */}
-              <div className="flex-1 w-full lg:w-auto">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search by name, email, job title..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  />
-                </div>
-              </div>
-
-              {/* Status Filter */}
-              <div className="flex items-center gap-3 w-full lg:w-auto">
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white min-w-[150px]"
-                >
-                  <option value="all">All</option>
-                  <option value="Open">Open</option>
-                  <option value="Shortlisted">Shortlisted</option>
-                  <option value="Assessment Stage">Assessment Stage</option>
-                  <option value="Interview Stage">Interview Stage</option>
-
-                  <option value="Hired">Hired</option>
-                  <option value="Rejected">Rejected</option>
-                  <option value="Closed">Closed</option>
-                </select>
-
-                {/* Bulk Action */}
-                <div className="flex items-center gap-2">
-                  <select
-                    value={selectedStatus}
-                    onChange={(e) => setSelectedStatus(e.target.value)}
-                    className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white min-w-[150px]"
-                    disabled={selectedApplicants.length === 0}
-                  >
-                    <option value="">Change Status</option>
-                    <option value="open">Open</option>
-                    <option value="Shortlisted">Shortlisted</option>
-                    <option value="Assessment Stage">Assessment Stage</option>
-                    <option value="Hired">Hired</option>
-                    <option value="Rejected">Rejected</option>
-                    <option value="Closed">Closed</option>
-                  </select>
-                  
-                  <button
-                    onClick={handleChangeStatus}
-                    disabled={selectedApplicants.length === 0 || !selectedStatus}
-                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium whitespace-nowrap"
-                  >
-                    Update Status
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Selected Count Badge */}
-            {/* {selectedApplicants.length > 0 && (
-              <div className="mt-4 flex items-center gap-2">
-                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                  {selectedApplicants.length} applicant{selectedApplicants.length > 1 ? 's' : ''} selected
-                </span>
-                <button
-                  onClick={() => setSelectedApplicants([])}
-                  className="text-sm text-gray-600 hover:text-gray-900 underline"
-                >
-                  Clear selection
-                </button>
-              </div>
-            )} */}
           </div>
         </div>
-
-        {/* Error Message */}
         {error && (
           <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-6">
             <div className="flex items-start gap-3">
@@ -487,34 +382,82 @@ export default function ViewApplicantPage() {
             </div>
           </div>
         )}
-
-        {/* Table Section */}
         {filteredApplicants.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-            <div className="text-6xl mb-4">📋</div>
-            <h3 className="text-xl font-semibold text-gray-800 mb-2">No applicants found</h3>
-            <p className="text-gray-600">
-              {searchQuery || statusFilter !== 'all'
-                ? 'Try adjusting your filters to see more results'
-                : 'No applicants have been added yet'}
-            </p>
-          </div>
+          <p className="text-center text-gray-600">No applicants found.</p>
         ) : (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            {/* <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-              <h2 className="text-lg font-semibold text-gray-900">
-                Applicants List ({filteredApplicants.length})
-              </h2>
-            </div> */}
-            <ApplicantsTable
-              applicants={filteredApplicants}
-              selectedApplicants={selectedApplicants}
-              onSelectApplicant={handleSelectApplicant}
-            />
-          </div>
+          <ApplicantsTable
+            applicants={filteredApplicants}
+            selectedApplicants={selectedApplicants}
+            onSelectApplicant={handleSelectApplicant}
+            showCheckboxes={true}
+            showStatus={true}
+          />
         )}
       </div>
-    // </div>
+
+      {/* Confirmation Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h2 id="modal-title" className="text-2xl font-bold text-gray-800 mb-4">
+              Confirm Status Change
+            </h2>
+            {modalError && (
+              <div className="mb-4 p-2 bg-red-100 text-red-700 rounded-lg text-center">
+                <p>{modalError}</p>
+              </div>
+            )}
+            <div className="mb-4">
+              <label className="block text-gray-600 mb-2">Select New Status</label>
+              <select
+                className="px-4 py-2 border rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+              >
+                <option value="">Select Status</option>
+                <option value="Open">Open</option>
+                <option value="Shortlisted">Shortlisted</option>
+                <option value="Assessment Stage">Assessment Stage</option>
+                <option value="Closed">Closed</option>
+                <option value="Rejected">Rejected</option>
+                <option value="Hired">Hired</option>
+              </select>
+            </div>
+            <p className="text-gray-600 mb-4">
+              {selectedStatus
+                ? `You are about to change the status of the following applicants to ${selectedStatus}:`
+                : 'Selected Applicants:'}
+            </p>
+            <ul className="list-disc list-inside mb-4">
+              {selectedApplicants.map((name) => {
+                const applicant = applicants.find((a) => a.name === name);
+                return (
+                  <li key={name} className="text-gray-600 flex justify-between">
+                    <span>{applicant?.applicant_name || name}</span>
+                    {/* <span>{applicant?.job_title || 'N/A'}</span> */}
+                    <span>{applicant?.email_id}</span>
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={handleCloseModal}
+                className="px-4 py-2 rounded-lg text-gray-700 bg-gray-200 hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmStatusChange}
+                className="px-4 py-2 rounded-lg text-white bg-blue-600 hover:bg-blue-700"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
