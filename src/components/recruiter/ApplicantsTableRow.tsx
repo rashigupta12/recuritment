@@ -101,7 +101,7 @@ export const ApplicantsTableRow = ({
           <span className="text-gray-400">-</span>
         )}
       </td>
-      <td className="md:table-cell px-3 py-2">
+      {/* <td className="md:table-cell px-3 py-2">
         {applicant.custom_education?.length ? (
           <ul className="list-none text-xs text-gray-900 space-y-0.5">
             {applicant.custom_education.map((edu: any, i: number) => (
@@ -113,8 +113,8 @@ export const ApplicantsTableRow = ({
         ) : (
           <span className="text-gray-400">-</span>
         )}
-      </td>
-      <td className="md:table-cell px-3 py-2">
+      </td> */}
+      {/* <td className="md:table-cell px-3 py-2">
         {applicant.resume_attachment ? (
           <a
             href={`${process.env.NEXT_PUBLIC_FRAPPE_BASE_URL}${applicant.resume_attachment}`}
@@ -129,7 +129,7 @@ export const ApplicantsTableRow = ({
         ) : (
           <span className="text-gray-400">-</span>
         )}
-      </td>
+      </td> */}
       
     </tr>
   );

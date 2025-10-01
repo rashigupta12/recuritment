@@ -4,13 +4,17 @@ import { JobApplicant } from '../../app/(dashboard)/dashboard/recruiter/viewappl
 
 interface ApplicantsTableProps {
   applicants: JobApplicant[];
-  selectedApplicants: string[];
-  onSelectApplicant: (name: string) => void;
+  showStatus?:boolean;
+  showCheckboxes?: boolean; // New prop to control checkbox visibility
+  selectedApplicants?: string[]; // Optional for when checkboxes are shown
+  onSelectApplicant?: (name: string) => void; // Optional for when checkboxes are shown
 }
 
 export function ApplicantsTable({
   applicants,
-  selectedApplicants,
+  showCheckboxes = false,
+  showStatus=false,
+  selectedApplicants = [],
   onSelectApplicant,
 }: ApplicantsTableProps) {
   // Debug: Log applicant names and emails to check for duplicates
@@ -24,13 +28,18 @@ export function ApplicantsTable({
       <table className="min-w-full bg-white border rounded-lg">
         <thead>
           <tr className="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
-            <th className="py-3 px-6 text-left">Select</th>
+            {showCheckboxes && (
+              <th className="py-3 px-6 text-left">Select</th>
+            )}
+            <th className="py-3 px-6 text-left">Job Title</th>
             <th className="py-3 px-6 text-left">Name</th>
             <th className="py-3 px-6 text-left">Email</th>
             <th className="py-3 px-6 text-left">Phone</th>
-            <th className="py-3 px-6 text-left">Job Title</th>
-            <th className="py-3 px-6 text-left">Status</th>
-            <th className="py-3 px-6 text-left">Education</th>
+            {showStatus&&(
+                          <th className="py-3 px-6 text-left">Status</th>
+
+            )}
+            {/* <th className="py-3 px-6 text-left">Education</th> */}
           </tr>
         </thead>
         <tbody className="text-gray-600 text-sm font-light">
@@ -39,21 +48,27 @@ export function ApplicantsTable({
               key={applicant.name || `applicant-${index}`} // Fallback to index if name is missing
               className="border-b border-gray-200 hover:bg-gray-100"
             >
-              <td className="py-3 px-6 text-left">
-                <input
-                  type="checkbox"
-                  checked={selectedApplicants.includes(applicant.name)}
-                  onChange={() => onSelectApplicant(applicant.name)}
-                  className="h-4 w-4"
-                  disabled={!applicant.name}
-                />
-              </td>
+              {showCheckboxes && (
+                
+                <td className="py-3 px-6 text-left">
+                  <input
+                    type="checkbox"
+                    checked={selectedApplicants.includes(applicant.name)}
+                    onChange={() => onSelectApplicant?.(applicant.name)}
+                    className="h-4 w-4"
+                    disabled={!applicant.name}
+                  />
+                </td>
+              )}
+                            <td className="py-3 px-6 text-left">{applicant.job_title || 'N/A'}</td>
+
               <td className="py-3 px-6 text-left">{applicant.applicant_name || 'N/A'}</td>
               <td className="py-3 px-6 text-left">{applicant.email_id || 'N/A'}</td>
               <td className="py-3 px-6 text-left">{applicant.phone_number || 'N/A'}</td>
-              <td className="py-3 px-6 text-left">{applicant.job_title || 'N/A'}</td>
-              <td className="py-3 px-6 text-left">{applicant.status || 'N/A'}</td>
-              <td className="py-3 px-6 text-left">
+     {showStatus&&(
+               <td className="py-3 px-6 text-left">{applicant.status || 'N/A'}</td>
+     )}
+              {/* <td className="py-3 px-6 text-left">
                 {applicant.custom_education && applicant.custom_education.length > 0 ? (
                   <ul className="list-disc list-inside">
                     {applicant.custom_education.map((edu, index) => (
@@ -65,7 +80,7 @@ export function ApplicantsTable({
                 ) : (
                   'N/A'
                 )}
-              </td>
+              </td> */}
             </tr>
           ))}
         </tbody>

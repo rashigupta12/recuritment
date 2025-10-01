@@ -153,6 +153,7 @@
 'use client';
 
 import { Edit, Edit2Icon, Edit3Icon, EditIcon, LucideEdit, LucideEdit2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface ToDo {
   name: string;
@@ -214,6 +215,14 @@ export const TodosTable = ({ todos, onViewTodo, onEditTodo }: TodosTableProps) =
       return;
     }
     onViewTodo(todo);
+  };
+
+  const handleCreateApplicant = (todo: ToDo) => {
+    if (todo.custom_job_id) {
+      router.push(`/dashboard/recruiter/applicants?jobId=${encodeURIComponent(todo.custom_job_id)}`);
+    } else {
+      alert('No Job ID available for this task');
+    }
   };
 
   return (

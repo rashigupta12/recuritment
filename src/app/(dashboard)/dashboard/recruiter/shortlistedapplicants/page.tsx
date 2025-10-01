@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { frappeAPI } from '@/lib/api/frappeClient';
-import { ShortlistedApplicantsTable } from '@/components/recruiter/ShortlistedApplicantsTable';
+import { ApplicantsTable } from '@/components/recruiter/ApplicantsTable'; // Adjust path if needed
+import { Search } from 'lucide-react';
+
 export interface JobApplicant {
   name: string;
   applicant_name?: string;
@@ -53,21 +54,27 @@ interface AssessmentResponse {
   };
 }
 
-export default function ViewApplicantPage() {
+export default function ShortlistedApplicantsPage() {
   const [applicants, setApplicants] = useState<JobApplicant[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [filteredApplicants, setFilteredApplicants] = useState<JobApplicant[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [selectedApplicants, setSelectedApplicants] = useState<Set<string>>(new Set());
+  const [selectedApplicants, setSelectedApplicants] = useState<string[]>([]);
   const [assessmentError, setAssessmentError] = useState<string | null>(null);
   const [assessmentSuccess, setAssessmentSuccess] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [isAssessmentModalOpen, setIsAssessmentModalOpen] = useState<boolean>(false);
+  const [isStatusModalOpen, setIsStatusModalOpen] = useState<boolean>(false);
   const [scheduledOn, setScheduledOn] = useState<string>('');
   const [fromTime, setFromTime] = useState<string>('');
   const [toTime, setToTime] = useState<string>('');
   const [assessmentLink, setAssessmentLink] = useState<string>('');
   const [assessmentRound, setAssessmentRound] = useState<string>('');
   const [modalError, setModalError] = useState<string | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<string>('');
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+
   const router = useRouter();
 
   useEffect(() => {
@@ -86,6 +93,7 @@ export default function ViewApplicantPage() {
 
         setIsAuthenticated(true);
         const email = session.user.email;
+        setUserEmail(email);
 
         // Fetch list of applicants
         const response = await frappeAPI.getAllApplicants(email);
@@ -93,6 +101,7 @@ export default function ViewApplicantPage() {
 
         if (!result.data || result.data.length === 0) {
           setApplicants([]);
+          setFilteredApplicants([]);
           return;
         }
 
@@ -118,6 +127,7 @@ export default function ViewApplicantPage() {
         }
 
         setApplicants(detailedApplicants);
+        setFilteredApplicants(detailedApplicants);
       } catch (err: any) {
         console.error('Fetch error:', err);
         let errorMessage = 'An error occurred while fetching applicants.';
@@ -139,50 +149,84 @@ export default function ViewApplicantPage() {
     checkAuthAndFetchApplicants();
   }, [router]);
 
-  // Handlers for view and edit actions
+  // Handle search filter
+  useEffect(() => {
+    let filtered = applicants;
 
+    // Apply search filter by job_title and applicant_name
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (applicant) =>
+          (applicant.job_title?.toLowerCase().includes(query) || false) ||
+          (applicant.applicant_name?.toLowerCase().includes(query) || false)||
+          (applicant.email_id?.toLowerCase().includes(query) || false)
+      );
+    }
+
+    setFilteredApplicants(filtered);
+  }, [applicants, searchQuery]);
 
   // Handler for checkbox changes
   const handleCheckboxChange = (applicantId: string) => {
     setSelectedApplicants((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(applicantId)) {
-        newSet.delete(applicantId);
+      const newSelected = [...prev];
+      const index = newSelected.indexOf(applicantId);
+      if (index > -1) {
+        newSelected.splice(index, 1);
       } else {
-        newSet.add(applicantId);
+        newSelected.push(applicantId);
       }
-      return newSet;
+      return newSelected;
     });
   };
 
   // Handler for select all
   const handleSelectAll = () => {
-    if (selectedApplicants.size === applicants.length) {
-      setSelectedApplicants(new Set());
+    if (selectedApplicants.length === applicants.length) {
+      setSelectedApplicants([]);
     } else {
-      setSelectedApplicants(new Set(applicants.map((applicant) => applicant.name)));
+      setSelectedApplicants(applicants.map((applicant) => applicant.name));
     }
   };
 
-  // Handler to open the modal
-  const handleOpenModal = () => {
-    if (selectedApplicants.size === 0) {
+  // Handler to open the assessment modal
+  const handleOpenAssessmentModal = () => {
+    if (selectedApplicants.length === 0) {
       setAssessmentError('Please select at least one applicant to start the assessment.');
       setAssessmentSuccess(null);
       return;
     }
-    setIsModalOpen(true);
+    setIsAssessmentModalOpen(true);
     setModalError(null);
   };
 
-  // Handler to close the modal
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setScheduledOn('2025-09-29');
+  // Handler to close the assessment modal
+  const handleCloseAssessmentModal = () => {
+    setIsAssessmentModalOpen(false);
+    setScheduledOn('');
     setFromTime('');
     setToTime('');
     setAssessmentLink('');
     setAssessmentRound('');
+    setModalError(null);
+  };
+
+  // Handler to open the status update modal
+  const handleOpenStatusModal = () => {
+    if (selectedApplicants.length === 0) {
+      toast.error('Please select at least one applicant.');
+      return;
+    }
+    setIsStatusModalOpen(true);
+    setSelectedStatus('');
+    setModalError(null);
+  };
+
+  // Handler to close the status modal
+  const handleCloseStatusModal = () => {
+    setIsStatusModalOpen(false);
+    setSelectedStatus('');
     setModalError(null);
   };
 
@@ -194,8 +238,8 @@ export default function ViewApplicantPage() {
     }
 
     // Validate time: from_time should be before to_time
-    const fromTimeDate = new Date(`2025-09-29T${fromTime}`);
-    const toTimeDate = new Date(`2025-09-29T${toTime}`);
+    const fromTimeDate = new Date(`${fromTime}`);
+    const toTimeDate = new Date(`${toTime}`);
     if (fromTimeDate >= toTimeDate) {
       setModalError('From time must be earlier than to time.');
       return;
@@ -207,7 +251,7 @@ export default function ViewApplicantPage() {
 
       // Prepare the payload for the Assessment API
       const payload = {
-        applicants: Array.from(selectedApplicants),
+        applicants: selectedApplicants,
         scheduled_on: scheduledOn,
         from_time: fromTime,
         to_time: toTime,
@@ -216,7 +260,7 @@ export default function ViewApplicantPage() {
       };
 
       // Use frappeAPI.createbulkAssemnet to create the assessment
-      const response = await frappeAPI.createbulkAssemnet(payload);
+      const response = await frappeAPI.createbulkAssessment(payload);
 
       console.log('API Response:', response);
 
@@ -227,16 +271,12 @@ export default function ViewApplicantPage() {
       // Handle different possible response structures
       let assessmentIds: string;
       if (response.message?.created_assessments && Array.isArray(response.message.created_assessments)) {
-        // Handle { message: { status: "success", created_assessments: string[] } }
         assessmentIds = response.message.created_assessments.join(', ');
       } else if (response.message?.name) {
-        // Fallback: { message: { name: string } }
         assessmentIds = response.message.name;
       } else if (response.name) {
-        // Fallback: { name: string }
         assessmentIds = response.name;
       } else if (response.data && (response.data.name || response.data.id)) {
-        // Fallback: { data: { name: string } } or { data: { id: string } }
         assessmentIds = response.data.name || response.data.id;
       } else {
         throw new Error('Invalid response structure: Missing assessment ID(s).');
@@ -246,11 +286,11 @@ export default function ViewApplicantPage() {
       toast.success(`Assessment(s) created successfully with ID(s): ${assessmentIds}`);
 
       // Close the modal
-      setIsModalOpen(false);
+      setIsAssessmentModalOpen(false);
 
       // Clear selected applicants and form fields
-      setSelectedApplicants(new Set());
-      setScheduledOn('2025-09-29');
+      setSelectedApplicants([]);
+      setScheduledOn('');
       setFromTime('');
       setToTime('');
       setAssessmentLink('');
@@ -277,7 +317,99 @@ export default function ViewApplicantPage() {
       }
       setAssessmentError(errorMessage);
       toast.error(errorMessage);
-      setIsModalOpen(false);
+      setIsAssessmentModalOpen(false);
+    }
+  };
+
+  // Handler for confirming status change
+  const handleConfirmStatusChange = async () => {
+    if (!selectedStatus) {
+      setModalError('Please select a status.');
+      return;
+    }
+    if (!userEmail) {
+      toast.error('User email not found. Please log in again.');
+      setIsAuthenticated(false);
+      setIsStatusModalOpen(false);
+      router.push('/login');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      console.log('Selected applicants for status update:', selectedApplicants);
+      const failedUpdates: string[] = [];
+      for (const name of selectedApplicants) {
+        if (!name) {
+          console.warn('Skipping update: name is undefined or empty');
+          failedUpdates.push('Unknown (missing name)');
+          continue;
+        }
+        try {
+          console.log(`Sending PUT request to update status for ${name} to ${selectedStatus}`);
+          await frappeAPI.updateApplicantStatus(name, { status: selectedStatus });
+        } catch (err: any) {
+          console.error(`Failed to update status for ${name}:`, err);
+          if (err?.exc_type === 'DoesNotExistError' || err.response?.status === 404) {
+            failedUpdates.push(name);
+          } else {
+            throw err; // Rethrow other errors
+          }
+        }
+      }
+
+      // Refresh applicants list
+      const response = await frappeAPI.getAllApplicants(userEmail);
+      const result: ApiResponse = response;
+      console.log('getAllApplicants refresh response:', result.data);
+      const detailedApplicants: JobApplicant[] = [];
+      for (const applicant of result.data) {
+        try {
+          const detailResponse = await frappeAPI.getApplicantBYId(applicant.name);
+          const detail: ApplicantDetailResponse = detailResponse;
+          if (detail.data.status?.toLowerCase() === 'shortlisted') {
+            detailedApplicants.push(detail.data);
+          }
+        } catch (detailErr: any) {
+          console.error(`Error fetching details for ${applicant.name}:`, detailErr);
+          if (applicant.status?.toLowerCase() === 'shortlisted') {
+            detailedApplicants.push({
+              ...applicant,
+              applicant_name: 'Error fetching details',
+            });
+          }
+        }
+      }
+
+      setApplicants(detailedApplicants);
+      setFilteredApplicants(detailedApplicants);
+      setSelectedApplicants([]);
+      setSelectedStatus('');
+      setIsStatusModalOpen(false);
+
+      if (failedUpdates.length > 0) {
+        toast.warning(
+          `Status updated for some applicants. Failed for: ${failedUpdates.join(', ')}. Applicant records may not exist or the endpoint may be incorrect.`
+        );
+      } else {
+        toast.success('Applicant status updated successfully.');
+      }
+    } catch (err: any) {
+      console.error('Status update error:', err);
+      let errorMessage = 'Failed to update applicant statuses.';
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        errorMessage = 'Session expired or insufficient permissions. Please log in again.';
+        setIsAuthenticated(false);
+        router.push('/login');
+      } else if (err.response?.status === 404 || err?.exc_type === 'DoesNotExistError') {
+        errorMessage = 'Job Applicant resource not found. Please verify the API endpoint or contact support.';
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      }
+      toast.error(errorMessage);
+      setIsStatusModalOpen(false);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -306,17 +438,44 @@ export default function ViewApplicantPage() {
           <h1 className="text-3xl font-bold text-gray-800 text-center">
             Shortlisted Job Applicants
           </h1>
-          <button
-            onClick={handleOpenModal}
-            disabled={selectedApplicants.size === 0}
-            className={`px-4 py-2 rounded-lg text-white font-medium ${
-              selectedApplicants.size === 0
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-blue-600 hover:bg-blue-700'
-            }`}
-          >
-            Create Assessment
-          </button>
+          <div className="flex items-center gap-4">
+            <div className="flex-1 w-full lg:w-auto">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by name or job title..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-8 pr-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                />
+              </div>
+            </div>
+            <div className="flex items-center space-x-4">
+              <button
+                className={`px-4 py-2 rounded-lg text-white font-medium ${
+                  selectedApplicants.length === 0
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700'
+                }`}
+                onClick={handleOpenStatusModal}
+                disabled={selectedApplicants.length === 0}
+              >
+                Update Status
+              </button>
+              <button
+                onClick={handleOpenAssessmentModal}
+                disabled={selectedApplicants.length === 0}
+                className={`px-4 py-2 rounded-lg text-white font-medium ${
+                  selectedApplicants.length === 0
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700'
+                }`}
+              >
+                Create Assessment
+              </button>
+            </div>
+          </div>
         </div>
         {error && (
           <div className="mb-6 p-4 bg-red-100 text-red-700 rounded-lg text-center">
@@ -343,24 +502,24 @@ export default function ViewApplicantPage() {
             <p>{assessmentSuccess}</p>
           </div>
         )}
-        {applicants.length === 0 ? (
+        {filteredApplicants.length === 0 ? (
           <p className="text-center text-gray-600">No shortlisted applicants found.</p>
         ) : (
-          <ShortlistedApplicantsTable
-            applicants={applicants}
-           
+          <ApplicantsTable
+            applicants={filteredApplicants}
             selectedApplicants={selectedApplicants}
-            onCheckboxChange={handleCheckboxChange}
-            onSelectAll={handleSelectAll}
+            onSelectApplicant={handleCheckboxChange}
+            showCheckboxes={true}
+            showStatus={false}
           />
         )}
       </div>
 
-      {/* Modal for assessment details */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      {/* Assessment Modal */}
+      {isAssessmentModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="assessment-modal-title">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 id="modal-title" className="text-2xl font-bold text-gray-800 mb-4">Assessment Details</h2>
+            <h2 id="assessment-modal-title" className="text-2xl font-bold text-gray-800 mb-4">Assessment Details</h2>
             {modalError && (
               <div className="mb-4 p-2 bg-red-100 text-red-700 rounded-lg text-center">
                 <p>{modalError}</p>
@@ -375,7 +534,7 @@ export default function ViewApplicantPage() {
                 className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Scheduled Date"
                 required
-                min="2025-09-29"
+                
               />
               <label>Start Time</label>
               <input
@@ -414,13 +573,74 @@ export default function ViewApplicantPage() {
             </div>
             <div className="flex justify-end space-x-4 mt-6">
               <button
-                onClick={handleCloseModal}
+                onClick={handleCloseAssessmentModal}
                 className="px-4 py-2 rounded-lg text-gray-700 bg-gray-200 hover:bg-gray-300"
               >
                 Cancel
               </button>
               <button
                 onClick={handleStartAssessment}
+                className="px-4 py-2 rounded-lg text-white bg-blue-600 hover:bg-blue-700"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Status Update Modal */}
+      {isStatusModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="status-modal-title">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h2 id="status-modal-title" className="text-2xl font-bold text-gray-800 mb-4">
+              Confirm Status Change
+            </h2>
+            {modalError && (
+              <div className="mb-4 p-2 bg-red-100 text-red-700 rounded-lg text-center">
+                <p>{modalError}</p>
+              </div>
+            )}
+            <div className="mb-4">
+              <label className="block text-gray-600 mb-2">Select New Status</label>
+              <select
+                className="px-4 py-2 border rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+              >
+                <option value="">Select Status</option>
+                <option value="Open">Open</option>
+                <option value="Assessment Stage">Assessment Stage</option>
+                <option value="Closed">Closed</option>
+                <option value="Rejected">Rejected</option>
+                <option value="Hired">Hired</option>
+              </select>
+            </div>
+            <p className="text-gray-600 mb-4">
+              {selectedStatus
+                ? `You are about to change the status of the following applicants to ${selectedStatus}:`
+                : 'Selected Applicants:'}
+            </p>
+            <ul className="list-disc list-inside mb-4">
+              {selectedApplicants.map((name) => {
+                const applicant = applicants.find((a) => a.name === name);
+                return (
+                  <li key={name} className="text-gray-600 flex justify-between">
+                    <span>{applicant?.applicant_name || name}</span>
+                    <span>{applicant?.email_id}</span>
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={handleCloseStatusModal}
+                className="px-4 py-2 rounded-lg text-gray-700 bg-gray-200 hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmStatusChange}
                 className="px-4 py-2 rounded-lg text-white bg-blue-600 hover:bg-blue-700"
               >
                 Confirm

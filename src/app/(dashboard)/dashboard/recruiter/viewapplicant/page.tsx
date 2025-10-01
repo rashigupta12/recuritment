@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { frappeAPI } from '@/lib/api/frappeClient';
 import { ApplicantsTable } from '@/components/recruiter/ApplicantsTable';
+import { Search } from 'lucide-react';
 
 export interface JobApplicant {
   name: string;
@@ -42,12 +43,17 @@ interface ApplicantDetailResponse {
 
 export default function ViewApplicantPage() {
   const [applicants, setApplicants] = useState<JobApplicant[]>([]);
+  const [filteredApplicants, setFilteredApplicants] = useState<JobApplicant[]>([]); // New state for filtered applicants
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [selectedApplicants, setSelectedApplicants] = useState<string[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [modalError, setModalError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>(''); // New state for search query
+  const [statusFilter, setStatusFilter] = useState<string>('all'); // State for status filter
   const router = useRouter();
 
   useEffect(() => {
@@ -75,6 +81,7 @@ export default function ViewApplicantPage() {
 
         if (!result.data || result.data.length === 0) {
           setApplicants([]);
+          setFilteredApplicants([]);
           return;
         }
 
@@ -134,6 +141,7 @@ export default function ViewApplicantPage() {
         }
 
         setApplicants(detailedApplicants);
+        setFilteredApplicants(detailedApplicants); // Initialize filtered applicants
       } catch (err: any) {
         console.error('Fetch error:', err);
         let errorMessage = 'An error occurred while fetching applicants.';
@@ -155,6 +163,31 @@ export default function ViewApplicantPage() {
     checkAuthAndFetchApplicants();
   }, [router]);
 
+  // Handle search and status filter
+  useEffect(() => {
+    let filtered = applicants;
+
+    // Apply search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (applicant) =>
+          applicant.applicant_name?.toLowerCase().includes(query) ||
+          applicant.email_id?.toLowerCase().includes(query) ||
+          applicant.job_title?.toLowerCase().includes(query)
+      );
+    }
+
+    // Apply status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(
+        (applicant) => applicant.status?.toLowerCase() === statusFilter.toLowerCase()
+      );
+    }
+
+    setFilteredApplicants(filtered);
+  }, [applicants, searchQuery, statusFilter]);
+
   // Handle checkbox selection
   const handleSelectApplicant = (name: string) => {
     setSelectedApplicants((prev) =>
@@ -164,19 +197,27 @@ export default function ViewApplicantPage() {
     );
   };
 
-  // Handle status change
-  const handleChangeStatus = async () => {
+  // Handle opening the confirmation modal
+  const handleChangeStatus = () => {
     if (selectedApplicants.length === 0) {
       toast.error('Please select at least one applicant.');
       return;
     }
+    setIsModalOpen(true);
+    setSelectedStatus(''); // Reset status in modal
+    setModalError(null);
+  };
+
+  // Handle confirming the status change
+  const handleConfirmStatusChange = async () => {
     if (!selectedStatus) {
-      toast.error('Please select a status.');
+      setModalError('Please select a status.');
       return;
     }
     if (!userEmail) {
       toast.error('User email not found. Please log in again.');
       setIsAuthenticated(false);
+      setIsModalOpen(false);
       router.push('/login');
       return;
     }
@@ -263,15 +304,17 @@ export default function ViewApplicantPage() {
       }
 
       setApplicants(detailedApplicants);
+      setFilteredApplicants(detailedApplicants); // Reset filtered applicants
       setSelectedApplicants([]);
       setSelectedStatus('');
+      setIsModalOpen(false); // Close the modal
 
       if (failedUpdates.length > 0) {
         toast.warning(
           `Status updated for some applicants. Failed for: ${failedUpdates.join(', ')}. Applicant records may not exist or the endpoint may be incorrect.`
         );
       } else {
-        toast.success('Applicant statuses updated successfully.');
+        toast.success('Applicant status updated successfully.');
       }
     } catch (err: any) {
       console.error('Status update error:', err);
@@ -286,9 +329,17 @@ export default function ViewApplicantPage() {
         errorMessage = err.response.data.message;
       }
       toast.error(errorMessage);
+      setIsModalOpen(false); // Close the modal on error
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle closing the modal
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedStatus('');
+    setModalError(null);
   };
 
   if (loading) {
@@ -313,30 +364,43 @@ export default function ViewApplicantPage() {
     <div className="min-h-screen bg-gray-100 py-8 px-4">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-800">
-            Job Applicants
-          </h1>
-          <div className="flex items-center space-x-2">
-            <select
-              className="px-2 py-1 border rounded text-sm"
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-            >
-              <option value="">Select Status</option>
-              <option value="open">Open</option>
-              <option value="Shortlisted">Shortlisted</option>
-              <option value="Assessment Stage">Assessment Stage</option>
-              <option value="Closed">Closed</option>
-              <option value="Rejected">Rejected</option>
-              <option value="Hired">Hired</option>
-            </select>
-            <button
-              className="px-4 py-1 bg-blue-600 text-white rounded text-sm"
-              onClick={handleChangeStatus}
-              disabled={selectedApplicants.length === 0 || !selectedStatus}
-            >
-              Update Status
-            </button>
+          <h1 className="text-3xl font-bold text-gray-800">Job Applicants</h1>
+          <div className="flex items-center gap-4">
+            <div className="flex-1 w-full lg:w-auto">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by name, email, job title..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-3 w-full lg:w-auto">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white min-w-[150px]"
+              >
+                <option value="all">All</option>
+                <option value="Open">Open</option>
+                <option value="Shortlisted">Shortlisted</option>
+                <option value="Assessment Stage">Assessment Stage</option>
+                <option value="Interview Stage">Interview Stage</option>
+                <option value="Hired">Hired</option>
+                <option value="Rejected">Rejected</option>
+                <option value="Closed">Closed</option>
+              </select>
+              <button
+                onClick={handleChangeStatus}
+                disabled={selectedApplicants.length === 0}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium whitespace-nowrap"
+              >
+                Update Status
+              </button>
+            </div>
           </div>
         </div>
         {error && (
@@ -354,16 +418,81 @@ export default function ViewApplicantPage() {
             )}
           </div>
         )}
-        {applicants.length === 0 ? (
+        {filteredApplicants.length === 0 ? (
           <p className="text-center text-gray-600">No applicants found.</p>
         ) : (
           <ApplicantsTable
-            applicants={applicants}
+            applicants={filteredApplicants}
             selectedApplicants={selectedApplicants}
             onSelectApplicant={handleSelectApplicant}
+            showCheckboxes={true}
+            showStatus={true}
           />
         )}
       </div>
+
+      {/* Confirmation Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h2 id="modal-title" className="text-2xl font-bold text-gray-800 mb-4">
+              Confirm Status Change
+            </h2>
+            {modalError && (
+              <div className="mb-4 p-2 bg-red-100 text-red-700 rounded-lg text-center">
+                <p>{modalError}</p>
+              </div>
+            )}
+            <div className="mb-4">
+              <label className="block text-gray-600 mb-2">Select New Status</label>
+              <select
+                className="px-4 py-2 border rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+              >
+                <option value="">Select Status</option>
+                <option value="Open">Open</option>
+                <option value="Shortlisted">Shortlisted</option>
+                <option value="Assessment Stage">Assessment Stage</option>
+                <option value="Closed">Closed</option>
+                <option value="Rejected">Rejected</option>
+                <option value="Hired">Hired</option>
+              </select>
+            </div>
+            <p className="text-gray-600 mb-4">
+              {selectedStatus
+                ? `You are about to change the status of the following applicants to ${selectedStatus}:`
+                : 'Selected Applicants:'}
+            </p>
+            <ul className="list-disc list-inside mb-4">
+              {selectedApplicants.map((name) => {
+                const applicant = applicants.find((a) => a.name === name);
+                return (
+                  <li key={name} className="text-gray-600 flex justify-between">
+                    <span>{applicant?.applicant_name || name}</span>
+                    {/* <span>{applicant?.job_title || 'N/A'}</span> */}
+                    <span>{applicant?.email_id}</span>
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="flex justify-end space-x-4">
+              <button
+                onClick={handleCloseModal}
+                className="px-4 py-2 rounded-lg text-gray-700 bg-gray-200 hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmStatusChange}
+                className="px-4 py-2 rounded-lg text-white bg-blue-600 hover:bg-blue-700"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
