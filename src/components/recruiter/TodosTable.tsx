@@ -3,6 +3,7 @@
 import {  LucideEdit } from "lucide-react";
 
 interface ToDo {
+  custom_department?: string;
   name: string;
   status?: string;
   priority?: string;
@@ -92,7 +93,7 @@ export const TodosTable = ({ todos, onViewTodo }: TodosTableProps) => {
                 Company
               </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Designation
+                Department
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 No. of Vacancies 
@@ -110,9 +111,9 @@ export const TodosTable = ({ todos, onViewTodo }: TodosTableProps) => {
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Assigned By
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              {/* <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
-              </th>
+              </th> */}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -122,14 +123,14 @@ export const TodosTable = ({ todos, onViewTodo }: TodosTableProps) => {
                 className="hover:bg-gray-50 transition-colors duration-150 ease-in-out cursor-pointer"
                 onClick={(e) => handleRowClick(todo, e)}
               >
-                <td className="px-6 py-4">
+                <td className="px-6 py-2">
                   <div className="max-w-xs">
                     <div className="px-0 py-4 whitespace-nowrap text-sm text-gray-500">
                       {todo.custom_date_assigned ? new Date(todo.custom_date_assigned).toLocaleDateString('en-IN') : 'Not set'}
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-900 font-medium">
                   {todo.custom_job_title || 'N/A'}
                 </td>
                 {/* <td className="px-6 py-4">
@@ -140,7 +141,7 @@ export const TodosTable = ({ todos, onViewTodo }: TodosTableProps) => {
                   </div>
                 </td> */}
                 
-                <td className="px-6 py-4">
+                <td className="px-6 py-2">
                   <div className="max-w-xs">
                     <div className="text-sm font-medium text-gray-900">
                       {
@@ -153,8 +154,16 @@ export const TodosTable = ({ todos, onViewTodo }: TodosTableProps) => {
                     </div>
                   </div>
                 </td>
+ <td className="px-6 py-2">
+                  <div className="max-w-xs">
+                    <div className="text-sm font-medium text-gray-900 line-clamp-2">
+                      {todo.custom_department || '-'}
+                    </div>
+                  </div>
+                </td>
 
-<td className="px-6 py-4">
+
+{/* <td className="px-6 py-4">
   <div className="max-w-xs">
     <div className="text-sm font-medium text-gray-900">
       {
@@ -167,7 +176,7 @@ export const TodosTable = ({ todos, onViewTodo }: TodosTableProps) => {
       }
     </div>
   </div>
-</td>
+</td> */}
 
                 {/* <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium border ${getPriorityColor(todo.priority)}`}>
@@ -182,7 +191,7 @@ export const TodosTable = ({ todos, onViewTodo }: TodosTableProps) => {
                 {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {todo.date ? new Date(todo.date).toLocaleDateString('en-IN') : 'Not set'}
                 </td> */}
-<td className="px-6 py-4">
+<td className="px-6 py-2">
                   <div className="max-w-xs">
                     <div className="text-sm font-medium text-gray-900">
                       {
@@ -194,10 +203,10 @@ export const TodosTable = ({ todos, onViewTodo }: TodosTableProps) => {
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className="px-6 py-2 whitespace-nowrap text-sm text-gray-500">
                   {todo.assigned_by_full_name || todo.assigned_by || 'N/A'}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                {/* <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                   <div className="flex space-x-2">
                     <button
                       // onClick={() => handleCreateApplicant(todo)}
@@ -206,7 +215,7 @@ export const TodosTable = ({ todos, onViewTodo }: TodosTableProps) => {
                       <LucideEdit size={16} />
                     </button>
                   </div>
-                </td>
+                </td> */}
               </tr>
             ))}
           </tbody>

@@ -33,6 +33,7 @@ type SimplifiedContact = {
 };
 
 type SimplifiedCompany = {
+  custom_address: any;
   name: string;
   company_name: string;
   email: string;
@@ -230,6 +231,7 @@ if (!editLead) {
           website: editLead.website || "",
           country: editLead.country || "",
           companyId: undefined,
+          custom_address : editLead.custom_address
         });
       }
 
@@ -435,6 +437,7 @@ if (!editLead) {
       website: company.website,
       country: company.country,
       companyId: company.companyId,
+      custom_address :company.custom_address
     };
     setCompany(storeCompany);
   };
@@ -474,6 +477,7 @@ if (!editLead) {
       website: formData.company.website || "",
       country: formData.company.country || "",
       companyId: formData.company.companyId,
+      custom_address:formData.company.custom_address,
     };
   };
 

@@ -191,7 +191,7 @@ const LeadsTableRow = ({ lead, onView, onEdit }: LeadsTableRowProps) => {
           </div>
         ) : (
           <div className="text-sm text-gray-900 flex items-center">
-            {lead.custom_fixed_charges}
+            {formatToIndianCurrency(Number(lead.custom_fixed_charges))}
           </div>
         )}
       </td>

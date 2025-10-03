@@ -466,6 +466,8 @@ checkFirstLogin: async (username: string) => {
   //   return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Lead`);
   // },
 
+  
+
   getLeadById: async (leadId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Lead/${leadId}`);
   },
@@ -518,6 +520,8 @@ checkFirstLogin: async (username: string) => {
   // getAllTodos: async (email: string) => {
   //   return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/ToDo?filters=[["allocated_to" ,"=","${email}"]]`);
   // },
+
+
   getAllTodos: async (email: string) => {
     const fields = [
       "name",
@@ -533,7 +537,7 @@ checkFirstLogin: async (username: string) => {
       "role",
       "sender",
       "assignment_rule",
-      "custom_date_assigned","custom_job_title"
+      "custom_date_assigned","custom_job_title" , "custom_department"
       // Add any other fields you need
     ];
 
@@ -596,6 +600,7 @@ createBulkApplicants: async (applicantsData: Array<Record<string, unknown>>) => 
   getApplicantBYId: async (name:string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Job Applicant/${name}`);
   },
+
   createbulkAssessment:async(assessment:Record<string,unknown>)=>{
  return await frappeAPI.makeAuthenticatedRequest('POST', '/method/recruitment_app.bulk_create_assessment.bulk_create_assessments',assessment);
   },
@@ -613,8 +618,8 @@ createBulkApplicants: async (applicantsData: Array<Record<string, unknown>>) => 
 },
   
 
-  async updateApplicantStatus(name: string, data: { status: string }) {
-  return await this.makeAuthenticatedRequest('PUT', `/resource/Job Applicant/${encodeURIComponent(name)}`, data);
+  updateApplicantStatus :async(name: string, data: { status: string }) => {
+  return await frappeAPI.makeAuthenticatedRequest('PUT', `/resource/Job Applicant/${encodeURIComponent(name)}`, data);
 },
 
   

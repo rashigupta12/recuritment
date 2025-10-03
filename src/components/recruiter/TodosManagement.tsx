@@ -191,6 +191,7 @@ interface ToDo {
   creation?: string;
   modified?: string;
   doctype?: string;
+  custom_department?:string;
 }
 
 const TodosManagement = () => {
