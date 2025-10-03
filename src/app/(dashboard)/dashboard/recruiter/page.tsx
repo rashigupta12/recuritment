@@ -4,7 +4,6 @@ import { Chart as ChartJS, ArcElement, Tooltip, Legend, BarElement, CategoryScal
 import { Pie, Bar } from 'react-chartjs-2';
 import { useState } from 'react';
 import { Users, Briefcase, Calendar, Activity, FileText, Award } from 'lucide-react';
-
 // Register Chart.js components
 ChartJS.register(ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale);
 
@@ -114,7 +113,58 @@ const QuickStats: React.FC<{ applicants: JobApplicant[] }> = ({ applicants }) =>
     </div>
   );
 };
+// const FunnelChart: React.FC<{ applicants: JobApplicant[] }> = ({ applicants }) => {
+//   const funnelStages = ['Open', 'Shortlisted', 'Assessment Stage', 'Interview Stage', 'Hired'];
+//   const funnelData = funnelStages.map(stage => applicants.filter(a => a.status === stage).length);
 
+//   const data = {
+//     labels: funnelStages,
+//     datasets: [
+//       {
+//         label: 'Number of Candidates',
+//         data: funnelData,
+//         backgroundColor: ['#3B82F6', '#FBBF24', '#F59E0B', '#10B981', '#34D399'],
+//         borderColor: '#FFFFFF',
+//         borderWidth: 1,
+//       },
+//     ],
+//   };
+
+//   const options = {
+//     indexAxis: 'y' as const, // horizontal bars to simulate funnel
+//     responsive: true,
+//     plugins: {
+//       legend: { display: false },
+//       tooltip: {
+//         callbacks: {
+//           label: (context: any) => `${context.label}: ${context.raw} candidates`,
+//         },
+//       },
+//       title: {
+//         display: true,
+//         text: 'Candidate Funnel',
+//         font: { size: 18, family: 'Inter, sans-serif', weight: '600' },
+//         color: '#1F2937',
+//       },
+//     },
+//     scales: {
+//       x: {
+//         beginAtZero: true,
+//         ticks: { color: '#1F2937' },
+//         title: { display: true, text: 'Number of Candidates', font: { size: 14 }, color: '#1F2937' },
+//       },
+//       y: {
+//         ticks: { color: '#1F2937' },
+//       },
+//     },
+//   };
+
+//   return (
+//     <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100 mt-6">
+//       <Bar data={data} options={options} />
+//     </div>
+//   );
+// };
 // OfferLetterTracking component
 const OfferLetterTracking: React.FC<{ applicants: JobApplicant[] }> = ({ applicants }) => {
   const hiredApplicants = applicants.filter((a) => a.status === 'Hired');
@@ -183,6 +233,7 @@ const DashboardCards: React.FC<{ applicants: JobApplicant[]; jobOpenings: JobOpe
       <h3 className="text-lg font-semibold">Hired This Month</h3>
       <p className="text-2xl">{applicants.filter((a) => a.status === 'Hired').length}</p>
     </div>
+    
   </div>
 );
 
@@ -599,6 +650,7 @@ const JobOpeningsBreakdown: React.FC<{ applicants: JobApplicant[]; jobOpenings: 
     return {
       title: job.title,
       positions: job.positions,
+      company:job.company,
       status: job.status,
       total: jobApplicants.length,
       open: jobApplicants.filter((a) => a.status === 'Open').length,
@@ -626,6 +678,7 @@ const JobOpeningsBreakdown: React.FC<{ applicants: JobApplicant[]; jobOpenings: 
           <thead className="bg-gradient-to-r from-blue-50 to-blue-100 sticky top-0">
             <tr>
               <th className="px-4 py-3 text-left text-xs font-semibold text-blue-900 uppercase tracking-wider">Job Title</th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-blue-900 uppercase tracking-wider">Company</th>
               <th className="px-4 py-3 text-center text-xs font-semibold text-blue-900 uppercase tracking-wider">Positions</th>
               <th className="px-4 py-3 text-center text-xs font-semibold text-blue-900 uppercase tracking-wider">Status</th>
               <th className="px-4 py-3 text-center text-xs font-semibold text-blue-900 uppercase tracking-wider">Total</th>
@@ -648,6 +701,9 @@ const JobOpeningsBreakdown: React.FC<{ applicants: JobApplicant[]; jobOpenings: 
               >
                 <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
                   {job.title}
+                </td>
+                 <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                  {job.company}
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center font-semibold">
                   {job.positions}
@@ -803,6 +859,110 @@ const AnalyticsCharts: React.FC<{ jobOpenings: JobOpening[] }> = ({ jobOpenings 
     </div>
   );
 };
+const FunnelChart: React.FC<{ applicants: JobApplicant[] }> = ({ applicants }) => {
+  const funnelStages = [
+    { label: 'Open', value: 100, color: '#F59E0B' },
+    { label: 'Tagged', value: 80, color: '#FB923C' },
+    { label: 'Shortlisted', value: 60, color: '#FCA5A5' },
+    { label: 'Assessment Stage', value: 40, color: '#93C5FD' },
+    { label: 'Interview Stage', value: 25, color: '#60A5FA' },
+    { label: 'Offered', value: 15, color: '#34D399' },
+    { label: 'Joined', value: 10, color: '#10B981' }
+  ];
+
+  const maxValue = funnelStages[0].value;
+
+  return (
+    <div className="bg-white shadow-md rounded-lg p-4 border border-gray-100">
+      <h3 className="text-sm font-bold text-gray-700 mb-3">
+        Recruitment Process
+      </h3>
+      
+      {/* Funnel aligned left */}
+      <div className="relative w-full space-y-1">
+        {funnelStages.map((stage, index) => {
+          const widthPercent = (stage.value / maxValue) * 100;
+          const prevWidthPercent = index > 0 ? (funnelStages[index - 1].value / maxValue) * 100 : 100;
+          
+          return (
+            <div key={stage.label} className="flex items-center gap-2">
+              {/* Label closer + left aligned */}
+              <div className="w-24">
+                <span className="text-[11px] text-gray-600">{stage.label}</span>
+              </div>
+              
+              {/* Funnel Shape */}
+              <div className="flex-1" style={{ height: '32px' }}>
+                <svg 
+                  width="80%" 
+                  height="32" 
+                  viewBox="0 0 700 32" 
+                  preserveAspectRatio="none"
+                  className="overflow-visible"
+                >
+                  <defs>
+                    <filter id={`shadow-${index}`} x="-50%" y="-50%" width="200%" height="200%">
+                      <feGaussianBlur in="SourceAlpha" stdDeviation="0.5"/>
+                      <feOffset dx="0" dy="0.5" result="offsetblur"/>
+                      <feComponentTransfer>
+                        <feFuncA type="linear" slope="0.2"/>
+                      </feComponentTransfer>
+                      <feMerge>
+                        <feMergeNode/>
+                        <feMergeNode in="SourceGraphic"/>
+                      </feMerge>
+                    </filter>
+                  </defs>
+                  
+                  <polygon
+                    points={`
+                      ${(100 - prevWidthPercent) / 2 * 7},0
+                      ${(100 + prevWidthPercent) / 2 * 7},0
+                      ${(100 + widthPercent) / 2 * 7},32
+                      ${(100 - widthPercent) / 2 * 7},32
+                    `}
+                    fill={stage.color}
+                    filter={`url(#shadow-${index})`}
+                  />
+                  
+                  <text
+                    x="350"
+                    y="21"
+                    textAnchor="middle"
+                    className="fill-white"
+                    style={{ fontSize: '13px', fontWeight: '600' }}
+                  >
+                    {stage.value}
+                  </text>
+                </svg>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      
+      {/* Summary Stats compact */}
+      <div className="mt-3 pt-2 border-t border-gray-200">
+        <div className="grid grid-cols-3 gap-2 text-center">
+          <div>
+            <p className="text-[10px] text-gray-500">Applied</p>
+            <p className="text-base font-semibold text-gray-800">{funnelStages[0].value}</p>
+          </div>
+          <div>
+            <p className="text-[10px] text-gray-500">Conversion</p>
+            <p className="text-base font-semibold text-green-600">
+              {((funnelStages[funnelStages.length - 1].value / funnelStages[0].value) * 100).toFixed(0)}%
+            </p>
+          </div>
+          <div>
+            <p className="text-[10px] text-gray-500">Offered</p>
+            <p className="text-base font-semibold text-gray-800">{funnelStages[funnelStages.length - 1].value}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // Main Dashboard Component
 export default function RecruiterDashboard() {
@@ -819,7 +979,8 @@ export default function RecruiterDashboard() {
 
         {/* Overview Cards */}
         <DashboardCards applicants={applicants} jobOpenings={jobOpenings} />
-
+        <JobOpeningsBreakdown applicants={applicants} jobOpenings={jobOpenings} />
+ <div className='flex grid-cols-3 py-5 justify-between'><FunnelChart applicants={applicants} /><StatusBarChart applicants={applicants} jobOpenings={jobOpenings} /> </div> 
         {/* Top Section: QuickStats and OfferLetterTracking */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <div className="lg:col-span-1">
@@ -837,21 +998,21 @@ export default function RecruiterDashboard() {
         {/* Dashboard Content */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
           {/* Left Column: StatusBarChart */}
-          <div className="lg:col-span-1">
+          {/* <div className="lg:col-span-1">
             <StatusBarChart applicants={applicants} jobOpenings={jobOpenings} />
-          </div>
+          </div> */}
 
           {/* Right Column: AnalyticsCharts */}
           <div className="lg:col-span-2">
             <CandidateStatusBarChart applicants={applicants} jobOpenings={jobOpenings} />
           </div>
         </div>
-
-        {/* Job Openings Breakdown */}
+ {/* <FunnelChart applicants={applicants} />/ */}
+        
         <JobOpeningsBreakdown applicants={applicants} jobOpenings={jobOpenings} />
+        {/* Job Openings Breakdown */}
+
       </div>
     </div>
   );
 }
-
-
