@@ -536,7 +536,8 @@ checkFirstLogin: async (username: string) => {
       "reference_name",
       "role",
       "sender",
-      "assignment_rule"
+      "assignment_rule",
+      "custom_date_assigned","custom_job_title"
       // Add any other fields you need
     ];
 
