@@ -359,12 +359,12 @@ export default function BulkApplicantForm({ initialJobId , onFormSubmitSuccess }
   };
 
   return (
-    <div className="bg-gray-50 px-2 py-4">
+    <div className=" px-2">
       <div className="w-full mx-auto">
 
         <div className="space-y-6">
           {applicantRows.map((row, index) => (
-            <div key={row.id} className="bg-white rounded-lg shadow-md p-6">
+            <div key={row.id} className="bg-white rounded-lg  p-4">
               {/* Row Header */}
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-semibold text-gray-900"> New Applicant </h2>

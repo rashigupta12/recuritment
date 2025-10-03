@@ -362,14 +362,17 @@ const fetchApplicantsData = async (email: string) => {
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent bg-white shadow-sm min-w-[160px]"
               >
-                <option value="all">All Statuses</option>
+                <option value="all">All Status</option>
+                 <option value="" disabled>Select a status...</option>
                 <option value="Open">Open</option>
+                <option value="tagged">Tagged</option>
                 <option value="Shortlisted">Shortlisted</option>
                 <option value="Assessment Stage">Assessment Stage</option>
                 <option value="Interview Stage">Interview Stage</option>
-                <option value="Hired">Hired</option>
+                <option value="offered">Offered</option>
+                <option value="offer rejected">Offer Rejected</option>
                 <option value="Rejected">Rejected</option>
-                <option value="Closed">Closed</option>
+                <option value="joined">Joined</option>
               </select>
               <button
                 onClick={handleChangeStatus}
@@ -418,7 +421,7 @@ const fetchApplicantsData = async (email: string) => {
 
       {/* Status Change Confirmation Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-60 p-4 transition-opacity duration-300 ease-in-out" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="status-modal-title">
           <div className="bg-white rounded-2xl p-4 w-full max-w-md min-h-0 shadow-2xl transform transition-all duration-300 ease-in-out scale-100 opacity-100">
             <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-2">
               <h2 id="modal-title" className="text-xl font-bold text-gray-900 flex items-center gap-2">
@@ -447,13 +450,16 @@ const fetchApplicantsData = async (email: string) => {
                 onChange={(e) => setSelectedStatus(e.target.value)}
                 aria-label="Select status"
               >
-                <option value="" disabled>Select a status...</option>
+                 <option value="" disabled>Select a status...</option>
                 <option value="Open">Open</option>
+                <option value="tagged">Tagged</option>
                 <option value="Shortlisted">Shortlisted</option>
                 <option value="Assessment Stage">Assessment Stage</option>
-                <option value="Closed">Closed</option>
+                <option value="Interview Stage">Interview Stage</option>
+                <option value="offered">Offered</option>
+                <option value="offer rejected">Offer Rejected</option>
                 <option value="Rejected">Rejected</option>
-                <option value="Hired">Hired</option>
+                <option value="joined">Joined</option>
               </select>
             </div>
             <div className="mb-4">
@@ -506,7 +512,7 @@ const fetchApplicantsData = async (email: string) => {
 
       {/* Applicant Details Modal */}
       {selectedApplicant && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-60 p-4 transition-opacity duration-300 ease-in-out" role="dialog" aria-modal="true" aria-labelledby="details-modal-title">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="status-modal-title">
           <div className="bg-white rounded-2xl p-4 w-full max-w-xl min-h-0 shadow-2xl transform transition-all duration-300 ease-in-out scale-100 opacity-100">
             <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-2">
               <h2 id="details-modal-title" className="text-xl font-bold text-gray-900 flex items-center gap-2">
