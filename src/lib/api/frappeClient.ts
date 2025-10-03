@@ -608,7 +608,7 @@ createBulkApplicants: async (applicantsData: Array<Record<string, unknown>>) => 
   getTaggedApplicantsByJobId: async (jobId: string, email: string) => {
   return await frappeAPI.makeAuthenticatedRequest(
     'GET', 
-    `/resource/Job Applicant?filters=[["owner","=","${email}"],["job_title","=","${jobId}"],["status","=","Tagged"]]&order_by=creation desc`
+    `/resource/Job Applicant?filters=[["owner","=","${email}"],["job_title","=","${jobId}"]]&order_by=creation desc`
   );
 },
   
