@@ -485,6 +485,12 @@ export default function TaggedApplicants({ jobId, ownerEmail, todoData, refreshT
             setAssessmentSuccess(null);
             return;
         }
+        const allShortlisted = selectedApplicants.every(applicant => applicant.status?.toLowerCase() === 'shortlisted');
+    if (!allShortlisted) {
+        setAssessmentError('Assessment can only be created for applicants with "Shortlisted" status.');
+        setAssessmentSuccess(null);
+        return;
+    }
         setIsAssessmentModalOpen(true);
         setModalError(null);
     };
@@ -732,39 +738,39 @@ export default function TaggedApplicants({ jobId, ownerEmail, todoData, refreshT
     </p>
 </div>
                 <div className="flex items-center gap-80 w-full sm:w-auto mb-4">
-                    <div className="relative w-full sm:w-80">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Search by name, email, or job title..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm text-sm bg-gray-50 hover:bg-white"
-                        />
-                    </div>
-                    {selectedApplicants.length > 0 && (
-                        <div className="flex justify-between gap-3 items-center">
-                            <button
-                                onClick={() => setShowEmailPopup(true)}
-                                className="px-5 py-2.5 text-white bg-green-600 rounded-lg text-sm font-medium transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-green-500"
-                            >
-                                📧 Send ({selectedApplicants.length})
-                            </button>
-                            <button
-                                onClick={handleOpenStatusModal}
-                                className="px-5 py-2.5 text-white bg-blue-700 rounded-lg text-sm font-medium transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            >
-                                Update Status ({selectedApplicants.length})
-                            </button>
-                            <button
-                                onClick={handleOpenAssessmentModal}
-                                className="px-5 py-2.5 text-white bg-blue-700 rounded-lg text-sm font-medium transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            >
-                                Create Assessment ({selectedApplicants.length})
-                            </button>
-                        </div>
-                    )}
-                </div>
+    <div className="relative w-full sm:w-80">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+        <input
+            type="text"
+            placeholder="Search by name, email, or job title..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm text-sm bg-gray-50 hover:bg-white"
+        />
+    </div>
+    {selectedApplicants.length > 0 && (
+        <div className="flex justify-between gap-3 items-center flex-nowrap">
+            <button
+                onClick={() => setShowEmailPopup(true)}
+                className="px-3 py-3 text-white bg-green-600 rounded-lg text-sm font-medium transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 whitespace-nowrap w-[120px]"
+            >
+                📧 Send ({selectedApplicants.length})
+            </button>
+            <button
+                onClick={handleOpenStatusModal}
+                className="px-3 py-3 text-white bg-blue-700 rounded-lg text-sm font-medium transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 whitespace-nowrap w-[140px]"
+            >
+                Update Status ({selectedApplicants.length})
+            </button>
+            <button
+                onClick={handleOpenAssessmentModal}
+                className="px-3 py-3 text-white bg-blue-700 rounded-lg text-sm font-medium transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 whitespace-nowrap w-[180px]"
+            >
+                Create Assessment ({selectedApplicants.length})
+            </button>
+        </div>
+    )}
+</div>
             </div>
 
             {/* Error and Success Messages */}
