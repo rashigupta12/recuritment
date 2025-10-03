@@ -1,8 +1,6 @@
-// components/todos/TodosTable.tsx
 'use client';
 
-import { Edit, Edit2Icon, Edit3Icon, EditIcon, LucideEdit, LucideEdit2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import {  LucideEdit } from "lucide-react";
 
 interface ToDo {
   name: string;
@@ -19,6 +17,8 @@ interface ToDo {
   creation?: string;
   modified?: string;
   doctype?: string;
+  custom_date_assigned?:string;
+  custom_job_title?:string;
 }
 
 interface TodosTableProps {
@@ -27,7 +27,7 @@ interface TodosTableProps {
   onEditTodo: (todo: ToDo) => void;
 }
 
-export const TodosTable = ({ todos, onViewTodo, onEditTodo }: TodosTableProps) => {
+export const TodosTable = ({ todos, onViewTodo }: TodosTableProps) => {
   // const router = useRouter(); // Initialize useRouter for navigation
 
   // Get priority badge color
@@ -66,15 +66,16 @@ export const TodosTable = ({ todos, onViewTodo, onEditTodo }: TodosTableProps) =
     onViewTodo(todo);
   };
 
-  const handleCreateApplicant = (todo: ToDo) => {
-    if (todo.custom_job_id) {
-      router.push(`/dashboard/recruiter/applicants?jobId=${encodeURIComponent(todo.custom_job_id)}`);
-    } else {
-      alert('No Job ID available for this task');
-    }
-  };
+  // const handleCreateApplicant = (todo: ToDo) => {
+  //   if (todo.custom_job_id) {
+  //     router.push(`/dashboard/recruiter/applicants?jobId=${encodeURIComponent(todo.custom_job_id)}`);
+  //   } else {
+  //     alert('No Job ID available for this task');
+  //   }
+  // };
 
   return (
+    console.log(todos),
     <div className="bg-white shadow-sm rounded-lg overflow-hidden">
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
@@ -84,16 +85,17 @@ export const TodosTable = ({ todos, onViewTodo, onEditTodo }: TodosTableProps) =
                 Date Assigned
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Job ID
+                Job Title
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                No. of Vacancies <br /> Allocated
-              </th>
+              
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Company
               </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Designation
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                No. of Vacancies 
               </th>
               {/* <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Priority
@@ -123,12 +125,12 @@ export const TodosTable = ({ todos, onViewTodo, onEditTodo }: TodosTableProps) =
                 <td className="px-6 py-4">
                   <div className="max-w-xs">
                     <div className="px-0 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {todo.date ? new Date(todo.date).toLocaleDateString('en-IN') : 'Not set'}
+                      {todo.custom_date_assigned ? new Date(todo.custom_date_assigned).toLocaleDateString('en-IN') : 'Not set'}
                     </div>
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                  {todo.custom_job_id || 'N/A'}
+                  {todo.custom_job_title || 'N/A'}
                 </td>
                 {/* <td className="px-6 py-4">
                   <div className="max-w-xs">
@@ -137,18 +139,7 @@ export const TodosTable = ({ todos, onViewTodo, onEditTodo }: TodosTableProps) =
                     </div>
                   </div>
                 </td> */}
-                <td className="px-6 py-4">
-                  <div className="max-w-xs">
-                    <div className="text-sm font-medium text-gray-900">
-                      {
-                        (() => {
-                          const match = todo.description?.match(/YOUR ALLOCATED POSITIONS:\s*(\d+)/i);
-                          return match ? `${match[1]}` : 'No allocated positions';
-                        })()
-                      }
-                    </div>
-                  </div>
-                </td>
+                
                 <td className="px-6 py-4">
                   <div className="max-w-xs">
                     <div className="text-sm font-medium text-gray-900">
@@ -191,7 +182,18 @@ export const TodosTable = ({ todos, onViewTodo, onEditTodo }: TodosTableProps) =
                 {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {todo.date ? new Date(todo.date).toLocaleDateString('en-IN') : 'Not set'}
                 </td> */}
-
+<td className="px-6 py-4">
+                  <div className="max-w-xs">
+                    <div className="text-sm font-medium text-gray-900">
+                      {
+                        (() => {
+                          const match = todo.description?.match(/YOUR ALLOCATED POSITIONS:\s*(\d+)/i);
+                          return match ? `${match[1]}` : 'No allocated positions';
+                        })()
+                      }
+                    </div>
+                  </div>
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {todo.assigned_by_full_name || todo.assigned_by || 'N/A'}
                 </td>
