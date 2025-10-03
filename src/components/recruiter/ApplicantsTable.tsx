@@ -1,83 +1,94 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-
 import { JobApplicant } from '../../app/(dashboard)/dashboard/recruiter/viewapplicant/page';
 
 interface ApplicantsTableProps {
   applicants: JobApplicant[];
-  showStatus?:boolean;
-  showCheckboxes?: boolean; // New prop to control checkbox visibility
-  selectedApplicants?: string[]; // Optional for when checkboxes are shown
-  onSelectApplicant?: (name: string) => void; // Optional for when checkboxes are shown
+  showStatus?: boolean;
+  showCheckboxes?: boolean;
+  selectedApplicants?: string[];
+  onSelectApplicant?: (name: string) => void;
+  onRowClick?: (applicant: JobApplicant) => void; // New prop for row click
 }
 
 export function ApplicantsTable({
   applicants,
   showCheckboxes = false,
-  showStatus=false,
+  showStatus = false,
   selectedApplicants = [],
   onSelectApplicant,
+  onRowClick,
 }: ApplicantsTableProps) {
-  // Debug: Log applicant names and emails to check for duplicates
   console.log(
     'Applicants in table:',
     applicants.map((a) => ({ name: a.name, email_id: a.email_id }))
   );
 
+  const getStatusColor = (status?: string) => {
+    switch (status?.toLowerCase()) {
+      case 'open':
+        return 'bg-blue-100 text-blue-800';
+      case 'shortlisted':
+        return 'bg-purple-100 text-purple-800';
+      case 'assessment stage':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'hired':
+        return 'bg-green-100 text-green-800';
+      case 'rejected':
+        return 'bg-red-100 text-red-800';
+      case 'closed':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full bg-white border rounded-lg">
+      <table className="min-w-full bg-white border rounded-xl shadow-sm">
         <thead>
-          <tr className="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+          <tr className="bg-gray-100 text-gray-600 uppercase text-sm font-semibold tracking-wide">
             {showCheckboxes && (
-              <th className="py-3 px-6 text-left">Select</th>
+              <th className="py-4 px-6 text-left">Select</th>
             )}
-            <th className="py-3 px-6 text-left">Job Title</th>
-            <th className="py-3 px-6 text-left">Name</th>
-            <th className="py-3 px-6 text-left">Email</th>
-            <th className="py-3 px-6 text-left">Phone</th>
-            <th className="py-3 px-6 text-left">Job Title</th>
-            <th className="py-3 px-6 text-left">Status</th>
-            {/* <th className="py-3 px-6 text-left">Education</th> */}
+            <th className="py-4 px-6 text-left">Job Title</th>
+            <th className="py-4 px-6 text-left">Name</th>
+            <th className="py-4 px-6 text-left">Email</th>
+            <th className="py-4 px-6 text-left">Phone</th>
+            {showStatus && (
+              <th className="py-4 px-6 text-left">Status</th>
+            )}
           </tr>
         </thead>
-        <tbody className="text-gray-600 text-sm font-light">
+        <tbody className="text-gray-600 text-sm">
           {applicants.map((applicant, index) => (
             <tr
-              key={applicant.name || `applicant-${index}`} // Fallback to index if name is missing
-              className="border-b border-gray-200 hover:bg-gray-100"
+              key={applicant.name || `applicant-${index}`}
+              onClick={() => onRowClick?.(applicant)}
+              className="border-b border-gray-200 hover:bg-gray-50 cursor-pointer transition-colors"
             >
               {showCheckboxes && (
-                
-                <td className="py-3 px-6 text-left">
+                <td className="py-4 px-6 text-left">
                   <input
                     type="checkbox"
                     checked={selectedApplicants.includes(applicant.name)}
                     onChange={() => onSelectApplicant?.(applicant.name)}
-                    className="h-4 w-4"
+                    onClick={(e) => e.stopPropagation()}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-600 border-gray-300 rounded"
                     disabled={!applicant.name}
                   />
                 </td>
               )}
-                            <td className="py-3 px-6 text-left">{applicant.job_title || 'N/A'}</td>
-
-              <td className="py-3 px-6 text-left">{applicant.applicant_name || 'N/A'}</td>
-              <td className="py-3 px-6 text-left">{applicant.email_id || 'N/A'}</td>
-              <td className="py-3 px-6 text-left">{applicant.phone_number || 'N/A'}</td>
-              <td className="py-3 px-6 text-left">{applicant.job_title || 'N/A'}</td>
-              <td className="py-3 px-6 text-left">{applicant.status || 'N/A'}</td>
-              {/* <td className="py-3 px-6 text-left">
-                {applicant.custom_education && applicant.custom_education.length > 0 ? (
-                  <ul className="list-disc list-inside">
-                    {applicant.custom_education.map((edu, index) => (
-                      <li key={index}>
-                        {edu.degree} in {edu.specialization}, {edu.institution} ({edu.year_of_passing}, {edu.percentagecgpa}%)
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  'N/A'
-                )}
-              </td> */}
+              <td className="py-4 px-6 text-left">{applicant.job_title || 'N/A'}</td>
+              <td className="py-4 px-6 text-left">{applicant.applicant_name || 'N/A'}</td>
+              <td className="py-4 px-6 text-left">{applicant.email_id || 'N/A'}</td>
+              <td className="py-4 px-6 text-left">{applicant.phone_number || 'N/A'}</td>
+              {showStatus && (
+                <td className="py-4 px-6 text-left">
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(applicant.status)}`}>
+                    {applicant.status || 'N/A'}
+                  </span>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>

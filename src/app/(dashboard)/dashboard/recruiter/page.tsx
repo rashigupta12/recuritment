@@ -1,14 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
-import { useState, useEffect } from 'react';
-import { Search } from 'lucide-react';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale } from 'chart.js';
-import { Bar } from 'react-chartjs-2';
+import { Pie, Bar } from 'react-chartjs-2';
+import { useState } from 'react';
+import { Users, Briefcase, Calendar, Activity, FileText, Award } from 'lucide-react';
 
-// Register Chart.js components (funnel components removed)
+// Register Chart.js components
 ChartJS.register(ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale);
 
-// Dummy data interfaces
+// Updated JobApplicant interface with diversity fields
 interface JobApplicant {
   id: string;
   name: string;
@@ -16,14 +16,23 @@ interface JobApplicant {
   job_title: string;
   status: 'Open' | 'Shortlisted' | 'Assessment Stage' | 'Interview Stage' | 'Closed' | 'Rejected' | 'Hired';
   joined?: boolean;
+  gender?: 'Male' | 'Female' | 'Non-binary' | 'Prefer not to say'; // Added for diversity
+  ethnicity?: 'Asian' | 'Black' | 'Hispanic' | 'White' | 'Other'; // Added for diversity
+  ageGroup?: '18-24' | '25-34' | '35-44' | '45+'; // Added for diversity
+  location?: string; // Added for diversity (geographic diversity)
 }
 
+// JobOpening interface (unchanged)
 interface JobOpening {
   id: string;
   title: string;
+  company: string;
+  location: string;
+  experience: string;
   department: string;
   status: 'Open' | 'Closed';
   applicants: number;
+  positions: number;
 }
 
 interface Activity {
@@ -38,27 +47,31 @@ interface Event {
   date: string;
 }
 
-// Dummy data
+// Updated dummyApplicants with diverse data
 const dummyApplicants: JobApplicant[] = [
-  { id: '1', name: 'John Doe', email: 'john.doe@example.com', job_title: 'Software Engineer', status: 'Open' },
-  { id: '2', name: 'Jane Smith', email: 'jane.smith@example.com', job_title: 'Product Manager', status: 'Shortlisted' },
-  { id: '3', name: 'Alice Johnson', email: 'alice.j@example.com', job_title: 'Data Analyst', status: 'Assessment Stage' },
-  { id: '4', name: 'Bob Wilson', email: 'bob.wilson@example.com', job_title: 'UX Designer', status: 'Interview Stage' },
-  { id: '5', name: 'Emma Brown', email: 'emma.brown@example.com', job_title: 'DevOps Engineer', status: 'Hired', joined: true },
-  { id: '6', name: 'Michael Lee', email: 'michael.lee@example.com', job_title: 'Software Engineer', status: 'Rejected' },
-  { id: '7', name: 'Sarah Davis', email: 'sarah.davis@example.com', job_title: 'Marketing Manager', status: 'Closed' },
-  { id: '8', name: 'David Miller', email: 'david.miller@example.com', job_title: 'Data Scientist', status: 'Shortlisted' },
-  { id: '9', name: 'Laura Taylor', email: 'laura.taylor@example.com', job_title: 'Product Manager', status: 'Assessment Stage' },
-  { id: '10', name: 'James White', email: 'james.white@example.com', job_title: 'Software Engineer', status: 'Open' },
-  { id: '11', name: 'Emily Clark', email: 'emily.clark@example.com', job_title: 'Data Engineer', status: 'Hired', joined: false },
+  { id: '1', name: 'John Doe', email: 'john.doe@example.com', job_title: 'Software Engineer', status: 'Open', gender: 'Male', ethnicity: 'White', ageGroup: '25-34', location: 'USA' },
+  { id: '2', name: 'Jane Smith', email: 'jane.smith@example.com', job_title: 'Product Manager', status: 'Hired', joined:false, gender: 'Female', ethnicity: 'Asian', ageGroup: '35-44', location: 'India' },
+  { id: '3', name: 'Alice Johnson', email: 'alice.j@example.com', job_title: 'Data Analyst', status: 'Assessment Stage', gender: 'Female', ethnicity: 'Black', ageGroup: '18-24', location: 'Canada' },
+  { id: '4', name: 'Bob Wilson', email: 'bob.wilson@example.com', job_title: 'UX Designer', status: 'Interview Stage', gender: 'Male', ethnicity: 'Hispanic', ageGroup: '45+', location: 'Mexico' },
+  { id: '5', name: 'Emma Brown', email: 'emma.brown@example.com', job_title: 'DevOps Engineer', status: 'Hired', joined: true, gender: 'Non-binary', ethnicity: 'Other', ageGroup: '25-34', location: 'UK' },
+  { id: '6', name: 'Michael Lee', email: 'michael.lee@example.com', job_title: 'Software Engineer', status: 'Rejected', gender: 'Male', ethnicity: 'Asian', ageGroup: '35-44', location: 'China' },
+  { id: '7', name: 'Sarah Davis', email: 'sarah.davis@example.com', job_title: 'Marketing Manager', status: 'Closed', gender: 'Female', ethnicity: 'White', ageGroup: '45+', location: 'Australia' },
+  { id: '8', name: 'David Miller', email: 'david.miller@example.com', job_title: 'Data Scientist', status: 'Shortlisted', gender: 'Male', ethnicity: 'Black', ageGroup: '25-34', location: 'South Africa' },
+  { id: '9', name: 'Laura Taylor', email: 'laura.taylor@example.com', job_title: 'Product Manager', status: 'Assessment Stage', gender: 'Female', ethnicity: 'Hispanic', ageGroup: '18-24', location: 'Spain' },
+  { id: '10', name: 'James White', email: 'james.white@example.com', job_title: 'Software Engineer', status: 'Hired',joined:true, gender: 'Prefer not to say', ethnicity: 'Other', ageGroup: '35-44', location: 'Germany' },
+  { id: '11', name: 'Emily Clark', email: 'emily.clark@example.com', job_title: 'Data Engineer', status: 'Hired', joined: false, gender: 'Female', ethnicity: 'Asian', ageGroup: '25-34', location: 'Japan' },
 ];
 
+// Updated dummyJobOpenings to align with applicant data
 const dummyJobOpenings: JobOpening[] = [
-  { id: '1', title: 'Software Engineer', department: 'Engineering', status: 'Open', applicants: 5 },
-  { id: '2', title: 'Product Manager', department: 'Product', status: 'Open', applicants: 3 },
-  { id: '3', title: 'Data Analyst', department: 'Analytics', status: 'Open', applicants: 2 },
-  { id: '4', title: 'UX Designer', department: 'Design', status: 'Closed', applicants: 1 },
-  { id: '5', title: 'DevOps Engineer', department: 'Engineering', status: 'Open', applicants: 4 },
+  { id: '1', title: 'Software Engineer', company: 'TechCorp', location: 'Bangalore, India', experience: '2-5 years', department: 'Engineering', status: 'Open', applicants: 3, positions: 3 },
+  { id: '2', title: 'Product Manager', company: 'Innovate Ltd', location: 'Mumbai, India', experience: '3-7 years', department: 'Product', status: 'Open', applicants: 2, positions: 2 },
+  { id: '3', title: 'Data Analyst', company: 'DataVision', location: 'Delhi, India', experience: '1-3 years', department: 'Analytics', status: 'Open', applicants: 1, positions: 1 },
+  { id: '4', title: 'UX Designer', company: 'DesignHub', location: 'Pune, India', experience: '2-4 years', department: 'Design', status: 'Closed', applicants: 1, positions: 1 },
+  { id: '5', title: 'DevOps Engineer', company: 'CloudSys', location: 'Hyderabad, India', experience: '4-8 years', department: 'Engineering', status: 'Open', applicants: 1, positions: 2 },
+  { id: '6', title: 'Data Scientist', company: 'DataVision', location: 'Chennai, India', experience: '2-5 years', department: 'Analytics', status: 'Open', applicants: 1, positions: 1 },
+  { id: '7', title: 'Marketing Manager', company: 'Innovate Ltd', location: 'Kolkata, India', experience: '5-10 years', department: 'Marketing', status: 'Closed', applicants: 1, positions: 1 },
+  { id: '8', title: 'Data Engineer', company: 'TechCorp', location: 'Bangalore, India', experience: '3-6 years', department: 'Engineering', status: 'Open', applicants: 1, positions: 1 },
 ];
 
 const dummyActivities: Activity[] = [
@@ -79,8 +92,11 @@ const QuickStats: React.FC<{ applicants: JobApplicant[] }> = ({ applicants }) =>
   const recentStatusChanges = dummyActivities.length;
 
   return (
-    <div className="bg-white shadow-md rounded-lg p-6">
-      <h2 className="text-xl font-semibold text-blue-800 mb-4">Quick Stats</h2>
+    <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100">
+      <h2 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2">
+        <Award className="h-5 w-5 text-blue-600" />
+        Quick Stats
+      </h2>
       <div className="space-y-4">
         <div>
           <p className="text-sm text-gray-600">Total Applicants</p>
@@ -105,8 +121,11 @@ const OfferLetterTracking: React.FC<{ applicants: JobApplicant[] }> = ({ applica
   const joinedCount = hiredApplicants.filter((a) => a.joined).length;
 
   return (
-    <div className="bg-white shadow-md rounded-lg p-6">
-      <h2 className="text-xl font-semibold text-blue-800 mb-4">Offer Letter Tracking</h2>
+    <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100">
+      <h2 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2">
+        <FileText className="h-5 w-5 text-blue-600" />
+        Offer Letter Tracking
+      </h2>
       <div className="mb-4">
         <p className="text-sm text-gray-600">
           Offer Letters Sent: <span className="font-medium">{hiredApplicants.length}</span>
@@ -121,14 +140,14 @@ const OfferLetterTracking: React.FC<{ applicants: JobApplicant[] }> = ({ applica
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-blue-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Job Title</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Joined</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">Name</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">Job Title</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">Joined</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {hiredApplicants.map((applicant) => (
-              <tr key={applicant.id} className="hover:bg-blue-50">
+              <tr key={applicant.id} className="hover:bg-blue-50 transition-colors">
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{applicant.name}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{applicant.job_title}</td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -152,90 +171,29 @@ const OfferLetterTracking: React.FC<{ applicants: JobApplicant[] }> = ({ applica
 // DashboardCards component
 const DashboardCards: React.FC<{ applicants: JobApplicant[]; jobOpenings: JobOpening[] }> = ({ applicants, jobOpenings }) => (
   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-    <div className="bg-blue-600 text-white p-4 rounded-lg shadow-md">
+    <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-lg shadow-md hover:shadow-xl transition-shadow">
       <h3 className="text-lg font-semibold">Active Job Openings</h3>
       <p className="text-2xl">{jobOpenings.filter((job) => job.status === 'Open').length}</p>
     </div>
-    <div className="bg-blue-600 text-white p-4 rounded-lg shadow-md">
+    <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-lg shadow-md hover:shadow-xl transition-shadow">
       <h3 className="text-lg font-semibold">In Assessment</h3>
       <p className="text-2xl">{applicants.filter((a) => a.status === 'Assessment Stage').length}</p>
     </div>
-    <div className="bg-blue-600 text-white p-4 rounded-lg shadow-md">
+    <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-lg shadow-md hover:shadow-xl transition-shadow">
       <h3 className="text-lg font-semibold">Hired This Month</h3>
       <p className="text-2xl">{applicants.filter((a) => a.status === 'Hired').length}</p>
     </div>
   </div>
 );
 
-// ApplicantsTable component
-const ApplicantsTable: React.FC<{
-  applicants: JobApplicant[];
-  selectedApplicants: string[];
-  onSelectApplicant: (id: string) => void;
-}> = ({ applicants, selectedApplicants, onSelectApplicant }) => (
-  <div className="bg-white shadow-md rounded-lg overflow-hidden">
-    <table className="min-w-full divide-y divide-gray-200">
-      <thead className="bg-blue-50">
-        <tr>
-          <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">
-            <input
-              type="checkbox"
-              className="rounded text-blue-600 focus:ring-blue-500"
-              onChange={() =>
-                applicants.forEach((applicant) => onSelectApplicant(applicant.id))
-              }
-              checked={selectedApplicants.length === applicants.length && applicants.length > 0}
-            />
-          </th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Name</th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Email</th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Job Title</th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Status</th>
-        </tr>
-      </thead>
-      <tbody className="bg-white divide-y divide-gray-200">
-        {applicants.map((applicant) => (
-          <tr key={applicant.id} className="hover:bg-blue-50 transition-colors">
-            <td className="px-6 py-4 whitespace-nowrap">
-              <input
-                type="checkbox"
-                className="rounded text-blue-600 focus:ring-blue-500"
-                checked={selectedApplicants.includes(applicant.id)}
-                onChange={() => onSelectApplicant(applicant.id)}
-              />
-            </td>
-            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">{applicant.name}</td>
-            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{applicant.email}</td>
-            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{applicant.job_title}</td>
-            <td className="px-6 py-4 whitespace-nowrap">
-              <span
-                className={`inline-flex items-center px-3 py-1.5 text-sm font-semibold rounded-full transition-all duration-300 ease-in-out transform hover:scale-105 ${
-                  applicant.status === 'Hired'
-                    ? 'bg-green-100 text-green-800'
-                    : applicant.status === 'Rejected' || applicant.status === 'Closed'
-                    ? 'bg-red-100 text-red-800'
-                    : applicant.status === 'Shortlisted'
-                    ? 'bg-blue-100 text-blue-800'
-                    : applicant.status === 'Assessment Stage' || applicant.status === 'Interview Stage'
-                    ? 'bg-yellow-100 text-yellow-800'
-                    : 'bg-gray-100 text-gray-800'
-                }`}
-              >
-                {applicant.status}
-              </span>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
-);
-
 // JobOpeningsTable component
 const JobOpeningsTable: React.FC<{ jobOpenings: JobOpening[] }> = ({ jobOpenings }) => (
-  <div className="bg-white shadow-md rounded-lg overflow-hidden">
-    <div className="flex justify-between items-center p-6">
-      <h2 className="text-xl font-semibold text-blue-800">Job Openings</h2>
+  <div className="bg-white shadow-lg rounded-xl overflow-hidden border border-gray-100">
+    <div className="flex justify-between items-center p-6 border-b border-gray-100">
+      <h2 className="text-xl font-bold text-blue-900 flex items-center gap-2">
+        <Briefcase className="h-5 w-5 text-blue-600" />
+        Job Openings
+      </h2>
       <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
         Create Job Opening
       </button>
@@ -243,16 +201,17 @@ const JobOpeningsTable: React.FC<{ jobOpenings: JobOpening[] }> = ({ jobOpenings
     <table className="min-w-full divide-y divide-gray-200">
       <thead className="bg-blue-50">
         <tr>
-          <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Job Title</th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Department</th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Status</th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Applicants</th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-blue-800 uppercase tracking-wider">Actions</th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">Job Title</th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">Department</th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">Status</th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">Positions</th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">Applicants</th>
+          <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">Actions</th>
         </tr>
       </thead>
       <tbody className="bg-white divide-y divide-gray-200">
         {jobOpenings.map((job) => (
-          <tr key={job.id} className="hover:bg-blue-50">
+          <tr key={job.id} className="hover:bg-blue-50 transition-colors">
             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{job.title}</td>
             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{job.department}</td>
             <td className="px-6 py-4 whitespace-nowrap">
@@ -264,6 +223,7 @@ const JobOpeningsTable: React.FC<{ jobOpenings: JobOpening[] }> = ({ jobOpenings
                 {job.status}
               </span>
             </td>
+            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{job.positions}</td>
             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{job.applicants}</td>
             <td className="px-6 py-4 whitespace-nowrap">
               <button className="text-blue-600 hover:text-blue-800 text-sm">Edit</button>
@@ -275,8 +235,8 @@ const JobOpeningsTable: React.FC<{ jobOpenings: JobOpening[] }> = ({ jobOpenings
   </div>
 );
 
-// StatusBarChart component (replacing StatusFunnelChart)
-const StatusBarChart: React.FC<{ applicants: JobApplicant[] }> = ({ applicants }) => {
+// StatusBarChart component with enhanced hover effects
+const StatusBarChart: React.FC<{ applicants: JobApplicant[]; jobOpenings: JobOpening[] }> = ({ applicants, jobOpenings }) => {
   const statusCounts = applicants.reduce(
     (acc, applicant) => {
       acc[applicant.status] = (acc[applicant.status] || 0) + 1;
@@ -300,25 +260,27 @@ const StatusBarChart: React.FC<{ applicants: JobApplicant[] }> = ({ applicants }
           statusCounts['Rejected'] || 0,
         ],
         backgroundColor: [
-          '#E5E7EB', // Gray for Open
-          '#3B82F6', // Blue for Shortlisted
-          '#FBBF24', // Yellow for Assessment Stage
-          '#F59E0B', // Amber for Interview Stage
-          '#10B981', // Green for Hired
-          '#EF4444', // Red for Closed
-          '#DC2626', // Darker red for Rejected
+          '#E5E7EB',
+          '#3B82F6',
+          '#FBBF24',
+          '#F59E0B',
+          '#10B981',
+          '#EF4444',
+          '#DC2626',
         ],
         borderColor: ['#FFFFFF'],
         borderWidth: 1,
         hoverBackgroundColor: [
-          '#D1D5DB', // Lighter gray
-          '#2563EB', // Darker blue
-          '#D97706', // Darker yellow
-          '#D97706', // Darker amber
-          '#059669', // Darker green
-          '#DC2626', // Darker red
-          '#B91C1C', // Darker red
+          '#D1D5DB',
+          '#2563EB',
+          '#D97706',
+          '#D97706',
+          '#059669',
+          '#DC2626',
+          '#B91C1C',
         ],
+        hoverBorderWidth: 2,
+        hoverBorderColor: '#1F2937',
       },
     ],
   };
@@ -327,19 +289,15 @@ const StatusBarChart: React.FC<{ applicants: JobApplicant[] }> = ({ applicants }
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: {
-        position: 'bottom' as const,
-        labels: {
-          font: {
-            size: 14,
-            family: 'Inter, sans-serif',
-            weight: '500',
-          },
-          color: '#1F2937',
-          padding: 20,
-          boxWidth: 20,
-          usePointStyle: true,
-        },
+      legend: { 
+        position: 'bottom' as const, 
+        labels: { 
+          font: { size: 14, family: 'Inter, sans-serif', weight: '500' }, 
+          color: '#1F2937', 
+          padding: 20, 
+          boxWidth: 20, 
+          usePointStyle: true 
+        } 
       },
       tooltip: {
         enabled: true,
@@ -354,60 +312,409 @@ const StatusBarChart: React.FC<{ applicants: JobApplicant[] }> = ({ applicants }
       },
       title: {
         display: true,
-        text: 'Applicant Status Distribution',
+        text: 'Applicant Status Distribution Across Jobs',
         font: { size: 18, family: 'Inter, sans-serif', weight: '600' },
         color: '#1F2937',
         padding: { top: 10, bottom: 20 },
       },
-      animation: {
-        duration: 1200,
-        easing: 'easeOutQuart',
+      animation: { duration: 1200, easing: 'easeOutQuart' },
+    },
+    layout: { padding: { left: 20, right: 20, top: 20, bottom: 20 } },
+    onHover: (event: any, chartElement: any) => {
+      if (event.native) {
+        const target = event.native.target as HTMLElement;
+        if (chartElement.length > 0) {
+          target.style.cursor = 'pointer';
+        } else {
+          target.style.cursor = 'default';
+        }
+      }
+    },
+  };
+
+  return (
+    <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100 relative overflow-hidden group">
+      <h3 className="text-lg font-bold text-blue-900 mb-4 flex items-center gap-2">
+        <Users className="h-5 w-5 text-blue-600" />
+        Applicant Status Distribution
+      </h3>
+      <div className="h-[400px] flex items-center justify-center relative mb-6">
+        <div className="absolute inset-0 bg-gradient-to-b from-blue-50/20 to-transparent rounded-lg group-hover:from-blue-100/30 transition-colors" />
+        <Pie data={data} options={options} />
+      </div>
+    </div>
+  );
+};
+
+// Enhanced CandidateStatusBarChart component with hover effects
+const CandidateStatusBarChart: React.FC<{ applicants: JobApplicant[]; jobOpenings: JobOpening[] }> = ({ applicants, jobOpenings }) => {
+  const jobStats = jobOpenings.map((job) => {
+    const jobApplicants = applicants.filter((a) => a.job_title === job.title);
+    return {
+      company: job.company,
+      title: job.title,
+      vacancies: job.positions,
+      location: job.location,
+      experience: job.experience,
+      totalCandidates: jobApplicants.length,
+      shortlisted: jobApplicants.filter((a) => a.status === 'Shortlisted').length,
+      assessment: jobApplicants.filter((a) => a.status === 'Assessment Stage').length,
+      interview: jobApplicants.filter((a) => a.status === 'Interview Stage').length,
+      offered: jobApplicants.filter((a) => a.status === 'Hired').length,
+      rejected: jobApplicants.filter((a) => a.status === 'Rejected').length,
+      joined: jobApplicants.filter((a) => a.status === 'Hired' && a.joined).length,
+    };
+  });
+
+  const data = {
+    labels: jobStats.map((job) => `${job.title} (${job.company})`), // Combine title and company for x-axis
+    datasets: [
+      {
+        label: 'Total Candidates',
+        data: jobStats.map((job) => job.totalCandidates),
+        backgroundColor: '#3B82F6',
+        borderColor: '#2563EB',
+        borderWidth: 1,
+        hoverBackgroundColor: '#2563EB',
+        hoverBorderWidth: 2,
+        hoverBorderColor: '#1F2937',
+      },
+      {
+        label: 'Shortlisted',
+        data: jobStats.map((job) => job.shortlisted),
+        backgroundColor: '#FBBF24',
+        borderColor: '#D97706',
+        borderWidth: 1,
+        hoverBackgroundColor: '#D97706',
+        hoverBorderWidth: 2,
+        hoverBorderColor: '#1F2937',
+      },
+      {
+        label: 'Assessment',
+        data: jobStats.map((job) => job.assessment),
+        backgroundColor: '#F59E0B',
+        borderColor: '#D97706',
+        borderWidth: 1,
+        hoverBackgroundColor: '#D97706',
+        hoverBorderWidth: 2,
+        hoverBorderColor: '#1F2937',
+      },
+      {
+        label: 'Interview',
+        data: jobStats.map((job) => job.interview),
+        backgroundColor: '#10B981',
+        borderColor: '#059669',
+        borderWidth: 1,
+        hoverBackgroundColor: '#059669',
+        hoverBorderWidth: 2,
+        hoverBorderColor: '#1F2937',
+      },
+      {
+        label: 'Offered',
+        data: jobStats.map((job) => job.offered),
+        backgroundColor: '#34D399',
+        borderColor: '#059669',
+        borderWidth: 1,
+        hoverBackgroundColor: '#059669',
+        hoverBorderWidth: 2,
+        hoverBorderColor: '#1F2937',
+      },
+      {
+        label: 'Rejected',
+        data: jobStats.map((job) => job.rejected),
+        backgroundColor: '#EF4444',
+        borderColor: '#DC2626',
+        borderWidth: 1,
+        hoverBackgroundColor: '#DC2626',
+        hoverBorderWidth: 2,
+        hoverBorderColor: '#1F2937',
+      },
+      {
+        label: 'Joined',
+        data: jobStats.map((job) => job.joined),
+        backgroundColor: '#6EE7B7',
+        borderColor: '#059669',
+        borderWidth: 1,
+        hoverBackgroundColor: '#059669',
+        hoverBorderWidth: 2,
+        hoverBorderColor: '#1F2937',
+      },
+    ],
+  };
+
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { 
+        position: 'top' as const, 
+        labels: { 
+          font: { size: 14, family: 'Inter, sans-serif' }, 
+          color: '#1F2937' 
+        } 
+      },
+      tooltip: {
+        callbacks: {
+          label: (context: any) => {
+            const job = jobStats[context.dataIndex];
+            return [
+              `Company: ${job.company}`,
+              `Job Title: ${job.title}`,
+              `Vacancies: ${job.vacancies}`,
+              `Location: ${job.location}`,
+              `Experience: ${job.experience}`,
+              `${context.label}: ${context.raw}`,
+            ];
+          },
+        },
+        backgroundColor: '#1F2937',
+        titleFont: { size: 16, family: 'Inter, sans-serif', weight: '600' },
+        bodyFont: { size: 14, family: 'Inter, sans-serif' },
+        padding: 12,
+        cornerRadius: 6,
+      },
+      title: {
+        display: true,
+        text: 'Candidate Status by Job Opening',
+        font: { size: 18, family: 'Inter, sans-serif' },
+        color: '#1F2937',
       },
     },
     scales: {
       y: {
         beginAtZero: true,
-        ticks: {
-          stepSize: 1,
-          color: '#1F2937',
-          font: { size: 12, family: 'Inter, sans-serif' },
-        },
-        title: {
-          display: true,
-          text: 'Number of Applicants',
-          font: { size: 14, family: 'Inter, sans-serif', weight: '500' },
-          color: '#1F2937',
-        },
+        ticks: { stepSize: 1, color: '#1F2937' },
+        title: { display: true, text: 'Number of Candidates', font: { size: 14, family: 'Inter, sans-serif' }, color: '#1F2937' },
       },
       x: {
-        ticks: {
-          color: '#1F2937',
-          font: { size: 12, family: 'Inter, sans-serif' },
-        },
-        title: {
-          display: true,
-          text: 'Status',
-          font: { size: 14, family: 'Inter, sans-serif', weight: '500' },
-          color: '#1F2937',
-        },
+        ticks: { color: '#1F2937' },
+        title: { display: true, text: 'Job Titles (Company)', font: { size: 14, family: 'Inter, sans-serif' }, color: '#1F2937' },
       },
     },
-    layout: {
-      padding: {
-        left: 20,
-        right: 20,
-        top: 20,
-        bottom: 20,
+    onHover: (event: any, chartElement: any) => {
+      if (event.native) {
+        const target = event.native.target as HTMLElement;
+        if (chartElement.length > 0) {
+          target.style.cursor = 'pointer';
+        } else {
+          target.style.cursor = 'default';
+        }
+      }
+    },
+  };
+
+  return (
+    <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100 group">
+      <h3 className="text-lg font-bold text-blue-900 mb-4 flex items-center gap-2">
+        <Users className="h-5 w-5 text-blue-600" />
+        Candidate Status Breakdown
+      </h3>
+      <div className="h-[450px]">
+        <Bar data={data} options={options} />
+      </div>
+    </div>
+  );
+};
+
+// DiversityCharts component
+const DiversityCharts: React.FC<{ applicants: JobApplicant[] }> = ({ applicants }) => {
+  const genderCounts = applicants.reduce(
+    (acc, applicant) => {
+      const gender = applicant.gender || 'Unknown';
+      acc[gender] = (acc[gender] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
+
+  const genderData = {
+    labels: Object.keys(genderCounts),
+    datasets: [
+      {
+        data: Object.values(genderCounts),
+        backgroundColor: ['#3B82F6', '#FBBF24', '#10B981', '#EF4444'],
+        borderColor: '#FFFFFF',
+        borderWidth: 1,
+      },
+    ],
+  };
+
+  const ethnicityCounts = applicants.reduce(
+    (acc, applicant) => {
+      const ethnicity = applicant.ethnicity || 'Unknown';
+      acc[ethnicity] = (acc[ethnicity] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
+
+  const ethnicityData = {
+    labels: Object.keys(ethnicityCounts),
+    datasets: [
+      {
+        data: Object.values(ethnicityCounts),
+        backgroundColor: ['#3B82F6', '#FBBF24', '#10B981', '#EF4444', '#8B5CF6'],
+        borderColor: '#FFFFFF',
+        borderWidth: 1,
+      },
+    ],
+  };
+
+  const pieOptions = {
+    responsive: true,
+    plugins: {
+      legend: { position: 'bottom' as const, labels: { font: { size: 14, family: 'Inter, sans-serif' }, color: '#1F2937' } },
+      title: {
+        display: true,
+        font: { size: 18, family: 'Inter, sans-serif' },
+        color: '#1F2937',
       },
     },
   };
 
   return (
-    <div className="bg-white shadow-lg rounded-lg p-6 relative overflow-hidden">
-      <h3 className="text-lg font-semibold text-blue-800 mb-4">Applicant Status Distribution</h3>
-      <div className="h-[500px] flex items-center justify-center relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-blue-50/20 to-transparent rounded-lg" />
-        <Bar data={data} options={options} />
+    <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100 mt-6">
+      <h2 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2">
+        <Users className="h-5 w-5 text-blue-600" />
+        Diversity Metrics
+      </h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <h3 className="text-lg font-semibold text-blue-900 mb-2">Gender Distribution</h3>
+          <Pie data={genderData} options={{ ...pieOptions, plugins: { ...pieOptions.plugins, title: { ...pieOptions.plugins.title, text: 'Gender Distribution' } } }} />
+        </div>
+        <div>
+          <h3 className="text-lg font-semibold text-blue-900 mb-2">Ethnicity Distribution</h3>
+          <Pie data={ethnicityData} options={{ ...pieOptions, plugins: { ...pieOptions.plugins, title: { ...pieOptions.plugins.title, text: 'Ethnicity Distribution' } } }} />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Updated JobOpeningsBreakdown component with improved UI
+const JobOpeningsBreakdown: React.FC<{ applicants: JobApplicant[]; jobOpenings: JobOpening[] }> = ({ applicants, jobOpenings }) => {
+  const jobStats = jobOpenings.map((job) => {
+    const jobApplicants = applicants.filter((applicant) => applicant.job_title === job.title);
+    return {
+      title: job.title,
+      positions: job.positions,
+      status: job.status,
+      total: jobApplicants.length,
+      open: jobApplicants.filter((a) => a.status === 'Open').length,
+      shortlisted: jobApplicants.filter((a) => a.status === 'Shortlisted').length,
+      assessment: jobApplicants.filter((a) => a.status === 'Assessment Stage').length,
+      interview: jobApplicants.filter((a) => a.status === 'Interview Stage').length,
+      hired: jobApplicants.filter((a) => a.status === 'Hired').length,
+      closed: jobApplicants.filter((a) => a.status === 'Closed').length,
+      rejected: jobApplicants.filter((a) => a.status === 'Rejected').length,
+    };
+  });
+
+  return (
+    <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100 mt-6">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-bold text-blue-900 flex items-center gap-2">
+          <Briefcase className="h-5 w-5 text-blue-600" />
+          Job Openings Breakdown
+        </h2>
+        
+      </div>
+      
+      <div className="max-h-[500px] overflow-y-auto rounded-lg border border-gray-200">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gradient-to-r from-blue-50 to-blue-100 sticky top-0">
+            <tr>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-blue-900 uppercase tracking-wider">Job Title</th>
+              <th className="px-4 py-3 text-center text-xs font-semibold text-blue-900 uppercase tracking-wider">Positions</th>
+              <th className="px-4 py-3 text-center text-xs font-semibold text-blue-900 uppercase tracking-wider">Status</th>
+              <th className="px-4 py-3 text-center text-xs font-semibold text-blue-900 uppercase tracking-wider">Total</th>
+              <th className="px-4 py-3 text-center text-xs font-semibold text-blue-900 uppercase tracking-wider">Open</th>
+              <th className="px-4 py-3 text-center text-xs font-semibold text-blue-900 uppercase tracking-wider">Shortlisted</th>
+              <th className="px-4 py-3 text-center text-xs font-semibold text-blue-900 uppercase tracking-wider">Assessment</th>
+              <th className="px-4 py-3 text-center text-xs font-semibold text-blue-900 uppercase tracking-wider">Interview</th>
+              <th className="px-4 py-3 text-center text-xs font-semibold text-blue-900 uppercase tracking-wider">Hired</th>
+              <th className="px-4 py-3 text-center text-xs font-semibold text-blue-900 uppercase tracking-wider">Closed</th>
+              <th className="px-4 py-3 text-center text-xs font-semibold text-blue-900 uppercase tracking-wider">Rejected</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {jobStats.map((job, index) => (
+              <tr 
+                key={job.title} 
+                className={`hover:bg-blue-50 transition-all duration-200 ${
+                  index % 2 === 0 ? 'bg-gray-50' : 'bg-white'
+                }`}
+              >
+                <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
+                  {job.title}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center font-semibold">
+                  {job.positions}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-center">
+                  <span
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-all ${
+                      job.status === 'Open' 
+                        ? 'bg-green-100 text-green-800 hover:bg-green-200' 
+                        : 'bg-red-100 text-red-800 hover:bg-red-200'
+                    }`}
+                  >
+                    {job.status}
+                  </span>
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center font-bold ">
+                  {job.total}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center">
+                  <span className={`px-2 py-1 rounded ${job.open > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-500'}`}>
+                    {job.open}
+                  </span>
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center">
+                  <span className={`px-2 py-1 rounded ${job.shortlisted > 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-500'}`}>
+                    {job.shortlisted}
+                  </span>
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center">
+                  <span className={`px-2 py-1 rounded ${job.assessment > 0 ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-500'}`}>
+                    {job.assessment}
+                  </span>
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center">
+                  <span className={`px-2 py-1 rounded ${job.interview > 0 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'}`}>
+                    {job.interview}
+                  </span>
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center">
+                  <span className={`px-2 py-1 rounded ${job.hired > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-500'}`}>
+                    {job.hired}
+                  </span>
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center">
+                  <span className={`px-2 py-1 rounded ${job.closed > 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-500'}`}>
+                    {job.closed}
+                  </span>
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center">
+                  <span className={`px-2 py-1 rounded ${job.rejected > 0 ? 'bg-rose-100 text-rose-800' : 'bg-gray-100 text-gray-500'}`}>
+                    {job.rejected}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      
+      <div className="mt-4 flex justify-between items-center text-sm text-gray-600">
+        <div>
+          Showing <span className="font-semibold">{jobStats.length}</span> job openings
+        </div>
+        <div className="flex gap-4">
+          <span className="font-medium">Total Applicants: {applicants.length}</span>
+          <span className="font-medium">Open Positions: {jobOpenings.filter(job => job.status === 'Open').length}</span>
+        </div>
       </div>
     </div>
   );
@@ -415,8 +722,11 @@ const StatusBarChart: React.FC<{ applicants: JobApplicant[] }> = ({ applicants }
 
 // RecentActivity component
 const RecentActivity: React.FC = () => (
-  <div className="bg-white shadow-md rounded-lg p-6">
-    <h2 className="text-xl font-semibold text-blue-800 mb-4">Recent Activity</h2>
+  <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100">
+    <h2 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2">
+      <Activity className="h-5 w-5 text-blue-600" />
+      Recent Activity
+    </h2>
     <ul className="divide-y divide-gray-200 max-h-64 overflow-y-auto">
       {dummyActivities.map((activity) => (
         <li key={activity.id} className="py-2">
@@ -430,8 +740,11 @@ const RecentActivity: React.FC = () => (
 
 // ScheduleOverview component
 const ScheduleOverview: React.FC = () => (
-  <div className="bg-white shadow-md rounded-lg p-6 mt-6">
-    <h2 className="text-xl font-semibold text-blue-800 mb-4">Upcoming Schedule</h2>
+  <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100">
+    <h2 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2">
+      <Calendar className="h-5 w-5 text-blue-600" />
+      Upcoming Schedule
+    </h2>
     <ul className="divide-y divide-gray-200 max-h-64 overflow-y-auto">
       {dummyEvents.map((event) => (
         <li key={event.id} className="py-2">
@@ -461,13 +774,7 @@ const AnalyticsCharts: React.FC<{ jobOpenings: JobOpening[] }> = ({ jobOpenings 
   const options = {
     responsive: true,
     plugins: {
-      legend: {
-        position: 'top' as const,
-        labels: {
-          font: { size: 14, family: 'Inter, sans-serif' },
-          color: '#1F2937',
-        },
-      },
+      legend: { position: 'top' as const, labels: { font: { size: 14, family: 'Inter, sans-serif' }, color: '#1F2937' } },
       title: {
         display: true,
         text: 'Applicants by Job Opening',
@@ -487,109 +794,28 @@ const AnalyticsCharts: React.FC<{ jobOpenings: JobOpening[] }> = ({ jobOpenings 
   };
 
   return (
-    <div className="bg-white shadow-md rounded-lg p-6 mt-6">
-      <h2 className="text-xl font-semibold text-blue-800 mb-4">Applicants by Job</h2>
+    <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100">
+      <h2 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2">
+        <Users className="h-5 w-5 text-blue-600" />
+        Applicants by Job
+      </h2>
       <Bar data={data} options={options} />
     </div>
   );
 };
 
+// Main Dashboard Component
 export default function RecruiterDashboard() {
-  const [applicants, setApplicants] = useState<JobApplicant[]>(dummyApplicants);
-  const [filteredApplicants, setFilteredApplicants] = useState<JobApplicant[]>(dummyApplicants);
+  const [applicants] = useState<JobApplicant[]>(dummyApplicants);
   const [jobOpenings] = useState<JobOpening[]>(dummyJobOpenings);
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [selectedApplicants, setSelectedApplicants] = useState<string[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [selectedStatus, setSelectedStatus] = useState<string>('');
-  const [modalError, setModalError] = useState<string | null>(null);
-
-  // Handle search and status filter
-  useEffect(() => {
-    let filtered = applicants;
-
-    // Apply search filter
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (applicant) =>
-          applicant.name.toLowerCase().includes(query) ||
-          applicant.email.toLowerCase().includes(query) ||
-          applicant.job_title.toLowerCase().includes(query)
-      );
-    }
-
-    // Apply status filter
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(
-        (applicant) => applicant.status.toLowerCase() === statusFilter.toLowerCase()
-      );
-    }
-
-    setFilteredApplicants(filtered);
-  }, [applicants, searchQuery, statusFilter]);
-
-  // Handle checkbox selection
-  const handleSelectApplicant = (id: string) => {
-    setSelectedApplicants((prev) =>
-      prev.includes(id) ? prev.filter((selectedId) => selectedId !== id) : [...prev, id]
-    );
-  };
-
-  // Handle opening the status update modal
-  const handleUpdateStatus = () => {
-    if (selectedApplicants.length === 0) {
-      alert('Please select at least one applicant.');
-      return;
-    }
-    setIsModalOpen(true);
-    setSelectedStatus('');
-    setModalError(null);
-  };
-
-  // Handle confirming status change
-  const handleConfirmStatusChange = () => {
-    if (!selectedStatus) {
-      setModalError('Please select a status.');
-      return;
-    }
-    setApplicants((prev) =>
-      prev.map((applicant) =>
-        selectedApplicants.includes(applicant.id) ? { ...applicant, status: selectedStatus } : applicant
-      )
-    );
-    setFilteredApplicants((prev) =>
-      prev.map((applicant) =>
-        selectedApplicants.includes(applicant.id) ? { ...applicant, status: selectedStatus } : applicant
-      )
-    );
-    setSelectedApplicants([]);
-    setSelectedStatus('');
-    setIsModalOpen(false);
-    alert('Status updated successfully.');
-  };
-
-  // Handle closing the modal
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setSelectedStatus('');
-    setModalError(null);
-  };
-
-  // Placeholder for job opening actions
-  const handleCreateJobOpening = () => {
-    alert('Create job opening functionality would be implemented here.');
-  };
-
-  const handleEditJobOpening = (id: string) => {
-    alert(`Edit job opening ${id} functionality would be implemented here.`);
-  };
 
   return (
-    <div className="min-h-screen bg-gray-100 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-100 to-blue-50 py-8 px-4">
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-blue-800 mb-8">Recruiter Dashboard</h1>
+        <h1 className="text-3xl font-bold text-blue-900 mb-8 flex items-center gap-2">
+          <Users className="h-6 w-6 text-blue-600" />
+          Recruiter Dashboard
+        </h1>
 
         {/* Overview Cards */}
         <DashboardCards applicants={applicants} jobOpenings={jobOpenings} />
@@ -597,146 +823,32 @@ export default function RecruiterDashboard() {
         {/* Top Section: QuickStats and OfferLetterTracking */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           <div className="lg:col-span-1">
-            <QuickStats applicants={applicants} />
+            <ScheduleOverview />
+            <div className='mt-2'>
+              <RecentActivity/>
+            </div>
+             
           </div>
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2"> 
             <OfferLetterTracking applicants={applicants} />
           </div>
         </div>
 
-        {/* Search and Filters */}
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-          <div className="flex-1 w-full">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search by name, email, job title..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-gray-900"
-              />
-            </div>
-          </div>
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white min-w-[150px] text-gray-900"
-            >
-              <option value="all">All Status</option>
-              <option value="Open">Open</option>
-              <option value="Shortlisted">Shortlisted</option>
-              <option value="Assessment Stage">Assessment Stage</option>
-              <option value="Interview Stage">Interview Stage</option>
-              <option value="Closed">Closed</option>
-              <option value="Rejected">Rejected</option>
-              <option value="Hired">Hired</option>
-            </select>
-            <button
-              onClick={handleUpdateStatus}
-              disabled={selectedApplicants.length === 0}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-            >
-              Update Status
-            </button>
-          </div>
-        </div>
-
         {/* Dashboard Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Applicants Table */}
-          <div className="lg:col-span-2">
-            <div className="bg-white shadow-md rounded-lg p-6 mb-6">
-              <h2 className="text-xl font-semibold text-blue-800 mb-4">Applicants</h2>
-              {filteredApplicants.length === 0 ? (
-                <p className="text-center text-gray-600">No applicants found.</p>
-              ) : (
-                <ApplicantsTable
-                  applicants={filteredApplicants}
-                  selectedApplicants={selectedApplicants}
-                  onSelectApplicant={handleSelectApplicant}
-                />
-              )}
-            </div>
-          </div>
-
-          {/* Right Column */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
+          {/* Left Column: StatusBarChart */}
           <div className="lg:col-span-1">
-            <StatusBarChart applicants={applicants} />
-            <ScheduleOverview />
+            <StatusBarChart applicants={applicants} jobOpenings={jobOpenings} />
+          </div>
+
+          {/* Right Column: AnalyticsCharts */}
+          <div className="lg:col-span-2">
+            <CandidateStatusBarChart applicants={applicants} jobOpenings={jobOpenings} />
           </div>
         </div>
 
-        {/* Bottom Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <JobOpeningsTable jobOpenings={jobOpenings} />
-          <RecentActivity />
-        </div>
-        <AnalyticsCharts jobOpenings={jobOpenings} />
-
-        {/* Status Update Modal */}
-        {isModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
-              <h2 id="modal-title" className="text-2xl font-bold text-blue-800 mb-4">
-                Confirm Status Change
-              </h2>
-              {modalError && (
-                <div className="mb-4 p-2 bg-red-100 text-red-700 rounded-lg text-center">
-                  <p>{modalError}</p>
-                </div>
-              )}
-              <div className="mb-4">
-                <label className="block text-gray-600 mb-2">Select New Status</label>
-                <select
-                  className="px-4 py-2 border rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={selectedStatus}
-                  onChange={(e) => setSelectedStatus(e.target.value)}
-                >
-                  <option value="">Select Status</option>
-                  <option value="Open">Open</option>
-                  <option value="Shortlisted">Shortlisted</option>
-                  <option value="Assessment Stage">Assessment Stage</option>
-                  <option value="Interview Stage">Interview Stage</option>
-                  <option value="Closed">Closed</option>
-                  <option value="Rejected">Rejected</option>
-                  <option value="Hired">Hired</option>
-                </select>
-              </div>
-              <p className="text-gray-600 mb-4">
-                {selectedStatus
-                  ? `You are about to change the status of the following applicants to ${selectedStatus}:`
-                  : 'Selected Applicants:'}
-              </p>
-              <ul className="list-disc list-inside mb-4">
-                {selectedApplicants.map((id) => {
-                  const applicant = applicants.find((a) => a.id === id);
-                  return (
-                    <li key={id} className="text-gray-600 flex justify-between">
-                      <span>{applicant?.name || id}</span>
-                      <span>{applicant?.job_title || 'N/A'}</span>
-                    </li>
-                  );
-                })}
-              </ul>
-              <div className="flex justify-end space-x-4">
-                <button
-                  onClick={handleCloseModal}
-                  className="px-4 py-2 rounded-lg text-gray-700 bg-gray-200 hover:bg-gray-300"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleConfirmStatusChange}
-                  className="px-4 py-2 rounded-lg text-white bg-blue-600 hover:bg-blue-700"
-                >
-                  Confirm
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Job Openings Breakdown */}
+        <JobOpeningsBreakdown applicants={applicants} jobOpenings={jobOpenings} />
       </div>
     </div>
   );
