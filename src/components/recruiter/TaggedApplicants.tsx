@@ -723,16 +723,13 @@ export default function TaggedApplicants({ jobId, ownerEmail, todoData, refreshT
     return (
         <div className="bg-white shadow-lg border border-gray-200 rounded-xl p-8 max-w-7xl mx-auto">
             {/* Header Section */}
-            <div className="flex flex-row items-center gap-4 sm:flex-col sm:items-start">
-                <div className="flex flex-row justify-between gapitems-center">
+            <div className="relative flex flex-row items-center gap-4 sm:flex-col sm:items-start">
+                <div className="flex flex-row justify-between items-center">
     <h2 className="text-2xl font-bold text-gray-900">Tagged Applicants</h2>
-    <p className="text-gray-500 text-sm">
+    <p className="text-gray-500 text-sm absolute right-0">
         Job: {jobId} | Total: {applicants.length} applicants
         {selectedApplicants.length > 0 && ` | Selected: ${selectedApplicants.length}`}
     </p>
-     {/* <p className="text-xs text-gray-400 mt-1">
-                        Applicants with resumes: {applicants.filter(app => app.resume_attachment).length}
-                    </p> */}
 </div>
                 <div className="flex items-center gap-80 w-full sm:w-auto mb-4">
                     <div className="relative w-full sm:w-80">
