@@ -466,6 +466,8 @@ checkFirstLogin: async (username: string) => {
   //   return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Lead`);
   // },
 
+  
+
   getLeadById: async (leadId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Lead/${leadId}`);
   },
@@ -518,6 +520,8 @@ checkFirstLogin: async (username: string) => {
   // getAllTodos: async (email: string) => {
   //   return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/ToDo?filters=[["allocated_to" ,"=","${email}"]]`);
   // },
+
+
   getAllTodos: async (email: string) => {
     const fields = [
       "name",

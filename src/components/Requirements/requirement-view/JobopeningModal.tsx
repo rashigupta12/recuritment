@@ -85,6 +85,22 @@ export const JobOpeningModal: React.FC<JobOpeningModalProps> = ({
 
   const hasJobId = staffingDetail?.job_id;
 
+  // Calculate if allocation exceeds vacancies
+  const calculateTotalAllocated = (assignToString: string): number => {
+    if (!assignToString) return 0;
+    try {
+      return assignToString.split(',').reduce((sum, item) => {
+        const [, allocation] = item.trim().split('-');
+        return sum + (parseInt(allocation) || 0);
+      }, 0);
+    } catch {
+      return 0;
+    }
+  };
+
+  const totalAllocated = calculateTotalAllocated(assignTo);
+  const isOverAllocated = totalAllocated > (staffingDetail?.vacancies || 0);
+
   const handleInputChange = (
     field: keyof StaffingPlanItem,
     value: string | number
@@ -420,8 +436,8 @@ const handleAllocation = async () => {
           ) : (
             <button
               onClick={handleAllocation}
-              disabled={isAllocating}
-              className="px-4 py-1 bg-green-600 text-white rounded disabled:opacity-50"
+              disabled={isAllocating || isOverAllocated}
+              className="px-4 py-1 bg-green-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isAllocating ? "Updating..." : "Update Allocation"}
             </button>

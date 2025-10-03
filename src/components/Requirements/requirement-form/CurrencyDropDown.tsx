@@ -163,15 +163,11 @@ const CurrencyDropdown: React.FC<CurrencyDropdownProps> = ({
           disabled={disabled}
           className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <span className="flex items-center space-x-2">
-            {/* {value && (
-              <span className="font-medium text-gray-700">
-                {getSymbolForCurrency(value)}
-              </span>
-            )} */}
-            <span>{value || 'Select Currency'}</span>
+          <span className="flex ">
+           
+            <span className='text-xs'>{value || 'Select Currency'}</span>
           </span>
-          <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`h-3 w-3 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
         </button>
       </div>
 
