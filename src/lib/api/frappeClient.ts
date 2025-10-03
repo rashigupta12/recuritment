@@ -515,8 +515,33 @@ checkFirstLogin: async (username: string) => {
   updateStaffingPLan: async (StaffingId: string, StaffingData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('PUT', `/resource/Company/${StaffingId}`, StaffingData);
   },
+  // getAllTodos: async (email: string) => {
+  //   return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/ToDo?filters=[["allocated_to" ,"=","${email}"]]`);
+  // },
   getAllTodos: async (email: string) => {
-    return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/ToDo?filters=[["allocated_to" ,"=","${email}"]]`);
+    const fields = [
+      "name",
+      "description", 
+      "status",
+      "priority",
+      "date",
+      "custom_job_id",
+      "allocated_to",
+      "assigned_by",
+      "reference_type",
+      "reference_name",
+      "role",
+      "sender",
+      "assignment_rule"
+      // Add any other fields you need
+    ];
+
+    const filters = JSON.stringify([["allocated_to", "=", email]]);
+
+    return await frappeAPI.makeAuthenticatedRequest(
+      'GET', 
+      `/resource/ToDo?fields=${JSON.stringify(fields)}&filters=${filters}&limit_page_length=0&order_by=creation desc`
+    );
   },
   getTodoBYId: async (TodoId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/ToDo/${TodoId}`);
@@ -541,8 +566,31 @@ createBulkApplicants: async (applicantsData: Array<Record<string, unknown>>) => 
   createApplicants: async(ApplicantData :Record<string, unknown>)=>{
  return await frappeAPI.makeAuthenticatedRequest('POST', '/resource/Job Applicant', ApplicantData);
   },
-  getAllApplicants: async (email: string) => {
-    return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Job Applicant?limit_page_length=0&order_by=creation desc`);
+  // getAllApplicants: async (email: string) => {
+  //   return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Job Applicant?limit_page_length=0&order_by=creation desc`);
+  // },
+
+   getAllApplicants: async (email: string) => {
+    const fields = [
+      "name",
+      "applicant_name", 
+      "email_id",
+      "phone_number",
+      "country",
+      "job_title",
+      "designation", 
+      "status",
+      "resume_attachment",
+      "custom_experience",
+      "custom_education",
+      "creation",
+      "owner"
+    ];
+
+    return await frappeAPI.makeAuthenticatedRequest(
+      'GET', 
+      `/resource/Job Applicant?fields=${JSON.stringify(fields)}&limit_page_length=0&order_by=creation desc`
+    );
   },
   getApplicantBYId: async (name:string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Job Applicant/${name}`);
