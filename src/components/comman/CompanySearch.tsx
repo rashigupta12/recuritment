@@ -16,6 +16,7 @@ import { createPortal } from "react-dom";
 
 // -------- Type Definitions --------
 type CompanyType = {
+  custom_address: string;
   name: string;
   company_name: string;
   email?: string | null;
@@ -24,6 +25,7 @@ type CompanyType = {
 };
 
 type SimplifiedCompany = {
+  custom_address: string;
   name: string;
   company_name: string;
   email: string;
@@ -64,6 +66,7 @@ type CompanySearchSectionProps = {
 
 // -------- Company Form State --------
 type CompanyFormState = {
+  custom_address: string ;
   company_name: string;
   country: string;
   email: string;
@@ -86,6 +89,7 @@ const initialCompanyFormState: CompanyFormState = {
   tax_id: "",
   abbr: "",
   domain: "",
+  custom_address:""
 };
 
 // -------- Component --------
@@ -149,6 +153,7 @@ useEffect(() => {
           tax_id: fullCompanyData.tax_id || "",
           abbr: fullCompanyData.abbr || "",
           domain: fullCompanyData.domain || "",
+          custom_address:fullCompanyData.custom_address||""
         };
 
         // FIX: Call onCompanySelect to properly select the company
@@ -273,6 +278,7 @@ useEffect(() => {
       website: company.website || "",
       country: company.country,
       companyId: company.name,
+      custom_address:company.custom_address||""
     };
     onCompanySelect(simplifiedCompany);
     setSearchQuery(company.company_name);
@@ -312,6 +318,7 @@ useEffect(() => {
         tax_id: selectedCompany.tax_id || "",
         abbr: selectedCompany.abbr || "",
         domain: selectedCompany.domain || "",
+        custom_address:selectedCompany.custom_address ||""
       });
     }
     setShowCompanyDialog(true);
@@ -330,6 +337,7 @@ useEffect(() => {
       tax_id: "",
       abbr: "",
       domain: "",
+      custom_address:""
     });
     setShowCompanyDialog(true);
     setShowDropdown(false);
@@ -376,6 +384,7 @@ useEffect(() => {
         tax_id: companyForm.tax_id,
         abbr: companyForm.abbr,
         domain: companyForm.domain,
+        custom_address:companyForm.custom_address
       };
       onCompanySelect(simplifiedCompany);
       setSearchQuery(companyName);
@@ -649,23 +658,31 @@ useEffect(() => {
                 
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Website
-                </label>
-                <input
-                  type="url"
-                  value={companyForm.website}
-                  onChange={(e) =>
-                    setCompanyForm((prev) => ({
-                      ...prev,
-                      website: e.target.value,
-                    }))
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-                  placeholder="https://example.com"
-                />
-              </div>
+             <div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">
+    Website
+  </label>
+  <input
+    type="text"
+    value={companyForm.website}
+    onChange={(e) =>
+      setCompanyForm((prev) => ({
+        ...prev,
+        website: e.target.value,
+      }))
+    }
+    onBlur={(e) => {
+      let value = e.target.value.trim();
+      if (value && !/^https?:\/\//i.test(value)) {
+        value = "https://" + value;
+        setCompanyForm((prev) => ({ ...prev, website: value }));
+      }
+    }}
+    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+    placeholder="www.hevhive.com"
+  />
+</div>
+
 
               <div className="grid grid-cols-1 gap-4">
                 <div>
@@ -682,8 +699,22 @@ useEffect(() => {
                     placeholder="info@company.com"
                   />
                 </div>
-                
-              
+              </div>
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Address
+                  </label>
+                  <input
+                    type="email"
+                    value={companyForm.custom_address}
+                    onChange={(e) => 
+                      setCompanyForm((prev) => ({ ...prev, custom_address: e.target.value }))
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                    placeholder="Enter the Address"
+                  />
+                </div>
               </div>
 
               

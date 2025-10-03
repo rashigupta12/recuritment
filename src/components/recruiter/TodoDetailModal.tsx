@@ -183,32 +183,83 @@ export const TodoDetailModal = ({ todoId, onClose }: TodoDetailModalProps) => {
             </h2>
           </div>
           
-          <div className="p-6">
-            <div className="prose prose-sm max-w-none">
-              <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap bg-gray-50 p-4 rounded-lg border border-gray-200">
-                {(() => {
-                  if (!todo.description) return 'No description provided for this task.';
+<div className="p-6">
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    {/* Left Column (Company + Position Details) */}
+    <div className="prose prose-sm max-w-none">
+      <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap bg-gray-50 p-4 rounded-lg border border-gray-200">
+        {(() => {
+          if (!todo.description) return "No description provided for this task.";
 
-                  const lines = todo.description.split('\n');
-                  const excludeKeywords = [
-                    'Staffing Plan Assignment',
-                    'Staffing Plan:',
-                    'Plan Duration:',
-                    'Vacancies:',
-                    'Current Count:',
-                    'Current Openings:',
-                    'All Assignments for This Position:'
-                  ];
+          const lines = todo.description.split("\n");
+          const excludeKeywords = [
+            "Staffing Plan Assignment",
+            "Staffing Plan:",
+            "Plan Duration:",
+            "Vacancies:",
+            "Current Count:",
+            "Current Openings:",
+            "All Assignments for This Position:",
+          ];
 
-                  const filteredLines = lines.filter(line => {
-                    return !excludeKeywords.some(keyword => line.includes(keyword));
-                  });
+          // Remove excluded lines
+          const filteredLines = lines.filter(
+            (line) => !excludeKeywords.some((keyword) => line.includes(keyword))
+          );
 
-                  return filteredLines.join('\n') || 'No description provided for this task.';
-                })()}
-              </div>
-            </div>
-          </div>
+          // Find Job Description line
+          const jobDescIndex = filteredLines.findIndex((line) =>
+            line.trim().startsWith("• Job Description:")
+          );
+
+          // Left column: everything BEFORE "• Job Description:"
+          const leftColumn =
+            jobDescIndex > -1
+              ? filteredLines.slice(0, jobDescIndex)
+              : filteredLines;
+
+          return leftColumn.join("\n") || "No details provided.";
+        })()}
+      </div>
+    </div>
+
+    {/* Right Column (Job Description only) */}
+    <div className="prose prose-sm max-w-none">
+      <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap bg-gray-50 p-4 rounded-lg border border-gray-200">
+        {(() => {
+          if (!todo.description) return "No description provided for this task.";
+
+          const lines = todo.description.split("\n");
+          const excludeKeywords = [
+            "Staffing Plan Assignment",
+            "Staffing Plan:",
+            "Plan Duration:",
+            "Vacancies:",
+            "Current Count:",
+            "Current Openings:",
+            "All Assignments for This Position:",
+          ];
+
+          const filteredLines = lines.filter(
+            (line) => !excludeKeywords.some((keyword) => line.includes(keyword))
+          );
+
+          const jobDescIndex = filteredLines.findIndex((line) =>
+            line.trim().startsWith("• Job Description:")
+          );
+
+          // Right column: everything FROM "• Job Description:" onwards
+          const rightColumn =
+            jobDescIndex > -1 ? filteredLines.slice(jobDescIndex) : [];
+
+          return rightColumn.join("\n") || "No job description provided.";
+        })()}
+      </div>
+    </div>
+  </div>
+</div>
+
+
         </div>
       </div>
     </div>
