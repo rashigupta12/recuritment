@@ -201,32 +201,52 @@ const TodosManagement = () => {
   const router = useRouter();
 
   // Function to fetch todos
-  const fetchTodos = async (email: string) => {
-    try {
-      setLoading(true);
-      const response = await frappeAPI.getAllTodos(email);
-      const todoList = response.data || [];
+  // const fetchTodos = async (email: string) => {
+  //   try {
+  //     setLoading(true);
+  //     const response = await frappeAPI.getAllTodos(email);
+  //     const todoList = response.data || [];
 
-      const detailedTodos = await Promise.all(
-        todoList.map(async (todo: { name: string }) => {
-          try {
-            const todoDetails = await frappeAPI.getTodoBYId(todo.name);
-            return todoDetails.data;
-          } catch (err) {
-            console.error(`Error fetching details for ${todo.name}:`, err);
-            return null;
-          }
-        })
-      );
+  //     const detailedTodos = await Promise.all(
+  //       todoList.map(async (todo: { name: string }) => {
+  //         try {
+  //           const todoDetails = await frappeAPI.getTodoBYId(todo.name);
+  //           return todoDetails.data;
+  //         } catch (err) {
+  //           console.error(`Error fetching details for ${todo.name}:`, err);
+  //           return null;
+  //         }
+  //       })
+  //     );
 
-      setTodos(detailedTodos.filter(Boolean));
-    } catch (error) {
-      console.error("Error fetching todos:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  //     setTodos(detailedTodos.filter(Boolean));
+  //   } catch (error) {
+  //     console.error("Error fetching todos:", error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+const fetchTodos = async (email: string) => {
+  try {
+    setLoading(true);
+    
+    // ✅ SINGLE API CALL - All data comes in one request
+    const response = await frappeAPI.getAllTodos(email);
+    const todos = response.data || [];
+    
+    console.log('All todos with full details:', todos);
+    
+    // No need for individual API calls - all data is already here!
+    setTodos(todos);
 
+  } catch (error) {
+    console.error("Error fetching todos:", error);
+    // Add proper error handling
+  
+  } finally {
+    setLoading(false);
+  }
+};
   useEffect(() => {
     if (!user) return;
     fetchTodos(user.email);

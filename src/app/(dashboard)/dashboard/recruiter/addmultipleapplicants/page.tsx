@@ -1,4 +1,4 @@
-import ApplicantForm from '@/components/recruiter/ApplicantForm'
+// import ApplicantForm from '@/components/recruiter/ApplicantForm'
 import MultipleApplicantsForm from '@/components/recruiter/MultipleApplicantsForm';
 import React from 'react'
 

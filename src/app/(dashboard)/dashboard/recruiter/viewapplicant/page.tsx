@@ -50,63 +50,90 @@ export default function ViewApplicantPage() {
   const [selectedApplicant, setSelectedApplicant] = useState<JobApplicant | null>(null);
   const router = useRouter();
 
-  const fetchApplicantsData = async (email: string) => {
-    const response = await frappeAPI.getAllApplicants(email);
-    const result: ApiResponse = response;
-    console.log('getAllApplicants response:', result.data);
+  // const fetchApplicantsData = async (email: string) => {
+  //   const response = await frappeAPI.getAllApplicants(email);
+  //   const result: ApiResponse = response;
+  //   console.log('getAllApplicants response:', result.data);
 
-    if (!result.data || result.data.length === 0) {
-      setApplicants([]);
-      setFilteredApplicants([]);
-      return;
-    }
+  //       if (!result.data || result.data.length === 0) {
+  //         setApplicants([]);
+  //         setFilteredApplicants([]);
+  //         return;
+  //       }
 
-    const detailedApplicants: JobApplicant[] = [];
-    const usedNames = new Set<string>();
+  //   const detailedApplicants: JobApplicant[] = [];
+  //   const usedNames = new Set<string>();
+    
+  //   for (const applicant of result.data) {
+  //     if (!applicant.name) {
+  //       console.warn('Skipping applicant with missing name:', applicant);
+  //       continue;
+  //     }
+      
+  //     let uniqueName = applicant.name;
+  //     let suffix = 1;
+  //     while (usedNames.has(uniqueName)) {
+  //       uniqueName = `${applicant.name}-${suffix}`;
+  //       suffix++;
+  //     }
+  //     usedNames.add(uniqueName);
 
-    for (const applicant of result.data) {
-      if (!applicant.name) {
-        console.warn('Skipping applicant with missing name:', applicant);
-        continue;
-      }
 
-      let uniqueName = applicant.name;
-      let suffix = 1;
-      while (usedNames.has(uniqueName)) {
-        uniqueName = `${applicant.name}-${suffix}`;
-        suffix++;
-      }
-      usedNames.add(uniqueName);
+  //     try {
+  //       const detailResponse = await frappeAPI.getApplicantBYId(applicant.name);
+  //       const detail: ApplicantDetailResponse = detailResponse;
+  //       detailedApplicants.push({
+  //         ...detail.data,
+  //         name: uniqueName,
+  //       });
+  //     } catch (detailErr: any) {
+  //       console.error(`Error fetching details for ${applicant.name}:`, detailErr);
+  //       if (detailErr?.exc_type === 'DoesNotExistError' || detailErr.response?.status === 404) {
+  //         detailedApplicants.push({
+  //           ...applicant,
+  //           name: uniqueName,
+  //           applicant_name: applicant.applicant_name || 'N/A',
+  //           status: applicant.status || 'N/A',
+  //         });
+  //       } else {
+  //         detailedApplicants.push({
+  //           ...applicant,
+  //           name: uniqueName,
+  //           applicant_name: 'Error fetching details',
+  //         });
+  //       }
+  //     }
+  //   }
 
-      try {
-        const detailResponse = await frappeAPI.getApplicantBYId(applicant.name);
-        const detail: ApplicantDetailResponse = detailResponse;
-        detailedApplicants.push({
-          ...detail.data,
-          name: uniqueName,
-        });
-      } catch (detailErr: any) {
-        console.error(`Error fetching details for ${applicant.name}:`, detailErr);
-        if (detailErr?.exc_type === 'DoesNotExistError' || detailErr.response?.status === 404) {
-          detailedApplicants.push({
-            ...applicant,
-            name: uniqueName,
-            applicant_name: applicant.applicant_name || 'N/A',
-            status: applicant.status || 'N/A',
-          });
-        } else {
-          detailedApplicants.push({
-            ...applicant,
-            name: uniqueName,
-            applicant_name: 'Error fetching details',
-          });
-        }
-      }
-    }
+  //   return detailedApplicants;
+  // };
+// ✅ Better: Parallel API calls
+// const fetchApplicantsData = async (email: string) => {
+//   const response = await frappeAPI.getAllApplicants(email);
+//   const result: ApiResponse = response;
 
-    return detailedApplicants;
-  };
+//   // Create all promises at once
+//   const detailPromises = result.data.map(applicant => 
+//     frappeAPI.getApplicantBYId(applicant.name).catch(error => {
+//       console.error(`Error fetching ${applicant.name}:`, error);
+//       return { data: applicant }; // Fallback to basic data
+//     })
+//   );
 
+//   // Execute all in parallel
+//   const detailResults = await Promise.all(detailPromises);
+//   return detailResults.map(result => result.data);
+// };
+
+
+const fetchApplicantsData = async (email: string) => {
+  const response = await frappeAPI.getAllApplicants(email);
+  const result: ApiResponse = response;
+  console.log('All applicants with full details:', result.data);
+  
+  // All data is already here - no need for individual detail calls!
+  return result.data || [];
+};
   useEffect(() => {
     const checkAuthAndFetchApplicants = async () => {
       try {
