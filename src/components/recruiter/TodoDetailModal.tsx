@@ -52,6 +52,8 @@ export const TodoDetailModal = ({ todoId, onClose }: TodoDetailModalProps) => {
     }
   }, [todoId]);
 
+  console.log(todo)
+
   const getPriorityColor = (priority: string = '') => {
     switch (priority.toLowerCase()) {
       case 'high':
@@ -109,7 +111,7 @@ export const TodoDetailModal = ({ todoId, onClose }: TodoDetailModalProps) => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-auto">
-      <div className="max-w-5xl mx-auto p-6">
+      <div className="w-full mx-auto p-6">
         {/* Header Card */}
         <div className="bg-white rounded-xl shadow-md mb-6 overflow-hidden">
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
