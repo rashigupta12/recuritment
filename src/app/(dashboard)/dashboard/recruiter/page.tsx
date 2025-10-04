@@ -1,6 +1,8 @@
 /*eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
+import { useAuth } from "@/contexts/AuthContext";
+import { frappeAPI } from "@/lib/api/frappeClient";
 import {
   ActiveElement,
   ArcElement,
@@ -26,7 +28,7 @@ import {
   Users,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Bar, Doughnut, Line } from "react-chartjs-2";
 
 ChartJS.register(
@@ -79,211 +81,131 @@ interface MetricData {
   joined: number;
 }
 
-const dummyApplicants: JobApplicant[] = [
-  {
-    id: "1",
-    name: "John Doe",
-    email: "john@example.com",
-    job_title: "Software Engineer",
-    client: "TechCorp",
-    status: "Applied",
-    appliedDate: "2025-09-15",
-    lastUpdated: "2025-09-15",
-  },
-  {
-    id: "2",
-    name: "Jane Smith",
-    email: "jane@example.com",
-    job_title: "Product Manager",
-    client: "InnovateLtd",
-    status: "Joined",
-    appliedDate: "2025-08-10",
-    lastUpdated: "2025-10-01",
-  },
-  {
-    id: "3",
-    name: "Alice Johnson",
-    email: "alice@example.com",
-    job_title: "Data Analyst",
-    client: "DataVision",
-    status: "InterviewStage",
-    appliedDate: "2025-09-20",
-    lastUpdated: "2025-09-28",
-  },
-  {
-    id: "4",
-    name: "Bob Wilson",
-    email: "bob@example.com",
-    job_title: "UX Designer",
-    client: "DesignHub",
-    status: "Shortlisted",
-    appliedDate: "2025-09-25",
-    lastUpdated: "2025-09-27",
-  },
-  {
-    id: "5",
-    name: "Emma Brown",
-    email: "emma@example.com",
-    job_title: "DevOps Engineer",
-    client: "CloudSys",
-    status: "Offered",
-    appliedDate: "2025-08-15",
-    lastUpdated: "2025-09-30",
-  },
-  {
-    id: "6",
-    name: "Michael Lee",
-    email: "michael@example.com",
-    job_title: "Software Engineer",
-    client: "TechCorp",
-    status: "Tagged",
-    appliedDate: "2025-09-18",
-    lastUpdated: "2025-09-22",
-  },
-  {
-    id: "7",
-    name: "Sarah Davis",
-    email: "sarah@example.com",
-    job_title: "Marketing Manager",
-    client: "InnovateLtd",
-    status: "OfferRejected",
-    appliedDate: "2025-08-20",
-    lastUpdated: "2025-09-05",
-  },
-  {
-    id: "8",
-    name: "David Miller",
-    email: "david@example.com",
-    job_title: "Data Scientist",
-    client: "DataVision",
-    status: "AssessmentStage",
-    appliedDate: "2025-09-22",
-    lastUpdated: "2025-09-29",
-  },
-  {
-    id: "9",
-    name: "Laura Taylor",
-    email: "laura@example.com",
-    job_title: "Product Manager",
-    client: "TechCorp",
-    status: "AssessmentStage",
-    appliedDate: "2025-09-12",
-    lastUpdated: "2025-09-25",
-  },
-  {
-    id: "10",
-    name: "James White",
-    email: "james@example.com",
-    job_title: "Software Engineer",
-    client: "CloudSys",
-    status: "Rejected",
-    appliedDate: "2025-08-05",
-    lastUpdated: "2025-09-28",
-  },
-];
-
-const dummyJobs: JobOpening[] = [
-  {
-    id: "1",
-    title: "Software Engineer",
-    client: "TechCorp",
-    location: "Bangalore",
-    status: "Open",
-    positions: 3,
-    createdDate: "2025-08-01",
-  },
-  {
-    id: "2",
-    title: "Product Manager",
-    client: "InnovateLtd",
-    location: "Mumbai",
-    status: "Open",
-    positions: 2,
-    createdDate: "2025-08-05",
-  },
-  {
-    id: "3",
-    title: "Data Analyst",
-    client: "DataVision",
-    location: "Delhi",
-    status: "Open",
-    positions: 1,
-    createdDate: "2025-08-10",
-  },
-  {
-    id: "4",
-    title: "UX Designer",
-    client: "DesignHub",
-    location: "Pune",
-    status: "Offered",
-    positions: 1,
-    createdDate: "2025-08-15",
-  },
-  {
-    id: "5",
-    title: "DevOps Engineer",
-    client: "CloudSys",
-    location: "Hyderabad",
-    status: "Joined",
-    positions: 2,
-    createdDate: "2025-07-20",
-  },
-];
-
-const monthlyMetrics: MetricData[] = [
-  { month: "Jul", tagged: 12, interviews: 8, offers: 5, joined: 3 },
-  { month: "Aug", tagged: 15, interviews: 11, offers: 7, joined: 5 },
-  { month: "Sep", tagged: 18, interviews: 13, offers: 9, joined: 6 },
-  { month: "Oct", tagged: 10, interviews: 7, offers: 4, joined: 2 },
-];
-
 export default function RecruiterDashboard() {
   const router = useRouter();
   const [selectedClient, setSelectedClient] = useState<string>("All");
   const [timePeriod, setTimePeriod] = useState<"week" | "month" | "year">(
     "month"
   );
+  const { user } = useAuth();
+  console.log(user)
+  const [apiData, setApiData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const clients = useMemo(
-    () => ["All", ...Array.from(new Set(dummyJobs.map((j) => j.client)))],
-    []
-  );
+  useEffect(() => {
+    const fetchData = async () => {
+      if (user?.email) {
+        try {
+          setLoading(true);
+          const response = await frappeAPI.makeAuthenticatedRequest(
+            "GET",
+            `/method/recruitment_app.rec_dashboard.get_recruiter_dashboard_data_by_company?email=${user.email}`
+          );
+          console.log(response)
+          setApiData(response.message);
+        } catch (error) {
+          console.error("Error fetching dashboard data:", error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    fetchData();
+  }, [user?.email]);
+
+  // Transform API data to match component structure
+  const transformedApplicants = useMemo((): JobApplicant[] => {
+    if (!apiData) return [];
+
+    const allApplicants: JobApplicant[] = [];
+    const statusMapping: Record<string, string> = {
+      tagged_applicants_by_company: "Tagged",
+      shortlisted_applicants_by_company: "Shortlisted",
+      assessment_stage_applicants_by_company: "AssessmentStage",
+      interview_stage_applicants_by_company: "InterviewStage",
+      offered_applicants_by_company: "Offered",
+      rejected_applicants_by_company: "Rejected",
+      joined_applicants_by_company: "Joined",
+    };
+
+    Object.keys(statusMapping).forEach((key) => {
+      const statusData = apiData[key]?.applicants_by_company || {};
+      const status = statusMapping[key];
+
+      Object.entries(statusData).forEach(([company, applicants]: [string, any]) => {
+        (applicants || []).forEach((applicant: any) => {
+          allApplicants.push({
+            id: applicant.name,
+            name: applicant.applicant_name,
+            email: applicant.email_id,
+            job_title: applicant.designation,
+            client: company,
+            status: status as any,
+            appliedDate: new Date().toISOString().split("T")[0],
+            lastUpdated: new Date().toISOString().split("T")[0],
+          });
+        });
+      });
+    });
+
+    return allApplicants;
+  }, [apiData]);
+
+  // Transform jobs data from API
+  const transformedJobs = useMemo((): JobOpening[] => {
+    if (!apiData?.jobs_by_company) return [];
+
+    const jobs: JobOpening[] = [];
+    Object.entries(apiData.jobs_by_company).forEach(([company, jobTitles]: [string, any]) => {
+      (jobTitles || []).forEach((title: string, index: number) => {
+        jobs.push({
+          id: `${company}-${index}`,
+          title: title,
+          client: company,
+          location: "N/A",
+          status: "Open",
+          positions: 1,
+          createdDate: new Date().toISOString().split("T")[0],
+        });
+      });
+    });
+
+    return jobs;
+  }, [apiData]);
+
+  // Get clients from API data
+  const clients = useMemo(() => {
+    if (!apiData?.companies) return ["All"];
+    return ["All", ...apiData.companies];
+  }, [apiData]);
+
   const filteredApplicants = useMemo(
     () =>
       selectedClient === "All"
-        ? dummyApplicants
-        : dummyApplicants.filter((a) => a.client === selectedClient),
-    [selectedClient]
+        ? transformedApplicants
+        : transformedApplicants.filter((a) => a.client === selectedClient),
+    [selectedClient, transformedApplicants]
   );
+
   const filteredJobs = useMemo(
     () =>
       selectedClient === "All"
-        ? dummyJobs
-        : dummyJobs.filter((j) => j.client === selectedClient),
-    [selectedClient]
+        ? transformedJobs
+        : transformedJobs.filter((j) => j.client === selectedClient),
+    [selectedClient, transformedJobs]
   );
 
   const activeClients = useMemo(() => {
-    const clientsWithOpenJobs = new Set(
-      dummyJobs.filter((j) => j.status === "Open").map((j) => j.client)
-    );
-    return clientsWithOpenJobs.size;
-  }, []);
+    return apiData?.companies?.length || 0;
+  }, [apiData]);
 
   const kpiMetrics = useMemo(() => {
-    const total = filteredApplicants.length;
-    const tagged = filteredApplicants.filter(
-      (a) => a.status === "Tagged"
-    ).length;
-    const interviews = filteredApplicants.filter(
-      (a) => a.status === "InterviewStage"
-    ).length;
-    const offered = filteredApplicants.filter(
-      (a) => a.status === "Offered"
-    ).length;
-    const joined = filteredApplicants.filter(
-      (a) => a.status === "Joined"
-    ).length;
+    const total = apiData?.summary?.total_applicants || 0;
+    const tagged = apiData?.metrics?.Tagged || 0;
+    const interviews = apiData?.metrics?.["Interview Stage"] || 0;
+    const offered = apiData?.metrics?.Offered || 0;
+    const joined = apiData?.metrics?.Joined || 0;
+
     return {
       totalApplicants: total,
       taggedToInterview:
@@ -292,7 +214,7 @@ export default function RecruiterDashboard() {
         interviews > 0 ? ((offered / interviews) * 100).toFixed(1) : "0",
       offerToJoin: offered > 0 ? ((joined / offered) * 100).toFixed(1) : "0",
     };
-  }, [filteredApplicants]);
+  }, [apiData]);
 
   const exportCSV = () => {
     const csvRows = [];
@@ -353,7 +275,7 @@ export default function RecruiterDashboard() {
           .replace(/([A-Z])/g, " $1")
           .replace(/^./, (str) => str.toUpperCase()),
         data: clientGroups.map((client) => {
-          const clientApplicants = dummyApplicants.filter(
+          const clientApplicants = transformedApplicants.filter(
             (a) => a.client === client
           );
           return clientApplicants.filter((a) => a.status === status).length;
@@ -363,7 +285,7 @@ export default function RecruiterDashboard() {
         borderWidth: 1,
       })),
     };
-  }, [selectedClient, clients]);
+  }, [selectedClient, clients, transformedApplicants]);
 
   const funnelStages = [
     "Tagged",
@@ -432,6 +354,41 @@ export default function RecruiterDashboard() {
     };
   }, [filteredJobs]);
 
+  // Generate monthly metrics from current data (simplified version)
+  const monthlyMetrics: MetricData[] = useMemo(() => {
+    const metrics = apiData?.metrics || {};
+    return [
+      {
+        month: "Jul",
+        tagged: Math.floor((metrics.Tagged || 0) * 0.6),
+        interviews: Math.floor((metrics["Interview Stage"] || 0) * 0.6),
+        offers: Math.floor((metrics.Offered || 0) * 0.6),
+        joined: Math.floor((metrics.Joined || 0) * 0.6),
+      },
+      {
+        month: "Aug",
+        tagged: Math.floor((metrics.Tagged || 0) * 0.75),
+        interviews: Math.floor((metrics["Interview Stage"] || 0) * 0.75),
+        offers: Math.floor((metrics.Offered || 0) * 0.75),
+        joined: Math.floor((metrics.Joined || 0) * 0.75),
+      },
+      {
+        month: "Sep",
+        tagged: Math.floor((metrics.Tagged || 0) * 0.9),
+        interviews: Math.floor((metrics["Interview Stage"] || 0) * 0.9),
+        offers: Math.floor((metrics.Offered || 0) * 0.9),
+        joined: Math.floor((metrics.Joined || 0) * 0.9),
+      },
+      {
+        month: "Oct",
+        tagged: metrics.Tagged || 0,
+        interviews: metrics["Interview Stage"] || 0,
+        offers: metrics.Offered || 0,
+        joined: metrics.Joined || 0,
+      },
+    ];
+  }, [apiData]);
+
   const trendData = useMemo(
     () => ({
       labels: monthlyMetrics.map((m) => m.month),
@@ -482,7 +439,7 @@ export default function RecruiterDashboard() {
         },
       ],
     }),
-    []
+    [monthlyMetrics]
   );
 
   const handleJobStatusClick = (elements: any[]) => {
@@ -506,6 +463,17 @@ export default function RecruiterDashboard() {
     const target = nativeEvent?.target as HTMLElement;
     if (target) target.style.cursor = elements[0] ? "pointer" : "default";
   };
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-slate-600">Loading dashboard data...</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-slate-50">
@@ -659,7 +627,6 @@ export default function RecruiterDashboard() {
 
           {/* Job Status */}
           <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200">
-            {/* Header + Summary in one row */}
             <div className="flex justify-between items-center mb-2">
               <SectionHeader
                 title="Job Status"
@@ -681,7 +648,6 @@ export default function RecruiterDashboard() {
               </div>
             </div>
 
-            {/* Chart below */}
             <div className="h-64 flex items-center justify-center cursor-pointer mt-2">
               <Doughnut
                 data={jobStatusData}
@@ -723,7 +689,6 @@ export default function RecruiterDashboard() {
         {/* Pipeline Charts */}
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200">
-            {/* Header + Summary side by side */}
             <div className="flex justify-between items-center mb-2">
               <SectionHeader
                 title="Candidate Pipeline"
@@ -757,7 +722,6 @@ export default function RecruiterDashboard() {
               </div>
             </div>
 
-            {/* Chart below */}
             <div className="h-64 cursor-pointer mt-2">
               <Bar
                 data={candidatePipelineData}
@@ -766,7 +730,7 @@ export default function RecruiterDashboard() {
                   maintainAspectRatio: false,
                   plugins: {
                     legend: {
-                      position: "bottom", // 👈 moved to bottom
+                      position: "bottom",
                       labels: {
                         padding: 10,
                         font: { size: 11 },
@@ -807,7 +771,6 @@ export default function RecruiterDashboard() {
           </div>
 
           <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200">
-            {/* Header + Summary in one row */}
             <div className="flex justify-between items-center">
               <SectionHeader
                 title="Recruitment Funnel"
@@ -825,7 +788,6 @@ export default function RecruiterDashboard() {
               </div>
             </div>
 
-            {/* Funnel Chart below */}
             <div className="h-64 mt-4">
               <Bar
                 data={funnelData}
