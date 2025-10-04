@@ -345,10 +345,10 @@ const fetchApplicantsData = async (email: string) => {
   }, {} as Record<string, number>);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8 px-4">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 ">
+      <div className="w-full mx-auto">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-gray-800">Job Applicants</h1>
+          <h1 className="text-3xl font-bold text-blue-800">Applicants</h1>
           <div className="flex items-center gap-4">
             <div className="flex-1 w-full lg:w-auto">
               <div className="relative">
