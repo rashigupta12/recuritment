@@ -25,9 +25,9 @@ export function ApplicantsTable({
 
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full bg-white border rounded-lg">
+      <table className="min-w-full bg-white border  rounded-lg">
         <thead>
-          <tr className="bg-gray-200 text-gray-600 uppercase text-sm leading-normal">
+          <tr className="bg-primary rounded-sm text-white uppercase text-sm font-bold leading-normal">
             {showCheckboxes && (
               <th className="py-3 px-6 text-left">Select</th>
             )}
