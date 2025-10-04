@@ -1,3 +1,4 @@
+/*eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import CompanySearchSection from "@/components/comman/CompanySearch";
 import ContactSearchSection from "@/components/comman/ContactSearch";
@@ -33,6 +34,7 @@ type SimplifiedContact = {
 };
 
 type SimplifiedCompany = {
+  custom_address: any;
   name: string;
   company_name: string;
   email: string;
@@ -218,6 +220,7 @@ const LeadForm: React.FC<LeadFormProps> = ({
           website: editLead.website || "",
           country: editLead.country || "",
           companyId: undefined,
+          custom_address : editLead.custom_address
         });
       }
 
@@ -397,6 +400,7 @@ const LeadForm: React.FC<LeadFormProps> = ({
       website: company.website,
       country: company.country,
       companyId: company.companyId,
+      custom_address :company.custom_address
     };
     setCompany(storeCompany);
   };
@@ -433,6 +437,7 @@ const LeadForm: React.FC<LeadFormProps> = ({
       website: formData.company.website || "",
       country: formData.company.country || "",
       companyId: formData.company.companyId,
+      custom_address:formData.company.custom_address,
     };
   };
 

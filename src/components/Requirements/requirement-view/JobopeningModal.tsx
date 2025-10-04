@@ -1,13 +1,7 @@
 "use client";
 import { frappeAPI } from "@/lib/api/frappeClient";
 import {
-  Briefcase,
-  Clock,
-  IndianRupee,
-  Loader2,
-  MapPin,
-  Users,
-  X,
+  X
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { MultiUserAssignment } from "./MultiUserAssignment";
@@ -85,6 +79,22 @@ export const JobOpeningModal: React.FC<JobOpeningModalProps> = ({
 
   const hasJobId = staffingDetail?.job_id;
 
+  // Calculate if allocation exceeds vacancies
+  const calculateTotalAllocated = (assignToString: string): number => {
+    if (!assignToString) return 0;
+    try {
+      return assignToString.split(',').reduce((sum, item) => {
+        const [, allocation] = item.trim().split('-');
+        return sum + (parseInt(allocation) || 0);
+      }, 0);
+    } catch {
+      return 0;
+    }
+  };
+
+  const totalAllocated = calculateTotalAllocated(assignTo);
+  const isOverAllocated = totalAllocated > (staffingDetail?.vacancies || 0);
+
   const handleInputChange = (
     field: keyof StaffingPlanItem,
     value: string | number
@@ -95,31 +105,31 @@ export const JobOpeningModal: React.FC<JobOpeningModalProps> = ({
     }));
   };
 
-  const handleSaveDetails = async () => {
-    if (!staffingPlan || !staffingDetail) return;
-    setIsSaving(true);
-    try {
-      const updatedStaffingDetails = [...staffingPlan.staffing_details];
-      updatedStaffingDetails[detailIndex] = {
-        ...updatedStaffingDetails[detailIndex],
-        ...editData,
-      };
+  // const handleSaveDetails = async () => {
+  //   if (!staffingPlan || !staffingDetail) return;
+  //   setIsSaving(true);
+  //   try {
+  //     const updatedStaffingDetails = [...staffingPlan.staffing_details];
+  //     updatedStaffingDetails[detailIndex] = {
+  //       ...updatedStaffingDetails[detailIndex],
+  //       ...editData,
+  //     };
 
-      await frappeAPI.makeAuthenticatedRequest(
-        "PUT",
-        `/resource/Staffing Plan/${staffingPlan.name}`,
-        {
-          staffing_details: updatedStaffingDetails,
-        }
-      );
+  //     await frappeAPI.makeAuthenticatedRequest(
+  //       "PUT",
+  //       `/resource/Staffing Plan/${staffingPlan.name}`,
+  //       {
+  //         staffing_details: updatedStaffingDetails,
+  //       }
+  //     );
 
-      onSuccess(planIndex, detailIndex, editData);
-    } catch (error) {
-      console.error("Error updating staffing details:", error);
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  //     onSuccess(planIndex, detailIndex, editData);
+  //   } catch (error) {
+  //     console.error("Error updating staffing details:", error);
+  //   } finally {
+  //     setIsSaving(false);
+  //   }
+  // };
 
   const handleCreateOpening = async () => {
     if (!staffingPlan || !staffingDetail) return;
@@ -420,8 +430,8 @@ const handleAllocation = async () => {
           ) : (
             <button
               onClick={handleAllocation}
-              disabled={isAllocating}
-              className="px-4 py-1 bg-green-600 text-white rounded disabled:opacity-50"
+              disabled={isAllocating || isOverAllocated}
+              className="px-4 py-1 bg-green-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isAllocating ? "Updating..." : "Update Allocation"}
             </button>

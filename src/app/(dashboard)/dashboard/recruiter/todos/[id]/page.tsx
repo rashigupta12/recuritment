@@ -7,6 +7,8 @@ import { useState, useEffect } from "react";
 import { frappeAPI } from "@/lib/api/frappeClient";
 import TaggedApplicants from "@/components/recruiter/TaggedApplicants";
 import MultipleApplicantsForm from "@/components/recruiter/MultipleApplicantsForm";
+import { Plus } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
 interface TodoData {
   name: string;
@@ -23,16 +25,24 @@ export default function TodoDetailPage() {
   const [jobId, setJobId] = useState<string>('');
   const [todoData, setTodoData] = useState<TodoData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [refreshTrigger, setRefreshTrigger] = useState(0); // ✅ New state for refresh
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0); // ✅ Better refresh mechanism
 
   const handleClose = () => {
     router.back();
   };
 
-  // ✅ New function to trigger refresh
+  // ✅ Improved refresh function
   const handleFormSubmitSuccess = () => {
     console.log('🔄 Refreshing applicants list...');
-    setRefreshTrigger(prev => prev + 1);
+    setRefreshKey(prev => prev + 1); // Increment key to force re-render
+    setIsSheetOpen(false);
+  };
+
+  // ✅ Force refresh function that can be passed down
+  const refreshApplicants = () => {
+    console.log('🔄 Manual refresh triggered');
+    setRefreshKey(prev => prev + 1);
   };
 
   useEffect(() => {
@@ -77,8 +87,8 @@ export default function TodoDetailPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Tabs Navigation */}
       <div className="sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-center space-x-4">
+        <div className="w-full ">
+          <div className="flex justify-center space-x-4 ">
             <button
               onClick={() => setActiveTab('details')}
               className={`px-4 py-1 rounded-full text-sm font-medium transition ${activeTab === 'details'
@@ -97,21 +107,12 @@ export default function TodoDetailPage() {
             >
               Tagged Applicants
             </button>
-            {/* <button
-              onClick={() => setActiveTab('resume')}
-              className={`px-4 py-1 rounded-full text-sm font-medium transition ${activeTab === 'resume'
-                  ? "bg-blue-100 text-primary border border-primary"
-                  : "text-gray-500 hover:text-gray-700"
-                }`}
-            >
-              Resume Application
-            </button> */}
           </div>
         </div>
       </div>
 
       {/* Tab Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="">
         {activeTab === 'details' && (
           <TodoDetailModal
             todoId={todoId}
@@ -120,54 +121,50 @@ export default function TodoDetailPage() {
         )}
 
         {activeTab === 'applicants' && (
-          <div className="">
-            <h1 className="text-2xl font-bold text-gray-900"></h1>
+          <div className="space-y-0 relative">
+            {/* ✅ Big Plus Button - Floating Action Button */}
+            <button
+              onClick={() => setIsSheetOpen(true)}
+              className="fixed bottom-8 right-8 z-50 w-16 h-16 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110"
+              title="Add Multiple Applicants"
+            >
+              <Plus className="w-8 h-8" />
+            </button>
+
+            <h1 className="text-2xl font-bold text-gray-900 mb-4"></h1>
             {jobId && todoData ? (
               <>
-                <MultipleApplicantsForm
-                  initialJobId={jobId}
-                  onFormSubmitSuccess={handleFormSubmitSuccess} // ✅ Pass callback
-                />
+                {/* ✅ Multiple Applicants Form in Sheet */}
+                <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+                  <SheetContent side="right" className="w-full sm:max-w-4xl overflow-y-auto">
+                    <SheetHeader>
+                      <SheetTitle className="text-2xl font-bold text-gray-900">
+                        Add Multiple Applicants
+                      </SheetTitle>
+                    </SheetHeader>
+                    <div className="mt-6">
+                      <MultipleApplicantsForm
+                        initialJobId={jobId}
+                        onFormSubmitSuccess={handleFormSubmitSuccess}
+                      />
+                    </div>
+                  </SheetContent>
+                </Sheet>
+
+                {/* ✅ Tagged Applicants List with refresh key */}
                 <TaggedApplicants
+                  key={`tagged-applicants-${refreshKey}`} // ✅ Force re-render
                   jobId={jobId}
                   ownerEmail={todoData.owner_email || 'recruiter@gennextit.com'}
                   todoData={todoData}
-                  refreshTrigger={refreshTrigger} // ✅ Pass refresh trigger
+                  refreshTrigger={refreshKey}
+                   // ✅ Additional refresh prop
                 />
               </>
             ) : (
               <p className="text-red-500">
                 Loading todo details or job ID not found.
               </p>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'resume' && (
-          <div>
-            <div className="mb-6">
-              <h1 className="text-2xl font-bold text-gray-900">Job Application Form</h1>
-              <p className="text-gray-600 mt-2">
-                Applying for Job ID:
-                {jobId ? (
-                  <span className="font-semibold text-blue-600 ml-2">{jobId}</span>
-                ) : (
-                  <span className="text-red-500 ml-2">Job ID not available</span>
-                )}
-              </p>
-            </div>
-
-            {jobId ? (
-              <ApplicantForm
-                initialJobId={jobId}
-                todoData={todoData}
-              />
-            ) : (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
-                <p className="text-yellow-800">
-                  Job ID not available for this task. Please check the task details.
-                </p>
-              </div>
             )}
           </div>
         )}

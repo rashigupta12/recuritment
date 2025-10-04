@@ -17,6 +17,7 @@ export interface Contact {
 }
 
 export interface Company {
+  custom_address: any
   companyId: string | undefined
   email: string
   company_name: string
@@ -33,6 +34,7 @@ export interface Industry {
 }
 
 export interface Lead {
+  custom_address: any
   custom_fixed_charges: number
   owner: string
   lead_owner: string

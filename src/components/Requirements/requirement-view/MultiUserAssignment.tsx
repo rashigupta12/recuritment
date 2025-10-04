@@ -1,15 +1,10 @@
 'use client'
 import { frappeAPI } from '@/lib/api/frappeClient';
 import {
-  AlertCircle,
-  Check,
   Loader2,
-  Search,
-  Trash2,
-  UserPlus,
   X
 } from 'lucide-react';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 type Assignment = {
   userEmail: string;
@@ -78,8 +73,9 @@ export const MultiUserAssignment: React.FC<MultiUserAssignmentProps> = ({
     }
   }, [users]);
 
-  const totalAllocated = assignments.reduce((sum, a) => sum + a.allocation, 0);
+ const totalAllocated = assignments.reduce((sum, a) => sum + a.allocation, 0);
   const remaining = totalVacancies - totalAllocated;
+  // const isOverAllocated = totalAllocated > totalVacancies;
 
   const loadUsers = async () => {
     if (users.length > 0) return;
@@ -95,19 +91,52 @@ export const MultiUserAssignment: React.FC<MultiUserAssignmentProps> = ({
     }
   };
 
-  const updateAssignments = useCallback((newA: Assignment[]) => {
-    setAssignments(newA);
-    onAssignToChange(formatAssignTo(newA));
-  }, [onAssignToChange]);
+  // const updateAssignments = useCallback((newA: Assignment[]) => {
+  //   setAssignments(newA);
+  //   const validAssignments = newA.filter(a => a.allocation > 0);
+  //   onAssignToChange(formatAssignTo(validAssignments));
+  // }, [onAssignToChange]);
 
   const addAssignment = (user: User) => {
-    updateAssignments([...assignments, { userEmail: user.email, userName: user.full_name, allocation: 1 }]);
+    const newAssignments = [...assignments, { userEmail: user.email, userName: user.full_name, allocation: 1 }];
+    setAssignments(newAssignments);
+    onAssignToChange(formatAssignTo(newAssignments));
     setShowDropdown(false);
     setSearchTerm('');
   };
 
   const removeAssignment = (i: number) => {
-    updateAssignments(assignments.filter((_, idx) => idx !== i));
+    const newAssignments = assignments.filter((_, idx) => idx !== i);
+    setAssignments(newAssignments);
+    onAssignToChange(formatAssignTo(newAssignments));
+  };
+
+  const handleAllocationChange = (i: number, newAlloc: number) => {
+    const newAssignments = assignments.map((x, j) => 
+      j === i ? { ...x, allocation: newAlloc } : x
+    );
+    setAssignments(newAssignments);
+    
+    if (newAlloc > 0) {
+      onAssignToChange(formatAssignTo(newAssignments));
+    }
+  };
+
+  // Handle input change with proper number parsing
+  const handleInputChange = (i: number, value: string) => {
+    // If empty, set to 0 temporarily
+    if (value === '') {
+      handleAllocationChange(i, 0);
+      return;
+    }
+
+    // Remove leading zeros and parse
+    const cleanValue = value.replace(/^0+/, '') || '0';
+    const newAlloc = parseInt(cleanValue, 10);
+    
+    if (!isNaN(newAlloc) && newAlloc >= 0) {
+      handleAllocationChange(i, newAlloc);
+    }
   };
 
   if (totalVacancies === 0) {
@@ -119,17 +148,27 @@ export const MultiUserAssignment: React.FC<MultiUserAssignmentProps> = ({
       <div className="border rounded p-2 space-y-1 bg-gray-50">
         {assignments.map((a, i) => (
           <div key={a.userEmail} className="flex items-center justify-between text-xs bg-white rounded p-1">
-            <span className="truncate">{a.userName}</span>
+            <span className="truncate capitalize">{a.userName}</span>
             <div className="flex items-center gap-1">
               <input
-                type="number"
-                value={a.allocation}
+                type="text" // Changed to text to have more control
+                inputMode="numeric" // Shows numeric keyboard on mobile
+                pattern="[0-9]*" // Ensures numeric input
+                value={a.allocation === 0 ? '' : a.allocation.toString()} // Show empty string for 0
                 onChange={(e) => {
-                  const newAlloc = parseInt(e.target.value) || 0;
-                  updateAssignments(assignments.map((x, j) => j === i ? { ...x, allocation: newAlloc } : x));
+                  // Only allow numeric characters
+                  const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                  handleInputChange(i, numericValue);
+                }}
+                onBlur={(e) => {
+                  // When input loses focus and is empty or 0, remove the assignment
+                  if (a.allocation === 0 || e.target.value === '') {
+                    removeAssignment(i);
+                  }
                 }}
                 className="w-12 px-1 py-0.5 border rounded text-center"
                 disabled={disabled}
+                placeholder="0"
               />
               <button onClick={() => removeAssignment(i)} disabled={disabled} className="text-gray-400 hover:text-red-600">
                 <X className="h-3 w-3" />

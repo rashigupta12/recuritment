@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { frappeAPI } from '@/lib/api/frappeClient';
 import { ApplicantsTable } from '@/components/recruiter/ApplicantsTable';
-import { Search, User, Mail, Phone, MapPin, Briefcase, Award, FileText, Calendar, X } from 'lucide-react';
+import { Search } from 'lucide-react';
 
 export interface JobApplicant {
   name: string;
@@ -24,6 +24,13 @@ export interface JobApplicant {
     end_date: string;
     current_company: number;
   }>;
+  // custom_education?: Array<{
+  //   degree: string;
+  //   specialization: string;
+  //   institution: string;
+  //   year_of_passing: number;
+  //   percentagecgpa: number;
+  // }>;
 }
 
 interface ApiResponse {
@@ -36,7 +43,7 @@ interface ApplicantDetailResponse {
 
 export default function ViewApplicantPage() {
   const [applicants, setApplicants] = useState<JobApplicant[]>([]);
-  const [filteredApplicants, setFilteredApplicants] = useState<JobApplicant[]>([]);
+  const [filteredApplicants, setFilteredApplicants] = useState<JobApplicant[]>([]); // New state for filtered applicants
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -45,9 +52,8 @@ export default function ViewApplicantPage() {
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [modalError, setModalError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [selectedApplicant, setSelectedApplicant] = useState<JobApplicant | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>(''); // New state for search query
+  const [statusFilter, setStatusFilter] = useState<string>('all'); // State for status filter
   const router = useRouter();
 
   // const fetchApplicantsData = async (email: string) => {
@@ -77,7 +83,6 @@ export default function ViewApplicantPage() {
   //       suffix++;
   //     }
   //     usedNames.add(uniqueName);
-
 
   //     try {
   //       const detailResponse = await frappeAPI.getApplicantBYId(applicant.name);
@@ -153,7 +158,7 @@ const fetchApplicantsData = async (email: string) => {
 
         const detailedApplicants = await fetchApplicantsData(email);
         setApplicants(detailedApplicants);
-        setFilteredApplicants(detailedApplicants);
+        setFilteredApplicants(detailedApplicants); // Initialize filtered applicants
       } catch (err: any) {
         console.error('Fetch error:', err);
         let errorMessage = 'An error occurred while fetching applicants.';
@@ -175,9 +180,11 @@ const fetchApplicantsData = async (email: string) => {
     checkAuthAndFetchApplicants();
   }, [router]);
 
+  // Handle search and status filter
   useEffect(() => {
     let filtered = applicants;
 
+    // Apply search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
@@ -188,6 +195,7 @@ const fetchApplicantsData = async (email: string) => {
       );
     }
 
+    // Apply status filter
     if (statusFilter !== 'all') {
       filtered = filtered.filter(
         (applicant) => applicant.status?.toLowerCase() === statusFilter.toLowerCase()
@@ -197,30 +205,25 @@ const fetchApplicantsData = async (email: string) => {
     setFilteredApplicants(filtered);
   }, [applicants, searchQuery, statusFilter]);
 
+  // Handle checkbox selection
   const handleSelectApplicant = (name: string) => {
     setSelectedApplicants((prev) =>
       prev.includes(name) ? prev.filter((id) => id !== name) : [...prev, name]
     );
   };
 
-  const handleRowClick = (applicant: JobApplicant) => {
-    setSelectedApplicant(applicant);
-  };
-
-  const handleCloseDetailsModal = () => {
-    setSelectedApplicant(null);
-  };
-
+  // Handle opening the confirmation modal
   const handleChangeStatus = () => {
     if (selectedApplicants.length === 0) {
       toast.error('Please select at least one applicant.');
       return;
     }
     setIsModalOpen(true);
-    setSelectedStatus('');
+    setSelectedStatus(''); // Reset status in modal
     setModalError(null);
   };
 
+  // Handle confirming the status change
   const handleConfirmStatusChange = async () => {
     if (!selectedStatus) {
       setModalError('Please select a status.');
@@ -237,7 +240,7 @@ const fetchApplicantsData = async (email: string) => {
     try {
       setLoading(true);
       const failedUpdates: string[] = [];
-
+      
       for (const name of selectedApplicants) {
         if (!name) {
           failedUpdates.push('Unknown (missing name)');
@@ -257,10 +260,10 @@ const fetchApplicantsData = async (email: string) => {
 
       const detailedApplicants = await fetchApplicantsData(userEmail);
       setApplicants(detailedApplicants);
-      setFilteredApplicants(detailedApplicants);
+      setFilteredApplicants(detailedApplicants); // Reset filtered applicants
       setSelectedApplicants([]);
       setSelectedStatus('');
-      setIsModalOpen(false);
+      setIsModalOpen(false); // Close the modal
 
       if (failedUpdates.length > 0) {
         toast.warning(
@@ -280,34 +283,58 @@ const fetchApplicantsData = async (email: string) => {
         errorMessage = err.response.data.message;
       }
       toast.error(errorMessage);
-      setIsModalOpen(false);
+      setIsModalOpen(false); // Close the modal on error
     } finally {
       setLoading(false);
     }
   };
 
+  // Handle closing the modal
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedStatus('');
     setModalError(null);
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-xl font-semibold text-gray-700">Loading applicants...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="text-center bg-white p-8 rounded-lg shadow-lg">
+          <div className="text-6xl mb-4">🔒</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Authentication Required</h2>
+          <p className="text-gray-600">Please log in to view applicants.</p>
+        </div>
+      </div>
+    );
+  }
+
   const getStatusColor = (status?: string) => {
     switch (status?.toLowerCase()) {
-      case 'open':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'Open':
+        return 'bg-blue-100 text-blue-800';
       case 'shortlisted':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
+        return 'bg-purple-100 text-purple-800';
       case 'assessment stage':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        return 'bg-yellow-100 text-yellow-800';
       case 'hired':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'bg-green-100 text-green-800';
       case 'rejected':
-        return 'bg-red-100 text-red-800 border-red-200';
+        return 'bg-red-100 text-red-800';
       case 'closed':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-gray-100 text-gray-800';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -317,53 +344,36 @@ const fetchApplicantsData = async (email: string) => {
     return acc;
   }, {} as Record<string, number>);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-xl font-semibold text-gray-800">Loading applicants...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
-        <div className="text-center bg-white p-8 rounded-xl shadow-2xl max-w-md">
-          <div className="text-6xl mb-4 text-gray-800">🔒</div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">Authentication Required</h2>
-          <p className="text-gray-600">Please log in to view applicants.</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 py-12 px-6">
-      <div className="max-w-7xl mx-auto bg-white rounded-xl shadow-xl p-8">
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-8">
-          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">Job Applicants</h1>
-          <div className="flex flex-col sm:flex-row items-center gap-4 mt-4 sm:mt-0">
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search by name, email, job title..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent transition-all shadow-sm"
-              />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 ">
+      <div className="w-full mx-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-blue-800">Applicants</h1>
+          <div className="flex items-center gap-4">
+            <div className="flex-1 w-full lg:w-auto">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by name, email, job title..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                />
+              </div>
             </div>
-            <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="flex items-center gap-3 w-full lg:w-auto">
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent bg-white shadow-sm min-w-[160px]"
+                className="px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white min-w-[150px]"
               >
+<<<<<<< HEAD
                 <option value="" disabled>Select status...</option>
                 <option value="all">All Status</option>
+=======
+                <option value="all">All</option>
+>>>>>>> rashi2.0
                 <option value="Open">Open</option>
                 <option value="tagged">Tagged</option>
                 <option value="Shortlisted">Shortlisted</option>
@@ -377,7 +387,7 @@ const fetchApplicantsData = async (email: string) => {
               <button
                 onClick={handleChangeStatus}
                 disabled={selectedApplicants.length === 0}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold shadow-md"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium whitespace-nowrap"
               >
                 Update Status
               </button>
@@ -385,9 +395,9 @@ const fetchApplicantsData = async (email: string) => {
           </div>
         </div>
         {error && (
-          <div className="mb-8 bg-red-50 border border-red-200 rounded-xl p-6 shadow-sm">
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 text-2xl text-red-600">⚠️</div>
+          <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-6">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 text-2xl">⚠️</div>
               <div className="flex-1">
                 <h3 className="text-lg font-semibold text-red-800 mb-2">Error</h3>
                 <p className="text-red-700 mb-3">{error}</p>
@@ -406,7 +416,7 @@ const fetchApplicantsData = async (email: string) => {
           </div>
         )}
         {filteredApplicants.length === 0 ? (
-          <p className="text-center text-gray-600 text-lg">No applicants found.</p>
+          <p className="text-center text-gray-600">No applicants found.</p>
         ) : (
           <ApplicantsTable
             applicants={filteredApplicants}
@@ -414,13 +424,13 @@ const fetchApplicantsData = async (email: string) => {
             onSelectApplicant={handleSelectApplicant}
             showCheckboxes={true}
             showStatus={true}
-            onRowClick={handleRowClick}
           />
         )}
       </div>
 
-      {/* Status Change Confirmation Modal */}
+      {/* Confirmation Modal */}
       {isModalOpen && (
+<<<<<<< HEAD
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="status-modal-title">
           <div className="bg-white rounded-2xl p-4 w-full max-w-md min-h-0 shadow-2xl transform transition-all duration-300 ease-in-out scale-100 opacity-100">
             <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-2">
@@ -436,21 +446,30 @@ const fetchApplicantsData = async (email: string) => {
                 <X className="h-4 w-4" />
               </button>
             </div>
+=======
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h2 id="modal-title" className="text-2xl font-bold text-gray-800 mb-4">
+              Confirm Status Change
+            </h2>
+>>>>>>> rashi2.0
             {modalError && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
-                <X className="h-3 w-3" />
-                <p className="text-xs">{modalError}</p>
+              <div className="mb-4 p-2 bg-red-100 text-red-700 rounded-lg text-center">
+                <p>{modalError}</p>
               </div>
             )}
             <div className="mb-4">
-              <label className="block text-gray-700 font-semibold mb-2 text-sm">Select New Status</label>
+              <label className="block text-gray-600 mb-2">Select New Status</label>
               <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition-all bg-white text-gray-900 text-sm"
+                className="px-4 py-2 border rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
-                aria-label="Select status"
               >
+<<<<<<< HEAD
                  <option value="" disabled>Select a status...</option>
+=======
+                <option value="">Select Status</option>
+>>>>>>> rashi2.0
                 <option value="Open">Open</option>
                 <option value="tagged">Tagged</option>
                 <option value="Shortlisted">Shortlisted</option>
@@ -462,47 +481,35 @@ const fetchApplicantsData = async (email: string) => {
                 <option value="joined">Joined</option>
               </select>
             </div>
-            <div className="mb-4">
-              <p className="text-gray-600 font-medium mb-2 text-sm">Selected Applicants ({selectedApplicants.length})</p>
-              <div className="space-y-2">
-                {selectedApplicants.map((name) => { // Limit to 2 for narrower width
-                  const applicant = applicants.find((a) => a.name === name);
-                  return (
-                    <div key={name} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg border border-gray-200">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center">
-                          <User className="h-3 w-3 text-blue-600" />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-gray-900 text-sm">{applicant?.applicant_name || name}</p>
-                          <p className="text-xs text-gray-500">{applicant?.email_id}</p>
-                        </div>
-                      </div>
-                      {selectedStatus && (
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedStatus)}`}>
-                          {selectedStatus}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-               
-              </div>
-            </div>
-            <div className="flex justify-end space-x-2 pt-2 border-t border-gray-100">
+            <p className="text-gray-600 mb-4">
+              {selectedStatus
+                ? `You are about to change the status of the following applicants to ${selectedStatus}:`
+                : 'Selected Applicants:'}
+            </p>
+            <ul className="list-disc list-inside mb-4">
+              {selectedApplicants.map((name) => {
+                const applicant = applicants.find((a) => a.name === name);
+                return (
+                  <li key={name} className="text-gray-600 flex justify-between">
+                    <span>{applicant?.applicant_name || name}</span>
+                    {/* <span>{applicant?.job_title || 'N/A'}</span> */}
+                    <span>{applicant?.email_id}</span>
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="flex justify-end space-x-4">
               <button
                 onClick={handleCloseModal}
-                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-all font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-400 text-sm"
-                aria-label="Cancel"
+                className="px-4 py-2 rounded-lg text-gray-700 bg-gray-200 hover:bg-gray-300"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmStatusChange}
-                disabled={!selectedStatus}
-                className="px-4 py-2 text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-medium shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
-                aria-label="Confirm status change"
+                className="px-4 py-2 rounded-lg text-white bg-blue-600 hover:bg-blue-700"
               >
+<<<<<<< HEAD
                 Confirm Change
               </button>
             </div>
@@ -637,6 +644,9 @@ const fetchApplicantsData = async (email: string) => {
               >
                 
                 Close
+=======
+                Confirm
+>>>>>>> rashi2.0
               </button>
             </div>
           </div>
@@ -645,3 +655,4 @@ const fetchApplicantsData = async (email: string) => {
     </div>
   );
 }
+

@@ -11,7 +11,7 @@ import {
   Save,
   Trash2,
   Upload,
-  Users
+  Users,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
@@ -38,8 +38,12 @@ const StaffingPlanCreator: React.FC = () => {
   );
   const [selectedLead, setSelectedLead] = useState<LeadType | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [uploadingFiles, setUploadingFiles] = useState<{
+  const [uploadingJDs, setUploadingJDs] = useState<{
     [key: number]: boolean;
+  }>({});
+  // Store File objects temporarily until form submission
+  const [pendingJDFiles, setPendingJDFiles] = useState<{
+    [key: number]: File;
   }>({});
   const [successMessage, setSuccessMessage] = useState("");
   const [isLoadingLead, setIsLoadingLead] = useState(false);
@@ -47,7 +51,6 @@ const StaffingPlanCreator: React.FC = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [originalPlanId, setOriginalPlanId] = useState<string>("");
   const [error, setError] = useState<string>("");
-  // const [showAssignDropdown, setShowAssignDropdown] = useState(false);
 
   useEffect(() => {
     const handleInitialLoad = async () => {
@@ -94,7 +97,8 @@ const StaffingPlanCreator: React.FC = () => {
                   item.job_description || ""
                 ),
                 attachmentsoptional: item.attachmentsoptional || "",
-                assign_to: item.assign_to || "", // Added this line
+                assign_to: item.assign_to || "",
+                location: item.location || "",
               })) || [initialStaffingPlanItem],
             });
 
@@ -177,6 +181,13 @@ const StaffingPlanCreator: React.FC = () => {
         ...prev,
         staffing_details: prev.staffing_details.filter((_, i) => i !== index),
       }));
+      
+      // Remove pending file if exists
+      setPendingJDFiles((prev) => {
+        const updated = { ...prev };
+        delete updated[index];
+        return updated;
+      });
     }
   };
 
@@ -193,38 +204,66 @@ const StaffingPlanCreator: React.FC = () => {
     }));
   };
 
-  // File Upload
-  const handleFileUpload = async (file: File, index: number) => {
+  // Job Description Upload - Parse only for summary
+  const handleJDUpload = async (file: File, index: number) => {
     if (!file) return;
 
-    setUploadingFiles((prev) => ({ ...prev, [index]: true }));
+    // Validate file type
+    const allowedTypes = [
+      "application/pdf",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "text/plain",
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      setError("Please upload PDF, DOCX, or TXT files only");
+      return;
+    }
+
+    setUploadingJDs((prev) => ({ ...prev, [index]: true }));
+    setError("");
 
     try {
-      const uploadResult = await frappeAPI.upload(file, {
-        is_private: false,
-        folder: "Home",
+      console.log("Parsing job description with AI...");
+      const parseFormData = new FormData();
+      parseFormData.append("file", file);
+      parseFormData.append("fileName", file.name);
+
+      const response = await fetch("/api/jobdescription", {
+        method: "POST",
+        body: parseFormData,
       });
 
-      if (uploadResult.success) {
-        updateStaffingItem(index, "attachmentsoptional", uploadResult.file_url);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to parse job description");
+      }
+
+      const result = await response.json();
+
+      if (result.success && result.description) {
+        // Only update the job_description field with the summary
+        updateStaffingItem(index, 'job_description', result.description);
+        
+        // Store the file for later upload
+        setPendingJDFiles((prev) => ({
+          ...prev,
+          [index]: file,
+        }));
       }
     } catch (error) {
-      console.error("Error uploading file:", error);
+      console.error("Error processing JD:", error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to process job description";
+      setError(errorMessage);
     } finally {
-      setUploadingFiles((prev) => ({ ...prev, [index]: false }));
+      setUploadingJDs((prev) => ({ ...prev, [index]: false }));
     }
   };
 
-  // Assign User (for overall plan assignment)
-  // const handleAssignUser = async (userEmail: string, userName: string) => {
-  //   setFormData((prev) => ({
-  //     ...prev,
-  //     custom_assign_to: userEmail,
-  //     assigned_to_full_name: userName,
-  //   }));
-  // };
-
-  // Form Submission
+  // Form Submission - Upload all pending JD files first
   const handleSubmit = async () => {
     if (!selectedLead) {
       setError("Please select a lead first");
@@ -240,26 +279,53 @@ const StaffingPlanCreator: React.FC = () => {
     setError("");
 
     try {
+      // Step 1: Upload all pending JD files to Frappe
+      const uploadedFileUrls: { [key: number]: string } = {};
+      
+      for (const [indexStr, file] of Object.entries(pendingJDFiles)) {
+        const index = parseInt(indexStr);
+        console.log(`Uploading JD file for requirement ${index}...`);
+        
+        try {
+          const uploadResult = await frappeAPI.upload(file, {
+            is_private: false,
+            folder: "Home",
+          });
+
+          if (uploadResult.success && uploadResult.file_url) {
+            uploadedFileUrls[index] = uploadResult.file_url;
+            console.log(`JD file uploaded successfully: ${uploadResult.file_url}`);
+          }
+        } catch (uploadError) {
+          console.error(`Failed to upload JD file for requirement ${index}:`, uploadError);
+        }
+      }
+
+      // Step 2: Prepare submission data with uploaded file URLs
       const submissionData = {
         custom_lead: formData.custom_lead,
         from_date: formData.from_date,
         to_date: formData.to_date,
         custom_assign_to: formData.custom_assign_to || "",
-        staffing_details: formData.staffing_details.map((item) => ({
-  currency: item.currency,
-  designation: capitalizeWords(item.designation),
-  vacancies: item.vacancies,
-  estimated_cost_per_position: item.estimated_cost_per_position,
-  number_of_positions: item.number_of_positions,
-  min_experience_reqyrs: item.min_experience_reqyrs,
-  job_description: `<div class="ql-editor read-mode"><p>${capitalizeWords(item.job_description)}</p></div>`,
-  attachmentsoptional: item.attachmentsoptional || "",
-  assign_to: item.assign_to || "",
-  location: item.location || "", // <-- ADD THIS LINE
-}))
-,
+        staffing_details: formData.staffing_details.map((item, index) => ({
+          currency: item.currency,
+          designation: capitalizeWords(item.designation),
+          vacancies: item.vacancies,
+          estimated_cost_per_position: item.estimated_cost_per_position,
+          number_of_positions: item.number_of_positions,
+          min_experience_reqyrs: item.min_experience_reqyrs,
+          job_description: item.job_description.startsWith("<")
+            ? item.job_description
+            : `<div class="ql-editor read-mode"><p>${capitalizeWords(
+                item.job_description
+              )}</p></div>`,
+          attachmentsoptional: uploadedFileUrls[index] || item.attachmentsoptional || "",
+          assign_to: item.assign_to || "",
+          location: item.location || "",
+        })),
       };
 
+      // Step 3: Create or update the staffing plan
       let response;
       if (isEditMode && originalPlanId) {
         response = await frappeAPI.makeAuthenticatedRequest(
@@ -275,6 +341,7 @@ const StaffingPlanCreator: React.FC = () => {
         if (!isEditMode) {
           setFormData(initialStaffingPlanForm);
           setSelectedLead(null);
+          setPendingJDFiles({});
         }
       }
 
@@ -342,9 +409,8 @@ const StaffingPlanCreator: React.FC = () => {
                 )}
               </div>
 
-              {/* Assign Button and Save Button */}
+              {/* Save Button */}
               <div className="flex items-center gap-2">
-                {/* Save Button */}
                 {selectedLead && (
                   <button
                     onClick={handleSubmit}
@@ -372,7 +438,7 @@ const StaffingPlanCreator: React.FC = () => {
 
             {error && (
               <div className="bg-red-50 border border-red-200 rounded p-2 text-sm text-red-800 mb-2 flex items-center">
-                <AlertCircle className="h-4 w-4 mr-2" />
+                <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
                 {error}
               </div>
             )}
@@ -421,190 +487,208 @@ const StaffingPlanCreator: React.FC = () => {
                   </button>
                 </div>
 
-                {/* Updated Table with improved overflow handling */}
+                {/* Table */}
                 <div className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
                   <div className="overflow-x-auto">
-                    <table className="w-full text-sm min-w-[1200px]">
+                    <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: '1200px' }}>
                       <thead className="bg-gray-100">
                         <tr className="text-left text-gray-700 border-b border-gray-200">
-                          <th className="p-3 font-medium w-[180px]">
+                          <th className="p-3 font-medium" style={{ width: '200px', minWidth: '200px', maxWidth: '200px' }}>
                             Designation
                           </th>
-                          <th className="p-3 font-medium w-[60px] text-center">
-                            Vac
+                          <th className="p-3 font-medium text-center" style={{ width: '80px', minWidth: '80px', maxWidth: '80px' }}>
+                            Vacancy
                           </th>
-                          <th className="p-3 font-medium w-[60px] text-center">
-                            AVG.SAL(LPA)
-                          </th>
-                          <th className="p-3 font-medium w-[60px] text-center">
-                            Exp (Yrs)
-                          </th>
-                          <th className="p-3 font-medium w-[80px] text-center">
+                          <th className="p-3 font-medium text-center" style={{ width: '100px', minWidth: '100px', maxWidth: '100px' }}>
                             Currency
                           </th>
-                          <th className="p-3 font-medium w-[180px]">
+                          <th className="p-3 font-medium text-center" style={{ width: '100px', minWidth: '100px', maxWidth: '100px' }}>
+                            AVG.SAL(LPA)
+                          </th>
+                          <th className="p-3 font-medium text-center" style={{ width: '80px', minWidth: '80px', maxWidth: '80px' }}>
+                            Exp (Yrs)
+                          </th>
+                          <th className="p-3 font-medium" style={{ width: '150px', minWidth: '150px', maxWidth: '150px' }}>
                             Location
                           </th>
-                          {/* <th className="p-3 font-medium w-[100px]">
-                            Assign To
-                          </th> */}
-                          <th className="p-3 font-medium w-[100px]">
-                            Attachment
+                          <th className="p-3 font-medium" style={{ width: '120px', minWidth: '120px', maxWidth: '120px' }}>
+                            Upload JD
                           </th>
-                          <th className="p-3 font-medium w-[80px] text-center">
+                          <th className="p-3 font-medium text-center" style={{ width: '80px', minWidth: '80px', maxWidth: '80px' }}>
                             Action
                           </th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200">
                         {formData.staffing_details.map((item, index) => (
-                          <tr
-                            key={index}
-                            className="bg-white hover:bg-gray-50 transition-colors"
-                          >
-                            {/* Designation */}
-                            <td className="p-3">
-                              <DesignationDropdown
-                                value={item.designation}
-                                onChange={(val) =>
-                                  updateStaffingItem(index, "designation", val)
-                                }
-                              />
-                            </td>
+                          <React.Fragment key={index}>
+                            <tr className="bg-white hover:bg-gray-50 transition-colors">
+                              {/* Designation */}
+                              <td className="p-3" style={{ width: '200px', minWidth: '200px', maxWidth: '200px' }}>
+                                <DesignationDropdown
+                                  value={item.designation}
+                                  onChange={(val) =>
+                                    updateStaffingItem(index, "designation", val)
+                                  }
+                                />
+                              </td>
 
-                            {/* Vacancies */}
-                            <td className="p-3 text-center">
-                              <input
-                                type="number"
-                                value={item.vacancies || ""}
-                                onChange={(e) =>
-                                  updateStaffingItem(
-                                    index,
-                                    "vacancies",
-                                    parseInt(e.target.value) || 0
-                                  )
-                                }
-                                className="w-[60px] text-center px-1 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
-                                min="0"
-                                placeholder="0"
-                              />
-                            </td>
+                              {/* Vacancies */}
+                              <td className="p-3 text-center" style={{ width: '80px', minWidth: '80px', maxWidth: '80px' }}>
+                                <input
+                                  type="number"
+                                  value={item.vacancies || ""}
+                                  onChange={(e) =>
+                                    updateStaffingItem(
+                                      index,
+                                      "vacancies",
+                                      parseInt(e.target.value) || 0
+                                    )
+                                  }
+                                  className="w-full text-center px-1 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                                  min="0"
+                                  placeholder="0"
+                                />
+                              </td>
 
-                            {/* Salary in LPA */}
-                            <td className="p-3 text-center">
-                              <input
-                                type="number"
-                                value={item.estimated_cost_per_position || ""}
-                                onChange={(e) =>
-                                  updateStaffingItem(
-                                    index,
-                                    "estimated_cost_per_position",
-                                    parseInt(e.target.value) || 0
-                                  )
-                                }
-                                className="w-[60px] text-center px-1 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
-                                placeholder="0"
-                              />
-                            </td>
+                              {/* Currency */}
+                              <td className="p-3" style={{ width: '100px', minWidth: '100px', maxWidth: '100px' }}>
+                                <CurrencyDropdown
+                                  value={item.currency}
+                                  onChange={(currency) =>
+                                    updateStaffingItem(
+                                      index,
+                                      "currency",
+                                      currency
+                                    )
+                                  }
+                                />
+                              </td>
 
-                            {/* Min Experience */}
-                            <td className="p-3 text-center">
-                              <input
-                                type="number"
-                                value={item.min_experience_reqyrs || ""}
-                                onChange={(e) =>
-                                  updateStaffingItem(
-                                    index,
-                                    "min_experience_reqyrs",
-                                    parseFloat(e.target.value) || 0
-                                  )
-                                }
-                                className="w-[60px] text-center px-1 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
-                                step="0.5"
-                                placeholder="0"
-                                min="0"
-                              />
-                            </td>
+                              {/* Salary in LPA */}
+                              <td className="p-3 text-center" style={{ width: '100px', minWidth: '100px', maxWidth: '100px' }}>
+                                <input
+                                  type="number"
+                                  value={item.estimated_cost_per_position || ""}
+                                  onChange={(e) =>
+                                    updateStaffingItem(
+                                      index,
+                                      "estimated_cost_per_position",
+                                      parseInt(e.target.value) || 0
+                                    )
+                                  }
+                                  className="w-full text-center px-1 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                                  placeholder="0"
+                                />
+                              </td>
 
-                            {/* Currency */}
-                            <td className="p-3 text-center w-[80px]">
-                              <CurrencyDropdown
-                                value={item.currency}
-                                onChange={(currency) =>
-                                  updateStaffingItem(
-                                    index,
-                                    "currency",
-                                    currency
-                                  )
-                                }
-                              />
-                            </td>
+                              {/* Min Experience */}
+                              <td className="p-3 text-center" style={{ width: '80px', minWidth: '80px', maxWidth: '80px' }}>
+                                <input
+                                  type="number"
+                                  value={item.min_experience_reqyrs || ""}
+                                  onChange={(e) =>
+                                    updateStaffingItem(
+                                      index,
+                                      "min_experience_reqyrs",
+                                      parseFloat(e.target.value) || 0
+                                    )
+                                  }
+                                  className="w-full text-center px-1 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                                  step="0.5"
+                                  placeholder="0"
+                                  min="0"
+                                />
+                              </td>
 
-                            {/* Location */}
-                            <td className="p-3 w-[180px]">
-                              <LocationDropdown
-                                value={item.location || ""}
-                                onChange={(val) =>
-                                  updateStaffingItem(index, "location", val)
-                                }
-                              />
-                            </td>
+                              {/* Location */}
+                              <td className="p-3" style={{ width: '150px', minWidth: '150px', maxWidth: '150px' }}>
+                                <LocationDropdown
+                                  value={item.location || ""}
+                                  onChange={(val) =>
+                                    updateStaffingItem(index, "location", val)
+                                  }
+                                />
+                              </td>
 
-                            {/* Multi-User Assignment */}
-                            {/* <td className="p-3 w-[100px]">
-                              <MultiUserAssignment
-                                assignTo={item.assign_to}
-                                totalVacancies={item.vacancies}
-                                onAssignToChange={(assignTo) =>
-                                  updateStaffingItem(
-                                    index,
-                                    "assign_to",
-                                    assignTo
-                                  )
-                                }
-                                itemIndex={index}
-                              />
-                            </td> */}
+                              {/* Upload JD */}
+                              <td className="p-3" style={{ width: '120px' }}>
+                                <div className="flex ">
+                                  <label className="flex items-center space-x-1 cursor-pointer text-blue-600 hover:text-blue-800 transition-colors">
+                                    {uploadingJDs[index] ? (
+                                      <>
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        <span className="text-xs">Parsing...</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Upload className="h-4 w-4" />
+                                        <span className="text-xs">Upload</span>
+                                      </>
+                                    )}
+                                    <input
+                                      type="file"
+                                      className="hidden"
+                                      accept=".pdf,.docx,.txt"
+                                      onChange={(e) =>
+                                        e.target.files?.[0] &&
+                                        handleJDUpload(e.target.files[0], index)
+                                      }
+                                      disabled={uploadingJDs[index]}
+                                    />
+                                  </label>
+                                  {pendingJDFiles[index] && !uploadingJDs[index] && (
+                                    <FileText 
+                                      className="h-4 w-4 text-orange-600" 
+                                    />
+                                  )}
+                                  {item.attachmentsoptional && !pendingJDFiles[index] && (
+                                    <CheckCircle 
+                                      className="h-4 w-4 text-green-600" 
+                                    />
+                                  )}
+                                </div>
+                              </td>
 
-                            {/* Attachment */}
-                            <td className="p-3 w-[100px]">
-                              <div className="flex items-center space-x-2">
-                                <label className="flex items-center space-x-2 cursor-pointer text-blue-600 hover:text-blue-800 transition-colors">
-                                  <Upload className="h-4 w-4" />
-                                  <span className="text-sm">Upload</span>
-                                  <input
-                                    type="file"
-                                    className="hidden"
-                                    onChange={(e) =>
-                                      e.target.files?.[0] &&
-                                      handleFileUpload(e.target.files[0], index)
-                                    }
-                                  />
-                                </label>
-                                {uploadingFiles[index] && (
-                                  <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
-                                )}
-                                {item.attachmentsoptional && (
-                                  <FileText className="h-4 w-4 text-green-600" />
-                                )}
-                              </div>
-                            </td>
+                              {/* Action */}
+                              <td className="p-3 text-center" style={{ width: '80px', minWidth: '80px', maxWidth: '80px' }}>
+                                <button
+                                  onClick={() => removeStaffingItem(index)}
+                                  disabled={formData.staffing_details.length === 1}
+                                  className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title={
+                                    formData.staffing_details.length === 1
+                                      ? "Cannot remove the only requirement"
+                                      : "Remove requirement"
+                                  }
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </td>
+                            </tr>
 
-                            {/* Action */}
-                            <td className="p-3 text-center">
-                              <button
-                                onClick={() => removeStaffingItem(index)}
-                                className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
-                                title={
-                                  formData.staffing_details.length === 1
-                                    ? "Cannot remove the only requirement"
-                                    : "Remove requirement"
-                                }
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            </td>
-                          </tr>
+                            {/* Description Row - Editable after each requirement */}
+                            {item.job_description && (
+                              <tr className="bg-gray-50">
+                                <td colSpan={8} className="p-3">
+                                  <div className="space-y-2">
+                                    <label className="text-xs font-medium text-gray-700 flex items-center gap-1">
+                                      <FileText className="h-3 w-3" />
+                                      Job Description Summary (Editable)
+                                    </label>
+                                    <textarea
+                                      value={item.job_description.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()}
+                                      onChange={(e) =>
+                                        updateStaffingItem(index, "job_description", e.target.value)
+                                      }
+                                      className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm resize-y min-h-[100px]"
+                                      placeholder="Upload a JD file to auto-generate a summary here, or type manually. You can edit the generated summary as needed."
+                                    />
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
                         ))}
                       </tbody>
                     </table>
@@ -614,41 +698,12 @@ const StaffingPlanCreator: React.FC = () => {
             </div>
           )}
         </div>
-
-        {/* Sidebar */}
-        {/* <div className="w-80 flex-shrink-0">
-          {isLoadingLead ? (
-            <div className="bg-white rounded-lg shadow-sm border p-4 text-center">
-              <Loader2 className="h-6 w-6 animate-spin text-blue-500 mx-auto mb-3" />
-              <h3 className="text-sm font-semibold text-gray-900 mb-1">
-                Loading Lead
-              </h3>
-              <p className="text-xs text-gray-500">
-                Please wait while we load the lead details...
-              </p>
-            </div>
-          ) : selectedLead ? (
-            <LeadInfoSidebar lead={selectedLead} />
-          ) : (
-            <div className="bg-white rounded-lg shadow-sm border p-4 text-center">
-              <User className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-              <h3 className="text-sm font-semibold text-gray-900 mb-1">
-                No Lead Selected
-              </h3>
-              <p className="text-xs text-gray-500">
-                {isEditMode
-                  ? "Lead information will appear here once loaded."
-                  : "Search and select a lead to create a staffing plan."}
-              </p>
-            </div>
-          )}
-        </div> */}
       </div>
 
       {/* Success Toast */}
       {successMessage && (
-        <div className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg flex items-center space-x-2 z-50">
-          <CheckCircle className="h-4 w-4" />
+        <div className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg flex items-center space-x-2 z-50 animate-in slide-in-from-bottom max-w-md">
+          <CheckCircle className="h-4 w-4 flex-shrink-0" />
           <span className="text-sm">{successMessage}</span>
         </div>
       )}

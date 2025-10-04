@@ -20,7 +20,7 @@ export function middleware(request: NextRequest) {
   const publicRoutes = ['/login', '/api/auth/login', '/api/health', '/api/frappe'];
   
   // Auth routes that require special handling
-  const authRoutes = ['/first-time-password-reset'];
+  // const authRoutes = ['/first-time-password-reset'];
   
   // All dashboard routes - these require full authentication
   const isDashboardRoute = pathname.startsWith('/dashboard');

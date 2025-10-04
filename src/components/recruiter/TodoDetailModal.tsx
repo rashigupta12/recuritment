@@ -50,58 +50,7 @@ export const TodoDetailModal = ({ todoId, onClose }: TodoDetailModalProps) => {
     }
   }, [todoId]);
 
-  // Extract company name from description
-  const extractCompany = (description?: string) => {
-    if (!description) return 'Not specified';
-    const match = description.match(/Company:\s*([^\n]+)/i);
-    return match ? match[1].trim() : 'Not specified';
-  };
-
-  // Extract industry from description
-  const extractIndustry = (description?: string) => {
-    if (!description) return 'Not specified';
-    const match = description.match(/Industry:\s*([^\n]+)/i);
-    return match ? match[1].trim() : 'Not specified';
-  };
-
-  // Extract location from description
-  const extractLocation = (description?: string) => {
-    if (!description) return 'Not specified';
-    const match = description.match(/Location:\s*([^\n]+)/i);
-    return match ? match[1].trim() : 'Not specified';
-  };
-
-  // Extract designation from description
-  const extractDesignation = (description?: string) => {
-    if (!description) return 'Not specified';
-    const plain = description.replace(/<[^>]+>/g, '').trim();
-    const match = plain.match(/Designation:\s*([^\n]+)/i);
-    return match ? match[1].trim() : 'Not specified';
-  };
-
-  // Extract position title from description
-  const extractPositionTitle = (description?: string) => {
-    if (!description) return 'Not specified';
-    const match = description.match(/Position Title:\s*([^\n]+)/i);
-    return match ? match[1].trim() : 'Not specified';
-  };
-
-  // Extract number of vacancies from description
-  const extractVacancies = (description?: string) => {
-    if (!description) return 'Not specified';
-    const match = description.match(/YOUR ALLOCATED POSITIONS:\s*(\d+)/i);
-    return match ? `${match[1]} vacancy${parseInt(match[1]) > 1 ? 's' : ''}` : 'Not specified';
-  };
-
-  // Calculate days ago
-  const calculateDaysAgo = (date?: string) => {
-    if (!date) return 'Not set';
-    const assignedDate = new Date(date);
-    const currentDate = new Date();
-    const diffTime = Math.abs(currentDate.getTime() - assignedDate.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
-  };
+  console.log(todo)
 
   const getPriorityColor = (priority: string = '') => {
     switch (priority.toLowerCase()) {
@@ -168,15 +117,16 @@ export const TodoDetailModal = ({ todoId, onClose }: TodoDetailModalProps) => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <div className="w-full mx-auto">
-        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-slate-100 to-slate-200 px-6 py-3 border-b border-slate-200">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center">
-                  <FileText className="text-white" size={20} />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-auto">
+      <div className="w-full mx-auto p-6">
+        {/* Header Card */}
+        <div className="bg-white rounded-xl shadow-md mb-6 overflow-hidden">
+          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <h1 className="text-xl font-bold text-white">Task Details</h1>
+                <div className={`inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full border ${getStatusColor(todo.status)} bg-white`}>
+                  {todo.status || 'Unknown'}
                 </div>
                 <div>
                   <h1 className="text-xl font-bold text-slate-900">Task Details</h1>
@@ -259,84 +209,91 @@ export const TodoDetailModal = ({ todoId, onClose }: TodoDetailModalProps) => {
               </div>
             </div>
 
-            {/* Middle Row - Job Description */}
-            <div className="flex flex-row gap-6">
-              {/* Job Description - 100% width */}
-              <div className="flex-1 bg-gradient-to-br from-white to-slate-50 rounded-xl p-6 border border-slate-200" style={{flex: '0 0 75%'}}>
-                <h2 className="text-lg font-semibold text-slate-900 mb-4">Job Description</h2>
-                
-                <div className="space-y-6">
-                  {(() => {
-                    if (!todo.description) {
-                      return (
-                        <div className="text-center py-8">
-                          <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
-                            <FileText className="text-slate-400" size={20} />
-                          </div>
-                          <p className="text-slate-500 italic">No description provided for this task.</p>
-                        </div>
-                      );
-                    }
-
-                    const lines = todo.description.split('\n');
-                    const excludeKeywords = [
-                      'Staffing Plan Assignment',
-                      'Staffing Plan:',
-                      'Plan Duration:',
-                      'Vacancies:',
-                      'Current Count:',
-                      'Current Openings:',
-                      'All Assignments for This Position:'
-                    ];
-
-                    const filteredLines = lines.filter(line => {
-                      return !excludeKeywords.some(keyword => line.includes(keyword));
-                    });
-
-                    const content = filteredLines.join('\n').trim();
-                    
-                    if (!content) {
-                      return (
-                        <div className="text-center py-8">
-                          <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
-                            <FileText className="text-slate-400" size={20} />
-                          </div>
-                          <p className="text-slate-500 italic">No description provided for this task.</p>
-                        </div>
-                      );
-                    }
-
-                    const sections = content.split('\n\n');
-                    
-                    return (
-                      <div className="space-y-6">
-                        {sections.map((section, idx) => {
-                          const sectionLines = section.split('\n');
-                          const heading = sectionLines[0];
-                          const items = sectionLines.slice(1);
-
-                          return (
-                            <div key={idx} className="bg-white rounded-lg p-5 border border-slate-100 shadow-sm hover:shadow-md transition-shadow duration-200">
-                              <h3 className="font-semibold text-slate-900 mb-4 text-base md:text-lg leading-tight">
-                                {heading}
-                              </h3>
-                              <div className="space-y-3">
-                                {items.filter(item => item.trim()).map((item, i) => (
-                                  <p key={i} className="text-slate-600 text-sm md:text-base leading-relaxed">
-                                    {item.replace(/^[•\-]\s*/, '').trim()}
-                                  </p>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })()}
-                </div>
-              </div>
-            </div>
+        {/* Description Card */}
+        <div className="bg-white rounded-xl shadow-md overflow-hidden">
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 px-6 py-3 border-b border-green-100">
+            <h2 className="text-sm font-bold text-green-800 uppercase tracking-wide">
+              Task Description
+            </h2>
           </div>
+          
+<div className="p-6">
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    {/* Left Column (Company + Position Details) */}
+    <div className="prose prose-sm max-w-none">
+      <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap bg-gray-50 p-4 rounded-lg border border-gray-200">
+        {(() => {
+          if (!todo.description) return "No description provided for this task.";
+
+          const lines = todo.description.split("\n");
+          const excludeKeywords = [
+            "Staffing Plan Assignment",
+            "Staffing Plan:",
+            "Plan Duration:",
+            "Vacancies:",
+            "Current Count:",
+            "Current Openings:",
+            "All Assignments for This Position:",
+          ];
+
+          // Remove excluded lines
+          const filteredLines = lines.filter(
+            (line) => !excludeKeywords.some((keyword) => line.includes(keyword))
+          );
+
+          // Find Job Description line
+          const jobDescIndex = filteredLines.findIndex((line) =>
+            line.trim().startsWith("• Job Description:")
+          );
+
+          // Left column: everything BEFORE "• Job Description:"
+          const leftColumn =
+            jobDescIndex > -1
+              ? filteredLines.slice(0, jobDescIndex)
+              : filteredLines;
+
+          return leftColumn.join("\n") || "No details provided.";
+        })()}
+      </div>
+    </div>
+
+    {/* Right Column (Job Description only) */}
+    <div className="prose prose-sm max-w-none">
+      <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap bg-gray-50 p-4 rounded-lg border border-gray-200">
+        {(() => {
+          if (!todo.description) return "No description provided for this task.";
+
+          const lines = todo.description.split("\n");
+          const excludeKeywords = [
+            "Staffing Plan Assignment",
+            "Staffing Plan:",
+            "Plan Duration:",
+            "Vacancies:",
+            "Current Count:",
+            "Current Openings:",
+            "All Assignments for This Position:",
+          ];
+
+          const filteredLines = lines.filter(
+            (line) => !excludeKeywords.some((keyword) => line.includes(keyword))
+          );
+
+          const jobDescIndex = filteredLines.findIndex((line) =>
+            line.trim().startsWith("• Job Description:")
+          );
+
+          // Right column: everything FROM "• Job Description:" onwards
+          const rightColumn =
+            jobDescIndex > -1 ? filteredLines.slice(jobDescIndex) : [];
+
+          return rightColumn.join("\n") || "No job description provided.";
+        })()}
+      </div>
+    </div>
+  </div>
+</div>
+
+
         </div>
       </div>
       </div>

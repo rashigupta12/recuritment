@@ -1,4 +1,4 @@
-//app/api/jobapplicatant
+//app/api/jobdescription/route.ts
 import { NextRequest, NextResponse } from "next/server";
 
 // Configuration
@@ -6,7 +6,7 @@ const MISTRAL_API_KEY = process.env.MISTRAL_API_KEY;
 const MISTRAL_API_URL = "https://api.mistral.ai/v1/chat/completions";
 const MAX_FILE_SIZE = 16 * 1024 * 1024; // 16MB
 const MAX_TEXT_LENGTH = 15000;
-const MIN_TEXT_LENGTH = 100;
+const MIN_TEXT_LENGTH = 50;
 
 const SUPPORTED_MIME_TYPES: Record<string, string> = {
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
@@ -54,12 +54,6 @@ async function extractTextFromPDF(buffer: Buffer): Promise<{ text: string; pages
   }
 }
 
-// Define types for mammoth
-interface Warning {
-  message: string;
-  type: string;
-}
-
 interface Message {
   message: string;
   type: string;
@@ -67,7 +61,6 @@ interface Message {
 
 interface MammothOptions {
   includeDefaultStyleMap?: boolean;
-  // Add other options as needed based on mammoth documentation
 }
 
 interface Input {
@@ -88,7 +81,6 @@ async function extractTextFromWord(buffer: Buffer): Promise<{ text: string; warn
       .replace(/\n{3,}/g, "\n\n")
       .trim();
     console.log("Word text extracted successfully, length:", cleanText.length);
-    // Map messages to extract warning messages as strings
     const warnings = result.messages ? result.messages.map((msg: Message) => msg.message) : [];
     return {
       text: cleanText,
@@ -116,76 +108,39 @@ function validateAndCleanText(text: string | undefined, filename: string): strin
   return trimmedText;
 }
 
-const createAutofillPrompt = (resumeText: string): string => `
-You are an expert resume parser. Extract information from the provided resume and return a JSON object matching the exact structure below. Fill in all fields based on the resume content, and leave fields empty ("" for strings, [] for arrays, 0 for numbers) if the information is not found. Pay special attention to identifying the current company (set "current_company": 1 if the position is ongoing, otherwise 0).
+// Updated prompt to generate concise bullet-point summaries
+const createJobDescriptionPrompt = (jdText: string): string => `
+You are an expert recruiter summarizing job descriptions. Create a CONCISE bullet-point summary that recruiters can quickly scan.
 
-Return ONLY valid JSON in this structure:
+Your task:
+1. Extract ONLY the most important information
+2. Format as clean bullet points
+3. Keep it brief - recruiters should understand the role in 30 seconds
+4. Return ONLY plain text bullet points (no HTML, no markdown, no formatting)
 
-{
-  "applicant_name": "",
-  "email_id": "",
-  "phone_number": "",
-  "country": "",
-  "job_title": "",
-  "resume_attachment": "",
-  "custom_experience": [
-    {
-      "company_name": "",
-      "designation": "",
-      "start_date": "",
-      "end_date": "",
-      "current_company": 0
-    }
-  ],
-  "custom_education": [
-    {
-      "degree": "",
-      "specialization": "",
-      "institution": "",
-      "year_of_passing": 0,
-      "percentagecgpa": 0
-    }
-  ]
-}
+Include ONLY these key points (if available):
+• Role title and level
+• 2-3 key responsibilities
+• 2-3 must-have technical skills or qualifications
+• Experience required (years)
+• Any standout details (salary range, location, benefits)
 
-EXTRACTION INSTRUCTIONS:
-1. **Personal Info**: Extract name, email, phone, and country from contact sections or headers.
-2. **Job Title**: Use the job title mentioned in the resume or the most recent position title if no specific job title is provided.
-3. **Experience**: Include all work experiences, with accurate start/end dates (format: "YYYY-MM-DD"). Set "current_company": 1 for the current role (no end date or marked as "Present").
-4. **Education**: Extract degree, specialization, institution, year of passing, and CGPA/percentage. Use 0 for missing numerical fields.
-5. **Dates**: Use "YYYY-MM-DD" format for dates. If only the year is provided, use "YYYY-01-01". If no end date or "Present", set "end_date": "" and "current_company": 1.
-6. **Resume Attachment**: Leave as "" (will be filled by the API).
-7. **Missing Data**: Use empty strings, empty arrays, or 0 for missing fields.
+Guidelines:
+- Use simple bullet points (•)
+- Each point should be ONE short line (max 10-15 words)
+- NO HTML tags, NO markdown
+- Remove fluff and corporate jargon
+- Focus on what matters to candidates
+- Maximum 6-8 bullet points total
 
-Resume Content:
-${resumeText}
+Job Description Content:
+${jdText}
+
+Return ONLY the bullet-point summary:
 `;
 
-interface AutofillData {
-  applicant_name: string;
-  email_id: string;
-  phone_number: string;
-  country: string;
-  job_title: string;
-  resume_attachment: string;
-  custom_experience: Array<{
-    company_name: string;
-    designation: string;
-    start_date: string;
-    end_date: string;
-    current_company: number;
-  }>;
-  custom_education: Array<{
-    degree: string;
-    specialization: string;
-    institution: string;
-    year_of_passing: number;
-    percentagecgpa: number;
-  }>;
-}
-
-async function callMistralAPIForAutofill(resumeText: string, retries: number = 2): Promise<{ structuredData: AutofillData; tokensUsed: number }> {
-  const prompt = createAutofillPrompt(resumeText);
+async function callMistralAPIForJobDescription(jdText: string, retries: number = 2): Promise<{ formattedDescription: string; tokensUsed: number }> {
+  const prompt = createJobDescriptionPrompt(jdText);
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
@@ -198,8 +153,8 @@ async function callMistralAPIForAutofill(resumeText: string, retries: number = 2
         body: JSON.stringify({
           model: "mistral-large-latest",
           messages: [{ role: "user", content: prompt }],
-          temperature: 0.1,
-          max_tokens: 2000,
+          temperature: 0.3,
+          max_tokens: 500, // Reduced since we only need a summary
           top_p: 0.9,
         }),
       });
@@ -214,43 +169,39 @@ async function callMistralAPIForAutofill(resumeText: string, retries: number = 2
         choices?: Array<{ message?: { content?: string } }>;
         usage?: { total_tokens?: number };
       };
+      
       if (!data.choices || !data.choices[0] || !data.choices[0].message) {
         throw new Error("Invalid response format from Mistral API");
       }
 
-      const jsonString = data.choices[0].message.content?.trim() ?? "";
-      let parsedJSON: AutofillData;
-      try {
-        const cleanJsonString = jsonString.replace(/^```json\n?/, "").replace(/\n?```$/, "");
-        parsedJSON = JSON.parse(cleanJsonString) as AutofillData;
-      } catch (parseError: unknown) {
-        const message = parseError instanceof Error ? parseError.message : "Unknown error";
-        throw new Error(`Invalid JSON response from AI: ${message}`);
+      const formattedDescription = data.choices[0].message.content?.trim() ?? "";
+      
+      if (!formattedDescription) {
+        throw new Error("Empty response from AI service");
       }
 
       return {
-        structuredData: parsedJSON,
+        formattedDescription,
         tokensUsed: data.usage?.total_tokens || 0,
       };
     } catch (error: unknown) {
-      console.error(`Autofill API attempt ${attempt + 1} failed:`, error);
+      console.error(`Job description API attempt ${attempt + 1} failed:`, error);
       if (attempt === retries) throw error;
       await new Promise((resolve) => setTimeout(resolve, Math.pow(2, attempt) * 1000));
     }
   }
-  throw new Error("All attempts failed"); // This line is for type safety, though loop throws on last attempt
+  throw new Error("All attempts failed");
 }
 
-// Main POST handler with enhanced debugging
+// Main POST handler
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
   
   try {
-    console.log("=== AUTOFILL APPLICATION PROCESSING START ===");
+    console.log("=== JOB DESCRIPTION PROCESSING START ===");
     console.log("Request URL:", request.url);
-    console.log("Request method:", request.method);
     
-    // Validate API key first
+    // Validate API key
     if (!MISTRAL_API_KEY) {
       console.error("MISTRAL_API_KEY not configured");
       return NextResponse.json(
@@ -259,7 +210,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Parse FormData with error handling
+    // Parse FormData
     let formData: FormData;
     try {
       formData = await request.formData();
@@ -268,19 +219,17 @@ export async function POST(request: NextRequest) {
       const message = formDataError instanceof Error ? formDataError.message : "Unknown error";
       console.error("Failed to parse FormData:", formDataError);
       return NextResponse.json(
-        { error: `Invalid form data. Please ensure you're uploading a valid file: ${message}` },
+        { error: `Invalid form data: ${message}` },
         { status: 400 }
       );
     }
 
     const file = formData.get('file') as File | null;
     const fileName = formData.get('fileName') as string | null;
-    const jobTitle = formData.get('jobTitle') as string | null;
 
     console.log("Form data extracted:", {
       hasFile: !!file,
       fileName,
-      jobTitle,
       fileSize: file?.size,
       fileType: file?.type
     });
@@ -288,7 +237,7 @@ export async function POST(request: NextRequest) {
     if (!file) {
       console.error("No file provided");
       return NextResponse.json(
-        { error: "No file provided. Please upload a resume file." },
+        { error: "No file provided. Please upload a job description file." },
         { status: 400 }
       );
     }
@@ -301,7 +250,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Convert File to Buffer with error handling
+    // Convert File to Buffer
     let arrayBuffer: ArrayBuffer;
     let fileBuffer: Buffer;
     try {
@@ -312,7 +261,7 @@ export async function POST(request: NextRequest) {
       const message = bufferError instanceof Error ? bufferError.message : "Unknown error";
       console.error("Failed to convert file to buffer:", bufferError);
       return NextResponse.json(
-        { error: `Failed to process the uploaded file. Please try again: ${message}` },
+        { error: `Failed to process the uploaded file: ${message}` },
         { status: 400 }
       );
     }
@@ -333,11 +282,10 @@ export async function POST(request: NextRequest) {
     try {
       const contentType = file.type || null;
       fileType = determineFileType(fileName, contentType, fileName);
-      console.log(`File type determined: ${fileType} (content-type: ${contentType})`);
+      console.log(`File type determined: ${fileType}`);
     } catch (typeError: unknown) {
       const message = typeError instanceof Error ? typeError.message : "Unknown error";
       console.error("Unsupported file type:", typeError);
-      const errorMessage = typeError instanceof Error ? typeError.message : "Unknown file type error";
       return NextResponse.json(
         { error: message },
         { status: 415 }
@@ -365,7 +313,6 @@ export async function POST(request: NextRequest) {
     } catch (extractionError: unknown) {
       const message = extractionError instanceof Error ? extractionError.message : "Unknown error";
       console.error("Text extraction failed:", extractionError);
-      const errorMessage = extractionError instanceof Error ? extractionError.message : "Unknown extraction error";
       return NextResponse.json(
         { error: `Failed to extract text from ${fileType.toUpperCase()} file: ${message}` },
         { status: 400 }
@@ -373,43 +320,38 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate and clean text
-    let resumeText: string;
+    let jdText: string;
     try {
-      resumeText = validateAndCleanText(extractionResult.text, fileName);
-      console.log(`Text validated and cleaned: ${resumeText.length} characters`);
+      jdText = validateAndCleanText(extractionResult.text, fileName);
+      console.log(`Text validated and cleaned: ${jdText.length} characters`);
     } catch (validationError: unknown) {
       const message = validationError instanceof Error ? validationError.message : "Unknown error";
       console.error("Text validation failed:", validationError);
-      const errorMessage = validationError instanceof Error ? validationError.message : "Validation error";
       return NextResponse.json(
         { error: message },
         { status: 400 }
       );
     }
 
-    // Call Mistral API for autofill JSON
-    let structuredData: AutofillData;
+    // Call Mistral API to generate concise summary
+    let formattedDescription: string;
     let tokensUsed: number;
     try {
-      console.log("Calling Mistral API...");
-      const apiResult = await callMistralAPIForAutofill(resumeText);
+      console.log("Calling Mistral API for summary...");
+      const apiResult = await callMistralAPIForJobDescription(jdText);
       if (!apiResult) {
         throw new Error("No result returned from Mistral API");
       }
-      structuredData = apiResult.structuredData;
+      formattedDescription = apiResult.formattedDescription;
       tokensUsed = apiResult.tokensUsed;
       console.log("Mistral API call successful");
     } catch (apiError: unknown) {
       console.error("Mistral API call failed:", apiError);
       return NextResponse.json(
-        { error: "Failed to process resume with AI service. Please try again." },
+        { error: "Failed to process job description with AI service. Please try again." },
         { status: 502 }
       );
     }
-
-    // Add job_title and resume_attachment
-    structuredData.job_title = jobTitle || structuredData.job_title || "";
-    structuredData.resume_attachment = fileName;
 
     // Calculate processing time
     const processingTime = Date.now() - startTime;
@@ -418,14 +360,14 @@ export async function POST(request: NextRequest) {
     // Return response
     const response = {
       success: true,
-      data: structuredData,
+      description: formattedDescription,
       metadata: {
         fileName,
         fileType,
         fileSize: size,
         processingTime,
         tokensUsed,
-        textLength: resumeText.length,
+        textLength: jdText.length,
       },
     };
 
@@ -433,21 +375,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(response);
 
   } catch (error: unknown) {
-    console.error("=== AUTOFILL APPLICATION PROCESSING ERROR ===");
+    console.error("=== JOB DESCRIPTION PROCESSING ERROR ===");
     console.error("Error details:", error);
     if (error instanceof Error) {
       console.error("Error stack:", error.stack);
     }
 
-    // Determine error type and status
     let statusCode = 500;
-    let errorMessage = "An unexpected error occurred while processing the resume.";
+    let errorMessage = "An unexpected error occurred while processing the job description.";
     const details: string | undefined = process.env.NODE_ENV === "development" 
       ? (error instanceof Error ? error.message : "Unknown error")
       : undefined;
 
     if (error instanceof Error) {
-      if (error.message.includes("Mistral API error") || error.message.includes("Invalid JSON response")) {
+      if (error.message.includes("Mistral API error") || error.message.includes("Invalid response")) {
         statusCode = 502;
         errorMessage = "AI service unavailable or returned invalid data.";
       } else if (error.message.includes("File too large")) {

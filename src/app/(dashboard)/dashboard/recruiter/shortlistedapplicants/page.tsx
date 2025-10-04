@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { frappeAPI } from '@/lib/api/frappeClient';
 import { ApplicantsTable } from '@/components/recruiter/ApplicantsTable'; // Adjust path if needed
-import { Search, User, Award, X } from 'lucide-react';
+import { Search } from 'lucide-react';
 
 export interface JobApplicant {
   name: string;
@@ -159,7 +159,7 @@ export default function ShortlistedApplicantsPage() {
       filtered = filtered.filter(
         (applicant) =>
           (applicant.job_title?.toLowerCase().includes(query) || false) ||
-          (applicant.applicant_name?.toLowerCase().includes(query) || false) ||
+          (applicant.applicant_name?.toLowerCase().includes(query) || false)||
           (applicant.email_id?.toLowerCase().includes(query) || false)
       );
     }
@@ -259,7 +259,7 @@ export default function ShortlistedApplicantsPage() {
         assessment_round: assessmentRound,
       };
 
-      // Use frappeAPI.createbulkAssessment to create the assessment
+      // Use frappeAPI.createbulkAssemnet to create the assessment
       const response = await frappeAPI.createbulkAssessment(payload);
 
       console.log('API Response:', response);
@@ -413,26 +413,6 @@ export default function ShortlistedApplicantsPage() {
     }
   };
 
-  // Helper function for status colors (needed for the updated modal UI)
-  const getStatusColor = (status?: string) => {
-    switch (status?.toLowerCase()) {
-      case 'open':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'shortlisted':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'assessment stage':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'hired':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'rejected':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'closed':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
@@ -554,6 +534,7 @@ export default function ShortlistedApplicantsPage() {
                 className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Scheduled Date"
                 required
+                
               />
               <label>Start Time</label>
               <input
@@ -611,38 +592,24 @@ export default function ShortlistedApplicantsPage() {
       {/* Status Update Modal */}
       {isStatusModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="status-modal-title">
-          <div className="bg-white rounded-2xl p-4 w-full max-w-md min-h-0 shadow-2xl transform transition-all duration-300 ease-in-out scale-100 opacity-100">
-            <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-2">
-              <h2 id="status-modal-title" className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                <Award className="h-5 w-5 text-blue-600" />
-                Confirm Status Change
-              </h2>
-              <button
-                onClick={handleCloseStatusModal}
-                className="p-1 text-gray-400 hover:text-gray-600 transition-colors rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                aria-label="Close"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
+          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+            <h2 id="status-modal-title" className="text-2xl font-bold text-gray-800 mb-4">
+              Confirm Status Change
+            </h2>
             {modalError && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
-                <X className="h-3 w-3" />
-                <p className="text-xs">{modalError}</p>
+              <div className="mb-4 p-2 bg-red-100 text-red-700 rounded-lg text-center">
+                <p>{modalError}</p>
               </div>
             )}
             <div className="mb-4">
-              <label className="block text-gray-700 font-semibold mb-2 text-sm">Select New Status</label>
+              <label className="block text-gray-600 mb-2">Select New Status</label>
               <select
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition-all bg-white text-gray-900 text-sm"
+                className="px-4 py-2 border rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
-                aria-label="Select status"
               >
-                <option value="" disabled>Select a status...</option>
+                <option value="">Select Status</option>
                 <option value="Open">Open</option>
-                <option value="tagged">Tagged</option>
-                <option value="Shortlisted">Shortlisted</option>
                 <option value="Assessment Stage">Assessment Stage</option>
                 <option value="Interview Stage">Interview Stage</option>
                 <option value="offered">Offered</option>
@@ -651,47 +618,34 @@ export default function ShortlistedApplicantsPage() {
                 <option value="joined">Joined</option>
               </select>
             </div>
-            <div className="mb-4">
-              <p className="text-gray-600 font-medium mb-2 text-sm">Selected Applicants ({selectedApplicants.length})</p>
-              <div className="space-y-2">
-                {selectedApplicants.map((name) => {
-                  const applicant = applicants.find((a) => a.name === name);
-                  return (
-                    <div key={name} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg border border-gray-200">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center">
-                          <User className="h-3 w-3 text-blue-600" />
-                        </div>
-                        <div>
-                          <p className="font-semibold text-gray-900 text-sm">{applicant?.applicant_name || name}</p>
-                          <p className="text-xs text-gray-500">{applicant?.email_id}</p>
-                        </div>
-                      </div>
-                      {selectedStatus && (
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedStatus)}`}>
-                          {selectedStatus}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-            <div className="flex justify-end space-x-2 pt-2 border-t border-gray-100">
+            <p className="text-gray-600 mb-4">
+              {selectedStatus
+                ? `You are about to change the status of the following applicants to ${selectedStatus}:`
+                : 'Selected Applicants:'}
+            </p>
+            <ul className="list-disc list-inside mb-4">
+              {selectedApplicants.map((name) => {
+                const applicant = applicants.find((a) => a.name === name);
+                return (
+                  <li key={name} className="text-gray-600 flex justify-between">
+                    <span>{applicant?.applicant_name || name}</span>
+                    <span>{applicant?.email_id}</span>
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="flex justify-end space-x-4">
               <button
                 onClick={handleCloseStatusModal}
-                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-all font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-400 text-sm"
-                aria-label="Cancel"
+                className="px-4 py-2 rounded-lg text-gray-700 bg-gray-200 hover:bg-gray-300"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmStatusChange}
-                disabled={!selectedStatus}
-                className="px-4 py-2 text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-medium shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
-                aria-label="Confirm status change"
+                className="px-4 py-2 rounded-lg text-white bg-blue-600 hover:bg-blue-700"
               >
-                Confirm Change
+                Confirm
               </button>
             </div>
           </div>
