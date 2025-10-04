@@ -359,10 +359,10 @@ export default function BulkApplicantForm({ initialJobId , onFormSubmitSuccess }
   };
 
   return (
-    <div className="bg-gray-50 px-2 py-4">
-      <div className="w-full mx-auto">
+    <div className="bg-gray-50 px-4 py-4">
+      <div className="mx-auto">
 
-        <div className="space-y-6">
+        <div className="space-y-4">
           {applicantRows.map((row, index) => (
             <div key={row.id} className="bg-white rounded-lg shadow-md p-6">
               {/* Row Header */}
@@ -500,11 +500,11 @@ export default function BulkApplicantForm({ initialJobId , onFormSubmitSuccess }
                   </div> */}
               {/* </div> */}
               {/* </div> */}
-              <div className="mb-6 flex flex-wrap items-start gap-4">
+              <div className="mb-6 ">
                 {/* Resume Upload */}
-                <div className="flex-none">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Upload Resume *</label>
-                  <div className={`relative w-30 h-10 border-2 border-dashed rounded-md flex items-center justify-center cursor-pointer ${row.errors.resume_attachment ? 'border-red-300' : 'border-gray-300'}`}>
+                {/* <div className="grid  md:grid-cols-2">
+                  <label className= "text-sm md:grid-cols-2 font-medium text-gray-700 mb-1">Upload Resume *</label>
+                  <div className={`relative w-30 h-10 border-2 md:grid-cols-2 border-dashed rounded-md flex items-center justify-center cursor-pointer ${row.errors.resume_attachment ? 'border-red-300' : 'border-gray-300'}`}>
                     <input
                       type="file"
                       accept=".pdf,.docx,.txt"
@@ -519,11 +519,7 @@ export default function BulkApplicantForm({ initialJobId , onFormSubmitSuccess }
                   </div>
                   {row.resume_attachment && <p className="text-sm text-green-600 mt-1">✓ Resume uploaded</p>}
                   {row.errors.resume_attachment && <p className="text-red-600 text-sm mt-1">{row.errors.resume_attachment}</p>}
-                </div>
-
-                {/* Personal Information */}
-                <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
+                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
                     <input
                       type="text"
@@ -535,6 +531,66 @@ export default function BulkApplicantForm({ initialJobId , onFormSubmitSuccess }
                     />
                     {row.errors.applicant_name && <p className="text-red-600 text-sm mt-1">{row.errors.applicant_name}</p>}
                   </div>
+                </div> */}
+<div className="grid md:grid-cols-2 gap-6 items-start">
+  {/* Upload Resume */}
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-1">
+      Upload Resume *
+    </label>
+    <div
+      className={`relative w-full border-2 border-dashed rounded-md p-3 flex items-center justify-center cursor-pointer ${
+        row.errors.resume_attachment ? 'border-red-300' : 'border-gray-300'
+      }`}
+    >
+      <input
+        type="file"
+        accept=".pdf,.docx,.txt"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) handleResumeUpload(row.id, file);
+        }}
+        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+        disabled={row.isAutofilling}
+      />
+      <Upload className="w-6 h-6 text-gray-400" />
+    </div>
+    {row.resume_attachment && (
+      <p className="text-sm text-green-600 mt-1">✓ Resume uploaded</p>
+    )}
+    {row.errors.resume_attachment && (
+      <p className="text-red-600 text-sm mt-1">
+        {row.errors.resume_attachment}
+      </p>
+    )}
+  </div>
+
+  {/* Full Name */}
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-1">
+      Full Name *
+    </label>
+    <input
+      type="text"
+      value={row.applicant_name}
+      onChange={(e) => handleFieldChange(row.id, 'applicant_name', e.target.value)}
+      className={`w-full px-3 py-2 border rounded-md ${
+        row.errors.applicant_name ? 'border-red-300' : 'border-gray-300'
+      }`}
+      placeholder="Enter name"
+      disabled={row.isAutofilling}
+    />
+    {row.errors.applicant_name && (
+      <p className="text-red-600 text-sm mt-1">
+        {row.errors.applicant_name}
+      </p>
+    )}
+  </div>
+</div>
+
+                {/* Personal Information */}
+                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+                 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
                     <div className="relative">
@@ -568,7 +624,7 @@ export default function BulkApplicantForm({ initialJobId , onFormSubmitSuccess }
                 </div>
 
                 {/* <div className=""> */}
-                <div className='pt-6'>
+                <div className='pt-6 items-end flex justify-end'>
                 <button
                   type="button"
                   onClick={handleSubmit}

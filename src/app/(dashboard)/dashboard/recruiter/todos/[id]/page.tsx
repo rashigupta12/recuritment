@@ -135,11 +135,11 @@ export default function TodoDetailPage() {
             {jobId && todoData ? (
               <>
                 {/* ✅ Multiple Applicants Form in Sheet */}
-                <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+                {/* <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                   <SheetContent side="right" className="w-full sm:max-w-4xl overflow-y-auto">
                     <SheetHeader>
                       <SheetTitle className="text-2xl font-bold text-gray-900">
-                        Add Multiple Applicants
+                        Add Applicants
                       </SheetTitle>
                     </SheetHeader>
                     <div className="mt-6">
@@ -149,8 +149,22 @@ export default function TodoDetailPage() {
                       />
                     </div>
                   </SheetContent>
-                </Sheet>
-
+                </Sheet> */}
+<Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+  <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+    <SheetHeader>
+      <SheetTitle className="text-2xl font-bold text-gray-900">
+        Add Applicants
+      </SheetTitle>
+    </SheetHeader>
+    <div className="mt-6">
+      <MultipleApplicantsForm
+        initialJobId={jobId}
+        onFormSubmitSuccess={handleFormSubmitSuccess}
+      />
+    </div>
+  </SheetContent>
+</Sheet>
                 {/* ✅ Tagged Applicants List with refresh key */}
                 <TaggedApplicants
                   key={`tagged-applicants-${refreshKey}`} // ✅ Force re-render
