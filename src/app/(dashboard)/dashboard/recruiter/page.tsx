@@ -84,7 +84,7 @@ interface MetricData {
 export default function RecruiterDashboard() {
   const router = useRouter();
   const [selectedClient, setSelectedClient] = useState<string>("All");
-  const [timePeriod, setTimePeriod] = useState<"week" | "month" | "year">(
+  const [timePeriod, setTimePeriod] = useState<"week" | "month" | "quarter">(
     "month"
   );
   const { user } = useAuth();
@@ -482,15 +482,15 @@ export default function RecruiterDashboard() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h1 className="text-xl font-bold text-slate-800">
-              Recruitment Analytics
+              Recruiter Analytics
             </h1>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-sm text-slate-500 mt-0.5">
               Monitor performance and track hiring progress
             </p>
           </div>
           <button
             type="button"
-            className="flex items-center justify-center gap-2 px-3 py-2 bg-white text-slate-700 rounded-lg shadow-sm border border-slate-200 hover:border-slate-300 transition-all text-xs font-medium"
+            className="flex items-center justify-center gap-2 px-3 py-2 bg-white text-slate-700 rounded-lg shadow-sm border border-slate-200 hover:border-slate-300 transition-all text-sm font-medium"
             onClick={exportCSV}
           >
             <Download className="h-3.5 w-3.5" />
@@ -503,7 +503,7 @@ export default function RecruiterDashboard() {
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-1.5">
               <Filter className="h-3.5 w-3.5 text-slate-400" />
-              <span className="text-xs font-medium text-slate-600">
+              <span className="text-sm font-medium text-slate-600">
                 Clients:
               </span>
             </div>
@@ -511,7 +511,7 @@ export default function RecruiterDashboard() {
             <select
               value={selectedClient}
               onChange={(e) => setSelectedClient(e.target.value)}
-              className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400 text-slate-700 bg-white"
+              className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-indigo-400 text-slate-700 bg-white"
             >
               {clients.map((client) => (
                 <option key={client} value={client}>
@@ -523,12 +523,12 @@ export default function RecruiterDashboard() {
             <div className="flex items-center gap-1.5 ml-auto">
               <Calendar className="h-3.5 w-3.5 text-slate-400" />
               <div className="flex gap-0.5 bg-slate-100 p-0.5 rounded-md">
-                {(["week", "month", "year"] as const).map((period) => (
+                {(["week", "month", "Quarter"] as const).map((period) => (
                   <button
                     key={period}
                     type="button"
                     onClick={() => setTimePeriod(period)}
-                    className={`px-2 py-1 rounded text-xs font-medium transition-all ${
+                    className={`px-2 py-1 rounded text-sm font-medium transition-all ${
                       timePeriod === period
                         ? "bg-white text-indigo-600 shadow-sm"
                         : "text-slate-600 hover:text-slate-800"
@@ -575,48 +575,54 @@ export default function RecruiterDashboard() {
         </section>
 
         {/* Main Charts */}
-        <section className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        <section className="grid grid-cols-1 xl:grid-cols-2 gap-4">
           {/* Trends Chart */}
-          <div className="xl:col-span-2 bg-white rounded-lg p-4 shadow-sm border border-slate-200">
-            <SectionHeader
-              title="Recruitment Trends"
-              subtitle="Monthly performance overview"
-            />
-            <div className="h-64 mt-3">
-              <Line
-                data={trendData}
+          
+             <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200">
+            <div className="flex justify-between items-center">
+              <SectionHeader
+                title="Applicant Funnel"
+                subtitle="Stage-wise breakdown"
+              />
+              <div className="bg-yellow-100 text-slate-700 text-md px-4 py-2 rounded">
+                <p>Conversion Rate: {kpiMetrics.offerToJoin}%</p>
+                <p>
+                  Total Joined:{" "}
+                  {
+                    filteredApplicants.filter((a) => a.status === "Joined")
+                      .length
+                  }
+                </p>
+              </div>
+            </div>
+
+            <div className="h-64 mt-4">
+              <Bar
+                data={funnelData}
                 options={{
                   responsive: true,
                   maintainAspectRatio: false,
+                  indexAxis: "y",
                   plugins: {
-                    legend: {
-                      display: true,
-                      position: "top",
-                      labels: {
-                        padding: 8,
-                        font: { size: 11 },
-                        usePointStyle: true,
-                        pointStyle: "circle",
-                        color: "#475569",
-                      },
-                    },
+                    legend: { display: false },
                   },
                   scales: {
-                    y: {
+                    x: {
                       beginAtZero: true,
                       grid: { color: "#f1f5f9" },
                       border: { display: false },
                       ticks: {
-                        font: { size: 10 },
+                        stepSize: 1,
+                        font: { size: 14 },
                         color: "#64748b",
                       },
                     },
-                    x: {
+                    y: {
                       grid: { display: false },
                       border: { display: false },
                       ticks: {
-                        font: { size: 10 },
-                        color: "#64748b",
+                        font: { size: 14 },
+                        color: "#475569",
                       },
                     },
                   },
@@ -627,12 +633,12 @@ export default function RecruiterDashboard() {
 
           {/* Job Status */}
           <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200">
-            <div className="flex justify-between items-center mb-2">
+            <div className="flex justify-between items-start mb-2">
               <SectionHeader
                 title="Job Status"
                 subtitle="Current distribution"
               />
-              <div className="bg-yellow-100 text-slate-700 text-xs px-3 py-2 rounded">
+              <div className="bg-yellow-100 text-slate-700 text-md px-3 py-2 rounded">
                 <p>Total Jobs: {filteredJobs.length}</p>
                 <p>
                   Open: {filteredJobs.filter((j) => j.status === "Open").length}
@@ -674,7 +680,8 @@ export default function RecruiterDashboard() {
                     },
                     legend: {
                       position: "bottom",
-                      labels: { usePointStyle: true, pointStyle: "circle" },
+                      labels: { usePointStyle: true, pointStyle: "circle" , font: { size: 14 }},
+                      
                     },
                   },
                   onClick: (event, elements) => {
@@ -688,13 +695,13 @@ export default function RecruiterDashboard() {
 
         {/* Pipeline Charts */}
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200">
+          {/* <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200">
             <div className="flex justify-between items-center mb-2">
               <SectionHeader
                 title="Candidate Pipeline"
                 subtitle="By client and status"
               />
-              <div className="bg-yellow-100 text-slate-700 text-xs px-3 py-2 rounded">
+              <div className="bg-yellow-100 text-slate-700 text-sm px-3 py-2 rounded">
                 <p>Total Candidates: {filteredApplicants.length}</p>
                 <p>
                   Assessment:{" "}
@@ -768,53 +775,47 @@ export default function RecruiterDashboard() {
                 }}
               />
             </div>
-          </div>
-
-          <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200">
-            <div className="flex justify-between items-center">
-              <SectionHeader
-                title="Recruitment Funnel"
-                subtitle="Stage-wise breakdown"
-              />
-              <div className="bg-yellow-100 text-slate-700 text-sm px-4 py-2 rounded">
-                <p>Conversion Rate: {kpiMetrics.offerToJoin}%</p>
-                <p>
-                  Total Joined:{" "}
-                  {
-                    filteredApplicants.filter((a) => a.status === "Joined")
-                      .length
-                  }
-                </p>
-              </div>
-            </div>
-
-            <div className="h-64 mt-4">
-              <Bar
-                data={funnelData}
+          </div> */}
+          <div className="xl:col-span-2 bg-white rounded-lg p-4 shadow-sm border border-slate-200">
+            <SectionHeader
+              title="Recruitment Trends"
+              subtitle="Monthly performance overview"
+            />
+            <div className="h-64 mt-3">
+              <Line
+                data={trendData}
                 options={{
                   responsive: true,
                   maintainAspectRatio: false,
-                  indexAxis: "y",
                   plugins: {
-                    legend: { display: false },
+                    legend: {
+                      display: true,
+                      position: "top",
+                      labels: {
+                        padding: 8,
+                        font: { size: 14 },
+                        usePointStyle: true,
+                        pointStyle: "circle",
+                        color: "#475569",
+                      },
+                    },
                   },
                   scales: {
-                    x: {
+                    y: {
                       beginAtZero: true,
                       grid: { color: "#f1f5f9" },
                       border: { display: false },
                       ticks: {
-                        stepSize: 1,
-                        font: { size: 10 },
+                        font: { size: 14 },
                         color: "#64748b",
                       },
                     },
-                    y: {
+                    x: {
                       grid: { display: false },
                       border: { display: false },
                       ticks: {
-                        font: { size: 11 },
-                        color: "#475569",
+                        font: { size: 14 },
+                        color: "#64748b",
                       },
                     },
                   },
@@ -822,6 +823,8 @@ export default function RecruiterDashboard() {
               />
             </div>
           </div>
+
+       
         </section>
       </div>
     </main>
@@ -864,16 +867,16 @@ function KpiCard({ icon, value, label, trend, color }: CardProps) {
         >
           {icon}
         </div>
-        {trend && (
-          <div className="flex items-center gap-1 text-xs font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">
-            <TrendingUp className="h-3 w-3" />
-            <span>{trend}</span>
+       
+          <div className="flex items-center gap-1  text-5xl font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">
+            {/* <TrendingUp className="h-3 w-3" /> */}
+            <span>{value}</span>
           </div>
-        )}
+    
       </div>
-      <div className="space-y-0.5">
-        <div className="text-lg font-bold text-slate-800">{value}</div>
-        <p className="text-xs text-slate-500 font-medium">{label}</p>
+      <div className="">
+        {/* <div className="text-lg font-bold text-slate-800">{value}</div> */}
+        <p className="text-lg text-slate-500 font-medium">{label}</p>
       </div>
     </div>
   );
@@ -887,8 +890,8 @@ interface HeaderProps {
 function SectionHeader({ title, subtitle }: HeaderProps) {
   return (
     <div>
-      <h3 className="text-sm font-semibold text-slate-800">{title}</h3>
-      {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
+      <h3 className="text-lg font-semibold text-slate-800">{title}</h3>
+      {subtitle && <p className="text-md text-slate-500 mt-0.5">{subtitle}</p>}
     </div>
   );
 }
