@@ -330,7 +330,7 @@ const extractVacancies = (description?: string) => {
         onFilterChange={handleFilterChange}
       />
 
-      <div className="w-full mx-auto py-2">
+      <div className="w-full mx-auto ">
         {filteredTodos.length > 0 ? (
           <TodosTable
             todos={filteredTodos}
