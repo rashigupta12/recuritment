@@ -1,5 +1,5 @@
 /*eslint-disable @typescript-eslint/no-explicit-any */
-import { Search, RefreshCw, Filter, X, Calendar, Building2, Users, Briefcase, MapPin, ChevronDown, ChevronUp } from "lucide-react";
+import { Search, RefreshCw, Filter, X, Calendar, Users, Briefcase, MapPin, ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -15,15 +15,16 @@ interface TodosHeaderProps {
   filteredJobs?: number;
   uniqueDepartments?: string[];
   uniqueAssigners?: string[];
-  uniqueClients?: string[];
+  uniqueLocations?: string[];
+  uniqueJobTitles?: string[];
   onFilterChange?: (filters: FilterState) => void;
 }
 
 interface FilterState {
   departments: string[];
   assignedBy: string[];
-  clients: string[];
   locations: string[];
+  jobTitles: string[];
   dateRange: 'all' | 'today' | 'week' | 'month';
   vacancies: 'all' | 'single' | 'multiple';
 }
@@ -36,33 +37,24 @@ export const TodosHeader = ({
   filteredJobs = 0,
   uniqueDepartments = [],
   uniqueAssigners = [],
-  uniqueClients = [],
+  uniqueLocations = [],
+  uniqueJobTitles = [],
   onFilterChange
 }: TodosHeaderProps) => {
   const [filters, setFilters] = useState<FilterState>({
     departments: [],
     assignedBy: [],
-    clients: [],
     locations: [],
+    jobTitles: [],
     dateRange: 'all',
     vacancies: 'all'
   });
 
-  const [clientSearch, setClientSearch] = useState('');
   const [locationSearch, setLocationSearch] = useState('');
+  const [jobTitleSearch, setJobTitleSearch] = useState('');
   const [openSection, setOpenSection] = useState<string | null>(null);
 
-  // Extract unique locations from job descriptions (you'll need to pass this as prop)
-  // For now, I'll create a mock function - you should replace this with actual data
-  const extractLocationsFromDescriptions = () => {
-    // This should be implemented based on your actual data structure
-    // For now, returning mock locations
-    return ['New York', 'London', 'Tokyo', 'Remote', 'San Francisco', 'Berlin'];
-  };
-
-  const uniqueLocations = extractLocationsFromDescriptions();
-
-  const toggleFilter = (type: 'departments' | 'assignedBy' | 'clients' | 'locations', value: string) => {
+  const toggleFilter = (type: 'departments' | 'assignedBy' | 'locations' | 'jobTitles', value: string) => {
     const newFilters = {
       ...filters,
       [type]: filters[type].includes(value)
@@ -89,14 +81,14 @@ export const TodosHeader = ({
     const resetFilters = {
       departments: [],
       assignedBy: [],
-      clients: [],
       locations: [],
+      jobTitles: [],
       dateRange: 'all' as const,
       vacancies: 'all' as const
     };
     setFilters(resetFilters);
-    setClientSearch('');
     setLocationSearch('');
+    setJobTitleSearch('');
     onFilterChange?.(resetFilters);
   };
 
@@ -104,17 +96,20 @@ export const TodosHeader = ({
     setOpenSection(openSection === section ? null : section);
   };
 
-  const filteredClients = uniqueClients.filter(client =>
-    client.toLowerCase().includes(clientSearch.toLowerCase())
-  );
-
   const filteredLocations = uniqueLocations.filter(location =>
     location.toLowerCase().includes(locationSearch.toLowerCase())
   );
 
-  const activeFilterCount = filters.departments.length + filters.assignedBy.length +
-    filters.clients.length + filters.locations.length +
-    (filters.dateRange !== 'all' ? 1 : 0) + (filters.vacancies !== 'all' ? 1 : 0);
+  const filteredJobTitles = uniqueJobTitles.filter(jobTitle =>
+    jobTitle.toLowerCase().includes(jobTitleSearch.toLowerCase())
+  );
+
+  const activeFilterCount = filters.departments.length + 
+    filters.assignedBy.length +
+    filters.locations.length +
+    filters.jobTitles.length +
+    (filters.dateRange !== 'all' ? 1 : 0) + 
+    (filters.vacancies !== 'all' ? 1 : 0);
 
   // Filter sections configuration
   const filterSections = [
@@ -144,58 +139,37 @@ export const TodosHeader = ({
         </div>
       )
     },
-    // ...(uniqueDepartments.length > 0 ? [{
-    //   id: 'jobtitle',
-    //   title: 'Job Titile',
-    //   icon: Briefcase,
-    //   content: (
-    //     <div className="space-y-2 pl-6">
-    //       {uniqueDepartments.map(dept => (
-    //         <label key={dept} className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
-    //           <input
-    //             type="checkbox"
-    //             checked={filters.departments.includes(dept)}
-    //             onChange={() => toggleFilter('departments', dept)}
-    //             className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-    //           />
-    //           <span className="text-sm font-medium text-gray-700">{dept}</span>
-    //         </label>
-    //       ))}
-    //     </div>
-    //   )
-    // }] : []),
-    ...(uniqueClients.length > 0 ? [{
-      id: 'company',
-      title: 'Company',
-      icon: Building2,
+    ...(uniqueJobTitles.length > 0 ? [{
+      id: 'jobTitle',
+      title: 'Job Title',
+      icon: Briefcase,
       content: (
         <div className="space-y-3 pl-6">
-          {/* Company Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search companies..."
-              value={clientSearch}
-              onChange={(e) => setClientSearch(e.target.value)}
+              placeholder="Search job titles..."
+              value={jobTitleSearch}
+              onChange={(e) => setJobTitleSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
           <div className="space-y-2 max-h-48 overflow-y-auto">
-            {filteredClients.map(client => (
-              <label key={client} className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+            {filteredJobTitles.map(jobTitle => (
+              <label key={jobTitle} className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
                 <input
                   type="checkbox"
-                  checked={filters.clients.includes(client)}
-                  onChange={() => toggleFilter('clients', client)}
+                  checked={filters.jobTitles.includes(jobTitle)}
+                  onChange={() => toggleFilter('jobTitles', jobTitle)}
                   className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
-                <span className="text-sm font-medium text-gray-700">{client}</span>
+                <span className="text-sm font-medium text-gray-700">{jobTitle}</span>
               </label>
             ))}
-            {filteredClients.length === 0 && (
+            {filteredJobTitles.length === 0 && (
               <div className="text-center py-3 text-sm text-gray-500">
-                No companies found
+                No job titles found
               </div>
             )}
           </div>
@@ -208,7 +182,6 @@ export const TodosHeader = ({
       icon: MapPin,
       content: (
         <div className="space-y-3 pl-6">
-          {/* Location Search */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
@@ -292,10 +265,7 @@ export const TodosHeader = ({
       <div className="">
         {/* Header Row: My Jobs + Search + Filter + Refresh */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          {/* Title */}
           <h1 className="text-2xl font-semibold text-gray-900 whitespace-nowrap">My Jobs</h1>
-
-          {/* Search */}
           <div className="flex items-center gap-3 flex-wrap justify-end">
             <div className="flex-1 min-w-[250px] max-w-md items-end justify-end relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -307,10 +277,7 @@ export const TodosHeader = ({
                 className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-
-            {/* Filter + Refresh */}
             <div className="flex items-center gap-2">
-              {/* Sheet Trigger */}
               <Sheet>
                 <SheetTrigger asChild>
                   <Button
@@ -329,7 +296,6 @@ export const TodosHeader = ({
                     )}
                   </Button>
                 </SheetTrigger>
-
                 <SheetContent side="right" className="w-full sm:max-w-md flex flex-col p-0">
                   <SheetHeader className="px-6 py-4 border-b">
                     <div className="flex items-center justify-between">
@@ -339,10 +305,8 @@ export const TodosHeader = ({
                       </SheetTitle>
                     </div>
                   </SheetHeader>
-
                   <ScrollArea className="flex-1">
                     <div className="p-6 py-2 space-y-4">
-                      {/* Active Filters */}
                       {activeFilterCount > 0 && (
                         <div className="space-y-3">
                           <h4 className="text-sm font-medium text-gray-700">Active Filters</h4>
@@ -369,22 +333,22 @@ export const TodosHeader = ({
                                 </button>
                               </Badge>
                             ))}
-                            {filters.clients.map(client => (
-                              <Badge key={client} variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
-                                Company: {client}
+                            {filters.locations.map(location => (
+                              <Badge key={location} variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
+                                {location}
                                 <button 
-                                  onClick={() => toggleFilter('clients', client)} 
+                                  onClick={() => toggleFilter('locations', location)} 
                                   className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
                                 >
                                   <X className="w-3 h-3" />
                                 </button>
                               </Badge>
                             ))}
-                            {filters.locations.map(location => (
-                              <Badge key={location} variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
-                                {location}
+                            {filters.jobTitles.map(jobTitle => (
+                              <Badge key={jobTitle} variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
+                                Job Title: {jobTitle}
                                 <button 
-                                  onClick={() => toggleFilter('locations', location)} 
+                                  onClick={() => toggleFilter('jobTitles', jobTitle)} 
                                   className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
                                 >
                                   <X className="w-3 h-3" />
@@ -417,8 +381,6 @@ export const TodosHeader = ({
                           <Separator />
                         </div>
                       )}
-
-                      {/* Filter Sections */}
                       {filterSections.map((section) => (
                         <div key={section.id} className="space-y-3">
                           <button
@@ -437,8 +399,6 @@ export const TodosHeader = ({
                       ))}
                     </div>
                   </ScrollArea>
-
-                  {/* Footer Actions */}
                   <div className="border-t p-4 bg-gray-50">
                     <div className="flex gap-3">
                       <Button
@@ -457,8 +417,6 @@ export const TodosHeader = ({
                   </div>
                 </SheetContent>
               </Sheet>
-
-              {/* Refresh Button */}
               <Button
                 variant="outline"
                 size="icon"
@@ -470,8 +428,6 @@ export const TodosHeader = ({
             </div>
           </div>
         </div>
-
-        {/* Active Filters Pills (outside sheet) */}
         {activeFilterCount > 0 && (
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <span className="text-sm text-gray-600 font-medium">Active filters:</span>
@@ -497,22 +453,22 @@ export const TodosHeader = ({
                 </button>
               </Badge>
             ))}
-            {filters.clients.map(client => (
-              <Badge key={client} variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
-                Company: {client}
+            {filters.locations.map(location => (
+              <Badge key={location} variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
+                {location}
                 <button
-                  onClick={() => toggleFilter('clients', client)}
+                  onClick={() => toggleFilter('locations', location)}
                   className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
                 >
                   <X className="w-3 h-3" />
                 </button>
               </Badge>
             ))}
-            {filters.locations.map(location => (
-              <Badge key={location} variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
-                {location}
+            {filters.jobTitles.map(jobTitle => (
+              <Badge key={jobTitle} variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
+                Job Title: {jobTitle}
                 <button
-                  onClick={() => toggleFilter('locations', location)}
+                  onClick={() => toggleFilter('jobTitles', jobTitle)}
                   className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
                 >
                   <X className="w-3 h-3" />
