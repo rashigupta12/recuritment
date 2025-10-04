@@ -83,16 +83,12 @@ const LeadForm: React.FC<LeadFormProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showLeaveConfirmation, setShowLeaveConfirmation] = useState(false);
-  const [showContractConfirmation, setShowContractConfirmation] = useState(false);
+  const [showSubmitConfirmation, setShowSubmitConfirmation] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
-  const [pendingStageChange, setPendingStageChange] = useState<string | null>(null);
   const [isFormSubmitted, setIsFormSubmitted] = useState(false);
   const [autoFetchOrganization, setAutoFetchOrganization] = useState<string | null>(null);
-  
-  // New state for fee type
   const [feeType, setFeeType] = useState<FeeType>("percent");
 
-  // Updated offerings and stages
   const offerings = [
     "Lateral - All Levels",
     "Lateral - Executive",
@@ -113,7 +109,17 @@ const LeadForm: React.FC<LeadFormProps> = ({
     "Follow-Up / Relationship Management",
   ];
 
-  // Check if form has changes
+  // Stage descriptions
+  const stageDescriptions: Record<string, string> = {
+    "Prospecting": "Identifying and researching potential clients.",
+    "Lead Qualification": "Assessing if the lead meets criteria for pursuit.",
+    "Needs Analysis / Discovery": "Understanding client needs and requirements.",
+    "Presentation / Proposal": "Presenting solutions or proposals to the client.",
+    "Contract": "Negotiating and finalizing contract terms.",
+    "Onboarded": "Client is fully onboarded and services begin.",
+    "Follow-Up / Relationship Management": "Maintaining client relationship post-onboarding."
+  };
+
   const checkFormChanges = useCallback(() => {
     return (
       formData.contact !== null ||
@@ -129,47 +135,35 @@ const LeadForm: React.FC<LeadFormProps> = ({
     );
   }, [formData]);
 
-  // Calculate deal value based on fee type
-// Update the calculateDealValue function in your component
-const calculateDealValue = useCallback(() => {
-  const { custom_estimated_hiring_, custom_average_salary, custom_fee, custom_fixed_charges } = formData;
-  
-  if (feeType === "fixed") {
-    // For fixed fee: Fixed charges × Estimated hiring
-    if (!custom_estimated_hiring_ || custom_estimated_hiring_ === 0 || !custom_fixed_charges || custom_fixed_charges === 0) {
-      return 0;
+  const calculateDealValue = useCallback(() => {
+    const { custom_estimated_hiring_, custom_average_salary, custom_fee, custom_fixed_charges } = formData;
+    if (feeType === "fixed") {
+      if (!custom_estimated_hiring_ || custom_estimated_hiring_ === 0 || !custom_fixed_charges || custom_fixed_charges === 0) {
+        return 0;
+      }
+      return custom_fixed_charges * custom_estimated_hiring_;
+    } else {
+      if (!custom_estimated_hiring_ || custom_estimated_hiring_ === 0 || !custom_average_salary || custom_average_salary === 0 || !custom_fee || custom_fee === 0) {
+        return 0;
+      }
+      return (custom_fee * custom_estimated_hiring_ * custom_average_salary) / 100;
     }
-    return custom_fixed_charges * custom_estimated_hiring_;
-  } else {
-    // For percentage fee: (Fee % × Estimated hiring × Average salary) ÷ 100
-    if (!custom_estimated_hiring_ || custom_estimated_hiring_ === 0 || !custom_average_salary || custom_average_salary === 0 || !custom_fee || custom_fee === 0) {
-      return 0;
-    }
-    return (custom_fee * custom_estimated_hiring_ * custom_average_salary) / 100;
-  }
-}, [formData.custom_estimated_hiring_, formData.custom_average_salary, formData.custom_fee, formData.custom_fixed_charges, feeType]);
+  }, [formData.custom_estimated_hiring_, formData.custom_average_salary, formData.custom_fee, formData.custom_fixed_charges, feeType]);
 
-  // Update deal value whenever relevant fields change (excluding custom_deal_value to prevent infinite loop)
   useEffect(() => {
     const dealValue = calculateDealValue();
-    // Only update if the value has actually changed to prevent infinite loops
     if (Math.round(dealValue) !== Math.round(formData.custom_deal_value)) {
       updateFormField("custom_deal_value", dealValue);
     }
   }, [calculateDealValue, formData.custom_deal_value, updateFormField]);
 
-  // Update hasUnsavedChanges whenever form data changes
   useEffect(() => {
-    // Don't track changes if form has been submitted successfully
     if (isFormSubmitted) return;
-
     const hasChanges = checkFormChanges();
     setHasUnsavedChanges(hasChanges);
-    // Notify parent component about unsaved changes
     onUnsavedChanges?.(hasChanges);
   }, [checkFormChanges, onUnsavedChanges, isFormSubmitted]);
 
-  // Set up event listeners for page unload
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasUnsavedChanges && !isFormSubmitted) {
@@ -184,21 +178,17 @@ const calculateDealValue = useCallback(() => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
   }, [hasUnsavedChanges, isFormSubmitted]);
-  
 
-  // Reset form data when component mounts or editLead changes
   useEffect(() => {
     resetForm();
-    setIsFormSubmitted(false); // Reset the submitted flag when form reloads
-if (!editLead) {
-    const today = new Date();
-    const nextMonth = new Date(today.setMonth(today.getMonth() + 1));
-    const defaultDate = nextMonth.toISOString().split("T")[0];
-    updateFormField("custom_expected_close_date", defaultDate);
-  }
-    // If editing, populate form with existing data
+    setIsFormSubmitted(false);
+    if (!editLead) {
+      const today = new Date();
+      const nextMonth = new Date(today.setMonth(today.getMonth() + 1));
+      const defaultDate = nextMonth.toISOString().split("T")[0];
+      updateFormField("custom_expected_close_date", defaultDate);
+    }
     if (editLead) {
-      // Populate contact information
       if (
         editLead.custom_full_name ||
         editLead.custom_email_address ||
@@ -207,7 +197,6 @@ if (!editLead) {
         const nameParts = (editLead.custom_full_name || editLead.lead_name || "").split(" ");
         const firstName = nameParts[0] || "";
         const lastName = nameParts.slice(1).join(" ") || "";
-
         setContact({
           name: editLead.custom_full_name || editLead.lead_name || "",
           email: editLead.custom_email_address || "",
@@ -221,7 +210,6 @@ if (!editLead) {
         });
       }
 
-      // Populate company information
       if (editLead.company_name) {
         setCompany({
           name: editLead.company_name,
@@ -233,15 +221,13 @@ if (!editLead) {
         });
       }
 
-      // Populate industry information
       if (editLead.industry) {
         setIndustry({
           name: editLead.industry,
           industry: editLead.industry,
         });
       }
-      
-      // Set new fields using the store
+
       updateFormField("custom_stage", editLead.custom_stage || "Prospecting");
       updateFormField("custom_offerings", editLead.custom_offerings || "Lateral - All Levels");
       updateFormField("custom_estimated_hiring_", editLead.custom_estimated_hiring_ || 0);
@@ -251,7 +237,6 @@ if (!editLead) {
       updateFormField("custom_deal_value", editLead.custom_deal_value || 0);
       updateFormField("custom_expected_close_date", editLead.custom_expected_close_date || "");
       
-      // Set fee type based on which field has a value
       if (editLead.custom_fixed_charges && editLead.custom_fixed_charges > 0) {
         setFeeType("fixed");
       } else {
@@ -264,92 +249,49 @@ if (!editLead) {
     setOpenSections((prev) => {
       const sectionOrder: SectionKey[] = ["contact", "company", "industry", "details"];
       const newState = { ...prev };
-
       if (prev[section]) {
         newState[section] = false;
         return newState;
       }
-
-      // Close all sections first
       sectionOrder.forEach((key) => {
         newState[key] = false;
       });
-
-      // Open the clicked section
       newState[section] = true;
-
       return newState;
     });
   };
 
-  // Handle stage change with contract confirmation
   const handleStageChange = (newStage: string) => {
-    if (newStage === "Onboarded" && formData.custom_stage !== "Onboarded") {
-      setPendingStageChange(newStage);
-      setShowContractConfirmation(true);
-    } else {
-      updateFormField("custom_stage", newStage);
-    }
+    console.log("Stage changed to:", newStage); // Debug log
+    updateFormField("custom_stage", newStage);
   };
 
-  // Handle contract confirmation
-  const handleConfirmContract = () => {
-    if (pendingStageChange) {
-      updateFormField("custom_stage", pendingStageChange);
-      setPendingStageChange(null);
-    }
-    setShowContractConfirmation(false);
-  };
-
-  const handleCancelContract = () => {
-    setPendingStageChange(null);
-    setShowContractConfirmation(false);
-  };
-
-  // Handle fee type change
-  const handleFeeTypeChange = (newFeeType: FeeType) => {
-    setFeeType(newFeeType);
-    // Clear both fee fields when switching types
-    if (newFeeType === "fixed") {
-      updateFormField("custom_fee", 0);
-    } else {
-      updateFormField("custom_fixed_charges", 0);
-    }
-  };
-
-  const handleSubmit = async () => {
+  const handleConfirmSubmit = async () => {
+    console.log("Submitting lead with stage:", formData.custom_stage); // Debug log
     try {
       setIsSubmitting(true);
-
       const payload = buildLeadPayload();
-
       let response;
       const isOnboardedStage = formData.custom_stage === "Onboarded";
 
       if (editLead && editLead.name) {
-        // Update existing lead
         console.log("Updating lead:", editLead.name);
         response = await frappeAPI.updateLead(editLead.name, payload);
       } else {
-        // Create new lead
+        console.log("Creating new lead");
         response = await frappeAPI.createLead(payload);
       }
 
-      // Mark form as successfully submitted to prevent change tracking
       setIsFormSubmitted(true);
-
-      // Clear unsaved changes state and notify parent
       setHasUnsavedChanges(false);
       onUnsavedChanges?.(false);
-
-      // Reset form and close WITHOUT confirmation
       resetForm();
 
-      // If stage is "Onboarded", redirect to contract page
       if (isOnboardedStage) {
+        console.log("Navigating to contract page");
         router.push("/dashboard/sales-manager/contract");
       } else {
-        // Call onClose directly without going through confirmation
+        console.log("Closing form");
         onClose();
       }
 
@@ -359,10 +301,34 @@ if (!editLead) {
       alert(`Failed to ${editLead ? "update" : "create"} lead. Please try again.`);
     } finally {
       setIsSubmitting(false);
+      setShowSubmitConfirmation(false);
     }
   };
 
-  // Enhanced handlers with confirmation
+  const handleCancelSubmit = () => {
+    console.log("Submit confirmation cancelled"); // Debug log
+    setShowSubmitConfirmation(false);
+  };
+
+  const handleSubmit = () => {
+    console.log("Submit button clicked, stage:", formData.custom_stage); // Debug log
+    if (formData.custom_stage === "Onboarded") {
+      console.log("Showing submit confirmation dialog"); // Debug log
+      setShowSubmitConfirmation(true);
+    } else {
+      handleConfirmSubmit();
+    }
+  };
+
+  const handleFeeTypeChange = (newFeeType: FeeType) => {
+    setFeeType(newFeeType);
+    if (newFeeType === "fixed") {
+      updateFormField("custom_fee", 0);
+    } else {
+      updateFormField("custom_fixed_charges", 0);
+    }
+  };
+
   const handleCloseWithConfirmation = (action: () => void) => {
     if (hasUnsavedChanges && !isFormSubmitted) {
       setPendingAction(() => action);
@@ -373,7 +339,6 @@ if (!editLead) {
   };
 
   const handleBackClick = () => {
-    // If form was successfully submitted, close without confirmation
     if (isFormSubmitted) {
       onClose();
     } else {
@@ -382,7 +347,6 @@ if (!editLead) {
   };
 
   const handleCancel = () => {
-    // If form was successfully submitted, close without confirmation
     if (isFormSubmitted) {
       onClose();
     } else {
@@ -390,7 +354,6 @@ if (!editLead) {
     }
   };
 
-  // Confirmation dialog handlers
   const handleConfirmLeave = () => {
     setShowLeaveConfirmation(false);
     setHasUnsavedChanges(false);
@@ -408,7 +371,6 @@ if (!editLead) {
 
   const canSubmit = formData.contact && formData.company && formData.industry;
 
-  // Handler functions to convert between store types and component types
   const handleContactSelect = (contact: SimplifiedContact) => {
     const storeContact = {
       name: contact.name,
@@ -447,7 +409,6 @@ if (!editLead) {
     setIndustry(storeIndustry);
   };
 
-  // Convert store types to component types for display
   const getSelectedContact = (): SimplifiedContact | null => {
     if (!formData.contact) return null;
     return {
@@ -465,8 +426,6 @@ if (!editLead) {
 
   const getSelectedCompany = (): SimplifiedCompany | null => {
     if (!formData.company) return null;
-    
-    // Ensure all required fields are properly mapped
     return {
       name: formData.company.name || "",
       company_name: formData.company.company_name || formData.company.name || "",
@@ -486,7 +445,6 @@ if (!editLead) {
 
   return (
     <div className="w-full mx-auto bg-white">
-      {/* Leave Confirmation Dialog */}
       <ConfirmationDialog
         isOpen={showLeaveConfirmation}
         onConfirm={handleConfirmLeave}
@@ -494,15 +452,13 @@ if (!editLead) {
         message="You have unsaved changes. Are you sure you want to leave? Your changes will be lost."
       />
 
-      {/* Contract Stage Confirmation Dialog */}
       <SuccessDialog
-        isOpen={showContractConfirmation}
-        onConfirm={handleConfirmContract}
-        onCancel={handleCancelContract}
+        isOpen={showSubmitConfirmation}
+        onConfirm={handleConfirmSubmit}
+        onCancel={handleCancelSubmit}
         message="Once you move to 'Onboarded' stage, you won't be able to make changes anymore. Are you sure you want to proceed?"
       />
 
-      {/* Header */}
       <div className="pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -553,12 +509,9 @@ if (!editLead) {
         </div>
       </div>
 
-      {/* Form Content */}
       <div className="grid grid-cols-12 gap-6">
-        {/* Left Column - Client Information */}
         <div className="col-span-12 lg:col-span-6">
           <div className="space-y-3">
-            {/* Contact Section */}
             <AccordionSection
               title="Contact Information"
               icon={User}
@@ -577,7 +530,6 @@ if (!editLead) {
               />
             </AccordionSection>
 
-            {/* Company Section */}
             <AccordionSection
               title="Organization Information"
               icon={Building2}
@@ -591,13 +543,11 @@ if (!editLead) {
                 onCompanySelect={handleCompanySelect}
                 onEdit={() => { /* Open company edit modal */ }}
                 onRemove={() => setCompany(null)}
-                // NEW: Pass auto-fetch organization
                 autoFetchOrganization={autoFetchOrganization}
-                onAutoFetchComplete={() => setAutoFetchOrganization(null)} // Reset after completion
+                onAutoFetchComplete={() => setAutoFetchOrganization(null)}
               />
             </AccordionSection>
 
-            {/* Industry Section */}
             <AccordionSection
               title="Industry Selection"
               icon={Factory}
@@ -614,10 +564,8 @@ if (!editLead) {
           </div>
         </div>
 
-        {/* Right Column - Deal & Financial Information */}
         <div className="col-span-12 lg:col-span-6">
           <div className="space-y-3">
-            {/* Deal/Sales Details */}
             <div className="bg-blue-50 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-4">
                 <Briefcase className="h-4 w-4 text-blue-600" />
@@ -637,7 +585,7 @@ if (!editLead) {
                     >
                       {stages.map((stg) => (
                         <option key={stg} value={stg}>
-                          {stg}
+                          {`${stg}: ${stageDescriptions[stg]}`}
                         </option>
                       ))}
                     </select>
@@ -663,7 +611,6 @@ if (!editLead) {
               </div>
             </div>
 
-            {/* Hiring Metrics */}
             <div className="bg-green-50 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-4">
                 <IndianRupee className="h-4 w-4 text-green-600" />
@@ -697,7 +644,7 @@ if (!editLead) {
                       type="text"
                       value={formData.custom_average_salary === 0 ? "" : formData.custom_average_salary.toLocaleString("en-IN")}
                       onChange={(e) => {
-                        const value = e.target.value.replace(/,/g, ""); // Remove commas
+                        const value = e.target.value.replace(/,/g, "");
                         updateFormField("custom_average_salary", value === "" ? 0 : parseFloat(value));
                       }}
                       className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
@@ -706,7 +653,6 @@ if (!editLead) {
                   </div>
                 </div>
 
-                {/* Fee Type Radio Buttons */}
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">Fee Type</label>
                   <div className="flex gap-6">
@@ -735,7 +681,6 @@ if (!editLead) {
                   </div>
                 </div>
 
-                {/* Fee Input Field */}
                 <div className="grid grid-cols-2 gap-4">
                   {feeType === "percent" ? (
                     <div>
@@ -768,7 +713,7 @@ if (!editLead) {
                             : formData.custom_fixed_charges.toLocaleString("en-IN")
                         }
                         onChange={(e) => {
-                          const value = e.target.value.replace(/,/g, ""); // Remove commas
+                          const value = e.target.value.replace(/,/g, "");
                           updateFormField("custom_fixed_charges", value === "" ? 0 : parseFloat(value));
                         }}
                         className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
@@ -778,18 +723,17 @@ if (!editLead) {
                   )}
 
                   <div>
-  <label className="block text-sm font-medium text-gray-700 mb-1">
-    Expected Close Date
-  </label>
-  <input
-    type="date"
-    value={formData.custom_expected_close_date}
-    min={new Date().toISOString().split("T")[0]} // disable past dates
-    onChange={(e) => updateFormField("custom_expected_close_date", e.target.value)}
-    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-  />
-</div>
-
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Expected Close Date
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.custom_expected_close_date}
+                      min={new Date().toISOString().split("T")[0]}
+                      onChange={(e) => updateFormField("custom_expected_close_date", e.target.value)}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
                 </div>
 
                 <div>

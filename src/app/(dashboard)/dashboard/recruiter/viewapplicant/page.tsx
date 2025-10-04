@@ -271,7 +271,7 @@ const fetchApplicantsData = async (email: string) => {
       }
     } catch (err: any) {
       console.error('Status update error:', err);
-      let errorMessage = 'Failed to update applicant statuses.';
+      let errorMessage = 'Failed to update applicant status';
       if (err.response?.status === 401 || err.response?.status === 403) {
         errorMessage = 'Session expired or insufficient permissions. Please log in again.';
         setIsAuthenticated(false);
@@ -362,8 +362,8 @@ const fetchApplicantsData = async (email: string) => {
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent bg-white shadow-sm min-w-[160px]"
               >
+                <option value="" disabled>Select status...</option>
                 <option value="all">All Status</option>
-                 <option value="" disabled>Select a status...</option>
                 <option value="Open">Open</option>
                 <option value="tagged">Tagged</option>
                 <option value="Shortlisted">Shortlisted</option>
@@ -567,25 +567,28 @@ const fetchApplicantsData = async (email: string) => {
                   <p className="text-sm text-gray-900">{selectedApplicant.country || 'N/A'}</p>
                 </div>
               </div>
-              <div className="p-2 flex gap-10 bg-gray-50 rounded-lg border border-gray-100 shadow-sm">
-                <div className="flex items-center gap-2 mb-1">
-                  <FileText className="h-4 w-4 text-gray-500" />
-                  <h4 className="text-sm font-semibold text-gray-700">Resume</h4>
-                </div>
-                {selectedApplicant.resume_attachment ? (
-                  <a
-                    href={selectedApplicant.resume_attachment}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-md hover:from-blue-700 hover:to-indigo-700 transition-all text-xs font-medium shadow-md"
-                  >
-                    
-                    View
-                  </a>
-                ) : (
-                  <p className="text-gray-500 text-xs italic">No resume attached</p>
-                )}
-              </div>
+             <div className="p-2 flex gap-10 bg-gray-50 rounded-lg border border-gray-100 shadow-sm">
+  <div className="flex items-center gap-2 mb-1">
+    <FileText className="h-4 w-4 text-gray-500" />
+    <h4 className="text-sm font-semibold text-gray-700">Resume</h4>
+  </div>
+  {selectedApplicant?.resume_attachment ? (
+    <a
+      href={
+        selectedApplicant.resume_attachment.startsWith('http')
+          ? selectedApplicant.resume_attachment
+          : `https://recruiter.gennextit.com/files/${selectedApplicant.resume_attachment.replace(/^\/files\//, '')}`
+      }
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-md hover:from-blue-700 hover:to-indigo-700 transition-all text-xs font-medium shadow-md"
+    >
+      View
+    </a>
+  ) : (
+    <p className="text-gray-500 text-xs italic">No resume attached</p>
+  )}
+</div>
             </div>
 
             {/* Experience Section */}
