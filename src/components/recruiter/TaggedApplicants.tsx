@@ -718,7 +718,7 @@ useEffect(() => {
               ` | Selected: ${selectedApplicants.length}`}
           </p>
         </div>
-        <div className="flex items-center gap-80 w-full sm:w-auto mb-4">
+        <div className="flex items-center gap-80 w-full justsm:w-auto mb-4">
           <div className="relative w-full sm:w-80">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
@@ -743,12 +743,14 @@ useEffect(() => {
               >
                 Update Status ({selectedApplicants.length})
               </button>
+              
               <button
                 onClick={handleOpenAssessmentModal}
                 className="px-3 py-3 text-white bg-blue-700 rounded-lg text-sm font-medium transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 whitespace-nowrap w-[180px]"
               >
                 Create Assessment ({selectedApplicants.length})
               </button>
+             
             </div>
           )}
         </div>
