@@ -31,34 +31,6 @@ interface TodosTableProps {
 export const TodosTable = ({ todos, onViewTodo }: TodosTableProps) => {
   // const router = useRouter(); // Initialize useRouter for navigation
 
-  // Get priority badge color
-  const getPriorityColor = (priority: string = '') => {
-    switch (priority.toLowerCase()) {
-      case 'high':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'medium':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'low':
-        return 'bg-green-100 text-green-800 border-green-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  // Get status badge color
-  const getStatusColor = (status: string = '') => {
-    switch (status.toLowerCase()) {
-      case 'open':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'closed':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800 border-red-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
   const handleRowClick = (todo: ToDo, event: React.MouseEvent) => {
     // Prevent the click event from bubbling up when clicking the edit button
     if ((event.target as HTMLElement).closest('button')) {

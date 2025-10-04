@@ -161,14 +161,14 @@ const addNewDesignation = async () => {
     setIsOpen(false);
   };
 
-  const handleClearDesignation = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setSearchQuery("");
-    onChange("");
-    setResults([]);
-    setIsOpen(false);
-  };
+  // const handleClearDesignation = (e: React.MouseEvent) => {
+  //   e.preventDefault();
+  //   e.stopPropagation();
+  //   setSearchQuery("");
+  //   onChange("");
+  //   setResults([]);
+  //   setIsOpen(false);
+  // };
 
   const handleOpenAddDialog = () => {
     setShowAddDialog(true);

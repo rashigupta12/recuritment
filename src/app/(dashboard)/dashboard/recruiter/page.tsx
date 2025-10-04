@@ -1,857 +1,1144 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+// 'use client';
+
+// import {
+//   ArcElement,
+//   BarElement,
+//   CategoryScale,
+//   Chart as ChartJS,
+//   Filler,
+//   Legend,
+//   LinearScale,
+//   LineElement,
+//   PointElement,
+//   Tooltip,
+// } from 'chart.js';
+// import {
+//   Activity,
+//   Briefcase,
+//   Building2,
+//   CheckCircle,
+//   Clock,
+//   Download,
+//   Target,
+//   UserCheck,
+//   Users
+// } from 'lucide-react';
+// import { useMemo, useState } from 'react';
+// import { Bar, Doughnut, Line } from 'react-chartjs-2';
+
+// ChartJS.register(
+//   ArcElement,
+//   Tooltip,
+//   Legend,
+//   BarElement,
+//   CategoryScale,
+//   LinearScale,
+//   LineElement,
+//   PointElement,
+//   Filler,
+// );
+
+// interface JobApplicant {
+//   id: string;
+//   name: string;
+//   email: string;
+//   job_title: string;
+//   client: string;
+//   status: 'Applied' | 'Tagged' | 'Shortlisted' | 'Interview' | 'Offered' | 'Hired' | 'Rejected';
+//   appliedDate: string;
+//   lastUpdated: string;
+// }
+
+// interface JobOpening {
+//   id: string;
+//   title: string;
+//   client: string;
+//   location: string;
+//   status: 'Open' | 'Offered' | 'Joined' | 'Cancelled';
+//   positions: number;
+//   createdDate: string;
+// }
+
+// interface MetricData {
+//   month: string;
+//   tagged: number;
+//   interviews: number;
+//   offers: number;
+//   joined: number;
+// }
+
+// const dummyApplicants: JobApplicant[] = [
+//   { id: '1', name: 'John Doe', email: 'john@example.com', job_title: 'Software Engineer', client: 'TechCorp', status: 'Applied', appliedDate: '2025-09-15', lastUpdated: '2025-09-15' },
+//   { id: '2', name: 'Jane Smith', email: 'jane@example.com', job_title: 'Product Manager', client: 'InnovateLtd', status: 'Hired', appliedDate: '2025-08-10', lastUpdated: '2025-10-01' },
+//   { id: '3', name: 'Alice Johnson', email: 'alice@example.com', job_title: 'Data Analyst', client: 'DataVision', status: 'Interview', appliedDate: '2025-09-20', lastUpdated: '2025-09-28' },
+//   { id: '4', name: 'Bob Wilson', email: 'bob@example.com', job_title: 'UX Designer', client: 'DesignHub', status: 'Shortlisted', appliedDate: '2025-09-25', lastUpdated: '2025-09-27' },
+//   { id: '5', name: 'Emma Brown', email: 'emma@example.com', job_title: 'DevOps Engineer', client: 'CloudSys', status: 'Offered', appliedDate: '2025-08-15', lastUpdated: '2025-09-30' },
+//   { id: '6', name: 'Michael Lee', email: 'michael@example.com', job_title: 'Software Engineer', client: 'TechCorp', status: 'Tagged', appliedDate: '2025-09-18', lastUpdated: '2025-09-22' },
+//   { id: '7', name: 'Sarah Davis', email: 'sarah@example.com', job_title: 'Marketing Manager', client: 'InnovateLtd', status: 'Rejected', appliedDate: '2025-08-20', lastUpdated: '2025-09-05' },
+//   { id: '8', name: 'David Miller', email: 'david@example.com', job_title: 'Data Scientist', client: 'DataVision', status: 'Interview', appliedDate: '2025-09-22', lastUpdated: '2025-09-29' },
+//   { id: '9', name: 'Laura Taylor', email: 'laura@example.com', job_title: 'Product Manager', client: 'TechCorp', status: 'Shortlisted', appliedDate: '2025-09-12', lastUpdated: '2025-09-25' },
+//   { id: '10', name: 'James White', email: 'james@example.com', job_title: 'Software Engineer', client: 'CloudSys', status: 'Hired', appliedDate: '2025-08-05', lastUpdated: '2025-09-28' },
+//   { id: '11', name: 'Emily Clark', email: 'emily@example.com', job_title: 'Data Engineer', client: 'DataVision', status: 'Offered', appliedDate: '2025-09-10', lastUpdated: '2025-09-30' },
+//   { id: '12', name: 'Chris Martin', email: 'chris@example.com', job_title: 'UX Designer', client: 'DesignHub', status: 'Interview', appliedDate: '2025-09-28', lastUpdated: '2025-10-02' },
+//   { id: '13', name: 'Sophia Garcia', email: 'sophia@example.com', job_title: 'DevOps Engineer', client: 'CloudSys', status: 'Tagged', appliedDate: '2025-09-19', lastUpdated: '2025-09-24' },
+//   { id: '14', name: 'Oliver Martinez', email: 'oliver@example.com', job_title: 'Software Engineer', client: 'TechCorp', status: 'Shortlisted', appliedDate: '2025-09-16', lastUpdated: '2025-09-26' },
+//   { id: '15', name: 'Isabella Rodriguez', email: 'isabella@example.com', job_title: 'Marketing Manager', client: 'InnovateLtd', status: 'Applied', appliedDate: '2025-09-30', lastUpdated: '2025-09-30' },
+// ];
+
+// const dummyJobs: JobOpening[] = [
+//   { id: '1', title: 'Software Engineer', client: 'TechCorp', location: 'Bangalore', status: 'Open', positions: 3, createdDate: '2025-08-01' },
+//   { id: '2', title: 'Product Manager', client: 'InnovateLtd', location: 'Mumbai', status: 'Open', positions: 2, createdDate: '2025-08-05' },
+//   { id: '3', title: 'Data Analyst', client: 'DataVision', location: 'Delhi', status: 'Open', positions: 1, createdDate: '2025-08-10' },
+//   { id: '4', title: 'UX Designer', client: 'DesignHub', location: 'Pune', status: 'Offered', positions: 1, createdDate: '2025-08-15' },
+//   { id: '5', title: 'DevOps Engineer', client: 'CloudSys', location: 'Hyderabad', status: 'Joined', positions: 2, createdDate: '2025-07-20' },
+//   { id: '6', title: 'Data Scientist', client: 'DataVision', location: 'Chennai', status: 'Open', positions: 1, createdDate: '2025-08-20' },
+//   { id: '7', title: 'Marketing Manager', client: 'InnovateLtd', location: 'Kolkata', status: 'Cancelled', positions: 1, createdDate: '2025-08-01' },
+// ];
+
+// const monthlyMetrics: MetricData[] = [
+//   { month: 'Jun', tagged: 8, interviews: 5, offers: 3, joined: 2 },
+//   { month: 'Jul', tagged: 12, interviews: 8, offers: 5, joined: 3 },
+//   { month: 'Aug', tagged: 15, interviews: 11, offers: 7, joined: 5 },
+//   { month: 'Sep', tagged: 18, interviews: 13, offers: 9, joined: 6 },
+//   { month: 'Oct', tagged: 10, interviews: 7, offers: 4, joined: 2 },
+// ];
+
+// export default function RecruiterDashboard() {
+//   const [selectedClient, setSelectedClient] = useState<string>('All');
+//   const [timePeriod, setTimePeriod] = useState<'week' | 'month' | 'year'>('month');
+
+//   const clients = useMemo(() => Array.from(new Set(dummyJobs.map(j => j.client))), []);
+//   const filteredApplicants = useMemo(() => selectedClient === 'All' ? dummyApplicants : dummyApplicants.filter(a => a.client === selectedClient), [selectedClient]);
+//   const filteredJobs = useMemo(() => selectedClient === 'All' ? dummyJobs : dummyJobs.filter(j => j.client === selectedClient), [selectedClient]);
+
+//   const activeClients = useMemo(() => {
+//     const clientsWithOpenJobs = new Set(dummyJobs.filter(j => j.status === 'Open').map(j => j.client));
+//     return clientsWithOpenJobs.size;
+//   }, []);
+
+//   const kpiMetrics = useMemo(() => {
+//     const total = filteredApplicants.length;
+//     const tagged = filteredApplicants.filter(a => a.status === 'Tagged').length;
+//     const interviews = filteredApplicants.filter(a => a.status === 'Interview').length;
+//     const offered = filteredApplicants.filter(a => a.status === 'Offered').length;
+//     const hired = filteredApplicants.filter(a => a.status === 'Hired').length;
+//     return {
+//       totalApplicants: total,
+//       taggedToInterview: tagged > 0 ? ((interviews / tagged) * 100).toFixed(1) : '0',
+//       interviewToOffer: interviews > 0 ? ((offered / interviews) * 100).toFixed(1) : '0',
+//       offerToJoin: offered > 0 ? ((hired / offered) * 100).toFixed(1) : '0',
+//       avgTimeToOffer: 12,
+//       avgTimeToJoin: 18,
+//     };
+//   }, [filteredApplicants]);
+
+//   const exportCSV = () => {
+//     const csvRows = [];
+//     csvRows.push('Name,Email,Job Title,Client,Status,Applied Date,Last Updated');
+//     filteredApplicants.forEach(a => {
+//       csvRows.push(`${a.name},${a.email},${a.job_title},${a.client},${a.status},${a.appliedDate},${a.lastUpdated}`);
+//     });
+//     const csvContent = csvRows.join('\n');
+//     const blob = new Blob([csvContent], { type: 'text/csv' });
+//     const url = URL.createObjectURL(blob);
+//     const a = document.createElement('a');
+//     a.href = url;
+//     a.download = `recruiter-report-${selectedClient}-${new Date().toISOString().split('T')[0]}.csv`;
+//     document.body.appendChild(a);
+//     a.click();
+//     document.body.removeChild(a);
+//     URL.revokeObjectURL(url);
+//   };
+
+//   // Client-wise breakdown data
+//   const clientBreakdown = useMemo(() => {
+//     return clients.map(client => {
+//       const clientApplicants = dummyApplicants.filter(a => a.client === client);
+//       const clientJobs = dummyJobs.filter(j => j.client === client);
+//       return {
+//         name: client,
+//         openJobs: clientJobs.filter(j => j.status === 'Open').length,
+//         totalCandidates: clientApplicants.length,
+//         interviewed: clientApplicants.filter(a => a.status === 'Interview').length,
+//         hired: clientApplicants.filter(a => a.status === 'Hired').length,
+//       };
+//     });
+//   }, [clients]);
+
+//   // Job Status Doughnut Chart
+//   const jobStatusData = useMemo(() => {
+//     const statusCounts = filteredJobs.reduce((acc, job) => {
+//       acc[job.status] = (acc[job.status] || 0) + 1;
+//       return acc;
+//     }, {} as Record<string, number>);
+//     return {
+//       labels: ['Open', 'Offered', 'Joined', 'Cancelled'],
+//       datasets: [{
+//         data: [
+//           statusCounts['Open'] || 0,
+//           statusCounts['Offered'] || 0,
+//           statusCounts['Joined'] || 0,
+//           statusCounts['Cancelled'] || 0,
+//         ],
+//         backgroundColor: ['#818CF8', '#FBBF24', '#34D399', '#F87171'],
+//         borderColor: '#FFFFFF',
+//         borderWidth: 2,
+//       }],
+//     };
+//   }, [filteredJobs]);
+
+//   // Candidate Pipeline by Client
+//   const candidatePipelineData = useMemo(() => {
+//     const clientGroups = selectedClient === 'All' ? clients : [selectedClient];
+//     const statusOrder = ['Applied', 'Tagged', 'Shortlisted', 'Interview', 'Offered', 'Hired'];
+//     return {
+//       labels: clientGroups,
+//       datasets: statusOrder.map((status, idx) => {
+//         const colors = ['#E0E7FF', '#C7D2FE', '#A5B4FC', '#818CF8', '#6366F1', '#34D399'];
+//         return {
+//           label: status,
+//           data: clientGroups.map(client => {
+//             const clientApplicants = dummyApplicants.filter(a =>
+//               (selectedClient === 'All' ? a.client === client : true)
+//             );
+//             return clientApplicants.filter(a => a.status === status).length;
+//           }),
+//           backgroundColor: colors[idx],
+//           borderColor: '#FFFFFF',
+//           borderWidth: 1,
+//         };
+//       }),
+//     };
+//   }, [selectedClient, clients]);
+
+//   // Recruitment Funnel
+//   const funnelData = useMemo(() => {
+//     const stages = [
+//       { label: 'Applied', count: filteredApplicants.length },
+//       { label: 'Tagged', count: filteredApplicants.filter(a => ['Tagged', 'Shortlisted', 'Interview', 'Offered', 'Hired'].includes(a.status)).length },
+//       { label: 'Interview', count: filteredApplicants.filter(a => ['Interview', 'Offered', 'Hired'].includes(a.status)).length },
+//       { label: 'Offered', count: filteredApplicants.filter(a => ['Offered', 'Hired'].includes(a.status)).length },
+//       { label: 'Hired', count: filteredApplicants.filter(a => a.status === 'Hired').length },
+//     ];
+//     return {
+//       labels: stages.map(s => s.label),
+//       datasets: [{
+//         label: 'Candidates',
+//         data: stages.map(s => s.count),
+//         backgroundColor: ['#E0E7FF', '#C7D2FE', '#A5B4FC', '#818CF8', '#34D399'],
+//         borderColor: '#FFFFFF',
+//         borderWidth: 2,
+//       }],
+//     };
+//   }, [filteredApplicants]);
+
+//   // Recruitment Trend
+//   const trendData = useMemo(() => ({
+//     labels: monthlyMetrics.map(m => m.month),
+//     datasets: [
+//       {
+//         label: 'Tagged',
+//         data: monthlyMetrics.map(m => m.tagged),
+//         borderColor: '#818CF8',
+//         backgroundColor: 'rgba(129,140,248,0.1)',
+//         fill: true,
+//         tension: 0.4,
+//         borderWidth: 2,
+//         pointRadius: 4,
+//         pointBackgroundColor: '#818CF8',
+//       },
+//       {
+//         label: 'Interviews',
+//         data: monthlyMetrics.map(m => m.interviews),
+//         borderColor: '#FBBF24',
+//         backgroundColor: 'rgba(251,191,36,0.1)',
+//         fill: true,
+//         tension: 0.4,
+//         borderWidth: 2,
+//         pointRadius: 4,
+//         pointBackgroundColor: '#FBBF24',
+//       },
+//       {
+//         label: 'Offers',
+//         data: monthlyMetrics.map(m => m.offers),
+//         borderColor: '#A78BFA',
+//         backgroundColor: 'rgba(167,139,250,0.1)',
+//         fill: true,
+//         tension: 0.4,
+//         borderWidth: 2,
+//         pointRadius: 4,
+//         pointBackgroundColor: '#A78BFA',
+//       },
+//       {
+//         label: 'Joined',
+//         data: monthlyMetrics.map(m => m.joined),
+//         borderColor: '#34D399',
+//         backgroundColor: 'rgba(52,211,153,0.1)',
+//         fill: true,
+//         tension: 0.4,
+//         borderWidth: 2,
+//         pointRadius: 4,
+//         pointBackgroundColor: '#34D399',
+//       },
+//     ],
+//   }), []);
+
+//   return (
+//     <main className="min-h-screen  to-indigo-50 ">
+//       <div className="w-full mx-auto space-y-4">
+//         {/* Header */}
+//         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-2">
+//           <div>
+//             <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">Recruitment Command Center</h1>
+//             <p className="text-sm text-slate-600 mt-1">Real-time insights • Performance metrics • Client analytics</p>
+//           </div>
+//           <div className="flex items-center gap-3">
+//             <div className="flex gap-2 bg-white rounded-lg p-1 shadow-sm border border-slate-200">
+//               {(['week', 'month', 'year'] as const).map(period => (
+//                 <button
+//                   key={period}
+//                   onClick={() => setTimePeriod(period)}
+//                   className={`px-4 py-1.5 rounded-md font-medium text-xs transition-all ${
+//                     timePeriod === period
+//                       ? 'bg-indigo-500 text-white shadow-sm'
+//                       : 'text-slate-600 hover:bg-slate-100'
+//                   }`}
+//                 >
+//                   {period.charAt(0).toUpperCase() + period.slice(1)}
+//                 </button>
+//               ))}
+//             </div>
+//             <button
+//               onClick={exportCSV}
+//               className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-lg shadow-md hover:shadow-lg transition-all text-sm font-semibold"
+//             >
+//               <Download className="h-4 w-4" />
+//               Export
+//             </button>
+//           </div>
+//         </div>
+
+//         {/* Top KPI Cards */}
+//         <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-3">
+//           <MetricCard icon={<Users className="h-5 w-5" />} value={kpiMetrics.totalApplicants} label="Total Candidates" color="indigo" />
+//           <MetricCard icon={<Briefcase className="h-5 w-5" />} value={filteredJobs.filter(j => j.status === 'Open').length} label="Open Positions" color="amber" />
+//           <MetricCard icon={<UserCheck className="h-5 w-5" />} value={filteredApplicants.filter(a => a.status === 'Hired').length} label="Hires" color="emerald" />
+//           <MetricCard icon={<Building2 className="h-5 w-5" />} value={activeClients} label="Active Clients" color="purple" />
+//           <MetricCard icon={<Target className="h-5 w-5" />} value={`${kpiMetrics.taggedToInterview}%`} label="Tag→Interview" color="blue" />
+//           <MetricCard icon={<Activity className="h-5 w-5" />} value={`${kpiMetrics.interviewToOffer}%`} label="Interview→Offer" color="rose" />
+//           <MetricCard icon={<Clock className="h-5 w-5" />} value={`${kpiMetrics.avgTimeToOffer}d`} label="Time to Offer" color="teal" />
+//           <MetricCard icon={<CheckCircle className="h-5 w-5" />} value={`${kpiMetrics.offerToJoin}%`} label="Offer→Join" color="green" />
+//         </div>
+
+//         {/* Client Pills */}
+//         <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
+//           <h3 className="text-xs font-semibold text-slate-600 mb-3 uppercase tracking-wide">Filter by Client</h3>
+//           <div className="flex flex-wrap gap-2">
+//             <button
+//               onClick={() => setSelectedClient('All')}
+//               className={`px-4 py-2 rounded-full font-medium text-sm transition-all ${
+//                 selectedClient === 'All'
+//                   ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-md'
+//                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+//               }`}
+//             >
+//               All Clients
+//             </button>
+//             {clients.map(client => (
+//               <button
+//                 key={client}
+//                 onClick={() => setSelectedClient(client)}
+//                 className={`px-4 py-2 rounded-full font-medium text-sm transition-all ${
+//                   selectedClient === client
+//                     ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-md'
+//                     : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+//                 }`}
+//               >
+//                 {client}
+//               </button>
+//             ))}
+//           </div>
+//         </div>
+
+//         {/* Main Charts Row */}
+//         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+//           {/* Trend Chart */}
+//           <div className="lg:col-span-2 bg-white rounded-xl p-5 shadow-sm border border-slate-200">
+//             <h3 className="text-base font-semibold text-slate-800 mb-4">Recruitment Performance Trend</h3>
+//             <div className="h-64">
+//               <Line data={trendData} options={{
+//                 responsive: true,
+//                 maintainAspectRatio: false,
+//                 animation: { duration: 800 },
+//                 plugins: {
+//                   legend: {
+//                     display: true,
+//                     position: 'bottom',
+//                     labels: { padding: 12, font: { size: 11 }, usePointStyle: true, pointStyle: 'circle' }
+//                   }
+//                 },
+//                 scales: {
+//                   y: { beginAtZero: true, grid: { color: '#F1F5F9' }, ticks: { font: { size: 10 }, color: '#64748B' } },
+//                   x: { grid: { display: false }, ticks: { font: { size: 10 }, color: '#64748B' } }
+//                 }
+//               }} />
+//             </div>
+//           </div>
+
+//           {/* Job Status Doughnut */}
+//           <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
+//             <h3 className="text-base font-semibold text-slate-800 mb-4">Job Status Distribution</h3>
+//             <div className="h-64 flex items-center justify-center">
+//               <Doughnut
+//                 data={jobStatusData}
+//                 options={{
+//                   responsive: true,
+//                   maintainAspectRatio: false,
+//                   cutout: '65%',
+//                   animation: { duration: 800 },
+//                   plugins: {
+//                     legend: {
+//                       position: 'bottom',
+//                       labels: { padding: 10, font: { size: 11 }, usePointStyle: true, pointStyle: 'circle' }
+//                     }
+//                   }
+//                 }}
+//               />
+//             </div>
+//           </div>
+//         </div>
+
+//         {/* Pipeline and Funnel */}
+//         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+//           {/* Candidate Pipeline */}
+//           <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
+//             <h3 className="text-base font-semibold text-slate-800 mb-4">Candidate Pipeline by Stage</h3>
+//             <div className="h-64">
+//               <Bar
+//                 data={candidatePipelineData}
+//                 options={{
+//                   responsive: true,
+//                   maintainAspectRatio: false,
+//                   animation: { duration: 800 },
+//                   plugins: {
+//                     legend: { position: 'bottom', labels: { padding: 10, font: { size: 10 } } },
+//                   },
+//                   scales: {
+//                     x: { stacked: true, grid: { display: false }, ticks: { font: { size: 10 }, color: '#64748B' } },
+//                     y: { stacked: true, beginAtZero: true, grid: { color: '#F1F5F9' }, ticks: { stepSize: 1, font: { size: 10 }, color: '#64748B' } }
+//                   }
+//                 }}
+//               />
+//             </div>
+//           </div>
+
+//           {/* Recruitment Funnel */}
+//           <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
+//             <h3 className="text-base font-semibold text-slate-800 mb-4">Recruitment Funnel</h3>
+//             <div className="h-64">
+//               <Bar
+//                 data={funnelData}
+//                 options={{
+//                   responsive: true,
+//                   maintainAspectRatio: false,
+//                   indexAxis: 'y',
+//                   animation: { duration: 800 },
+//                   plugins: {
+//                     legend: { display: false },
+//                   },
+//                   scales: {
+//                     x: { beginAtZero: true, grid: { color: '#F1F5F9' }, ticks: { stepSize: 1, font: { size: 10 }, color: '#64748B' } },
+//                     y: { grid: { display: false }, ticks: { font: { size: 10 }, color: '#64748B' } }
+//                   }
+//                 }}
+//               />
+//             </div>
+//           </div>
+//         </div>
+
+//         {/* Client Breakdown Table */}
+//         <div className="bg-white rounded-xl p-5 shadow-sm border border-slate-200">
+//           <h3 className="text-base font-semibold text-slate-800 mb-4">Client-wise Breakdown</h3>
+//           <div className="overflow-x-auto">
+//             <table className="w-full text-sm">
+//               <thead>
+//                 <tr className="border-b border-slate-200">
+//                   <th className="text-left py-3 px-4 font-semibold text-slate-600">Client</th>
+//                   <th className="text-center py-3 px-4 font-semibold text-slate-600">Open Jobs</th>
+//                   <th className="text-center py-3 px-4 font-semibold text-slate-600">Total Candidates</th>
+//                   <th className="text-center py-3 px-4 font-semibold text-slate-600">Interviewed</th>
+//                   <th className="text-center py-3 px-4 font-semibold text-slate-600">Hired</th>
+//                 </tr>
+//               </thead>
+//               <tbody>
+//                 {clientBreakdown.map((client, idx) => (
+//                   <tr key={idx} className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
+//                     <td className="py-3 px-4 font-medium text-slate-800">{client.name}</td>
+//                     <td className="py-3 px-4 text-center">
+//                       <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 font-semibold text-xs">
+//                         {client.openJobs}
+//                       </span>
+//                     </td>
+//                     <td className="py-3 px-4 text-center">
+//                       <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-semibold text-xs">
+//                         {client.totalCandidates}
+//                       </span>
+//                     </td>
+//                     <td className="py-3 px-4 text-center">
+//                       <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-100 text-amber-700 font-semibold text-xs">
+//                         {client.interviewed}
+//                       </span>
+//                     </td>
+//                     <td className="py-3 px-4 text-center">
+//                       <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 font-semibold text-xs">
+//                         {client.hired}
+//                       </span>
+//                     </td>
+//                   </tr>
+//                 ))}
+//               </tbody>
+//             </table>
+//           </div>
+//         </div>
+//       </div>
+//     </main>
+//   );
+// }
+
+// interface MetricCardProps {
+//   icon: React.ReactNode;
+//   value: string | number;
+//   label: string;
+//   color: string;
+// }
+
+// function MetricCard({ icon, value, label, color }: MetricCardProps) {
+//   const colorMap: Record<string, string> = {
+//     indigo: 'from-indigo-500 to-indigo-600',
+//     amber: 'from-amber-500 to-amber-600',
+//     emerald: 'from-emerald-500 to-emerald-600',
+//     purple: 'from-purple-500 to-purple-600',
+//     blue: 'from-blue-500 to-blue-600',
+//     rose: 'from-rose-500 to-rose-600',
+//     teal: 'from-teal-500 to-teal-600',
+//     green: 'from-green-500 to-green-600',
+//   };
+
+//   return (
+//     <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200 hover:shadow-md transition-all">
+//       <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${colorMap[color]} flex items-center justify-center text-white mb-3 shadow-sm`}>
+//         {icon}
+//       </div>
+//       <div className="text-2xl font-bold text-slate-800 mb-1">{value}</div>
+//       <div className="text-xs text-slate-600 font-medium">{label}</div>
+//     </div>
+//   );
+// }
+/*eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale } from 'chart.js';
-import { Pie, Bar } from 'react-chartjs-2';
-import { useState } from 'react';
-import { Users, Briefcase, Calendar, Activity, FileText, Award } from 'lucide-react';
 
-// Register Chart.js components
-ChartJS.register(ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale);
+import {
+  ActiveElement,
+  ArcElement,
+  BarElement,
+  CategoryScale,
+  ChartEvent,
+  Chart as ChartJS,
+  Filler,
+  Legend,
+  LinearScale,
+  LineElement,
+  PointElement,
+  Tooltip,
+} from 'chart.js';
+import {
+  Briefcase,
+  Building2,
+  Calendar,
+  Download,
+  Filter,
+  TrendingUp,
+  UserCheck,
+  Users,
+} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useMemo, useState } from 'react';
+import { Bar, Doughnut, Line } from 'react-chartjs-2';
 
-// Updated JobApplicant interface with diversity fields
+ChartJS.register(
+  ArcElement,
+  Tooltip,
+  Legend,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+  LineElement,
+  PointElement,
+  Filler,
+);
+
 interface JobApplicant {
   id: string;
   name: string;
   email: string;
   job_title: string;
-  status: 'Open' | 'Shortlisted' | 'Assessment Stage' | 'Interview Stage' | 'Closed' | 'Rejected' | 'Hired';
-  joined?: boolean;
-  gender?: 'Male' | 'Female' | 'Non-binary' | 'Prefer not to say'; // Added for diversity
-  ethnicity?: 'Asian' | 'Black' | 'Hispanic' | 'White' | 'Other'; // Added for diversity
-  ageGroup?: '18-24' | '25-34' | '35-44' | '45+'; // Added for diversity
-  location?: string; // Added for diversity (geographic diversity)
+  client: string;
+  status: 'Applied' | 'Tagged' | 'Shortlisted' | 'Interview' | 'Offered' | 'Hired' | 'Rejected';
+  appliedDate: string;
+  lastUpdated: string;
 }
 
-// JobOpening interface (unchanged)
 interface JobOpening {
   id: string;
   title: string;
-  company: string;
+  client: string;
   location: string;
-  experience: string;
-  department: string;
-  status: 'Open' | 'Closed';
-  applicants: number;
+  status: 'Open' | 'Offered' | 'Joined' | 'Cancelled';
   positions: number;
+  createdDate: string;
 }
 
-interface Activity {
-  id: string;
-  action: string;
-  timestamp: string;
+interface MetricData {
+  month: string;
+  tagged: number;
+  interviews: number;
+  offers: number;
+  joined: number;
 }
 
-interface Event {
-  id: string;
-  title: string;
-  date: string;
-}
-
-// Updated dummyApplicants with diverse data
 const dummyApplicants: JobApplicant[] = [
-  { id: '1', name: 'John Doe', email: 'john.doe@example.com', job_title: 'Software Engineer', status: 'Open', gender: 'Male', ethnicity: 'White', ageGroup: '25-34', location: 'USA' },
-  { id: '2', name: 'Jane Smith', email: 'jane.smith@example.com', job_title: 'Product Manager', status: 'Hired', joined:false, gender: 'Female', ethnicity: 'Asian', ageGroup: '35-44', location: 'India' },
-  { id: '3', name: 'Alice Johnson', email: 'alice.j@example.com', job_title: 'Data Analyst', status: 'Assessment Stage', gender: 'Female', ethnicity: 'Black', ageGroup: '18-24', location: 'Canada' },
-  { id: '4', name: 'Bob Wilson', email: 'bob.wilson@example.com', job_title: 'UX Designer', status: 'Interview Stage', gender: 'Male', ethnicity: 'Hispanic', ageGroup: '45+', location: 'Mexico' },
-  { id: '5', name: 'Emma Brown', email: 'emma.brown@example.com', job_title: 'DevOps Engineer', status: 'Hired', joined: true, gender: 'Non-binary', ethnicity: 'Other', ageGroup: '25-34', location: 'UK' },
-  { id: '6', name: 'Michael Lee', email: 'michael.lee@example.com', job_title: 'Software Engineer', status: 'Rejected', gender: 'Male', ethnicity: 'Asian', ageGroup: '35-44', location: 'China' },
-  { id: '7', name: 'Sarah Davis', email: 'sarah.davis@example.com', job_title: 'Marketing Manager', status: 'Closed', gender: 'Female', ethnicity: 'White', ageGroup: '45+', location: 'Australia' },
-  { id: '8', name: 'David Miller', email: 'david.miller@example.com', job_title: 'Data Scientist', status: 'Shortlisted', gender: 'Male', ethnicity: 'Black', ageGroup: '25-34', location: 'South Africa' },
-  { id: '9', name: 'Laura Taylor', email: 'laura.taylor@example.com', job_title: 'Product Manager', status: 'Assessment Stage', gender: 'Female', ethnicity: 'Hispanic', ageGroup: '18-24', location: 'Spain' },
-  { id: '10', name: 'James White', email: 'james.white@example.com', job_title: 'Software Engineer', status: 'Hired',joined:true, gender: 'Prefer not to say', ethnicity: 'Other', ageGroup: '35-44', location: 'Germany' },
-  { id: '11', name: 'Emily Clark', email: 'emily.clark@example.com', job_title: 'Data Engineer', status: 'Hired', joined: false, gender: 'Female', ethnicity: 'Asian', ageGroup: '25-34', location: 'Japan' },
+  { id: '1', name: 'John Doe', email: 'john@example.com', job_title: 'Software Engineer', client: 'TechCorp', status: 'Applied', appliedDate: '2025-09-15', lastUpdated: '2025-09-15' },
+  { id: '2', name: 'Jane Smith', email: 'jane@example.com', job_title: 'Product Manager', client: 'InnovateLtd', status: 'Hired', appliedDate: '2025-08-10', lastUpdated: '2025-10-01' },
+  { id: '3', name: 'Alice Johnson', email: 'alice@example.com', job_title: 'Data Analyst', client: 'DataVision', status: 'Interview', appliedDate: '2025-09-20', lastUpdated: '2025-09-28' },
+  { id: '4', name: 'Bob Wilson', email: 'bob@example.com', job_title: 'UX Designer', client: 'DesignHub', status: 'Shortlisted', appliedDate: '2025-09-25', lastUpdated: '2025-09-27' },
+  { id: '5', name: 'Emma Brown', email: 'emma@example.com', job_title: 'DevOps Engineer', client: 'CloudSys', status: 'Offered', appliedDate: '2025-08-15', lastUpdated: '2025-09-30' },
+  { id: '6', name: 'Michael Lee', email: 'michael@example.com', job_title: 'Software Engineer', client: 'TechCorp', status: 'Tagged', appliedDate: '2025-09-18', lastUpdated: '2025-09-22' },
+  { id: '7', name: 'Sarah Davis', email: 'sarah@example.com', job_title: 'Marketing Manager', client: 'InnovateLtd', status: 'Rejected', appliedDate: '2025-08-20', lastUpdated: '2025-09-05' },
+  { id: '8', name: 'David Miller', email: 'david@example.com', job_title: 'Data Scientist', client: 'DataVision', status: 'Interview', appliedDate: '2025-09-22', lastUpdated: '2025-09-29' },
+  { id: '9', name: 'Laura Taylor', email: 'laura@example.com', job_title: 'Product Manager', client: 'TechCorp', status: 'Shortlisted', appliedDate: '2025-09-12', lastUpdated: '2025-09-25' },
+  { id: '10', name: 'James White', email: 'james@example.com', job_title: 'Software Engineer', client: 'CloudSys', status: 'Hired', appliedDate: '2025-08-05', lastUpdated: '2025-09-28' },
 ];
 
-// Updated dummyJobOpenings to align with applicant data
-const dummyJobOpenings: JobOpening[] = [
-  { id: '1', title: 'Software Engineer', company: 'TechCorp', location: 'Bangalore, India', experience: '2-5 years', department: 'Engineering', status: 'Open', applicants: 3, positions: 3 },
-  { id: '2', title: 'Product Manager', company: 'Innovate Ltd', location: 'Mumbai, India', experience: '3-7 years', department: 'Product', status: 'Open', applicants: 2, positions: 2 },
-  { id: '3', title: 'Data Analyst', company: 'DataVision', location: 'Delhi, India', experience: '1-3 years', department: 'Analytics', status: 'Open', applicants: 1, positions: 1 },
-  { id: '4', title: 'UX Designer', company: 'DesignHub', location: 'Pune, India', experience: '2-4 years', department: 'Design', status: 'Closed', applicants: 1, positions: 1 },
-  { id: '5', title: 'DevOps Engineer', company: 'CloudSys', location: 'Hyderabad, India', experience: '4-8 years', department: 'Engineering', status: 'Open', applicants: 1, positions: 2 },
-  { id: '6', title: 'Data Scientist', company: 'DataVision', location: 'Chennai, India', experience: '2-5 years', department: 'Analytics', status: 'Open', applicants: 1, positions: 1 },
-  { id: '7', title: 'Marketing Manager', company: 'Innovate Ltd', location: 'Kolkata, India', experience: '5-10 years', department: 'Marketing', status: 'Closed', applicants: 1, positions: 1 },
-  { id: '8', title: 'Data Engineer', company: 'TechCorp', location: 'Bangalore, India', experience: '3-6 years', department: 'Engineering', status: 'Open', applicants: 1, positions: 1 },
+const dummyJobs: JobOpening[] = [
+  { id: '1', title: 'Software Engineer', client: 'TechCorp', location: 'Bangalore', status: 'Open', positions: 3, createdDate: '2025-08-01' },
+  { id: '2', title: 'Product Manager', client: 'InnovateLtd', location: 'Mumbai', status: 'Open', positions: 2, createdDate: '2025-08-05' },
+  { id: '3', title: 'Data Analyst', client: 'DataVision', location: 'Delhi', status: 'Open', positions: 1, createdDate: '2025-08-10' },
+  { id: '4', title: 'UX Designer', client: 'DesignHub', location: 'Pune', status: 'Offered', positions: 1, createdDate: '2025-08-15' },
+  { id: '5', title: 'DevOps Engineer', client: 'CloudSys', location: 'Hyderabad', status: 'Joined', positions: 2, createdDate: '2025-07-20' },
 ];
 
-const dummyActivities: Activity[] = [
-  { id: '1', action: 'John Doe moved to Assessment Stage', timestamp: '2025-10-01 10:30 AM' },
-  { id: '2', action: 'Software Engineer job opened', timestamp: '2025-09-30 3:15 PM' },
-  { id: '3', action: 'Jane Smith shortlisted', timestamp: '2025-09-29 9:00 AM' },
+const monthlyMetrics: MetricData[] = [
+  { month: 'Jul', tagged: 12, interviews: 8, offers: 5, joined: 3 },
+  { month: 'Aug', tagged: 15, interviews: 11, offers: 7, joined: 5 },
+  { month: 'Sep', tagged: 18, interviews: 13, offers: 9, joined: 6 },
+  { month: 'Oct', tagged: 10, interviews: 7, offers: 4, joined: 2 },
 ];
 
-const dummyEvents: Event[] = [
-  { id: '1', title: 'Interview with John Doe', date: '2025-10-02 10:00 AM' },
-  { id: '2', title: 'Assessment for Jane Smith', date: '2025-10-03 2:00 PM' },
-];
+export default function RecruiterDashboard() {
+  const router = useRouter();
+  const [selectedClient, setSelectedClient] = useState<string>('All');
+  const [timePeriod, setTimePeriod] = useState<'week' | 'month' | 'year'>('month');
 
-// QuickStats component
-const QuickStats: React.FC<{ applicants: JobApplicant[] }> = ({ applicants }) => {
-  const totalApplicants = applicants.length;
-  const pendingActions = applicants.filter((a) => a.status === 'Open' || a.status === 'Shortlisted' || a.status === 'Assessment Stage' || a.status === 'Interview Stage').length;
-  const recentStatusChanges = dummyActivities.length;
+  const clients = useMemo(() => ['All', ...Array.from(new Set(dummyJobs.map(j => j.client)))], []);
+  const filteredApplicants = useMemo(() => selectedClient === 'All' ? dummyApplicants : dummyApplicants.filter(a => a.client === selectedClient), [selectedClient]);
+  const filteredJobs = useMemo(() => selectedClient === 'All' ? dummyJobs : dummyJobs.filter(j => j.client === selectedClient), [selectedClient]);
 
-  return (
-    <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100">
-      <h2 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2">
-        <Award className="h-5 w-5 text-blue-600" />
-        Quick Stats
-      </h2>
-      <div className="space-y-4">
-        <div>
-          <p className="text-sm text-gray-600">Total Applicants</p>
-          <p className="text-2xl font-bold text-gray-900">{totalApplicants}</p>
-        </div>
-        <div>
-          <p className="text-sm text-gray-600">Pending Actions</p>
-          <p className="text-2xl font-bold text-gray-900">{pendingActions}</p>
-        </div>
-        <div>
-          <p className="text-sm text-gray-600">Recent Status Changes</p>
-          <p className="text-2xl font-bold text-gray-900">{recentStatusChanges}</p>
-        </div>
-      </div>
-    </div>
-  );
-};
+  const activeClients = useMemo(() => {
+    const clientsWithOpenJobs = new Set(dummyJobs.filter(j => j.status === 'Open').map(j => j.client));
+    return clientsWithOpenJobs.size;
+  }, []);
 
-// OfferLetterTracking component
-const OfferLetterTracking: React.FC<{ applicants: JobApplicant[] }> = ({ applicants }) => {
-  const hiredApplicants = applicants.filter((a) => a.status === 'Hired');
-  const joinedCount = hiredApplicants.filter((a) => a.joined).length;
+  const kpiMetrics = useMemo(() => {
+    const total = filteredApplicants.length;
+    const tagged = filteredApplicants.filter(a => a.status === 'Tagged').length;
+    const interviews = filteredApplicants.filter(a => a.status === 'Interview').length;
+    const offered = filteredApplicants.filter(a => a.status === 'Offered').length;
+    const hired = filteredApplicants.filter(a => a.status === 'Hired').length;
+    return {
+      totalApplicants: total,
+      taggedToInterview: tagged > 0 ? ((interviews / tagged) * 100).toFixed(1) : '0',
+      interviewToOffer: interviews > 0 ? ((offered / interviews) * 100).toFixed(1) : '0',
+      offerToJoin: offered > 0 ? ((hired / offered) * 100).toFixed(1) : '0',
+    };
+  }, [filteredApplicants]);
 
-  return (
-    <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100">
-      <h2 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2">
-        <FileText className="h-5 w-5 text-blue-600" />
-        Offer Letter Tracking
-      </h2>
-      <div className="mb-4">
-        <p className="text-sm text-gray-600">
-          Offer Letters Sent: <span className="font-medium">{hiredApplicants.length}</span>
-        </p>
-        <p className="text-sm text-gray-600">
-          Joined: <span className="font-medium">{joinedCount}</span> ({((joinedCount / hiredApplicants.length) * 100 || 0).toFixed(1)}%)
-        </p>
-      </div>
-      {hiredApplicants.length === 0 ? (
-        <p className="text-center text-gray-600">No offer letters sent.</p>
-      ) : (
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-blue-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">Job Title</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">Joined</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {hiredApplicants.map((applicant) => (
-              <tr key={applicant.id} className="hover:bg-blue-50 transition-colors">
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{applicant.name}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{applicant.job_title}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span
-                    className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      applicant.joined ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                    }`}
-                  >
-                    {applicant.joined ? 'Joined' : 'Not Joined'}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </div>
-  );
-};
+  const exportCSV = () => {
+    const csvRows = [];
+    csvRows.push('Name,Email,Job Title,Client,Status,Applied Date,Last Updated');
+    filteredApplicants.forEach(a => {
+      csvRows.push(`${a.name},${a.email},${a.job_title},${a.client},${a.status},${a.appliedDate},${a.lastUpdated}`);
+    });
+    const csvContent = csvRows.join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `recruiter-applicants-${selectedClient}-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
-// DashboardCards component
-const DashboardCards: React.FC<{ applicants: JobApplicant[]; jobOpenings: JobOpening[] }> = ({ applicants, jobOpenings }) => (
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-    <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-lg shadow-md hover:shadow-xl transition-shadow">
-      <h3 className="text-lg font-semibold">Active Job Openings</h3>
-      <p className="text-2xl">{jobOpenings.filter((job) => job.status === 'Open').length}</p>
-    </div>
-    <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-lg shadow-md hover:shadow-xl transition-shadow">
-      <h3 className="text-lg font-semibold">In Assessment</h3>
-      <p className="text-2xl">{applicants.filter((a) => a.status === 'Assessment Stage').length}</p>
-    </div>
-    <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-lg shadow-md hover:shadow-xl transition-shadow">
-      <h3 className="text-lg font-semibold">Hired This Month</h3>
-      <p className="text-2xl">{applicants.filter((a) => a.status === 'Hired').length}</p>
-    </div>
-  </div>
-);
-
-// JobOpeningsTable component
-const JobOpeningsTable: React.FC<{ jobOpenings: JobOpening[] }> = ({ jobOpenings }) => (
-  <div className="bg-white shadow-lg rounded-xl overflow-hidden border border-gray-100">
-    <div className="flex justify-between items-center p-6 border-b border-gray-100">
-      <h2 className="text-xl font-bold text-blue-900 flex items-center gap-2">
-        <Briefcase className="h-5 w-5 text-blue-600" />
-        Job Openings
-      </h2>
-      <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-        Create Job Opening
-      </button>
-    </div>
-    <table className="min-w-full divide-y divide-gray-200">
-      <thead className="bg-blue-50">
-        <tr>
-          <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">Job Title</th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">Department</th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">Status</th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">Positions</th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">Applicants</th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">Actions</th>
-        </tr>
-      </thead>
-      <tbody className="bg-white divide-y divide-gray-200">
-        {jobOpenings.map((job) => (
-          <tr key={job.id} className="hover:bg-blue-50 transition-colors">
-            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{job.title}</td>
-            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{job.department}</td>
-            <td className="px-6 py-4 whitespace-nowrap">
-              <span
-                className={`px-2 py-1 text-xs font-medium rounded-full ${
-                  job.status === 'Open' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                }`}
-              >
-                {job.status}
-              </span>
-            </td>
-            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{job.positions}</td>
-            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{job.applicants}</td>
-            <td className="px-6 py-4 whitespace-nowrap">
-              <button className="text-blue-600 hover:text-blue-800 text-sm">Edit</button>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
-);
-
-// StatusBarChart component with enhanced hover effects
-const StatusBarChart: React.FC<{ applicants: JobApplicant[]; jobOpenings: JobOpening[] }> = ({ applicants, jobOpenings }) => {
-  const statusCounts = applicants.reduce(
-    (acc, applicant) => {
-      acc[applicant.status] = (acc[applicant.status] || 0) + 1;
+  const jobStatusData = useMemo(() => {
+    const statusCounts = filteredJobs.reduce((acc, job) => {
+      acc[job.status] = (acc[job.status] || 0) + 1;
       return acc;
-    },
-    {} as Record<string, number>
-  );
-
-  const data = {
-    labels: ['Open', 'Shortlisted', 'Assessment Stage', 'Interview Stage', 'Hired', 'Closed', 'Rejected'],
-    datasets: [
-      {
-        label: 'Applicants',
+    }, {} as Record<string, number>);
+    return {
+      labels: ['Open', 'Offered', 'Joined', 'Cancelled'],
+      datasets: [{
         data: [
           statusCounts['Open'] || 0,
-          statusCounts['Shortlisted'] || 0,
-          statusCounts['Assessment Stage'] || 0,
-          statusCounts['Interview Stage'] || 0,
-          statusCounts['Hired'] || 0,
-          statusCounts['Closed'] || 0,
-          statusCounts['Rejected'] || 0,
+          statusCounts['Offered'] || 0,
+          statusCounts['Joined'] || 0,
+          statusCounts['Cancelled'] || 0,
         ],
-        backgroundColor: [
-          '#E5E7EB',
-          '#3B82F6',
-          '#FBBF24',
-          '#F59E0B',
-          '#10B981',
-          '#EF4444',
-          '#DC2626',
-        ],
-        borderColor: ['#FFFFFF'],
-        borderWidth: 1,
-        hoverBackgroundColor: [
-          '#D1D5DB',
-          '#2563EB',
-          '#D97706',
-          '#D97706',
-          '#059669',
-          '#DC2626',
-          '#B91C1C',
-        ],
-        hoverBorderWidth: 2,
-        hoverBorderColor: '#1F2937',
-      },
-    ],
-  };
-
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { 
-        position: 'bottom' as const, 
-        labels: { 
-          font: { size: 14, family: 'Inter, sans-serif', weight: '500' }, 
-          color: '#1F2937', 
-          padding: 20, 
-          boxWidth: 20, 
-          usePointStyle: true 
-        } 
-      },
-      tooltip: {
-        enabled: true,
-        backgroundColor: '#1F2937',
-        titleFont: { size: 16, family: 'Inter, sans-serif', weight: '600' },
-        bodyFont: { size: 14, family: 'Inter, sans-serif' },
-        padding: 12,
-        cornerRadius: 6,
-        callbacks: {
-          label: (context: any) => `${context.label}: ${context.raw} applicants`,
-        },
-      },
-      title: {
-        display: true,
-        text: 'Applicant Status Distribution Across Jobs',
-        font: { size: 18, family: 'Inter, sans-serif', weight: '600' },
-        color: '#1F2937',
-        padding: { top: 10, bottom: 20 },
-      },
-      animation: { duration: 1200, easing: 'easeOutQuart' },
-    },
-    layout: { padding: { left: 20, right: 20, top: 20, bottom: 20 } },
-    onHover: (event: any, chartElement: any) => {
-      if (event.native) {
-        const target = event.native.target as HTMLElement;
-        if (chartElement.length > 0) {
-          target.style.cursor = 'pointer';
-        } else {
-          target.style.cursor = 'default';
-        }
-      }
-    },
-  };
-
-  return (
-    <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100 relative overflow-hidden group">
-      <h3 className="text-lg font-bold text-blue-900 mb-4 flex items-center gap-2">
-        <Users className="h-5 w-5 text-blue-600" />
-        Applicant Status Distribution
-      </h3>
-      <div className="h-[400px] flex items-center justify-center relative mb-6">
-        <div className="absolute inset-0 bg-gradient-to-b from-blue-50/20 to-transparent rounded-lg group-hover:from-blue-100/30 transition-colors" />
-        <Pie data={data} options={options} />
-      </div>
-    </div>
-  );
-};
-
-// Enhanced CandidateStatusBarChart component with hover effects
-const CandidateStatusBarChart: React.FC<{ applicants: JobApplicant[]; jobOpenings: JobOpening[] }> = ({ applicants, jobOpenings }) => {
-  const jobStats = jobOpenings.map((job) => {
-    const jobApplicants = applicants.filter((a) => a.job_title === job.title);
-    return {
-      company: job.company,
-      title: job.title,
-      vacancies: job.positions,
-      location: job.location,
-      experience: job.experience,
-      totalCandidates: jobApplicants.length,
-      shortlisted: jobApplicants.filter((a) => a.status === 'Shortlisted').length,
-      assessment: jobApplicants.filter((a) => a.status === 'Assessment Stage').length,
-      interview: jobApplicants.filter((a) => a.status === 'Interview Stage').length,
-      offered: jobApplicants.filter((a) => a.status === 'Hired').length,
-      rejected: jobApplicants.filter((a) => a.status === 'Rejected').length,
-      joined: jobApplicants.filter((a) => a.status === 'Hired' && a.joined).length,
+        backgroundColor: ['#6366F1', '#F59E0B', '#10B981', '#EF4444'],
+        borderColor: '#FFFFFF',
+        borderWidth: 2,
+      }],
     };
-  });
+  }, [filteredJobs]);
 
-  const data = {
-    labels: jobStats.map((job) => `${job.title} (${job.company})`), // Combine title and company for x-axis
+  const candidatePipelineData = useMemo(() => {
+    const clientGroups = selectedClient === 'All'
+      ? clients.filter(c => c !== 'All')
+      : [selectedClient];
+    const statusOrder = ['Applied', 'Tagged', 'Shortlisted', 'Interview', 'Offered', 'Hired'];
+    return {
+      labels: clientGroups,
+      datasets: statusOrder.map((status, idx) => {
+        const colors = ['#E0E7FF', '#C7D2FE', '#A5B4FC', '#818CF8', '#6366F1', '#10B981'];
+        return {
+          label: status,
+          data: clientGroups.map(client => {
+            const clientApplicants = dummyApplicants.filter(a => a.client === client);
+            return clientApplicants.filter(a => a.status === status).length;
+          }),
+          backgroundColor: colors[idx],
+          borderColor: '#FFFFFF',
+          borderWidth: 1,
+        };
+      }),
+    };
+  }, [selectedClient, clients]);
+
+  const funnelData = useMemo(() => {
+    const stages = [
+      { label: 'Applied', count: filteredApplicants.length },
+      { label: 'Tagged', count: filteredApplicants.filter(a => ['Tagged', 'Shortlisted', 'Interview', 'Offered', 'Hired'].includes(a.status)).length },
+      { label: 'Interview', count: filteredApplicants.filter(a => ['Interview', 'Offered', 'Hired'].includes(a.status)).length },
+      { label: 'Offered', count: filteredApplicants.filter(a => ['Offered', 'Hired'].includes(a.status)).length },
+      { label: 'Hired', count: filteredApplicants.filter(a => a.status === 'Hired').length },
+    ];
+    return {
+      labels: stages.map(s => s.label),
+      datasets: [{
+        label: 'Candidates',
+        data: stages.map(s => s.count),
+        backgroundColor: ['#E0E7FF', '#C7D2FE', '#A5B4FC', '#818CF8', '#10B981'],
+        borderColor: '#FFFFFF',
+        borderWidth: 1,
+        borderRadius: 4,
+      }],
+    };
+  }, [filteredApplicants]);
+
+  const trendData = useMemo(() => ({
+    labels: monthlyMetrics.map(m => m.month),
     datasets: [
       {
-        label: 'Total Candidates',
-        data: jobStats.map((job) => job.totalCandidates),
-        backgroundColor: '#3B82F6',
-        borderColor: '#2563EB',
-        borderWidth: 1,
-        hoverBackgroundColor: '#2563EB',
-        hoverBorderWidth: 2,
-        hoverBorderColor: '#1F2937',
+        label: 'Tagged',
+        data: monthlyMetrics.map(m => m.tagged),
+        borderColor: '#6366F1',
+        backgroundColor: 'rgba(99,102,241,0.08)',
+        fill: true,
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: '#6366F1',
       },
       {
-        label: 'Shortlisted',
-        data: jobStats.map((job) => job.shortlisted),
-        backgroundColor: '#FBBF24',
-        borderColor: '#D97706',
-        borderWidth: 1,
-        hoverBackgroundColor: '#D97706',
-        hoverBorderWidth: 2,
-        hoverBorderColor: '#1F2937',
+        label: 'Interviews',
+        data: monthlyMetrics.map(m => m.interviews),
+        borderColor: '#F59E0B',
+        backgroundColor: 'rgba(245,158,11,0.08)',
+        fill: true,
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: '#F59E0B',
       },
       {
-        label: 'Assessment',
-        data: jobStats.map((job) => job.assessment),
-        backgroundColor: '#F59E0B',
-        borderColor: '#D97706',
-        borderWidth: 1,
-        hoverBackgroundColor: '#D97706',
-        hoverBorderWidth: 2,
-        hoverBorderColor: '#1F2937',
-      },
-      {
-        label: 'Interview',
-        data: jobStats.map((job) => job.interview),
-        backgroundColor: '#10B981',
-        borderColor: '#059669',
-        borderWidth: 1,
-        hoverBackgroundColor: '#059669',
-        hoverBorderWidth: 2,
-        hoverBorderColor: '#1F2937',
-      },
-      {
-        label: 'Offered',
-        data: jobStats.map((job) => job.offered),
-        backgroundColor: '#34D399',
-        borderColor: '#059669',
-        borderWidth: 1,
-        hoverBackgroundColor: '#059669',
-        hoverBorderWidth: 2,
-        hoverBorderColor: '#1F2937',
-      },
-      {
-        label: 'Rejected',
-        data: jobStats.map((job) => job.rejected),
-        backgroundColor: '#EF4444',
-        borderColor: '#DC2626',
-        borderWidth: 1,
-        hoverBackgroundColor: '#DC2626',
-        hoverBorderWidth: 2,
-        hoverBorderColor: '#1F2937',
+        label: 'Offers',
+        data: monthlyMetrics.map(m => m.offers),
+        borderColor: '#8B5CF6',
+        backgroundColor: 'rgba(139,92,246,0.08)',
+        fill: true,
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: '#8B5CF6',
       },
       {
         label: 'Joined',
-        data: jobStats.map((job) => job.joined),
-        backgroundColor: '#6EE7B7',
-        borderColor: '#059669',
-        borderWidth: 1,
-        hoverBackgroundColor: '#059669',
-        hoverBorderWidth: 2,
-        hoverBorderColor: '#1F2937',
+        data: monthlyMetrics.map(m => m.joined),
+        borderColor: '#10B981',
+        backgroundColor: 'rgba(16,185,129,0.08)',
+        fill: true,
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: '#10B981',
       },
     ],
+  }), []);
+
+  const handleJobStatusClick = (elements: any[]) => {
+    if (!elements.length) return;
+    const clickedIndex = elements[0].index;
+    const status = jobStatusData.labels[clickedIndex];
+    router.push(`/jobs/status/${status.toLowerCase()}`);
   };
 
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { 
-        position: 'top' as const, 
-        labels: { 
-          font: { size: 14, family: 'Inter, sans-serif' }, 
-          color: '#1F2937' 
-        } 
-      },
-      tooltip: {
-        callbacks: {
-          label: (context: any) => {
-            const job = jobStats[context.dataIndex];
-            return [
-              `Company: ${job.company}`,
-              `Job Title: ${job.title}`,
-              `Vacancies: ${job.vacancies}`,
-              `Location: ${job.location}`,
-              `Experience: ${job.experience}`,
-              `${context.label}: ${context.raw}`,
-            ];
-          },
-        },
-        backgroundColor: '#1F2937',
-        titleFont: { size: 16, family: 'Inter, sans-serif', weight: '600' },
-        bodyFont: { size: 14, family: 'Inter, sans-serif' },
-        padding: 12,
-        cornerRadius: 6,
-      },
-      title: {
-        display: true,
-        text: 'Candidate Status by Job Opening',
-        font: { size: 18, family: 'Inter, sans-serif' },
-        color: '#1F2937',
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        ticks: { stepSize: 1, color: '#1F2937' },
-        title: { display: true, text: 'Number of Candidates', font: { size: 14, family: 'Inter, sans-serif' }, color: '#1F2937' },
-      },
-      x: {
-        ticks: { color: '#1F2937' },
-        title: { display: true, text: 'Job Titles (Company)', font: { size: 14, family: 'Inter, sans-serif' }, color: '#1F2937' },
-      },
-    },
-    onHover: (event: any, chartElement: any) => {
-      if (event.native) {
-        const target = event.native.target as HTMLElement;
-        if (chartElement.length > 0) {
-          target.style.cursor = 'pointer';
-        } else {
-          target.style.cursor = 'default';
-        }
-      }
-    },
+  const handleCandidatePipelineClick = (elements: any[]) => {
+    if (!elements.length) return;
+    const datasetIndex = elements[0].datasetIndex;
+    const clientIndex = elements[0].index;
+    const client = candidatePipelineData.labels[clientIndex];
+    const status = candidatePipelineData.datasets[datasetIndex].label;
+    router.push(`/candidates?client=${client}&status=${status.toLowerCase()}`);
   };
 
-  return (
-    <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100 group">
-      <h3 className="text-lg font-bold text-blue-900 mb-4 flex items-center gap-2">
-        <Users className="h-5 w-5 text-blue-600" />
-        Candidate Status Breakdown
-      </h3>
-      <div className="h-[450px]">
-        <Bar data={data} options={options} />
-      </div>
-    </div>
-  );
+const chartHover = (event: ChartEvent, elements: ActiveElement[]) => {
+  const nativeEvent = event.native as unknown as MouseEvent;
+  const target = nativeEvent?.target as HTMLElement;
+  if (target) target.style.cursor = elements[0] ? 'pointer' : 'default';
 };
 
-// DiversityCharts component
-const DiversityCharts: React.FC<{ applicants: JobApplicant[] }> = ({ applicants }) => {
-  const genderCounts = applicants.reduce(
-    (acc, applicant) => {
-      const gender = applicant.gender || 'Unknown';
-      acc[gender] = (acc[gender] || 0) + 1;
-      return acc;
-    },
-    {} as Record<string, number>
-  );
-
-  const genderData = {
-    labels: Object.keys(genderCounts),
-    datasets: [
-      {
-        data: Object.values(genderCounts),
-        backgroundColor: ['#3B82F6', '#FBBF24', '#10B981', '#EF4444'],
-        borderColor: '#FFFFFF',
-        borderWidth: 1,
-      },
-    ],
-  };
-
-  const ethnicityCounts = applicants.reduce(
-    (acc, applicant) => {
-      const ethnicity = applicant.ethnicity || 'Unknown';
-      acc[ethnicity] = (acc[ethnicity] || 0) + 1;
-      return acc;
-    },
-    {} as Record<string, number>
-  );
-
-  const ethnicityData = {
-    labels: Object.keys(ethnicityCounts),
-    datasets: [
-      {
-        data: Object.values(ethnicityCounts),
-        backgroundColor: ['#3B82F6', '#FBBF24', '#10B981', '#EF4444', '#8B5CF6'],
-        borderColor: '#FFFFFF',
-        borderWidth: 1,
-      },
-    ],
-  };
-
-  const pieOptions = {
-    responsive: true,
-    plugins: {
-      legend: { position: 'bottom' as const, labels: { font: { size: 14, family: 'Inter, sans-serif' }, color: '#1F2937' } },
-      title: {
-        display: true,
-        font: { size: 18, family: 'Inter, sans-serif' },
-        color: '#1F2937',
-      },
-    },
-  };
 
   return (
-    <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100 mt-6">
-      <h2 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2">
-        <Users className="h-5 w-5 text-blue-600" />
-        Diversity Metrics
-      </h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <h3 className="text-lg font-semibold text-blue-900 mb-2">Gender Distribution</h3>
-          <Pie data={genderData} options={{ ...pieOptions, plugins: { ...pieOptions.plugins, title: { ...pieOptions.plugins.title, text: 'Gender Distribution' } } }} />
+    <main className="min-h-screen bg-slate-50">
+      <div className="w-full mx-auto space-y-4">
+        {/* Header - Compact */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h1 className="text-xl font-bold text-slate-800">Recruitment Analytics</h1>
+            <p className="text-xs text-slate-500 mt-0.5">Monitor performance and track hiring progress</p>
+          </div>
+          <button
+            type="button"
+            className="flex items-center justify-center gap-2 px-3 py-2 bg-white text-slate-700 rounded-lg shadow-sm border border-slate-200 hover:border-slate-300 transition-all text-xs font-medium"
+            onClick={exportCSV}
+          >
+            <Download className="h-3.5 w-3.5" />
+            Export Data
+          </button>
         </div>
-        <div>
-          <h3 className="text-lg font-semibold text-blue-900 mb-2">Ethnicity Distribution</h3>
-          <Pie data={ethnicityData} options={{ ...pieOptions, plugins: { ...pieOptions.plugins, title: { ...pieOptions.plugins.title, text: 'Ethnicity Distribution' } } }} />
-        </div>
-      </div>
-    </div>
-  );
-};
 
-// Updated JobOpeningsBreakdown component with improved UI
-const JobOpeningsBreakdown: React.FC<{ applicants: JobApplicant[]; jobOpenings: JobOpening[] }> = ({ applicants, jobOpenings }) => {
-  const jobStats = jobOpenings.map((job) => {
-    const jobApplicants = applicants.filter((applicant) => applicant.job_title === job.title);
-    return {
-      title: job.title,
-      positions: job.positions,
-      status: job.status,
-      total: jobApplicants.length,
-      open: jobApplicants.filter((a) => a.status === 'Open').length,
-      shortlisted: jobApplicants.filter((a) => a.status === 'Shortlisted').length,
-      assessment: jobApplicants.filter((a) => a.status === 'Assessment Stage').length,
-      interview: jobApplicants.filter((a) => a.status === 'Interview Stage').length,
-      hired: jobApplicants.filter((a) => a.status === 'Hired').length,
-      closed: jobApplicants.filter((a) => a.status === 'Closed').length,
-      rejected: jobApplicants.filter((a) => a.status === 'Rejected').length,
-    };
-  });
+        {/* Filters - Compact */}
+        <section className="bg-white p-3 rounded-lg shadow-sm border border-slate-200">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              <Filter className="h-3.5 w-3.5 text-slate-400" />
+              <span className="text-xs font-medium text-slate-600">Clients:</span>
+            </div>
+            
+            <select
+              value={selectedClient}
+              onChange={(e) => setSelectedClient(e.target.value)}
+              className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400 text-slate-700 bg-white"
+            >
+              {clients.map(client => (
+                <option key={client} value={client}>{client}</option>
+              ))}
+            </select>
 
-  return (
-    <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100 mt-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold text-blue-900 flex items-center gap-2">
-          <Briefcase className="h-5 w-5 text-blue-600" />
-          Job Openings Breakdown
-        </h2>
-        
-      </div>
-      
-      <div className="max-h-[500px] overflow-y-auto rounded-lg border border-gray-200">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gradient-to-r from-blue-50 to-blue-100 sticky top-0">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-blue-900 uppercase tracking-wider">Job Title</th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-blue-900 uppercase tracking-wider">Positions</th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-blue-900 uppercase tracking-wider">Status</th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-blue-900 uppercase tracking-wider">Total</th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-blue-900 uppercase tracking-wider">Open</th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-blue-900 uppercase tracking-wider">Shortlisted</th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-blue-900 uppercase tracking-wider">Assessment</th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-blue-900 uppercase tracking-wider">Interview</th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-blue-900 uppercase tracking-wider">Hired</th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-blue-900 uppercase tracking-wider">Closed</th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-blue-900 uppercase tracking-wider">Rejected</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {jobStats.map((job, index) => (
-              <tr 
-                key={job.title} 
-                className={`hover:bg-blue-50 transition-all duration-200 ${
-                  index % 2 === 0 ? 'bg-gray-50' : 'bg-white'
-                }`}
-              >
-                <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {job.title}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center font-semibold">
-                  {job.positions}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-center">
-                  <span
-                    className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-all ${
-                      job.status === 'Open' 
-                        ? 'bg-green-100 text-green-800 hover:bg-green-200' 
-                        : 'bg-red-100 text-red-800 hover:bg-red-200'
+            <div className="flex items-center gap-1.5 ml-auto">
+              <Calendar className="h-3.5 w-3.5 text-slate-400" />
+              <div className="flex gap-0.5 bg-slate-100 p-0.5 rounded-md">
+                {(['week', 'month', 'year'] as const).map(period => (
+                  <button
+                    key={period}
+                    type="button"
+                    onClick={() => setTimePeriod(period)}
+                    className={`px-2 py-1 rounded text-xs font-medium transition-all ${
+                      timePeriod === period
+                        ? 'bg-white text-indigo-600 shadow-sm'
+                        : 'text-slate-600 hover:text-slate-800'
                     }`}
                   >
-                    {job.status}
-                  </span>
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center font-bold ">
-                  {job.total}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center">
-                  <span className={`px-2 py-1 rounded ${job.open > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-500'}`}>
-                    {job.open}
-                  </span>
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center">
-                  <span className={`px-2 py-1 rounded ${job.shortlisted > 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-500'}`}>
-                    {job.shortlisted}
-                  </span>
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center">
-                  <span className={`px-2 py-1 rounded ${job.assessment > 0 ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-500'}`}>
-                    {job.assessment}
-                  </span>
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center">
-                  <span className={`px-2 py-1 rounded ${job.interview > 0 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'}`}>
-                    {job.interview}
-                  </span>
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center">
-                  <span className={`px-2 py-1 rounded ${job.hired > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-500'}`}>
-                    {job.hired}
-                  </span>
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center">
-                  <span className={`px-2 py-1 rounded ${job.closed > 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-500'}`}>
-                    {job.closed}
-                  </span>
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center">
-                  <span className={`px-2 py-1 rounded ${job.rejected > 0 ? 'bg-rose-100 text-rose-800' : 'bg-gray-100 text-gray-500'}`}>
-                    {job.rejected}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      
-      <div className="mt-4 flex justify-between items-center text-sm text-gray-600">
-        <div>
-          Showing <span className="font-semibold">{jobStats.length}</span> job openings
-        </div>
-        <div className="flex gap-4">
-          <span className="font-medium">Total Applicants: {applicants.length}</span>
-          <span className="font-medium">Open Positions: {jobOpenings.filter(job => job.status === 'Open').length}</span>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// RecentActivity component
-const RecentActivity: React.FC = () => (
-  <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100">
-    <h2 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2">
-      <Activity className="h-5 w-5 text-blue-600" />
-      Recent Activity
-    </h2>
-    <ul className="divide-y divide-gray-200 max-h-64 overflow-y-auto">
-      {dummyActivities.map((activity) => (
-        <li key={activity.id} className="py-2">
-          <p className="text-sm text-gray-900">{activity.action}</p>
-          <p className="text-xs text-gray-500">{activity.timestamp}</p>
-        </li>
-      ))}
-    </ul>
-  </div>
-);
-
-// ScheduleOverview component
-const ScheduleOverview: React.FC = () => (
-  <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100">
-    <h2 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2">
-      <Calendar className="h-5 w-5 text-blue-600" />
-      Upcoming Schedule
-    </h2>
-    <ul className="divide-y divide-gray-200 max-h-64 overflow-y-auto">
-      {dummyEvents.map((event) => (
-        <li key={event.id} className="py-2">
-          <p className="text-sm text-gray-900">{event.title}</p>
-          <p className="text-xs text-gray-500">{event.date}</p>
-        </li>
-      ))}
-    </ul>
-  </div>
-);
-
-// AnalyticsCharts component
-const AnalyticsCharts: React.FC<{ jobOpenings: JobOpening[] }> = ({ jobOpenings }) => {
-  const data = {
-    labels: jobOpenings.map((job) => job.title),
-    datasets: [
-      {
-        label: 'Applicants',
-        data: jobOpenings.map((job) => job.applicants),
-        backgroundColor: '#3B82F6',
-        borderColor: '#2563EB',
-        borderWidth: 1,
-      },
-    ],
-  };
-
-  const options = {
-    responsive: true,
-    plugins: {
-      legend: { position: 'top' as const, labels: { font: { size: 14, family: 'Inter, sans-serif' }, color: '#1F2937' } },
-      title: {
-        display: true,
-        text: 'Applicants by Job Opening',
-        font: { size: 18, family: 'Inter, sans-serif' },
-        color: '#1F2937',
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        ticks: { stepSize: 1, color: '#1F2937' },
-      },
-      x: {
-        ticks: { color: '#1F2937' },
-      },
-    },
-  };
-
-  return (
-    <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100">
-      <h2 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2">
-        <Users className="h-5 w-5 text-blue-600" />
-        Applicants by Job
-      </h2>
-      <Bar data={data} options={options} />
-    </div>
-  );
-};
-
-// Main Dashboard Component
-export default function RecruiterDashboard() {
-  const [applicants] = useState<JobApplicant[]>(dummyApplicants);
-  const [jobOpenings] = useState<JobOpening[]>(dummyJobOpenings);
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-100 to-blue-50 py-8 px-4">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-blue-900 mb-8 flex items-center gap-2">
-          <Users className="h-6 w-6 text-blue-600" />
-          Recruiter Dashboard
-        </h1>
-
-        {/* Overview Cards */}
-        <DashboardCards applicants={applicants} jobOpenings={jobOpenings} />
-
-        {/* Top Section: QuickStats and OfferLetterTracking */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          <div className="lg:col-span-1">
-            <ScheduleOverview />
-            <div className='mt-2'>
-              <RecentActivity/>
+                    {period.charAt(0).toUpperCase() + period.slice(1)}
+                  </button>
+                ))}
+              </div>
             </div>
-             
           </div>
-          <div className="lg:col-span-2"> 
-            <OfferLetterTracking applicants={applicants} />
+        </section>
+
+        {/* KPI Cards - Compact Grid */}
+        <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <KpiCard 
+            icon={<Building2 className="h-4 w-4" />} 
+            value={activeClients} 
+            label="Active Clients" 
+            color="violet"
+          />
+          <KpiCard 
+            icon={<Users className="h-4 w-4" />} 
+            value={kpiMetrics.totalApplicants} 
+            label="Total Candidates" 
+            trend="+5.8%" 
+            color="indigo"
+          />
+          <KpiCard 
+            icon={<Briefcase className="h-4 w-4" />} 
+            value={filteredJobs.filter(j => j.status === 'Open').length} 
+            label="Open Positions" 
+            color="amber"
+          />
+          <KpiCard 
+            icon={<UserCheck className="h-4 w-4" />} 
+            value={filteredApplicants.filter(a => a.status === 'Hired').length} 
+            label="Successfully Hired" 
+            trend="+3.2%" 
+            color="emerald"
+          />
+          
+        </section>
+
+        {/* Main Charts - Optimized Layout */}
+        <section className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+          {/* Trends Chart */}
+          <div className="xl:col-span-2 bg-white rounded-lg p-4 shadow-sm border border-slate-200">
+            <SectionHeader title="Recruitment Trends" subtitle="Monthly performance overview" />
+            <div className="h-64 mt-3">
+              <Line 
+                data={trendData} 
+                options={{
+                  responsive: true, 
+                  maintainAspectRatio: false,
+                  plugins: { 
+                    legend: { 
+                      display: true, 
+                      position: 'top',
+                      labels: { 
+                        padding: 8, 
+                        font: { size: 11 }, 
+                        usePointStyle: true, 
+                        pointStyle: 'circle',
+                        color: '#475569'
+                      } 
+                    }
+                  },
+                  scales: { 
+                    y: { 
+                      beginAtZero: true, 
+                      grid: { color: '#f1f5f9' }, 
+                      border: { display: false },
+                      ticks: { 
+                        font: { size: 10 }, 
+                        color: '#64748b' 
+                      } 
+                    }, 
+                    x: { 
+                      grid: { display: false }, 
+                      border: { display: false },
+                      ticks: { 
+                        font: { size: 10 }, 
+                        color: '#64748b' 
+                      } 
+                    } 
+                  }
+                }} 
+              />
+            </div>
           </div>
+          
+          {/* Job Status */}
+          <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200">
+            <SectionHeader title="Job Status" subtitle="Current distribution" />
+            <div className="h-64 flex items-center justify-center cursor-pointer mt-2">
+              <Doughnut
+                data={jobStatusData}
+                options={{
+                  responsive: true, 
+                  maintainAspectRatio: false, 
+                  cutout: '60%', 
+                  plugins: { 
+                    legend: { 
+                      position: 'bottom', 
+                      labels: { 
+                        padding: 8, 
+                        font: { size: 11 }, 
+                        usePointStyle: true, 
+                        pointStyle: 'circle',
+                        color: '#475569'
+                      } 
+                    }
+                  },
+                  onClick: (_, elements) => handleJobStatusClick(elements),
+                 onHover: (event, elements) => chartHover(event, elements),
+
+                }}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Pipeline Charts - Compact */}
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200">
+            <SectionHeader title="Candidate Pipeline" subtitle="By client and status" />
+            <div className="h-64 cursor-pointer mt-2">
+              <Bar
+                data={candidatePipelineData}
+                options={{
+                  responsive: true, 
+                  maintainAspectRatio: false, 
+                  plugins: {
+                    legend: { 
+                      position: 'top',
+                      labels: { 
+                        padding: 8, 
+                        font: { size: 11 },
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        color: '#475569'
+                      } 
+                    }
+                  },
+                  scales: {
+                    x: { 
+                      stacked: true, 
+                      grid: { display: false }, 
+                      border: { display: false },
+                      ticks: { 
+                        font: { size: 10 }, 
+                        color: '#64748b' 
+                      } 
+                    },
+                    y: { 
+                      stacked: true, 
+                      beginAtZero: true, 
+                      grid: { color: '#f1f5f9' }, 
+                      border: { display: false },
+                      ticks: { 
+                        stepSize: 1, 
+                        font: { size: 10 }, 
+                        color: '#64748b' 
+                      } 
+                    }
+                  },
+                  onClick: (_, elements) => handleCandidatePipelineClick(elements),
+                  onHover: chartHover,
+                }}
+              />
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200">
+            <SectionHeader title="Recruitment Funnel" subtitle="Stage-wise breakdown" />
+            <div className="h-64 mt-2">
+              <Bar
+                data={funnelData}
+                options={{
+                  responsive: true, 
+                  maintainAspectRatio: false, 
+                  indexAxis: 'y', 
+                  plugins: {
+                    legend: { display: false }
+                  },
+                  scales: {
+                    x: { 
+                      beginAtZero: true, 
+                      grid: { color: '#f1f5f9' }, 
+                      border: { display: false },
+                      ticks: { 
+                        stepSize: 1, 
+                        font: { size: 10 }, 
+                        color: '#64748b' 
+                      } 
+                    },
+                    y: { 
+                      grid: { display: false }, 
+                      border: { display: false },
+                      ticks: { 
+                        font: { size: 11 }, 
+                        color: '#475569' 
+                      } 
+                    }
+                  }
+                }}
+              />
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  );
+}
+
+interface CardProps {
+  icon: React.ReactNode;
+  value: string | number;
+  label: string;
+  trend?: string;
+  color: 'indigo' | 'amber' | 'emerald' | 'violet';
+}
+
+function KpiCard({ icon, value, label, trend, color }: CardProps) {
+  const colorStyles = {
+    indigo: {
+      bg: 'bg-indigo-50',
+      text: 'text-indigo-600',
+    },
+    amber: {
+      bg: 'bg-amber-50',
+      text: 'text-amber-600',
+    },
+    emerald: {
+      bg: 'bg-emerald-50',
+      text: 'text-emerald-600',
+    },
+    violet: {
+      bg: 'bg-violet-50',
+      text: 'text-violet-600',
+    }
+  };
+
+  return (
+    <div className="group bg-white rounded-lg p-3 shadow-sm border border-slate-200 hover:shadow-md transition-all">
+      <div className="flex items-start justify-between mb-2">
+        <div className={`w-8 h-8 rounded-lg ${colorStyles[color].bg} flex items-center justify-center ${colorStyles[color].text}`}>
+          {icon}
         </div>
-
-        {/* Dashboard Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
-          {/* Left Column: StatusBarChart */}
-          <div className="lg:col-span-1">
-            <StatusBarChart applicants={applicants} jobOpenings={jobOpenings} />
+        {trend && (
+          <div className="flex items-center gap-1 text-xs font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">
+            <TrendingUp className="h-3 w-3" />
+            <span>{trend}</span>
           </div>
-
-          {/* Right Column: AnalyticsCharts */}
-          <div className="lg:col-span-2">
-            <CandidateStatusBarChart applicants={applicants} jobOpenings={jobOpenings} />
-          </div>
-        </div>
-
-        {/* Job Openings Breakdown */}
-        <JobOpeningsBreakdown applicants={applicants} jobOpenings={jobOpenings} />
+        )}
+      </div>
+      <div className="space-y-0.5">
+        <div className="text-lg font-bold text-slate-800">{value}</div>
+        <p className="text-xs text-slate-500 font-medium">{label}</p>
       </div>
     </div>
   );
 }
 
+interface HeaderProps {
+  title: string;
+  subtitle?: string;
+}
 
+function SectionHeader({ title, subtitle }: HeaderProps) {
+  return (
+    <div>
+      <h3 className="text-sm font-semibold text-slate-800">{title}</h3>
+      {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
+    </div>
+  );
+}

@@ -12,31 +12,6 @@ const frappeClient = axios.create({
   },
 });
 
-interface ApplicantPayload {
-  applicant_name: string;
-  email_id: string;
-  phone_number: string;
-  country: string;
-  job_title: string;
-  designation: string;
-  status: string;
-  source: string;
-  custom_experience: {
-    company_name: string;
-    designation: string;
-    start_date: string;
-    end_date: string;
-    current_company: number;
-  }[];
-  custom_education: {
-    degree: string;
-    specialization: string;
-    institution: string;
-    year_of_passing: number;
-    percentagecgpa: number;
-  }[];
-}
-
 
 const frappeFileClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_dev_prod_FRAPPE_BASE_URL,
