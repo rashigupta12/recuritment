@@ -243,8 +243,8 @@ const TodosManagement = () => {
               {searchQuery || Object.values(filters).some(filter => 
                 Array.isArray(filter) ? filter.length > 0 : filter !== 'all'
               ) 
-                ? "No tasks found matching your search and filters." 
-                : "No tasks assigned to you."}
+                ? "No Jobs found matching your search and filters." 
+                : "No Jobs assigned to you."}
             </div>
             <button
               onClick={handleRefresh}

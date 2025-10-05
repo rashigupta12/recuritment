@@ -39,11 +39,10 @@ interface ApplicantRow {
 
 interface BulkApplicantFormProps {
   initialJobId?: string;
-    onFormSubmitSuccess?: () => void; // ✅ New prop
-
+  onFormSubmitSuccess?: () => void;
 }
 
-export default function BulkApplicantForm({ initialJobId , onFormSubmitSuccess }: BulkApplicantFormProps) {
+export default function BulkApplicantForm({ initialJobId, onFormSubmitSuccess }: BulkApplicantFormProps) {
   const [applicantRows, setApplicantRows] = useState<ApplicantRow[]>([
     createEmptyRow(initialJobId || '')
   ]);
@@ -166,6 +165,13 @@ export default function BulkApplicantForm({ initialJobId , onFormSubmitSuccess }
       const fileUrl = uploadResponse.file_url;
       console.log('File uploaded successfully, URL:', fileUrl);
 
+      // Immediately update the resume_attachment field with the uploaded file URL
+      setApplicantRows(rows =>
+        rows.map(row =>
+          row.id === rowId ? { ...row, resume_attachment: fileUrl } : row
+        )
+      );
+
       // Step 2: Call autofill API
       const uploadFormData = new FormData();
       uploadFormData.append('file', file);
@@ -203,7 +209,7 @@ export default function BulkApplicantForm({ initialJobId , onFormSubmitSuccess }
               phone_number: data.phone_number || '',
               country: data.country || 'India',
               job_title: data.job_title || row.job_title,
-              resume_attachment: fileUrl,
+              resume_attachment: fileUrl, // Ensure file URL is preserved
               custom_experience: data.custom_experience && data.custom_experience.length > 0
                 ? {
                   company_name: data.custom_experience[0].company_name || '',
@@ -232,10 +238,17 @@ export default function BulkApplicantForm({ initialJobId , onFormSubmitSuccess }
 
     } catch (error: any) {
       console.error('Autofill error:', error);
+      // Make sure resume_attachment is preserved even if autofill fails
+      const currentRow = applicantRows.find(r => r.id === rowId);
       setApplicantRows(rows =>
         rows.map(row =>
           row.id === rowId
-            ? { ...row, isAutofilling: false, autofillError: `Failed to process resume: ${error.message}` }
+            ? { 
+                ...row, 
+                isAutofilling: false, 
+                autofillError: `Failed to process resume: ${error.message}`,
+                resume_attachment: row.resume_attachment || currentRow?.resume_attachment || ''
+              }
             : row
         )
       );
@@ -254,7 +267,6 @@ export default function BulkApplicantForm({ initialJobId , onFormSubmitSuccess }
 
     // Experience validation
     if (!row.custom_experience.company_name.trim()) errors.exp_company = 'Company name is required';
-    // if (!row.custom_experience.designation.trim()) errors.exp_designation = 'Designation is required';
     if (!row.custom_experience.start_date) errors.exp_start = 'Start date is required';
     if (!row.custom_experience.current_company && !row.custom_experience.end_date) {
       errors.exp_end = 'End date is required';
@@ -268,191 +280,103 @@ export default function BulkApplicantForm({ initialJobId , onFormSubmitSuccess }
     return errors;
   };
 
-//   const handleSubmit = async () => {
-//     // Validate all rows
-//     let hasErrors = false;
-//     const updatedRows = applicantRows.map(row => {
-//       const errors = validateRow(row);
-//       if (Object.keys(errors).length > 0) {
-//         hasErrors = true;
-//         return { ...row, errors };
-//       }
-//       return { ...row, errors: {} };
-//     });
+  const handleSubmit = async () => {
+    // Validate all rows
+    let hasErrors = false;
+    const updatedRows = applicantRows.map(row => {
+      const errors = validateRow(row);
+      if (Object.keys(errors).length > 0) {
+        hasErrors = true;
+        return { ...row, errors };
+      }
+      return { ...row, errors: {} };
+    });
 
-//     setApplicantRows(updatedRows);
+    setApplicantRows(updatedRows);
 
-//     if (hasErrors) {
-//       alert('Please fix all validation errors before submitting');
-//       return;
-//     }
+    if (hasErrors) {
+      alert('Please fix all validation errors before submitting');
+      return;
+    }
 
-//     setIsSubmitting(true);
+    setIsSubmitting(true);
 
-//     try {
-//       // Prepare payload
-//       const payload = applicantRows.map(row => ({
-//         applicant_name: row.applicant_name,
-//         email_id: row.email_id,
-//         phone_number: row.phone_number,
-//         country: row.country,
-//         job_title: row.job_title,
-//         designation: row.designation,
-//         status: 'Tagged',
-//         source: '',
-//         resume_attachment: row.resume_attachment,
-//         custom_experience: [
-//           {
-//             company_name: row.custom_experience.company_name,
-//             designation: row.custom_experience.designation,
-//             start_date: row.custom_experience.start_date,
-//             end_date: row.custom_experience.end_date,
-//             current_company: row.custom_experience.current_company
-//           }
-//         ],
-//         custom_education: [
-//           {
-//             degree: row.custom_education.degree,
-//             specialization: row.custom_education.specialization,
-//             institution: row.custom_education.institution,
-//             year_of_passing: parseInt(row.custom_education.year_of_passing),
-//             percentagecgpa: parseFloat(row.custom_education.percentagecgpa) || 0
-//           }
-//         ]
-        
-//       }));
-// if (onFormSubmitSuccess) {
-//       onFormSubmitSuccess(); // This should trigger the refresh in page.tsx
-//     }
-//       setSubmissionResult({ success: 1, failed: 0 });
-//       setSubmitted(true);
-//       console.log('Submitting bulk applicants:', payload);
-//  if (onFormSubmitSuccess) {
-//         onFormSubmitSuccess();
-//       }
-//       const response = await frappeAPI.createBulkApplicants(payload);
+    try {
+      // Prepare payload
+      const payload = applicantRows.map(row => ({
+        applicant_name: row.applicant_name,
+        email_id: row.email_id,
+        phone_number: row.phone_number,
+        country: row.country,
+        job_title: row.job_title,
+        designation: row.designation,
+        status: 'Tagged',
+        source: '',
+        resume_attachment: row.resume_attachment,
+        custom_experience: [
+          {
+            company_name: row.custom_experience.company_name,
+            designation: row.custom_experience.designation,
+            start_date: row.custom_experience.start_date,
+            end_date: row.custom_experience.end_date,
+            current_company: row.custom_experience.current_company
+          }
+        ],
+        custom_education: [
+          {
+            degree: row.custom_education.degree,
+            specialization: row.custom_education.specialization,
+            institution: row.custom_education.institution,
+            year_of_passing: parseInt(row.custom_education.year_of_passing),
+            percentagecgpa: parseFloat(row.custom_education.percentagecgpa) || 0
+          }
+        ]
+      }));
 
-
- 
-//       // Calculate success/failed counts
-//       const successCount = response.results?.filter((r: any) => r.success).length || applicantRows.length;
-//       const failedCount = applicantRows.length - successCount;
-
-//       setSubmissionResult({ success: successCount, failed: failedCount });
-//       setSubmitted(true);
-
-//       // Reset form if all successful
-//       if (failedCount === 0) {
-//         setApplicantRows([createEmptyRow(initialJobId || '')]);
-//       }
+      console.log('Submitting bulk applicants:', payload);
       
+      // Wait for the API call to complete
+      const response = await frappeAPI.createBulkApplicants(payload);
 
-//     } catch (error: any) {
-//       console.error('Submission error:', error);
-//       alert(`Failed to submit applications: ${error.message}`);
-//     } finally {
-//       setIsSubmitting(false);
-//     }
-//   };
+      // Calculate success/failed counts
+      const successCount = response.results?.filter((r: any) => r.success).length || applicantRows.length;
+      const failedCount = applicantRows.length - successCount;
 
-const handleSubmit = async () => {
-  // Validate all rows
-  let hasErrors = false;
-  const updatedRows = applicantRows.map(row => {
-    const errors = validateRow(row);
-    if (Object.keys(errors).length > 0) {
-      hasErrors = true;
-      return { ...row, errors };
+      setSubmissionResult({ success: successCount, failed: failedCount });
+      setSubmitted(true);
+
+      // Call onFormSubmitSuccess only after successful API call
+      if (onFormSubmitSuccess && successCount > 0) {
+        console.log('Submission successful, triggering refresh...');
+        onFormSubmitSuccess();
+      }
+
+      // Reset form if all successful
+      if (failedCount === 0) {
+        setApplicantRows([createEmptyRow(initialJobId || '')]);
+      }
+
+    } catch (error: any) {
+      console.error('Submission error:', error);
+      alert(`Failed to submit applications: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
     }
-    return { ...row, errors: {} };
-  });
+  };
 
-  setApplicantRows(updatedRows);
-
-  if (hasErrors) {
-    alert('Please fix all validation errors before submitting');
-    return;
-  }
-
-  setIsSubmitting(true);
-
-  try {
-    // Prepare payload
-    const payload = applicantRows.map(row => ({
-      applicant_name: row.applicant_name,
-      email_id: row.email_id,
-      phone_number: row.phone_number,
-      country: row.country,
-      job_title: row.job_title,
-      designation: row.designation,
-      status: 'Tagged',
-      source: '',
-      resume_attachment: row.resume_attachment,
-      custom_experience: [
-        {
-          company_name: row.custom_experience.company_name,
-          designation: row.custom_experience.designation,
-          start_date: row.custom_experience.start_date,
-          end_date: row.custom_experience.end_date,
-          current_company: row.custom_experience.current_company
-        }
-      ],
-      custom_education: [
-        {
-          degree: row.custom_education.degree,
-          specialization: row.custom_education.specialization,
-          institution: row.custom_education.institution,
-          year_of_passing: parseInt(row.custom_education.year_of_passing),
-          percentagecgpa: parseFloat(row.custom_education.percentagecgpa) || 0
-        }
-      ]
-    }));
-
-    console.log('Submitting bulk applicants:', payload);
-    
-    // ✅ WAIT for the API call to complete FIRST
-    const response = await frappeAPI.createBulkApplicants(payload);
-
-    // Calculate success/failed counts
-    const successCount = response.results?.filter((r: any) => r.success).length || applicantRows.length;
-    const failedCount = applicantRows.length - successCount;
-
-    setSubmissionResult({ success: successCount, failed: failedCount });
-    setSubmitted(true);
-
-    // ✅ Call onFormSubmitSuccess ONLY AFTER successful API call
-    if (onFormSubmitSuccess && successCount > 0) {
-      console.log('✅ Submission successful, triggering refresh...');
-      onFormSubmitSuccess();
-    }
-
-    // Reset form if all successful
-    if (failedCount === 0) {
-      setApplicantRows([createEmptyRow(initialJobId || '')]);
-    }
-
-  } catch (error: any) {
-    console.error('Submission error:', error);
-    alert(`Failed to submit applications: ${error.message}`);
-  } finally {
-    setIsSubmitting(false);
-  }
-};
   const closeModal = () => {
     setSubmitted(false);
     setSubmissionResult({ success: 0, failed: 0 });
   };
 
   return (
-    <div className=" px-4">
+    <div className="px-4">
       <div className="mx-auto">
-
         <div className="space-y-4">
           {applicantRows.map((row, index) => (
             <div key={row.id} className="">
               {/* Row Header */}
               <div className="flex justify-between items-center mb-6">
-                {/* <h2 className="text-xl font-semibold text-gray-900"> New Applicant </h2> */}
                 {applicantRows.length > 1 && (
                   <button
                     type="button"
@@ -466,225 +390,74 @@ const handleSubmit = async () => {
                 )}
               </div>
 
-              {/* Resume Upload */}
-              {/* <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 ">Upload Resume *</label>
-                <div className={`relative border-2 border-dashed rounded-md p-4 ${row.errors.resume_attachment ? 'border-red-300' : 'border-gray-300'}`}>
-                  <input
-                    type="file"
-                    accept=".pdf,.docx,.txt"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleResumeUpload(row.id, file);
-                    }}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    disabled={row.isAutofilling}
-                  />
-                  <div className="text-center">
-                    <Upload className="w-8 h-8 text-gray-400 " />
-                  
+              <div className="mb-6">
+                <div className="grid md:grid-cols-1 px-4 gap-6 items-start">
+                  {/* Upload Resume */}
+                  <div>
+                    <label className="block text-md font-medium text-gray-700 mb-1">
+                      Upload Resume *
+                    </label>
+                    <div
+                      className={`relative w-full border-2 border-dashed rounded-md p-3 flex items-center justify-center cursor-pointer ${
+                        row.errors.resume_attachment ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                    >
+                      <input
+                        type="file"
+                        accept=".pdf,.docx,.txt"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleResumeUpload(row.id, file);
+                        }}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        disabled={row.isAutofilling}
+                      />
+                      <Upload className="w-6 h-6 text-gray-400" />
+                    </div>
                     {row.resume_attachment && (
-                      <p className="text-sm text-green-600 mt-2">✓ Resume uploaded</p>
+                      <p className="text-sm text-green-600 mt-1">✓ Resume uploaded</p>
                     )}
                     {row.isAutofilling && (
                       <p className="text-sm text-blue-600 mt-2 flex items-center justify-center gap-2">
                         <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                        Processing...
+                        Please be patient, data is being fetched...
                       </p>
                     )}
                     {row.autofillError && <p className="text-red-600 text-sm mt-2">{row.autofillError}</p>}
+                    {row.errors.resume_attachment && (
+                      <p className="text-red-600 text-sm mt-1">
+                        {row.errors.resume_attachment}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Full Name */}
+                  <div>
+                    <label className="block text-md font-medium text-gray-700 mb-1">
+                      Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={row.applicant_name}
+                      onChange={(e) => handleFieldChange(row.id, 'applicant_name', e.target.value)}
+                      className={`w-full px-3 py-2 border rounded-md ${
+                        row.errors.applicant_name ? 'border-red-300' : 'border-gray-300'
+                      }`}
+                      placeholder="Enter name"
+                      disabled={row.isAutofilling}
+                    />
+                    {row.errors.applicant_name && (
+                      <p className="text-red-600 text-sm mt-1">
+                        {row.errors.applicant_name}
+                      </p>
+                    )}
                   </div>
                 </div>
-                {row.errors.resume_attachment && <p className="text-red-600 text-sm mt-1">{row.errors.resume_attachment}</p>}
-              </div>
-
-              <div className="mb-6">
-               
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
-                    <input
-                      type="text"
-                      value={row.applicant_name}
-                      onChange={(e) => handleFieldChange(row.id, 'applicant_name', e.target.value)}
-                      className={`w-full px-3 py-2 border rounded-md ${row.errors.applicant_name ? 'border-red-300' : 'border-gray-300'}`}
-                      placeholder="Enter name"
-                      disabled={row.isAutofilling}
-                    />
-                    {row.errors.applicant_name && <p className="text-red-600 text-sm mt-1">{row.errors.applicant_name}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <input
-                        type="email"
-                        value={row.email_id}
-                        onChange={(e) => handleFieldChange(row.id, 'email_id', e.target.value)}
-                        className={`w-full pl-10 pr-3 py-2 border rounded-md ${row.errors.email_id ? 'border-red-300' : 'border-gray-300'}`}
-                        placeholder="email@example.com"
-                        disabled={row.isAutofilling}
-                      />
-                    </div>
-                    {row.errors.email_id && <p className="text-red-600 text-sm mt-1">{row.errors.email_id}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <input
-                        type="tel"
-                        value={row.phone_number}
-                        onChange={(e) => handleFieldChange(row.id, 'phone_number', e.target.value)}
-                        className={`w-full pl-10 pr-3 py-2 border rounded-md ${row.errors.phone_number ? 'border-red-300' : 'border-gray-300'}`}
-                        placeholder="+1234567890"
-                        disabled={row.isAutofilling}
-                      />
-                    </div>
-                    {row.errors.phone_number && <p className="text-red-600 text-sm mt-1">{row.errors.phone_number}</p>}
-                  </div> */}
-              {/* <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Country *</label>
-                    <select
-                      value={row.country}
-                      onChange={(e) => handleFieldChange(row.id, 'country', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                      disabled={row.isAutofilling}
-                    >
-                      {countries.map(country => (
-                        <option key={country} value={country}>{country}</option>
-                      ))}
-                    </select>
-                  </div> */}
-              {/* <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Job Title *</label>
-                    <input
-                      type="text"
-                      value={row.job_title}
-                      onChange={(e) => handleFieldChange(row.id, 'job_title', e.target.value)}
-                      className={`w-full px-3 py-2 border rounded-md ${row.errors.job_title ? 'border-red-300' : 'border-gray-300'}`}
-                      placeholder="HR-OPN-2025-0010"
-                      disabled={row.isAutofilling}
-                    />
-                    {row.errors.job_title && <p className="text-red-600 text-sm mt-1">{row.errors.job_title}</p>}
-                  </div> */}
-              {/* <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Designation *</label>
-                    <div className="relative">
-                      <Briefcase className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <input
-                        type="text"
-                        value={row.designation}
-                        onChange={(e) => handleFieldChange(row.id, 'designation', e.target.value)}
-                        className={`w-full pl-10 pr-3 py-2 border rounded-md ${row.errors.designation ? 'border-red-300' : 'border-gray-300'}`}
-                        placeholder="e.g., Software Engineer"
-                        disabled={row.isAutofilling}
-                      />
-                    </div>
-                    {row.errors.designation && <p className="text-red-600 text-sm mt-1">{row.errors.designation}</p>}
-                  </div> */}
-              {/* </div> */}
-              {/* </div> */}
-              <div className="mb-6 ">
-                {/* Resume Upload */}
-                {/* <div className="grid  md:grid-cols-2">
-                  <label className= "text-sm md:grid-cols-2 font-medium text-gray-700 mb-1">Upload Resume *</label>
-                  <div className={`relative w-30 h-10 border-2 md:grid-cols-2 border-dashed rounded-md flex items-center justify-center cursor-pointer ${row.errors.resume_attachment ? 'border-red-300' : 'border-gray-300'}`}>
-                    <input
-                      type="file"
-                      accept=".pdf,.docx,.txt"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) handleResumeUpload(row.id, file);
-                      }}
-                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                      disabled={row.isAutofilling}
-                    />
-                    <Upload className="w-6 h-6 text-gray-400" />
-                  </div>
-                  {row.resume_attachment && <p className="text-sm text-green-600 mt-1">✓ Resume uploaded</p>}
-                  {row.errors.resume_attachment && <p className="text-red-600 text-sm mt-1">{row.errors.resume_attachment}</p>}
-                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name *</label>
-                    <input
-                      type="text"
-                      value={row.applicant_name}
-                      onChange={(e) => handleFieldChange(row.id, 'applicant_name', e.target.value)}
-                      className={`w-full px-3 py-2 border rounded-md ${row.errors.applicant_name ? 'border-red-300' : 'border-gray-300'}`}
-                      placeholder="Enter name"
-                      disabled={row.isAutofilling}
-                    />
-                    {row.errors.applicant_name && <p className="text-red-600 text-sm mt-1">{row.errors.applicant_name}</p>}
-                  </div>
-                </div> */}
-<div className="grid md:grid-cols-1 px-4 gap-6 items-start">
-  {/* Upload Resume */}
-  <div>
-    <label className="block text-sm font-medium text-gray-700 mb-1">
-      Upload Resume *
-    </label>
-    <div
-      className={`relative w-full border-2 border-dashed rounded-md p-3 flex items-center justify-center cursor-pointer ${
-        row.errors.resume_attachment ? 'border-red-300' : 'border-gray-300'
-      }`}
-    >
-      <input
-        type="file"
-        accept=".pdf,.docx,.txt"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          if (file) handleResumeUpload(row.id, file);
-        }}
-        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-        disabled={row.isAutofilling}
-      />
-      <Upload className="w-6 h-6 text-gray-400" />
-    </div>
-    {row.resume_attachment && (
-      <p className="text-sm text-green-600 mt-1">✓ Resume uploaded</p>
-    )}
-      {row.isAutofilling && (
-    <p className="text-sm text-blue-600 mt-2 flex items-center justify-center gap-2">
-      <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-      Please be patient, data is being fetched...
-    </p>
-  )}
-  {row.autofillError && <p className="text-red-600 text-sm mt-2">{row.autofillError}</p>}
-    {row.errors.resume_attachment && (
-      <p className="text-red-600 text-sm mt-1">
-        {row.errors.resume_attachment}
-      </p>
-    )}
-  </div>
-
-  {/* Full Name */}
-  <div>
-    <label className="block text-sm font-medium text-gray-700 mb-1">
-      Full Name *
-    </label>
-    <input
-      type="text"
-      value={row.applicant_name}
-      onChange={(e) => handleFieldChange(row.id, 'applicant_name', e.target.value)}
-      className={`w-full px-3 py-2 border rounded-md ${
-        row.errors.applicant_name ? 'border-red-300' : 'border-gray-300'
-      }`}
-      placeholder="Enter name"
-      disabled={row.isAutofilling}
-    />
-    {row.errors.applicant_name && (
-      <p className="text-red-600 text-sm mt-1">
-        {row.errors.applicant_name}
-      </p>
-    )}
-  </div>
-</div>
 
                 {/* Personal Information */}
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-1 px-4 pt-2 gap-4">
-                 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                    <label className="block text-md font-medium text-gray-700 mb-1">Email *</label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                       <input
@@ -699,7 +472,7 @@ const handleSubmit = async () => {
                     {row.errors.email_id && <p className="text-red-600 text-sm mt-1">{row.errors.email_id}</p>}
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone *</label>
+                    <label className="block text-md font-medium text-gray-700 mb-1">Phone *</label>
                     <div className="relative">
                       <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                       <input
@@ -715,186 +488,32 @@ const handleSubmit = async () => {
                   </div>
                 </div>
 
-                {/* <div className=""> */}
                 <div className='pt-6 items-end flex justify-end'>
-                <button
-                  type="button"
-                  onClick={handleSubmit}
-                  disabled={isSubmitting || applicantRows.some(row => row.isAutofilling)}
-                  className={`py-2 px-8 rounded-md text-white font-medium flex items-center gap-2 ${isSubmitting || applicantRows.some(row => row.isAutofilling)
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-green-600 hover:bg-green-700'
-                    } transition-colors`}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <div className="w-2 h-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      <span>Submitting {applicantRows.length} Applications...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-4 h-4" />
-                      <span>Submit</span>
-                    </>
-                  )}
-                </button>
+                  <button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={isSubmitting || applicantRows.some(row => row.isAutofilling)}
+                    className={`py-2 px-8 rounded-md text-white font-medium flex items-center gap-2 ${isSubmitting || applicantRows.some(row => row.isAutofilling)
+                      ? 'bg-gray-400 cursor-not-allowed'
+                      : 'bg-green-600 hover:bg-green-700'
+                      } transition-colors`}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <div className="w-2 h-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <span>Submitting {applicantRows.length} Applications...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4" />
+                        <span>Submit</span>
+                      </>
+                    )}
+                  </button>
                 </div>
-                {/* </div> */}
               </div>
-              {/* Experience */}
-              {/* <div className="mb-6">
-                <h3 className="text-md font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                  <Briefcase className="w-4 h-4" /> Work Experience
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Company *</label>
-                    <input
-                      type="text"
-                      value={row.custom_experience.company_name}
-                      onChange={(e) => handleExperienceChange(row.id, 'company_name', e.target.value)}
-                      className={`w-full px-3 py-2 border rounded-md ${row.errors.exp_company ? 'border-red-300' : 'border-gray-300'}`}
-                      placeholder="Company name"
-                      disabled={row.isAutofilling}
-                    />
-                    {row.errors.exp_company && <p className="text-red-600 text-sm mt-1">{row.errors.exp_company}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Role *</label>
-                    <input
-                      type="text"
-                      value={row.custom_experience.designation}
-                      onChange={(e) => handleExperienceChange(row.id, 'designation', e.target.value)}
-                      className={`w-full px-3 py-2 border rounded-md ${row.errors.exp_designation ? 'border-red-300' : 'border-gray-300'}`}
-                      placeholder="Your role"
-                      disabled={row.isAutofilling}
-                    />
-                    {row.errors.exp_designation && <p className="text-red-600 text-sm mt-1">{row.errors.exp_designation}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Start Date *</label>
-                    <input
-                      type="date"
-                      value={row.custom_experience.start_date}
-                      onChange={(e) => handleExperienceChange(row.id, 'start_date', e.target.value)}
-                      className={`w-full px-3 py-2 border rounded-md ${row.errors.exp_start ? 'border-red-300' : 'border-gray-300'}`}
-                      disabled={row.isAutofilling}
-                    />
-                    {row.errors.exp_start && <p className="text-red-600 text-sm mt-1">{row.errors.exp_start}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                    <input
-                      type="date"
-                      value={row.custom_experience.end_date}
-                      onChange={(e) => handleExperienceChange(row.id, 'end_date', e.target.value)}
-                      disabled={row.custom_experience.current_company === 1 || row.isAutofilling}
-                      className={`w-full px-3 py-2 border rounded-md ${row.custom_experience.current_company === 1 ? 'bg-gray-100' : row.errors.exp_end ? 'border-red-300' : 'border-gray-300'}`}
-                    />
-                    {row.errors.exp_end && <p className="text-red-600 text-sm mt-1">{row.errors.exp_end}</p>}
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={row.custom_experience.current_company === 1}
-                        onChange={(e) => handleExperienceChange(row.id, 'current_company', e.target.checked)}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded"
-                        disabled={row.isAutofilling}
-                      />
-                      <span className="text-sm text-gray-700">Currently working here</span>
-                    </label>
-                  </div>
-                </div>
-              </div> */}
-
-              {/* Education */}
-              {/* <div>
-                <h3 className="text-md font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                  <GraduationCap className="w-4 h-4" /> Education
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Degree *</label>
-                    <input
-                      type="text"
-                      value={row.custom_education.degree}
-                      onChange={(e) => handleEducationChange(row.id, 'degree', e.target.value)}
-                      className={`w-full px-3 py-2 border rounded-md ${row.errors.edu_degree ? 'border-red-300' : 'border-gray-300'}`}
-                      placeholder="e.g., B.Tech"
-                      disabled={row.isAutofilling}
-                    />
-                    {row.errors.edu_degree && <p className="text-red-600 text-sm mt-1">{row.errors.edu_degree}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Specialization</label>
-                    <input
-                      type="text"
-                      value={row.custom_education.specialization}
-                      onChange={(e) => handleEducationChange(row.id, 'specialization', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                      placeholder="e.g., Computer Science"
-                      disabled={row.isAutofilling}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Institution *</label>
-                    <input
-                      type="text"
-                      value={row.custom_education.institution}
-                      onChange={(e) => handleEducationChange(row.id, 'institution', e.target.value)}
-                      className={`w-full px-3 py-2 border rounded-md ${row.errors.edu_institution ? 'border-red-300' : 'border-gray-300'}`}
-                      placeholder="University name"
-                      disabled={row.isAutofilling}
-                    />
-                    {row.errors.edu_institution && <p className="text-red-600 text-sm mt-1">{row.errors.edu_institution}</p>}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Year *</label>
-                    <input
-                      type="number"
-                      value={row.custom_education.year_of_passing}
-                      onChange={(e) => handleEducationChange(row.id, 'year_of_passing', e.target.value)}
-                      min="1950"
-                      max="2030"
-                      className={`w-full px-3 py-2 border rounded-md ${row.errors.edu_year ? 'border-red-300' : 'border-gray-300'}`}
-                      placeholder="2025"
-                      disabled={row.isAutofilling}
-                    />
-                    {row.errors.edu_year && <p className="text-red-600 text-sm mt-1">{row.errors.edu_year}</p>}
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Percentage/CGPA</label>
-                    <input
-                      type="text"
-                      value={row.custom_education.percentagecgpa}
-                      onChange={(e) => handleEducationChange(row.id, 'percentagecgpa', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                      placeholder="e.g., 8.5 or 85%"
-                      disabled={row.isAutofilling}
-                    />
-                  </div>
-                </div>
-              </div> */}
             </div>
-
           ))}
-
-          {/* Add New Row Button */}
-          {/* <div className="flex justify-center">
-            <button
-              type="button"
-              onClick={handleAddRow}
-              className="bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-md font-medium flex items-center gap-2 transition-colors"
-              disabled={isSubmitting}
-            >
-              <Plus className="w-5 h-5" />
-              Add Another Applicant
-            </button>
-          </div> */}
-
-          {/* Submit Button */}
-
         </div>
 
         {/* Success Modal */}

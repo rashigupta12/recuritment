@@ -347,7 +347,7 @@ useEffect(() => {
     try {
       setIsSaving(true);
 
-      const companyData = {
+           const companyData = {
         company_name: companyForm.company_name,
         country: companyForm.country,
         email: companyForm.email || null,
@@ -357,6 +357,7 @@ useEffect(() => {
         tax_id: companyForm.tax_id || null,
         abbr: companyForm.abbr || null,
         domain: companyForm.domain || null,
+        custom_address: companyForm.custom_address || null,
       };
 
       let companyId: string;
