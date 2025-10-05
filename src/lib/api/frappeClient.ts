@@ -564,6 +564,7 @@ createBulkApplicants: async (applicantsData: Array<Record<string, unknown>>) => 
       "custom_experience",
       "custom_education",
       "creation",
+      "custom_company_name",
       "owner"
     ];
 

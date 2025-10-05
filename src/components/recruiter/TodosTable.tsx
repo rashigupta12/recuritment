@@ -118,7 +118,7 @@ export const TodosTable = ({ todos, onViewTodo }: TodosTableProps) => {
   const SortableHeader = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
     <th
       scope="col"
-      className="cursor-pointer select-none px-2 sm:px-4 py-4 text-xs sm:text-sm font-semibold  tracking-wide text-white"
+      className="cursor-pointer select-none px-2 sm:px-4 py-4 text-lg  sm:text-lg uppercase text-white"
       onClick={() => handleSort(field)}
     >
       <div className="flex items-center gap-2">
@@ -136,7 +136,7 @@ export const TodosTable = ({ todos, onViewTodo }: TodosTableProps) => {
   return (
     <div className="overflow-x-auto bg-white rounded-lg shadow-lg border-2 border-blue-100 max-w-full ">
       <table className="min-w-full divide-y divide-blue-100">
-        <thead className="bg-blue-500 text-white text-xs sm:text-sm">
+        <thead className="bg-blue-500 text-white text-lg sm:text-sm">
           <tr>
             <SortableHeader field="date">Date Assigned</SortableHeader>
             <SortableHeader field="aging">Aging (Days)</SortableHeader>

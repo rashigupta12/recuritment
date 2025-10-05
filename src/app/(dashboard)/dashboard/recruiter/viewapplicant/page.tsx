@@ -16,6 +16,7 @@ export interface JobApplicant {
   job_title?: string;
   designation?: string;
   status?: string;
+  custom_company_name?:string;
   resume_attachment?: string;
   custom_experience?: Array<{
     company_name: string;
