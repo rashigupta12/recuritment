@@ -262,26 +262,26 @@ export const TodosHeader = ({
         </div>
       )
     }] : []),
-    ...(uniqueDepartments.length > 0 ? [{
-      id: 'department',
-      title: 'Department',
-      icon: Briefcase,
-      content: (
-        <div className="space-y-2 pl-6">
-          {uniqueDepartments.map(dept => (
-            <label key={dept} className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
-              <input
-                type="checkbox"
-                checked={filters.departments.includes(dept)}
-                onChange={() => toggleFilter('departments', dept)}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-              />
-              <span className="text-sm font-medium text-gray-700">{dept}</span>
-            </label>
-          ))}
-        </div>
-      )
-    }] : []),
+    // ...(uniqueDepartments.length > 0 ? [{
+    //   id: 'department',
+    //   title: 'Department',
+    //   icon: Briefcase,
+    //   content: (
+    //     <div className="space-y-2 pl-6">
+    //       {uniqueDepartments.map(dept => (
+    //         <label key={dept} className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+    //           <input
+    //             type="checkbox"
+    //             checked={filters.departments.includes(dept)}
+    //             onChange={() => toggleFilter('departments', dept)}
+    //             className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+    //           />
+    //           <span className="text-sm font-medium text-gray-700">{dept}</span>
+    //         </label>
+    //       ))}
+    //     </div>
+    //   )
+    // }] : []),
     ...(uniqueAssigners.length > 0 ? [{
       id: 'assignedBy',
       title: 'Assigned By',
