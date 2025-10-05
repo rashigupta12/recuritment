@@ -539,7 +539,7 @@
 // };
 
 
-
+/*eslint-disable @typescript-eslint/no-explicit-any*/
 
 import { Search, RefreshCw, Filter, X, Calendar, Building2, Users, Briefcase, MapPin, ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";

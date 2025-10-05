@@ -1,3 +1,5 @@
+/*eslint-disable @typescript-eslint/no-explicit-any*/
+
 "use client";
 import CompanySearchSection from "@/components/comman/CompanySearch";
 import ContactSearchSection from "@/components/comman/ContactSearch";
