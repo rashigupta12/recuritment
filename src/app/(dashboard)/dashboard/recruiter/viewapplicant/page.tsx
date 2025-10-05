@@ -288,6 +288,8 @@ export default function ViewApplicantPage() {
     );
   }
 
+  console.log("gfdjsg" , selectedApplicant)
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 ">
       <div className="w-full mx-auto">
@@ -440,6 +442,7 @@ export default function ViewApplicantPage() {
 
       {/* Applicant Details Modal */}
       {selectedApplicant && (
+        
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="details-modal-title">
           <div className="bg-white rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
@@ -504,7 +507,7 @@ export default function ViewApplicantPage() {
                   <p className="text-sm font-medium text-gray-700">Resume</p>
                   {selectedApplicant.resume_attachment ? (
                     <a
-                      href={selectedApplicant.resume_attachment}
+                       href={`https://recruiter.gennextit.com${selectedApplicant.resume_attachment}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:text-blue-800 underline text-sm"
