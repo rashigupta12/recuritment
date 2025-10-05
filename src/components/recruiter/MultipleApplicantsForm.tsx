@@ -268,91 +268,176 @@ export default function BulkApplicantForm({ initialJobId , onFormSubmitSuccess }
     return errors;
   };
 
-  const handleSubmit = async () => {
-    // Validate all rows
-    let hasErrors = false;
-    const updatedRows = applicantRows.map(row => {
-      const errors = validateRow(row);
-      if (Object.keys(errors).length > 0) {
-        hasErrors = true;
-        return { ...row, errors };
-      }
-      return { ...row, errors: {} };
-    });
+//   const handleSubmit = async () => {
+//     // Validate all rows
+//     let hasErrors = false;
+//     const updatedRows = applicantRows.map(row => {
+//       const errors = validateRow(row);
+//       if (Object.keys(errors).length > 0) {
+//         hasErrors = true;
+//         return { ...row, errors };
+//       }
+//       return { ...row, errors: {} };
+//     });
 
-    setApplicantRows(updatedRows);
+//     setApplicantRows(updatedRows);
 
-    if (hasErrors) {
-      alert('Please fix all validation errors before submitting');
-      return;
-    }
+//     if (hasErrors) {
+//       alert('Please fix all validation errors before submitting');
+//       return;
+//     }
 
-    setIsSubmitting(true);
+//     setIsSubmitting(true);
 
-    try {
-      // Prepare payload
-      const payload = applicantRows.map(row => ({
-        applicant_name: row.applicant_name,
-        email_id: row.email_id,
-        phone_number: row.phone_number,
-        country: row.country,
-        job_title: row.job_title,
-        designation: row.designation,
-        status: 'Tagged',
-        source: '',
-        resume_attachment: row.resume_attachment,
-        custom_experience: [
-          {
-            company_name: row.custom_experience.company_name,
-            designation: row.custom_experience.designation,
-            start_date: row.custom_experience.start_date,
-            end_date: row.custom_experience.end_date,
-            current_company: row.custom_experience.current_company
-          }
-        ],
-        custom_education: [
-          {
-            degree: row.custom_education.degree,
-            specialization: row.custom_education.specialization,
-            institution: row.custom_education.institution,
-            year_of_passing: parseInt(row.custom_education.year_of_passing),
-            percentagecgpa: parseFloat(row.custom_education.percentagecgpa) || 0
-          }
-        ]
+//     try {
+//       // Prepare payload
+//       const payload = applicantRows.map(row => ({
+//         applicant_name: row.applicant_name,
+//         email_id: row.email_id,
+//         phone_number: row.phone_number,
+//         country: row.country,
+//         job_title: row.job_title,
+//         designation: row.designation,
+//         status: 'Tagged',
+//         source: '',
+//         resume_attachment: row.resume_attachment,
+//         custom_experience: [
+//           {
+//             company_name: row.custom_experience.company_name,
+//             designation: row.custom_experience.designation,
+//             start_date: row.custom_experience.start_date,
+//             end_date: row.custom_experience.end_date,
+//             current_company: row.custom_experience.current_company
+//           }
+//         ],
+//         custom_education: [
+//           {
+//             degree: row.custom_education.degree,
+//             specialization: row.custom_education.specialization,
+//             institution: row.custom_education.institution,
+//             year_of_passing: parseInt(row.custom_education.year_of_passing),
+//             percentagecgpa: parseFloat(row.custom_education.percentagecgpa) || 0
+//           }
+//         ]
         
-      }));
+//       }));
+// if (onFormSubmitSuccess) {
+//       onFormSubmitSuccess(); // This should trigger the refresh in page.tsx
+//     }
+//       setSubmissionResult({ success: 1, failed: 0 });
+//       setSubmitted(true);
+//       console.log('Submitting bulk applicants:', payload);
+//  if (onFormSubmitSuccess) {
+//         onFormSubmitSuccess();
+//       }
+//       const response = await frappeAPI.createBulkApplicants(payload);
 
-      setSubmissionResult({ success: 1, failed: 0 });
-      setSubmitted(true);
-      console.log('Submitting bulk applicants:', payload);
- if (onFormSubmitSuccess) {
-        onFormSubmitSuccess();
-      }
-      const response = await frappeAPI.createBulkApplicants(payload);
 
-      console.log('Bulk submission response:', response);
+ 
+//       // Calculate success/failed counts
+//       const successCount = response.results?.filter((r: any) => r.success).length || applicantRows.length;
+//       const failedCount = applicantRows.length - successCount;
 
-      // Calculate success/failed counts
-      const successCount = response.results?.filter((r: any) => r.success).length || applicantRows.length;
-      const failedCount = applicantRows.length - successCount;
+//       setSubmissionResult({ success: successCount, failed: failedCount });
+//       setSubmitted(true);
 
-      setSubmissionResult({ success: successCount, failed: failedCount });
-      setSubmitted(true);
-
-      // Reset form if all successful
-      if (failedCount === 0) {
-        setApplicantRows([createEmptyRow(initialJobId || '')]);
-      }
+//       // Reset form if all successful
+//       if (failedCount === 0) {
+//         setApplicantRows([createEmptyRow(initialJobId || '')]);
+//       }
       
 
-    } catch (error: any) {
-      console.error('Submission error:', error);
-      alert(`Failed to submit applications: ${error.message}`);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+//     } catch (error: any) {
+//       console.error('Submission error:', error);
+//       alert(`Failed to submit applications: ${error.message}`);
+//     } finally {
+//       setIsSubmitting(false);
+//     }
+//   };
 
+const handleSubmit = async () => {
+  // Validate all rows
+  let hasErrors = false;
+  const updatedRows = applicantRows.map(row => {
+    const errors = validateRow(row);
+    if (Object.keys(errors).length > 0) {
+      hasErrors = true;
+      return { ...row, errors };
+    }
+    return { ...row, errors: {} };
+  });
+
+  setApplicantRows(updatedRows);
+
+  if (hasErrors) {
+    alert('Please fix all validation errors before submitting');
+    return;
+  }
+
+  setIsSubmitting(true);
+
+  try {
+    // Prepare payload
+    const payload = applicantRows.map(row => ({
+      applicant_name: row.applicant_name,
+      email_id: row.email_id,
+      phone_number: row.phone_number,
+      country: row.country,
+      job_title: row.job_title,
+      designation: row.designation,
+      status: 'Tagged',
+      source: '',
+      resume_attachment: row.resume_attachment,
+      custom_experience: [
+        {
+          company_name: row.custom_experience.company_name,
+          designation: row.custom_experience.designation,
+          start_date: row.custom_experience.start_date,
+          end_date: row.custom_experience.end_date,
+          current_company: row.custom_experience.current_company
+        }
+      ],
+      custom_education: [
+        {
+          degree: row.custom_education.degree,
+          specialization: row.custom_education.specialization,
+          institution: row.custom_education.institution,
+          year_of_passing: parseInt(row.custom_education.year_of_passing),
+          percentagecgpa: parseFloat(row.custom_education.percentagecgpa) || 0
+        }
+      ]
+    }));
+
+    console.log('Submitting bulk applicants:', payload);
+    
+    // ✅ WAIT for the API call to complete FIRST
+    const response = await frappeAPI.createBulkApplicants(payload);
+
+    // Calculate success/failed counts
+    const successCount = response.results?.filter((r: any) => r.success).length || applicantRows.length;
+    const failedCount = applicantRows.length - successCount;
+
+    setSubmissionResult({ success: successCount, failed: failedCount });
+    setSubmitted(true);
+
+    // ✅ Call onFormSubmitSuccess ONLY AFTER successful API call
+    if (onFormSubmitSuccess && successCount > 0) {
+      console.log('✅ Submission successful, triggering refresh...');
+      onFormSubmitSuccess();
+    }
+
+    // Reset form if all successful
+    if (failedCount === 0) {
+      setApplicantRows([createEmptyRow(initialJobId || '')]);
+    }
+
+  } catch (error: any) {
+    console.error('Submission error:', error);
+    alert(`Failed to submit applications: ${error.message}`);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
   const closeModal = () => {
     setSubmitted(false);
     setSubmissionResult({ success: 0, failed: 0 });

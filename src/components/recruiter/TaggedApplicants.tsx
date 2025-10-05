@@ -290,6 +290,8 @@ interface Props {
   ownerEmail: string;
   todoData?: any;
   refreshTrigger?: number;
+    onRefresh?: () => void; // ✅ Add this prop
+
 }
 
 interface AssessmentResponse {
@@ -311,6 +313,7 @@ export default function TaggedApplicants({
   ownerEmail,
   todoData,
   refreshTrigger,
+  onRefresh
 }: Props) {
   const [applicants, setApplicants] = useState<JobApplicant[]>([]);
   const [filteredApplicants, setFilteredApplicants] = useState<JobApplicant[]>(
@@ -376,6 +379,15 @@ export default function TaggedApplicants({
 
       // Trigger refresh
       setRefreshKey((prev) => prev + 1);
+        if (onRefresh) {
+        onRefresh();
+      } else {
+        // Fallback: increment local refresh key
+        setRefreshKey(prev => prev + 1);
+      }
+      
+      toast.success(`${applicant.applicant_name || applicant.name} deleted successfully`);
+    
 
     } catch (err: any) {
       console.error('Delete error:', err);
@@ -523,92 +535,143 @@ export default function TaggedApplicants({
   //   }
   // }, [jobId, ownerEmail, refreshTrigger, refreshKey]);
   // Replace the current useEffect with this improved version
-  useEffect(() => {
-    const fetchApplicants = async () => {
-      try {
-        setLoading(true);
-        console.log('🔄 Fetching applicants - refreshTrigger:', refreshTrigger);
-        console.log('📋 Job ID:', jobId, 'Owner Email:', ownerEmail);
+  // useEffect(() => {
+  //   const fetchApplicants = async () => {
+  //     try {
+  //       setLoading(true);
+  //       console.log('🔄 Fetching applicants - refreshTrigger:', refreshTrigger);
+  //       console.log('📋 Job ID:', jobId, 'Owner Email:', ownerEmail);
 
-        const response: any = await frappeAPI.getTaggedApplicantsByJobId(
-          jobId,
-          ownerEmail
-        );
-        console.log("📦 API Response:", response);
+  //       const response: any = await frappeAPI.getTaggedApplicantsByJobId(
+  //         jobId,
+  //         ownerEmail
+  //       );
+  //       console.log("📦 API Response:", response);
 
-        const applicantNames = response.data || [];
-        console.log("📊 Applicant names found:", applicantNames.length);
+  //       const applicantNames = response.data || [];
+  //       console.log("📊 Applicant names found:", applicantNames.length);
 
-        if (applicantNames.length === 0) {
-          console.log('ℹ️ No applicants found for this job');
-          setApplicants([]);
-          setFilteredApplicants([]);
-          setLoading(false);
-          return;
-        }
+  //       if (applicantNames.length === 0) {
+  //         console.log('ℹ️ No applicants found for this job');
+  //         setApplicants([]);
+  //         setFilteredApplicants([]);
+  //         setLoading(false);
+  //         return;
+  //       }
 
-        // Fetch detailed information for each applicant
-        const applicantsPromises = applicantNames.map(async (applicant: any) => {
-          try {
-            console.log(`📥 Fetching details for: ${applicant.name}`);
-            const applicantDetail = await frappeAPI.getApplicantBYId(applicant.name);
+  //       // Fetch detailed information for each applicant
+  //       const applicantsPromises = applicantNames.map(async (applicant: any) => {
+  //         try {
+  //           console.log(`📥 Fetching details for: ${applicant.name}`);
+  //           const applicantDetail = await frappeAPI.getApplicantBYId(applicant.name);
 
-            if (applicantDetail.data) {
-              console.log(`✅ Successfully fetched: ${applicant.name}`, {
-                name: applicantDetail.data.applicant_name || applicantDetail.data.name,
-                hasResume: !!applicantDetail.data.resume_attachment,
-                status: applicantDetail.data.status
-              });
-              return applicantDetail.data;
-            }
-            return null;
-          } catch (err) {
-            console.error(`❌ Error fetching ${applicant.name}:`, err);
-            return {
-              name: applicant.name,
-              email_id: applicant.email_id || "Not available",
-              applicant_name: applicant.applicant_name || "Unknown",
-              status: applicant.status || "Unknown"
-            };
-          }
-        });
+  //           if (applicantDetail.data) {
+  //             console.log(`✅ Successfully fetched: ${applicant.name}`, {
+  //               name: applicantDetail.data.applicant_name || applicantDetail.data.name,
+  //               hasResume: !!applicantDetail.data.resume_attachment,
+  //               status: applicantDetail.data.status
+  //             });
+  //             return applicantDetail.data;
+  //           }
+  //           return null;
+  //         } catch (err) {
+  //           console.error(`❌ Error fetching ${applicant.name}:`, err);
+  //           return {
+  //             name: applicant.name,
+  //             email_id: applicant.email_id || "Not available",
+  //             applicant_name: applicant.applicant_name || "Unknown",
+  //             status: applicant.status || "Unknown"
+  //           };
+  //         }
+  //       });
 
-        const applicantsData = await Promise.all(applicantsPromises);
-        const validApplicants = applicantsData.filter(applicant => applicant !== null);
+  //       const applicantsData = await Promise.all(applicantsPromises);
+  //       const validApplicants = applicantsData.filter(applicant => applicant !== null);
 
-        console.log("🎉 Final applicants data:", {
-          totalFetched: validApplicants.length,
-          applicants: validApplicants.map(app => ({
-            name: app.applicant_name || app.name,
-            status: app.status,
-            hasResume: !!app.resume_attachment
-          }))
-        });
+  //       console.log("🎉 Final applicants data:", {
+  //         totalFetched: validApplicants.length,
+  //         applicants: validApplicants.map(app => ({
+  //           name: app.applicant_name || app.name,
+  //           status: app.status,
+  //           hasResume: !!app.resume_attachment
+  //         }))
+  //       });
 
-        setApplicants(validApplicants);
-        setFilteredApplicants(validApplicants);
+  //       setApplicants(validApplicants);
+  //       setFilteredApplicants(validApplicants);
 
-      } catch (err: any) {
-        console.error("❌ Error in fetchApplicants:", err);
-        console.error("Error details:", err.response?.data || err.message);
-        setError("Failed to fetch applicants. Please try again later.");
-        setApplicants([]);
-        setFilteredApplicants([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+  //     } catch (err: any) {
+  //       console.error("❌ Error in fetchApplicants:", err);
+  //       console.error("Error details:", err.response?.data || err.message);
+  //       setError("Failed to fetch applicants. Please try again later.");
+  //       setApplicants([]);
+  //       setFilteredApplicants([]);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
 
-    if (jobId && ownerEmail) {
-      console.log('🚀 Starting data fetch...');
-      fetchApplicants();
-    } else {
+  //   if (jobId && ownerEmail) {
+  //     console.log('🚀 Starting data fetch...');
+  //     fetchApplicants();
+  //   } else {
+  //     console.log('❌ Missing required data:', { jobId, ownerEmail });
+  //     setLoading(false);
+  //     setError("Job ID or owner email not provided");
+  //   }
+  // }, [jobId, ownerEmail, refreshTrigger,refreshKey]); // ✅ refreshTrigger is in dependencies
+useEffect(() => {
+  const fetchApplicants = async () => {
+    if (!jobId || !ownerEmail) {
       console.log('❌ Missing required data:', { jobId, ownerEmail });
       setLoading(false);
       setError("Job ID or owner email not provided");
+      return;
     }
-  }, [jobId, ownerEmail, refreshTrigger,refreshKey]); // ✅ refreshTrigger is in dependencies
 
+    try {
+      setLoading(true);
+      console.log('🔄 Fetching applicants - refreshTrigger:', refreshTrigger);
+
+      const response: any = await frappeAPI.getTaggedApplicantsByJobId(jobId, ownerEmail);
+      const applicantNames = response.data || [];
+
+      if (applicantNames.length === 0) {
+        setApplicants([]);
+        setFilteredApplicants([]);
+        setLoading(false);
+        return;
+      }
+
+      const applicantsPromises = applicantNames.map(async (applicant: any) => {
+        try {
+          const applicantDetail = await frappeAPI.getApplicantBYId(applicant.name);
+          return applicantDetail.data;
+        } catch (err) {
+          console.error(`Error fetching details for ${applicant.name}:`, err);
+          return null;
+        }
+      });
+
+      const applicantsData = await Promise.all(applicantsPromises);
+      const validApplicants = applicantsData.filter(applicant => applicant !== null);
+
+      setApplicants(validApplicants);
+      setFilteredApplicants(validApplicants);
+      setError(null);
+
+    } catch (err: any) {
+      console.error("❌ Error in fetchApplicants:", err);
+      setError("Failed to fetch applicants. Please try again later.");
+      setApplicants([]);
+      setFilteredApplicants([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchApplicants();
+}, [jobId, ownerEmail, refreshTrigger]);
   // Add this useEffect to debug when refreshTrigger changes
   useEffect(() => {
     console.log('🔄 refreshTrigger changed:', refreshTrigger);
@@ -1002,7 +1065,7 @@ export default function TaggedApplicants({
             All Applicants
           </h2>
           <p className="text-gray-500 text-sm absolute right-0">
-            Job: {jobId} | Total: {applicants.length} applicants
+            Total: {applicants.length} applicants
             {selectedApplicants.length > 0 &&
               ` | Selected: ${selectedApplicants.length}`}
           </p>

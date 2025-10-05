@@ -173,6 +173,8 @@ export default function TodoDetailPage() {
                   ownerEmail={todoData.owner_email || 'recruiter@gennextit.com'}
                   todoData={todoData}
                   refreshTrigger={refreshKey}
+                    onRefresh={() => setRefreshKey(prev => prev + 1)} // ✅ Add this new prop
+
                 // ✅ Additional refresh prop
                 />
               </>
