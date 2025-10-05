@@ -27,7 +27,7 @@ export default function TodoDetailPage() {
   const [todoData, setTodoData] = useState<TodoData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0); // ✅ Better refresh mechanism
+  const [refreshKey, setRefreshKey] = useState(0);
   const {user } = useAuth()
   const userEmail = user?.email
 
@@ -35,17 +35,21 @@ export default function TodoDetailPage() {
     router.back();
   };
 
-  // ✅ Improved refresh function
- const handleFormSubmitSuccess = () => {
-  console.log('🔄 Refreshing applicants list...');
-  setIsSheetOpen(false);
-  setRefreshKey(prev => prev + 1);
-};
+  const handleFormSubmitSuccess = () => {
+    console.log('🔄 Refreshing applicants list...');
+    setIsSheetOpen(false);
+    setRefreshKey(prev => prev + 1);
+  };
 
-  // ✅ Force refresh function that can be passed down
   const refreshApplicants = () => {
     console.log('🔄 Manual refresh triggered');
     setRefreshKey(prev => prev + 1);
+  };
+
+  // ✅ New function to handle opening sheet from detail modal
+  const handleOpenApplicantForm = () => {
+    setActiveTab('applicants');
+    setIsSheetOpen(true);
   };
 
   useEffect(() => {
@@ -121,6 +125,7 @@ export default function TodoDetailPage() {
             todoId={todoId}
             onClose={handleClose}
             setActiveTab={setActiveTab}
+            onOpenApplicantForm={handleOpenApplicantForm}
           />
         )}
 
@@ -138,22 +143,6 @@ export default function TodoDetailPage() {
             <h1 className="text-2xl font-bold text-gray-900 mb-4 pb-4"></h1>
             {jobId && todoData ? (
               <>
-                {/* ✅ Multiple Applicants Form in Sheet */}
-                {/* <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-                  <SheetContent side="right" className="w-full sm:max-w-4xl overflow-y-auto">
-                    <SheetHeader>
-                      <SheetTitle className="text-2xl font-bold text-gray-900">
-                        Add Applicants
-                      </SheetTitle>
-                    </SheetHeader>
-                    <div className="mt-6">
-                      <MultipleApplicantsForm
-                        initialJobId={jobId}
-                        onFormSubmitSuccess={handleFormSubmitSuccess}
-                      />
-                    </div>
-                  </SheetContent>
-                </Sheet> */}
                 <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                   <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
                     <SheetHeader>
@@ -169,16 +158,14 @@ export default function TodoDetailPage() {
                     </div>
                   </SheetContent>
                 </Sheet>
-                {/* ✅ Tagged Applicants List with refresh key */}
+                
                 <TaggedApplicants
-                  key={`tagged-applicants-${refreshKey}`} // ✅ Force re-render
+                  key={`tagged-applicants-${refreshKey}`}
                   jobId={jobId}
                   ownerEmail={userEmail || ''}
                   todoData={todoData}
                   refreshTrigger={refreshKey}
-                    onRefresh={() => setRefreshKey(prev => prev + 1)} // ✅ Add this new prop
-
-                // ✅ Additional refresh prop
+                  onRefresh={() => setRefreshKey(prev => prev + 1)}
                 />
               </>
             ) : (

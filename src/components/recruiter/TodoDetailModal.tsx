@@ -27,11 +27,16 @@ interface ToDo {
 interface TodoDetailModalProps {
   todoId: any;
   onClose: () => void;
-    setActiveTab: (tab: 'details' | 'applicants' | 'resume') => void;
-
+  setActiveTab: (tab: 'details' | 'applicants' | 'resume') => void;
+  onOpenApplicantForm?: () => void; // ✅ New prop
 }
 
-export const TodoDetailModal = ({ todoId, onClose,setActiveTab }: TodoDetailModalProps) => {
+export const TodoDetailModal = ({ 
+  todoId, 
+  onClose, 
+  setActiveTab,
+  onOpenApplicantForm 
+}: TodoDetailModalProps) => {
   const [todo, setTodo] = useState<ToDo | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -53,28 +58,24 @@ export const TodoDetailModal = ({ todoId, onClose,setActiveTab }: TodoDetailModa
     }
   }, [todoId]);
 
-  // Extract company name from description
   const extractCompany = (description?: string) => {
     if (!description) return 'Not specified';
     const match = description.match(/Company:\s*([^\n]+)/i);
     return match ? match[1].trim() : 'Not specified';
   };
 
-  // Extract industry from description
   const extractIndustry = (description?: string) => {
     if (!description) return 'Not specified';
     const match = description.match(/Industry:\s*([^\n]+)/i);
     return match ? match[1].trim() : 'Not specified';
   };
 
-  // Extract location from description
   const extractLocation = (description?: string) => {
     if (!description) return 'Not specified';
     const match = description.match(/Location:\s*([^\n]+)/i);
     return match ? match[1].trim() : 'Not specified';
   };
 
-  // Extract designation from description
   const extractDesignation = (description?: string) => {
     if (!description) return 'Not specified';
     const plain = description.replace(/<[^>]+>/g, '').trim();
@@ -82,47 +83,36 @@ export const TodoDetailModal = ({ todoId, onClose,setActiveTab }: TodoDetailModa
     return match ? match[1].trim() : 'Not specified';
   };
 
-  // Extract position title from description
   const extractPositionTitle = (description?: string) => {
     if (!description) return 'Not specified';
     const match = description.match(/Position Title:\s*([^\n]+)/i);
     return match ? match[1].trim() : 'Not specified';
   };
 
-   const extractBudget = (description?: string) => {
+  const extractBudget = (description?: string) => {
     if (!description) return 'Not specified';
     const match = description.match(/Your Target Cost:\s*([^\n]+)/i);
     return match ? match[1].trim() : 'Not specified';
   };
 
-  // Extract number of vacancies from description
   const extractVacancies = (description?: string): string => {
     if (!description) return 'Not specified';
-
     const match = description.match(/YOUR ALLOCATED POSITIONS:\s*(\d+)/i);
-
     if (match) {
       const count = parseInt(match[1], 10);
       return `${count}`;
     }
-
     return 'Not specified';
   };
 
-
-  // Calculate days ago
   const calculateDaysAgo = (date?: string): string => {
     if (!date) return 'Not set';
-
     const assignedDate = new Date(date);
     const currentDate = new Date();
-
     const diffTime = Math.abs(currentDate.getTime() - assignedDate.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
     return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
   };
-
 
   const getPriorityColor = (priority: string = '') => {
     switch (priority.toLowerCase()) {
@@ -147,6 +137,15 @@ export const TodoDetailModal = ({ todoId, onClose,setActiveTab }: TodoDetailModa
         return 'bg-red-50 text-red-700 border-red-200';
       default:
         return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+    }
+  };
+
+  // ✅ Updated handler to open form directly
+  const handleTagApplicants = () => {
+    if (onOpenApplicantForm) {
+      onOpenApplicantForm(); // Opens the form sheet
+    } else {
+      setActiveTab('applicants'); // Fallback to just switching tabs
     }
   };
 
@@ -201,20 +200,21 @@ export const TodoDetailModal = ({ todoId, onClose,setActiveTab }: TodoDetailModa
                 </div>
                 <div>
                   <h1 className="text-xl font-bold text-slate-900 capitalize">{extractDesignation(todo.description)}</h1>
-                  <p className="text-slate-600 text-sm mt-0.5">Comprehensive overview of  company and job description.</p>
+                  <p className="text-slate-600 text-sm mt-0.5">Comprehensive overview of company and job description.</p>
                 </div>
               </div>
 
-               <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3">
                 <span className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg border `}>
                   Budget: {extractBudget(todo.description)}
                 </span>
-                 <button
-    onClick={() => setActiveTab('applicants')}
-    className="p-2 flex text-red-600 border-red-600 border  hover:text-red-900 hover:bg-red-100 rounded-lg transition-all duration-200 ml-2"
-  >
-    <Plus size={22} />Tag Applicants
-  </button>
+                {/* ✅ Updated button handler */}
+                <button
+                  onClick={handleTagApplicants}
+                  className="p-2 flex text-red-600 border-red-600 border hover:text-red-900 hover:bg-red-100 rounded-lg transition-all duration-200 ml-2"
+                >
+                  <Plus size={22} />Tag Applicants
+                </button>
 
                 <button
                   onClick={onClose}
@@ -234,9 +234,9 @@ export const TodoDetailModal = ({ todoId, onClose,setActiveTab }: TodoDetailModa
                 <h2 className="text-lg font-semibold text-slate-900 mb-4">JOB DESCRIPTION</h2>
 
                 <div
-  className="prose max-w-none text-slate-800 leading-relaxed"
-  dangerouslySetInnerHTML={{ __html: todo.custom_job_desc || '' }}
-/>
+                  className="prose max-w-none text-slate-800 leading-relaxed"
+                  dangerouslySetInnerHTML={{ __html: todo.custom_job_desc || '' }}
+                />
               </div>
               {/* Company Information - 23% width */}
               <div className="flex-1 bg-gradient-to-br from-white to-slate-50 rounded-xl p-6 border border-slate-200" style={{ flex: '0 0 30%' }}>
