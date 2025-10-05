@@ -962,7 +962,7 @@ useEffect(() => {
                 <option value="" disabled>
                   Select a status...
                 </option>
-                <option value="Open">Open</option>
+                {/* <option value="Open">Open</option>
                 <option value="tagged">Tagged</option>
                 <option value="Shortlisted">Shortlisted</option>
                 <option value="Assessment Stage">Assessment Stage</option>
@@ -970,7 +970,15 @@ useEffect(() => {
                 <option value="offered">Offered</option>
                 <option value="offer rejected">Offer Rejected</option>
                 <option value="Rejected">Rejected</option>
-                <option value="joined">Joined</option>
+                <option value="joined">Joined</option> */}
+                {/* <option value="Tagged">Tagged</option> */}
+                <option value="Shortlisted">Shortlisted</option>
+                <option value="Assessment Stage">Assessment</option>
+                <option value="Interview Stage">Interview</option>
+                 <option value="Interview Reject">Interview reject</option>
+                  <option value="Offered">Offered</option>
+                <option value="Offer Drop">Offer Drop</option>
+                <option value="Joined">Joined</option>
               </select>
             </div>
             <div className="mb-6">

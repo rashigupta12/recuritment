@@ -317,7 +317,7 @@ export default function ViewApplicantPage() {
                 <option value="Shortlisted">Shortlisted</option>
                 <option value="Assessment Stage">Assessment</option>
                 <option value="Interview Stage">Interview</option>
-                 <option value="Interview Reject">Interview</option>
+                 <option value="Interview Reject">Interview reject</option>
                   <option value="Offered">Offered</option>
                 <option value="Offer Drop">Offer Drop</option>
                 <option value="Joined">Joined</option>
