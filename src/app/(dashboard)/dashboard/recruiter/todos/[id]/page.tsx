@@ -9,6 +9,7 @@ import TaggedApplicants from "@/components/recruiter/TaggedApplicants";
 import MultipleApplicantsForm from "@/components/recruiter/MultipleApplicantsForm";
 import { Plus } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface TodoData {
   name: string;
@@ -27,6 +28,8 @@ export default function TodoDetailPage() {
   const [loading, setLoading] = useState(true);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0); // ✅ Better refresh mechanism
+  const {user } = useAuth()
+  const userEmail = user?.email
 
   const handleClose = () => {
     router.back();
@@ -170,7 +173,7 @@ export default function TodoDetailPage() {
                 <TaggedApplicants
                   key={`tagged-applicants-${refreshKey}`} // ✅ Force re-render
                   jobId={jobId}
-                  ownerEmail={todoData.owner_email || 'recruiter@gennextit.com'}
+                  ownerEmail={userEmail || ''}
                   todoData={todoData}
                   refreshTrigger={refreshKey}
                     onRefresh={() => setRefreshKey(prev => prev + 1)} // ✅ Add this new prop

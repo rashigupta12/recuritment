@@ -353,6 +353,7 @@ interface EmailSendingPopupProps {
     currentUserEmail: string;
     jobId: string;
     onEmailSent: () => void;
+     jobTitle : string;
 }
 
 export default function EmailSendingPopup({
@@ -361,10 +362,11 @@ export default function EmailSendingPopup({
     selectedApplicants,
     currentUserEmail,
     jobId,
-    onEmailSent
+    onEmailSent,
+    jobTitle
 }: EmailSendingPopupProps) {
     const [clientEmail, setClientEmail] = useState('');
-    const [subject, setSubject] = useState(`Applicants for Job ${jobId}`);
+    const [subject, setSubject] = useState(`Applicants for Job Title ${ jobTitle}`);
     const [message, setMessage] = useState(getDefaultTemplate(selectedApplicants, jobId));
     const [sending, setSending] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -372,7 +374,7 @@ export default function EmailSendingPopup({
     function getDefaultTemplate(applicants: any[], jobId: string): string {
         return `Dear Client,
 
-I am pleased to share with you ${applicants.length} candidate profiles for the position ${jobId}.
+I am pleased to share with you ${applicants.length} candidate profiles for the position ${jobTitle}.
 
 Candidate Summary:
 ${applicants.map((applicant, index) => 
@@ -382,7 +384,6 @@ ${applicants.map((applicant, index) =>
 Please find their resumes attached with this email. We believe these candidates have the skills and experience that align well with your requirements.
 
 Best regards,
-${currentUserEmail.split('@')[0]}
 ${process.env.NEXT_PUBLIC_COMPANY_NAME || ''}`;
     }
 
@@ -506,7 +507,7 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || ''}`;
                         </label>
                         <input
                             type="email"
-                            value={`${process.env.NEXT_PUBLIC_COMPANY_NAME} <${process.env.NEXT_PUBLIC_COMPANY_EMAIL}>`}
+                            value={`${process.env.NEXT_PUBLIC_COMPANY_NAME} <${currentUserEmail}>`}
                             disabled
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 text-sm"
                         />

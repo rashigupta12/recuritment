@@ -42,6 +42,7 @@ interface Props {
   todoData?: any;
   refreshTrigger?: number;
     onRefresh?: () => void; // ✅ Add this prop
+   jobTitle?:string;
 
 }
 
@@ -910,6 +911,7 @@ useEffect(() => {
           selectedApplicants={selectedApplicants}
           currentUserEmail={ownerEmail}
           jobId={jobId}
+          jobTitle = {job_title || ""}
           onEmailSent={() => {
             setSelectedApplicants([]);
             setShowEmailPopup(false);
