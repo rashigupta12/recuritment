@@ -1,5 +1,5 @@
 /*eslint-disable @typescript-eslint/no-explicit-any */
-import { Search, RefreshCw, Filter, X, Calendar, Users, Briefcase, MapPin, ChevronDown, ChevronUp } from "lucide-react";
+import { Search, RefreshCw, Filter, X, Calendar, Building2, Users, Briefcase, MapPin, ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ interface TodosHeaderProps {
   filteredJobs?: number;
   uniqueDepartments?: string[];
   uniqueAssigners?: string[];
+  uniqueClients?: string[];
   uniqueLocations?: string[];
   uniqueJobTitles?: string[];
   onFilterChange?: (filters: FilterState) => void;
@@ -23,6 +24,7 @@ interface TodosHeaderProps {
 interface FilterState {
   departments: string[];
   assignedBy: string[];
+  clients: string[];
   locations: string[];
   jobTitles: string[];
   dateRange: 'all' | 'today' | 'week' | 'month';
@@ -37,6 +39,7 @@ export const TodosHeader = ({
   filteredJobs = 0,
   uniqueDepartments = [],
   uniqueAssigners = [],
+  uniqueClients = [],
   uniqueLocations = [],
   uniqueJobTitles = [],
   onFilterChange
@@ -44,17 +47,19 @@ export const TodosHeader = ({
   const [filters, setFilters] = useState<FilterState>({
     departments: [],
     assignedBy: [],
+    clients: [],
     locations: [],
     jobTitles: [],
     dateRange: 'all',
     vacancies: 'all'
   });
 
+  const [clientSearch, setClientSearch] = useState('');
   const [locationSearch, setLocationSearch] = useState('');
   const [jobTitleSearch, setJobTitleSearch] = useState('');
   const [openSection, setOpenSection] = useState<string | null>(null);
 
-  const toggleFilter = (type: 'departments' | 'assignedBy' | 'locations' | 'jobTitles', value: string) => {
+  const toggleFilter = (type: 'departments' | 'assignedBy' | 'clients' | 'locations' | 'jobTitles', value: string) => {
     const newFilters = {
       ...filters,
       [type]: filters[type].includes(value)
@@ -81,12 +86,14 @@ export const TodosHeader = ({
     const resetFilters = {
       departments: [],
       assignedBy: [],
+      clients: [],
       locations: [],
       jobTitles: [],
       dateRange: 'all' as const,
       vacancies: 'all' as const
     };
     setFilters(resetFilters);
+    setClientSearch('');
     setLocationSearch('');
     setJobTitleSearch('');
     onFilterChange?.(resetFilters);
@@ -95,6 +102,10 @@ export const TodosHeader = ({
   const toggleSection = (section: string) => {
     setOpenSection(openSection === section ? null : section);
   };
+
+  const filteredClients = uniqueClients.filter(client =>
+    client.toLowerCase().includes(clientSearch.toLowerCase())
+  );
 
   const filteredLocations = uniqueLocations.filter(location =>
     location.toLowerCase().includes(locationSearch.toLowerCase())
@@ -106,6 +117,7 @@ export const TodosHeader = ({
 
   const activeFilterCount = filters.departments.length + 
     filters.assignedBy.length +
+    filters.clients.length +
     filters.locations.length +
     filters.jobTitles.length +
     (filters.dateRange !== 'all' ? 1 : 0) + 
@@ -176,6 +188,43 @@ export const TodosHeader = ({
         </div>
       )
     }] : []),
+    ...(uniqueClients.length > 0 ? [{
+      id: 'company',
+      title: 'Company',
+      icon: Building2,
+      content: (
+        <div className="space-y-3 pl-6">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search companies..."
+              value={clientSearch}
+              onChange={(e) => setClientSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+          <div className="space-y-2 max-h-48 overflow-y-auto">
+            {filteredClients.map(client => (
+              <label key={client} className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={filters.clients.includes(client)}
+                  onChange={() => toggleFilter('clients', client)}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium text-gray-700">{client}</span>
+              </label>
+            ))}
+            {filteredClients.length === 0 && (
+              <div className="text-center py-3 text-sm text-gray-500">
+                No companies found
+              </div>
+            )}
+          </div>
+        </div>
+      )
+    }] : []),
     ...(uniqueLocations.length > 0 ? [{
       id: 'location',
       title: 'Location',
@@ -210,6 +259,26 @@ export const TodosHeader = ({
               </div>
             )}
           </div>
+        </div>
+      )
+    }] : []),
+    ...(uniqueDepartments.length > 0 ? [{
+      id: 'department',
+      title: 'Department',
+      icon: Briefcase,
+      content: (
+        <div className="space-y-2 pl-6">
+          {uniqueDepartments.map(dept => (
+            <label key={dept} className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+              <input
+                type="checkbox"
+                checked={filters.departments.includes(dept)}
+                onChange={() => toggleFilter('departments', dept)}
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <span className="text-sm font-medium text-gray-700">{dept}</span>
+            </label>
+          ))}
         </div>
       )
     }] : []),
@@ -333,6 +402,17 @@ export const TodosHeader = ({
                                 </button>
                               </Badge>
                             ))}
+                            {filters.clients.map(client => (
+                              <Badge key={client} variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
+                                Company: {client}
+                                <button 
+                                  onClick={() => toggleFilter('clients', client)} 
+                                  className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </Badge>
+                            ))}
                             {filters.locations.map(location => (
                               <Badge key={location} variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
                                 {location}
@@ -414,22 +494,6 @@ export const TodosHeader = ({
                         </Button>
                       </SheetTrigger>
                     </div>
-                  </div> */}
-                  <div className="fixed bottom-0   pl-4  py-3">
-                    <div className="flex items-center bg-white justify-between gap-3">
-                      <Button
-                        variant="outline"
-                        onClick={clearAllFilters}
-                        className="flex-1 border-gray-300 text-gray-700 hover:bg-gray-200"
-                      >
-                        Clear All
-                      </Button>
-                      <SheetTrigger asChild>
-                        <Button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white">
-                          Show Results
-                        </Button>
-                      </SheetTrigger>
-                    </div>
                   </div>
                 </SheetContent>
               </Sheet>
@@ -469,22 +533,22 @@ export const TodosHeader = ({
                 </button>
               </Badge>
             ))}
-            {filters.locations.map(location => (
-              <Badge key={location} variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
-                {location}
+            {filters.clients.map(client => (
+              <Badge key={client} variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
+                Company: {client}
                 <button
-                  onClick={() => toggleFilter('locations', location)}
+                  onClick={() => toggleFilter('clients', client)}
                   className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
                 >
                   <X className="w-3 h-3" />
                 </button>
               </Badge>
             ))}
-            {filters.jobTitles.map(jobTitle => (
-              <Badge key={jobTitle} variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
-                Job Title: {jobTitle}
+            {filters.locations.map(location => (
+              <Badge key={location} variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
+                {location}
                 <button
-                  onClick={() => toggleFilter('jobTitles', jobTitle)}
+                  onClick={() => toggleFilter('locations', location)}
                   className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
                 >
                   <X className="w-3 h-3" />

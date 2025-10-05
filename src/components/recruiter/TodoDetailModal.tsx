@@ -16,7 +16,6 @@ interface ToDo {
   description?: string;
   custom_job_id?: string;
   custom_job_title?: string;
-  custom_job_title?: string;
   assigned_by?: string;
   assigned_by_full_name?: string;
   creation?: string;
