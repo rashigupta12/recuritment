@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, Eye } from "lucide-react";
 import { useState } from "react";
 import { JobApplicant } from "../../app/(dashboard)/dashboard/recruiter/viewapplicant/page";
 
@@ -9,6 +9,7 @@ interface ApplicantsTableProps {
   applicants: JobApplicant[];
   selectedApplicants: string[];
   onSelectApplicant: (name: string) => void;
+  onViewDetails?: (applicant: JobApplicant) => void;
   showCheckboxes: boolean;
   showStatus: boolean;
 }
@@ -20,6 +21,7 @@ export const ApplicantsTable = ({
   applicants,
   selectedApplicants,
   onSelectApplicant,
+  onViewDetails,
   showCheckboxes,
   showStatus,
 }: ApplicantsTableProps) => {
@@ -78,7 +80,7 @@ export const ApplicantsTable = ({
   }) => (
     <th
       onClick={() => handleSort(field)}
-      className="px-2 sm:px-4 py-4 text-left text-xs sm:text-sm font-semibold cursor-pointer select-none group"
+      className="px-2 sm:px-4 py-4 text-left text-lg sm:text-md cursor-pointer select-none group"
     >
       <div className="flex items-center gap-1 sm:gap-2">
         {children}
@@ -106,14 +108,17 @@ export const ApplicantsTable = ({
           <thead className="bg-blue-500 text-white">
             <tr>
               {showCheckboxes && (
-                <th className="px-2 sm:px-4 py-4 text-left">Select</th>
+                <th className="px-2 sm:px-4 py-4 text-left text-lg">Select</th>
               )}
-              <th className="px-2 sm:px-4 py-4 text-left">Designation</th>
-              <SortableHeader field="name" >Name</SortableHeader>
+              <SortableHeader field="name">Name</SortableHeader>
               <SortableHeader field="email">Email</SortableHeader>
-              <th className="px-2 sm:px-4 py-4 text-left">Phone</th>
+              <th className="px-2 sm:px-4 py-4 text-left text-lg">Phone</th>
+              <th className="px-2 sm:px-4 py-4 text-left text-lg">Designation</th>
               {showStatus && (
                 <SortableHeader field="status">Status</SortableHeader>
+              )}
+              {onViewDetails && (
+                <th className="px-2 sm:px-4 py-4 text-left text-lg">Actions</th>
               )}
             </tr>
           </thead>
@@ -135,9 +140,6 @@ export const ApplicantsTable = ({
                     />
                   </td>
                 )}
-                <td className="px-2 sm:px-4 py-4 truncate">
-                  {applicant.designation || "N/A"}
-                </td>
                 <td className="px-2 sm:px-4 py-4 font-semibold text-blue-900 truncate">
                   {applicant.applicant_name
                     ? applicant.applicant_name
@@ -145,16 +147,30 @@ export const ApplicantsTable = ({
                         .replace(/\b\w/g, (char) => char.toUpperCase())
                     : "N/A"}
                 </td>
-
                 <td className="px-2 sm:px-4 py-4 truncate">
                   {applicant.email_id || "N/A"}
                 </td>
                 <td className="px-2 sm:px-4 py-4 truncate">
                   {applicant.phone_number || "N/A"}
                 </td>
+                <td className="px-2 sm:px-4 py-4 truncate">
+                  {applicant.designation || "N/A"}
+                </td>
                 {showStatus && (
                   <td className="px-2 sm:px-4 py-4 truncate font-medium text-blue-700">
                     {applicant.status || "N/A"}
+                  </td>
+                )}
+                {onViewDetails && (
+                  <td className="px-2 sm:px-4 py-4">
+                    <button
+                      onClick={() => onViewDetails(applicant)}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                      aria-label={`View details for ${applicant.applicant_name}`}
+                    >
+                      <Eye className="h-4 w-4" />
+                      <span className="hidden sm:inline">View</span>
+                    </button>
                   </td>
                 )}
               </tr>

@@ -106,7 +106,7 @@ export const TodosTable = ({ todos, onViewTodo }: TodosTableProps) => {
     const assigned = new Date(dateAssigned);
     const now = new Date();
     const diffDays = Math.floor((now.getTime() - assigned.getTime()) / (1000 * 60 * 60 * 24));
-    return diffDays <= 0 ? 'Today' : `${diffDays}d`;
+    return  diffDays
   };
 
   const handleRowClick = (todo: ToDo, event: React.MouseEvent) => {

@@ -89,6 +89,7 @@ export default function ViewApplicantPage() {
         setUserEmail(email);
 
         const detailedApplicants = await fetchApplicantsData(email);
+        console.log(detailedApplicants)
         setApplicants(detailedApplicants);
         setFilteredApplicants(detailedApplicants);
       } catch (err: any) {
@@ -287,7 +288,7 @@ export default function ViewApplicantPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 ">
       <div className="w-full mx-auto">
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
           <h1 className="text-3xl font-bold text-blue-800">Applicants</h1>
@@ -312,12 +313,15 @@ export default function ViewApplicantPage() {
               >
                 <option value="all">All Status</option>
                 <option value="Open">Open</option>
+                <option value="Tagged">Tagged</option>
                 <option value="Shortlisted">Shortlisted</option>
-                <option value="Assessment Stage">Assessment Stage</option>
-                <option value="Interview Stage">Interview Stage</option>
-                <option value="Hired">Hired</option>
-                <option value="Rejected">Rejected</option>
-                <option value="Closed">Closed</option>
+                <option value="Assessment Stage">Assessment</option>
+                <option value="Interview Stage">Interview</option>
+                 <option value="Interview Reject">Interview</option>
+                  <option value="Offered">Offered</option>
+                <option value="Offer Drop">Offer Drop</option>
+                <option value="Joined">Joined</option>
+               
               </select>
               <button
                 onClick={handleChangeStatus}
