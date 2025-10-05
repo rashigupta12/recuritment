@@ -224,7 +224,7 @@ const addNewDesignation = async () => {
             <p className="font-medium">
               No designations found for &quot;{searchQuery}&quot;
             </p>
-            <p className="text-xs text-gray-500">Click to add a new designation</p>
+            <p className="text-md text-blue-500">Click to add a new designation</p>
           </div>
         </div>
       ) : (
