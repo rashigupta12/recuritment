@@ -1,1018 +1,912 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-'use client';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale } from 'chart.js';
-import { Pie, Bar } from 'react-chartjs-2';
-import { useState } from 'react';
-import { Users, Briefcase, Calendar, Activity, FileText, Award } from 'lucide-react';
-// Register Chart.js components
-ChartJS.register(ArcElement, Tooltip, Legend, BarElement, CategoryScale, LinearScale);
+/*eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
 
-// Updated JobApplicant interface with diversity fields
+import { useAuth } from "@/contexts/AuthContext";
+import { frappeAPI } from "@/lib/api/frappeClient";
+import {
+  ActiveElement,
+  ArcElement,
+  BarElement,
+  CategoryScale,
+  ChartEvent,
+  Chart as ChartJS,
+  Filler,
+  Legend,
+  LinearScale,
+  LineElement,
+  PointElement,
+  Tooltip,
+} from "chart.js";
+import {
+  Briefcase,
+  Building2,
+  Calendar,
+  Download,
+  Filter,
+  TrendingUp,
+  UserCheck,
+  Users,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { Bar, Doughnut, Line } from "react-chartjs-2";
+import ChartDataLabels from 'chartjs-plugin-datalabels';
+
+ChartJS.register(
+  ArcElement,
+  Tooltip,
+  Legend,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+  LineElement,
+  PointElement,
+  Filler,
+  ChartDataLabels
+);
+
 interface JobApplicant {
   id: string;
   name: string;
   email: string;
   job_title: string;
-  status: 'Open' | 'Shortlisted' | 'Assessment Stage' | 'Interview Stage' | 'Closed' | 'Rejected' | 'Hired';
-  joined?: boolean;
-  gender?: 'Male' | 'Female' | 'Non-binary' | 'Prefer not to say'; // Added for diversity
-  ethnicity?: 'Asian' | 'Black' | 'Hispanic' | 'White' | 'Other'; // Added for diversity
-  ageGroup?: '18-24' | '25-34' | '35-44' | '45+'; // Added for diversity
-  location?: string; // Added for diversity (geographic diversity)
+  client: string;
+  status:
+    | "Applied"
+    | "Tagged"
+    | "Shortlisted"
+    | "AssessmentStage"
+    | "InterviewStage"
+    | "Offered"
+    | "OfferRejected"
+    | "Rejected"
+    | "Joined";
+  appliedDate: string;
+  lastUpdated: string;
 }
 
-// JobOpening interface (unchanged)
 interface JobOpening {
   id: string;
   title: string;
-  company: string;
+  client: string;
   location: string;
-  experience: string;
-  department: string;
-  status: 'Open' | 'Closed';
-  applicants: number;
+  status: "Open" | "Offered" | "Joined" | "Cancelled";
   positions: number;
+  createdDate: string;
 }
 
-interface Activity {
-  id: string;
-  action: string;
-  timestamp: string;
+interface MetricData {
+  month: string;
+  totalCVUploaded: number;
+  tagged: number;
+  shortlisted: number;
+  assessmentStage: number;
+  interviews: number;
+  offers: number;
+  joined: number;
 }
 
-interface Event {
-  id: string;
-  title: string;
-  date: string;
-}
-
-// Updated dummyApplicants with diverse data
-const dummyApplicants: JobApplicant[] = [
-  { id: '1', name: 'John Doe', email: 'john.doe@example.com', job_title: 'Software Engineer', status: 'Open', gender: 'Male', ethnicity: 'White', ageGroup: '25-34', location: 'USA' },
-  { id: '2', name: 'Jane Smith', email: 'jane.smith@example.com', job_title: 'Product Manager', status: 'Hired', joined:false, gender: 'Female', ethnicity: 'Asian', ageGroup: '35-44', location: 'India' },
-  { id: '3', name: 'Alice Johnson', email: 'alice.j@example.com', job_title: 'Data Analyst', status: 'Assessment Stage', gender: 'Female', ethnicity: 'Black', ageGroup: '18-24', location: 'Canada' },
-  { id: '4', name: 'Bob Wilson', email: 'bob.wilson@example.com', job_title: 'UX Designer', status: 'Interview Stage', gender: 'Male', ethnicity: 'Hispanic', ageGroup: '45+', location: 'Mexico' },
-  { id: '5', name: 'Emma Brown', email: 'emma.brown@example.com', job_title: 'DevOps Engineer', status: 'Hired', joined: true, gender: 'Non-binary', ethnicity: 'Other', ageGroup: '25-34', location: 'UK' },
-  { id: '6', name: 'Michael Lee', email: 'michael.lee@example.com', job_title: 'Software Engineer', status: 'Rejected', gender: 'Male', ethnicity: 'Asian', ageGroup: '35-44', location: 'China' },
-  { id: '7', name: 'Sarah Davis', email: 'sarah.davis@example.com', job_title: 'Marketing Manager', status: 'Closed', gender: 'Female', ethnicity: 'White', ageGroup: '45+', location: 'Australia' },
-  { id: '8', name: 'David Miller', email: 'david.miller@example.com', job_title: 'Data Scientist', status: 'Shortlisted', gender: 'Male', ethnicity: 'Black', ageGroup: '25-34', location: 'South Africa' },
-  { id: '9', name: 'Laura Taylor', email: 'laura.taylor@example.com', job_title: 'Product Manager', status: 'Assessment Stage', gender: 'Female', ethnicity: 'Hispanic', ageGroup: '18-24', location: 'Spain' },
-  { id: '10', name: 'James White', email: 'james.white@example.com', job_title: 'Software Engineer', status: 'Hired',joined:true, gender: 'Prefer not to say', ethnicity: 'Other', ageGroup: '35-44', location: 'Germany' },
-  { id: '11', name: 'Emily Clark', email: 'emily.clark@example.com', job_title: 'Data Engineer', status: 'Hired', joined: false, gender: 'Female', ethnicity: 'Asian', ageGroup: '25-34', location: 'Japan' },
-];
-
-// Updated dummyJobOpenings to align with applicant data
-const dummyJobOpenings: JobOpening[] = [
-  { id: '1', title: 'Software Engineer', company: 'TechCorp', location: 'Bangalore, India', experience: '2-5 years', department: 'Engineering', status: 'Open', applicants: 3, positions: 3 },
-  { id: '2', title: 'Product Manager', company: 'Innovate Ltd', location: 'Mumbai, India', experience: '3-7 years', department: 'Product', status: 'Open', applicants: 2, positions: 2 },
-  { id: '3', title: 'Data Analyst', company: 'DataVision', location: 'Delhi, India', experience: '1-3 years', department: 'Analytics', status: 'Open', applicants: 1, positions: 1 },
-  { id: '4', title: 'UX Designer', company: 'DesignHub', location: 'Pune, India', experience: '2-4 years', department: 'Design', status: 'Closed', applicants: 1, positions: 1 },
-  { id: '5', title: 'DevOps Engineer', company: 'CloudSys', location: 'Hyderabad, India', experience: '4-8 years', department: 'Engineering', status: 'Open', applicants: 1, positions: 2 },
-  { id: '6', title: 'Data Scientist', company: 'DataVision', location: 'Chennai, India', experience: '2-5 years', department: 'Analytics', status: 'Open', applicants: 1, positions: 1 },
-  { id: '7', title: 'Marketing Manager', company: 'Innovate Ltd', location: 'Kolkata, India', experience: '5-10 years', department: 'Marketing', status: 'Closed', applicants: 1, positions: 1 },
-  { id: '8', title: 'Data Engineer', company: 'TechCorp', location: 'Bangalore, India', experience: '3-6 years', department: 'Engineering', status: 'Open', applicants: 1, positions: 1 },
-];
-
-const dummyActivities: Activity[] = [
-  { id: '1', action: 'John Doe moved to Assessment Stage', timestamp: '2025-10-01 10:30 AM' },
-  { id: '2', action: 'Software Engineer job opened', timestamp: '2025-09-30 3:15 PM' },
-  { id: '3', action: 'Jane Smith shortlisted', timestamp: '2025-09-29 9:00 AM' },
-];
-
-const dummyEvents: Event[] = [
-  { id: '1', title: 'Interview with John Doe', date: '2025-10-02 10:00 AM' },
-  { id: '2', title: 'Assessment for Jane Smith', date: '2025-10-03 2:00 PM' },
-];
-
-// QuickStats component
-const QuickStats: React.FC<{ applicants: JobApplicant[] }> = ({ applicants }) => {
-  const totalApplicants = applicants.length;
-  const pendingActions = applicants.filter((a) => a.status === 'Open' || a.status === 'Shortlisted' || a.status === 'Assessment Stage' || a.status === 'Interview Stage').length;
-  const recentStatusChanges = dummyActivities.length;
-
-  return (
-    <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100">
-      <h2 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2">
-        <Award className="h-5 w-5 text-blue-600" />
-        Quick Stats
-      </h2>
-      <div className="space-y-4">
-        <div>
-          <p className="text-sm text-gray-600">Total Applicants</p>
-          <p className="text-2xl font-bold text-gray-900">{totalApplicants}</p>
-        </div>
-        <div>
-          <p className="text-sm text-gray-600">Pending Actions</p>
-          <p className="text-2xl font-bold text-gray-900">{pendingActions}</p>
-        </div>
-        <div>
-          <p className="text-sm text-gray-600">Recent Status Changes</p>
-          <p className="text-2xl font-bold text-gray-900">{recentStatusChanges}</p>
-        </div>
-      </div>
-    </div>
+export default function RecruiterDashboard() {
+  const router = useRouter();
+  const [selectedClient, setSelectedClient] = useState<string>("All");
+  const [timePeriod, setTimePeriod] = useState<"week" | "month" | "quarter">(
+    "month"
   );
-};
-// const FunnelChart: React.FC<{ applicants: JobApplicant[] }> = ({ applicants }) => {
-//   const funnelStages = ['Open', 'Shortlisted', 'Assessment Stage', 'Interview Stage', 'Hired'];
-//   const funnelData = funnelStages.map(stage => applicants.filter(a => a.status === stage).length);
+  const { user } = useAuth();
+  console.log(user)
+  const [apiData, setApiData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-//   const data = {
-//     labels: funnelStages,
-//     datasets: [
-//       {
-//         label: 'Number of Candidates',
-//         data: funnelData,
-//         backgroundColor: ['#3B82F6', '#FBBF24', '#F59E0B', '#10B981', '#34D399'],
-//         borderColor: '#FFFFFF',
-//         borderWidth: 1,
-//       },
-//     ],
-//   };
+  useEffect(() => {
+    const fetchData = async () => {
+      if (user?.email) {
+        try {
+          setLoading(true);
+          const response = await frappeAPI.makeAuthenticatedRequest(
+            "GET",
+            `/method/recruitment_app.rec_dashboard.get_recruiter_dashboard_data_by_company?email=${user.email}`
+          );
+          console.log(response)
+          setApiData(response.message);
+        } catch (error) {
+          console.error("Error fetching dashboard data:", error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    fetchData();
+  }, [user?.email]);
 
-//   const options = {
-//     indexAxis: 'y' as const, // horizontal bars to simulate funnel
-//     responsive: true,
-//     plugins: {
-//       legend: { display: false },
-//       tooltip: {
-//         callbacks: {
-//           label: (context: any) => `${context.label}: ${context.raw} candidates`,
-//         },
-//       },
-//       title: {
-//         display: true,
-//         text: 'Candidate Funnel',
-//         font: { size: 18, family: 'Inter, sans-serif', weight: '600' },
-//         color: '#1F2937',
-//       },
-//     },
-//     scales: {
-//       x: {
-//         beginAtZero: true,
-//         ticks: { color: '#1F2937' },
-//         title: { display: true, text: 'Number of Candidates', font: { size: 14 }, color: '#1F2937' },
-//       },
-//       y: {
-//         ticks: { color: '#1F2937' },
-//       },
-//     },
-//   };
+  // Helper function to filter data by time period
+  const filterByTimePeriod = (dateString: string) => {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-//   return (
-//     <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100 mt-6">
-//       <Bar data={data} options={options} />
-//     </div>
-//   );
-// };
-// OfferLetterTracking component
-const OfferLetterTracking: React.FC<{ applicants: JobApplicant[] }> = ({ applicants }) => {
-  const hiredApplicants = applicants.filter((a) => a.status === 'Hired');
-  const joinedCount = hiredApplicants.filter((a) => a.joined).length;
+    switch (timePeriod) {
+      case "week":
+        return diffDays <= 7;
+      case "month":
+        return diffDays <= 30;
+      case "quarter":
+        return diffDays <= 90;
+      default:
+        return true;
+    }
+  };
 
-  return (
-    <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100">
-      <h2 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2">
-        <FileText className="h-5 w-5 text-blue-600" />
-        Offer Letter Tracking
-      </h2>
-      <div className="mb-4">
-        <p className="text-sm text-gray-600">
-          Offer Letters Sent: <span className="font-medium">{hiredApplicants.length}</span>
-        </p>
-        <p className="text-sm text-gray-600">
-          Joined: <span className="font-medium">{joinedCount}</span> ({((joinedCount / hiredApplicants.length) * 100 || 0).toFixed(1)}%)
-        </p>
-      </div>
-      {hiredApplicants.length === 0 ? (
-        <p className="text-center text-gray-600">No offer letters sent.</p>
-      ) : (
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-blue-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">Job Title</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">Joined</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {hiredApplicants.map((applicant) => (
-              <tr key={applicant.id} className="hover:bg-blue-50 transition-colors">
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{applicant.name}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{applicant.job_title}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span
-                    className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      applicant.joined ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                    }`}
-                  >
-                    {applicant.joined ? 'Joined' : 'Not Joined'}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </div>
+  // Transform API data to match component structure
+  const transformedApplicants = useMemo((): JobApplicant[] => {
+    if (!apiData) return [];
+
+    const allApplicants: JobApplicant[] = [];
+    const statusMapping: Record<string, string> = {
+      tagged_applicants_by_company: "Tagged",
+      shortlisted_applicants_by_company: "Shortlisted",
+      assessment_stage_applicants_by_company: "AssessmentStage",
+      interview_stage_applicants_by_company: "InterviewStage",
+      offered_applicants_by_company: "Offered",
+      rejected_applicants_by_company: "Rejected",
+      joined_applicants_by_company: "Joined",
+    };
+
+    Object.keys(statusMapping).forEach((key) => {
+      const statusData = apiData[key]?.applicants_by_company || {};
+      const status = statusMapping[key];
+
+      Object.entries(statusData).forEach(([company, applicants]: [string, any]) => {
+        (applicants || []).forEach((applicant: any) => {
+          allApplicants.push({
+            id: applicant.name,
+            name: applicant.applicant_name,
+            email: applicant.email_id,
+            job_title: applicant.designation,
+            client: company,
+            status: status as any,
+            appliedDate: new Date().toISOString().split("T")[0],
+            lastUpdated: new Date().toISOString().split("T")[0],
+          });
+        });
+      });
+    });
+
+    return allApplicants;
+  }, [apiData]);
+
+  // Transform jobs data from API
+  const transformedJobs = useMemo((): JobOpening[] => {
+    if (!apiData?.jobs_by_company) return [];
+
+    const jobs: JobOpening[] = [];
+    Object.entries(apiData.jobs_by_company).forEach(([company, jobTitles]: [string, any]) => {
+      (jobTitles || []).forEach((title: string, index: number) => {
+        jobs.push({
+          id: `${company}-${index}`,
+          title: title,
+          client: company,
+          location: "N/A",
+          status: "Open",
+          positions: 1,
+          createdDate: new Date().toISOString().split("T")[0],
+        });
+      });
+    });
+
+    return jobs;
+  }, [apiData]);
+
+  // Get clients from API data
+  const clients = useMemo(() => {
+    if (!apiData?.companies) return ["All"];
+    return ["All", ...apiData.companies];
+  }, [apiData]);
+
+  const filteredApplicants = useMemo(
+    () =>
+      (selectedClient === "All"
+        ? transformedApplicants
+        : transformedApplicants.filter((a) => a.client === selectedClient)
+      ).filter((a) => filterByTimePeriod(a.appliedDate)),
+    [selectedClient, transformedApplicants, timePeriod]
   );
-};
 
-// DashboardCards component
-const DashboardCards: React.FC<{ applicants: JobApplicant[]; jobOpenings: JobOpening[] }> = ({ applicants, jobOpenings }) => (
-  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-    <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-lg shadow-md hover:shadow-xl transition-shadow">
-      <h3 className="text-lg font-semibold">Active Job Openings</h3>
-      <p className="text-2xl">{jobOpenings.filter((job) => job.status === 'Open').length}</p>
-    </div>
-    <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-lg shadow-md hover:shadow-xl transition-shadow">
-      <h3 className="text-lg font-semibold">In Assessment</h3>
-      <p className="text-2xl">{applicants.filter((a) => a.status === 'Assessment Stage').length}</p>
-    </div>
-    <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 rounded-lg shadow-md hover:shadow-xl transition-shadow">
-      <h3 className="text-lg font-semibold">Hired This Month</h3>
-      <p className="text-2xl">{applicants.filter((a) => a.status === 'Hired').length}</p>
-    </div>
+  const filteredJobs = useMemo(
+    () =>
+      (selectedClient === "All"
+        ? transformedJobs
+        : transformedJobs.filter((j) => j.client === selectedClient)
+      ).filter((j) => filterByTimePeriod(j.createdDate)),
+    [selectedClient, transformedJobs, timePeriod]
+  );
+
+  const activeClients = useMemo(() => {
+    return apiData?.companies?.length || 0;
+  }, [apiData]);
+
+  const kpiMetrics = useMemo(() => {
+    const total = apiData?.summary?.total_applicants || 0;
+    const tagged = apiData?.metrics?.Tagged || 0;
+    const interviews = apiData?.metrics?.["Interview Stage"] || 0;
+    const offered = apiData?.metrics?.Offered || 0;
+    const joined = apiData?.metrics?.Joined || 0;
+
+    return {
+      totalApplicants: total,
+      taggedToInterview:
+        tagged > 0 ? ((interviews / tagged) * 100).toFixed(1) : "0",
+      interviewToOffer:
+        interviews > 0 ? ((offered / interviews) * 100).toFixed(1) : "0",
+      offerToJoin: offered > 0 ? ((joined / offered) * 100).toFixed(1) : "0",
+    };
+  }, [apiData]);
+
+  const exportCSV = () => {
+    const csvRows = [];
     
-  </div>
-);
-
-// JobOpeningsTable component
-const JobOpeningsTable: React.FC<{ jobOpenings: JobOpening[] }> = ({ jobOpenings }) => (
-  <div className="bg-white shadow-lg rounded-xl overflow-hidden border border-gray-100">
-    <div className="flex justify-between items-center p-6 border-b border-gray-100">
-      <h2 className="text-xl font-bold text-blue-900 flex items-center gap-2">
-        <Briefcase className="h-5 w-5 text-blue-600" />
-        Job Openings
-      </h2>
-      <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-        Create Job Opening
-      </button>
-    </div>
-    <table className="min-w-full divide-y divide-gray-200">
-      <thead className="bg-blue-50">
-        <tr>
-          <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">Job Title</th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">Department</th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">Status</th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">Positions</th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">Applicants</th>
-          <th className="px-6 py-3 text-left text-xs font-medium text-blue-900 uppercase tracking-wider">Actions</th>
-        </tr>
-      </thead>
-      <tbody className="bg-white divide-y divide-gray-200">
-        {jobOpenings.map((job) => (
-          <tr key={job.id} className="hover:bg-blue-50 transition-colors">
-            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{job.title}</td>
-            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{job.department}</td>
-            <td className="px-6 py-4 whitespace-nowrap">
-              <span
-                className={`px-2 py-1 text-xs font-medium rounded-full ${
-                  job.status === 'Open' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                }`}
-              >
-                {job.status}
-              </span>
-            </td>
-            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{job.positions}</td>
-            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{job.applicants}</td>
-            <td className="px-6 py-4 whitespace-nowrap">
-              <button className="text-blue-600 hover:text-blue-800 text-sm">Edit</button>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
-);
-
-// StatusBarChart component with enhanced hover effects
-const StatusBarChart: React.FC<{ applicants: JobApplicant[]; jobOpenings: JobOpening[] }> = ({ applicants, jobOpenings }) => {
-  const statusCounts = applicants.reduce(
-    (acc, applicant) => {
-      acc[applicant.status] = (acc[applicant.status] || 0) + 1;
-      return acc;
-    },
-    {} as Record<string, number>
-  );
-
-  const data = {
-    labels: ['Open', 'Shortlisted', 'Assessment Stage', 'Interview Stage', 'Hired', 'Closed', 'Rejected'],
-    datasets: [
-      {
-        label: 'Applicants',
-        data: [
-          statusCounts['Open'] || 0,
-          statusCounts['Shortlisted'] || 0,
-          statusCounts['Assessment Stage'] || 0,
-          statusCounts['Interview Stage'] || 0,
-          statusCounts['Hired'] || 0,
-          statusCounts['Closed'] || 0,
-          statusCounts['Rejected'] || 0,
-        ],
-        backgroundColor: [
-          '#E5E7EB',
-          '#3B82F6',
-          '#FBBF24',
-          '#F59E0B',
-          '#10B981',
-          '#EF4444',
-          '#DC2626',
-        ],
-        borderColor: ['#FFFFFF'],
-        borderWidth: 1,
-        hoverBackgroundColor: [
-          '#D1D5DB',
-          '#2563EB',
-          '#D97706',
-          '#D97706',
-          '#059669',
-          '#DC2626',
-          '#B91C1C',
-        ],
-        hoverBorderWidth: 2,
-        hoverBorderColor: '#1F2937',
-      },
-    ],
-  };
-
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { 
-        position: 'bottom' as const, 
-        labels: { 
-          font: { size: 14, family: 'Inter, sans-serif', weight: '500' }, 
-          color: '#1F2937', 
-          padding: 20, 
-          boxWidth: 20, 
-          usePointStyle: true 
-        } 
-      },
-      tooltip: {
-        enabled: true,
-        backgroundColor: '#1F2937',
-        titleFont: { size: 16, family: 'Inter, sans-serif', weight: '600' },
-        bodyFont: { size: 14, family: 'Inter, sans-serif' },
-        padding: 12,
-        cornerRadius: 6,
-        callbacks: {
-          label: (context: any) => `${context.label}: ${context.raw} applicants`,
-        },
-      },
-      title: {
-        display: true,
-        text: 'Applicant Status Distribution Across Jobs',
-        font: { size: 18, family: 'Inter, sans-serif', weight: '600' },
-        color: '#1F2937',
-        padding: { top: 10, bottom: 20 },
-      },
-      animation: { duration: 1200, easing: 'easeOutQuart' },
-    },
-    layout: { padding: { left: 20, right: 20, top: 20, bottom: 20 } },
-    onHover: (event: any, chartElement: any) => {
-      if (event.native) {
-        const target = event.native.target as HTMLElement;
-        if (chartElement.length > 0) {
-          target.style.cursor = 'pointer';
-        } else {
-          target.style.cursor = 'default';
-        }
+    // Header row
+    csvRows.push(
+      "Company Name,Job Title,Open Positions,CV Uploaded,Tagged,Shortlisted,Assessment Stage,Interview Stage,Offered,Offer Rejected,Rejected,Joined"
+    );
+    
+    // Group data by company and job title
+    const companyData: Record<string, Record<string, any>> = {};
+    
+    filteredApplicants.forEach((a) => {
+      if (!companyData[a.client]) {
+        companyData[a.client] = {};
       }
-    },
-  };
-
-  return (
-    <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100 relative overflow-hidden group">
-      <h3 className="text-lg font-bold text-blue-900 mb-4 flex items-center gap-2">
-        <Users className="h-5 w-5 text-blue-600" />
-        Applicant Status Distribution
-      </h3>
-      <div className="h-[400px] flex items-center justify-center relative mb-6">
-        <div className="absolute inset-0 bg-gradient-to-b from-blue-50/20 to-transparent rounded-lg group-hover:from-blue-100/30 transition-colors" />
-        <Pie data={data} options={options} />
-      </div>
-    </div>
-  );
-};
-
-// Enhanced CandidateStatusBarChart component with hover effects
-const CandidateStatusBarChart: React.FC<{ applicants: JobApplicant[]; jobOpenings: JobOpening[] }> = ({ applicants, jobOpenings }) => {
-  const jobStats = jobOpenings.map((job) => {
-    const jobApplicants = applicants.filter((a) => a.job_title === job.title);
-    return {
-      company: job.company,
-      title: job.title,
-      vacancies: job.positions,
-      location: job.location,
-      experience: job.experience,
-      totalCandidates: jobApplicants.length,
-      shortlisted: jobApplicants.filter((a) => a.status === 'Shortlisted').length,
-      assessment: jobApplicants.filter((a) => a.status === 'Assessment Stage').length,
-      interview: jobApplicants.filter((a) => a.status === 'Interview Stage').length,
-      offered: jobApplicants.filter((a) => a.status === 'Hired').length,
-      rejected: jobApplicants.filter((a) => a.status === 'Rejected').length,
-      joined: jobApplicants.filter((a) => a.status === 'Hired' && a.joined).length,
-    };
-  });
-
-  const data = {
-    labels: jobStats.map((job) => `${job.title} (${job.company})`), // Combine title and company for x-axis
-    datasets: [
-      {
-        label: 'Total Candidates',
-        data: jobStats.map((job) => job.totalCandidates),
-        backgroundColor: '#3B82F6',
-        borderColor: '#2563EB',
-        borderWidth: 1,
-        hoverBackgroundColor: '#2563EB',
-        hoverBorderWidth: 2,
-        hoverBorderColor: '#1F2937',
-      },
-      {
-        label: 'Shortlisted',
-        data: jobStats.map((job) => job.shortlisted),
-        backgroundColor: '#FBBF24',
-        borderColor: '#D97706',
-        borderWidth: 1,
-        hoverBackgroundColor: '#D97706',
-        hoverBorderWidth: 2,
-        hoverBorderColor: '#1F2937',
-      },
-      {
-        label: 'Assessment',
-        data: jobStats.map((job) => job.assessment),
-        backgroundColor: '#F59E0B',
-        borderColor: '#D97706',
-        borderWidth: 1,
-        hoverBackgroundColor: '#D97706',
-        hoverBorderWidth: 2,
-        hoverBorderColor: '#1F2937',
-      },
-      {
-        label: 'Interview',
-        data: jobStats.map((job) => job.interview),
-        backgroundColor: '#10B981',
-        borderColor: '#059669',
-        borderWidth: 1,
-        hoverBackgroundColor: '#059669',
-        hoverBorderWidth: 2,
-        hoverBorderColor: '#1F2937',
-      },
-      {
-        label: 'Offered',
-        data: jobStats.map((job) => job.offered),
-        backgroundColor: '#34D399',
-        borderColor: '#059669',
-        borderWidth: 1,
-        hoverBackgroundColor: '#059669',
-        hoverBorderWidth: 2,
-        hoverBorderColor: '#1F2937',
-      },
-      {
-        label: 'Rejected',
-        data: jobStats.map((job) => job.rejected),
-        backgroundColor: '#EF4444',
-        borderColor: '#DC2626',
-        borderWidth: 1,
-        hoverBackgroundColor: '#DC2626',
-        hoverBorderWidth: 2,
-        hoverBorderColor: '#1F2937',
-      },
-      {
-        label: 'Joined',
-        data: jobStats.map((job) => job.joined),
-        backgroundColor: '#6EE7B7',
-        borderColor: '#059669',
-        borderWidth: 1,
-        hoverBackgroundColor: '#059669',
-        hoverBorderWidth: 2,
-        hoverBorderColor: '#1F2937',
-      },
-    ],
-  };
-
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { 
-        position: 'top' as const, 
-        labels: { 
-          font: { size: 14, family: 'Inter, sans-serif' }, 
-          color: '#1F2937' 
-        } 
-      },
-      tooltip: {
-        callbacks: {
-          label: (context: any) => {
-            const job = jobStats[context.dataIndex];
-            return [
-              `Company: ${job.company}`,
-              `Job Title: ${job.title}`,
-              `Vacancies: ${job.vacancies}`,
-              `Location: ${job.location}`,
-              `Experience: ${job.experience}`,
-              `${context.label}: ${context.raw}`,
-            ];
-          },
-        },
-        backgroundColor: '#1F2937',
-        titleFont: { size: 16, family: 'Inter, sans-serif', weight: '600' },
-        bodyFont: { size: 14, family: 'Inter, sans-serif' },
-        padding: 12,
-        cornerRadius: 6,
-      },
-      title: {
-        display: true,
-        text: 'Candidate Status by Job Opening',
-        font: { size: 18, family: 'Inter, sans-serif' },
-        color: '#1F2937',
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        ticks: { stepSize: 1, color: '#1F2937' },
-        title: { display: true, text: 'Number of Candidates', font: { size: 14, family: 'Inter, sans-serif' }, color: '#1F2937' },
-      },
-      x: {
-        ticks: { color: '#1F2937' },
-        title: { display: true, text: 'Job Titles (Company)', font: { size: 14, family: 'Inter, sans-serif' }, color: '#1F2937' },
-      },
-    },
-    onHover: (event: any, chartElement: any) => {
-      if (event.native) {
-        const target = event.native.target as HTMLElement;
-        if (chartElement.length > 0) {
-          target.style.cursor = 'pointer';
-        } else {
-          target.style.cursor = 'default';
-        }
+      if (!companyData[a.client][a.job_title]) {
+        companyData[a.client][a.job_title] = {
+          cvUploaded: 0,
+          tagged: 0,
+          shortlisted: 0,
+          assessmentStage: 0,
+          interviewStage: 0,
+          offered: 0,
+          offerRejected: 0,
+          rejected: 0,
+          joined: 0,
+        };
       }
-    },
-  };
-
-  return (
-    <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100 group">
-      <h3 className="text-lg font-bold text-blue-900 mb-4 flex items-center gap-2">
-        <Users className="h-5 w-5 text-blue-600" />
-        Candidate Status Breakdown
-      </h3>
-      <div className="h-[450px]">
-        <Bar data={data} options={options} />
-      </div>
-    </div>
-  );
-};
-
-// DiversityCharts component
-const DiversityCharts: React.FC<{ applicants: JobApplicant[] }> = ({ applicants }) => {
-  const genderCounts = applicants.reduce(
-    (acc, applicant) => {
-      const gender = applicant.gender || 'Unknown';
-      acc[gender] = (acc[gender] || 0) + 1;
-      return acc;
-    },
-    {} as Record<string, number>
-  );
-
-  const genderData = {
-    labels: Object.keys(genderCounts),
-    datasets: [
-      {
-        data: Object.values(genderCounts),
-        backgroundColor: ['#3B82F6', '#FBBF24', '#10B981', '#EF4444'],
-        borderColor: '#FFFFFF',
-        borderWidth: 1,
-      },
-    ],
-  };
-
-  const ethnicityCounts = applicants.reduce(
-    (acc, applicant) => {
-      const ethnicity = applicant.ethnicity || 'Unknown';
-      acc[ethnicity] = (acc[ethnicity] || 0) + 1;
-      return acc;
-    },
-    {} as Record<string, number>
-  );
-
-  const ethnicityData = {
-    labels: Object.keys(ethnicityCounts),
-    datasets: [
-      {
-        data: Object.values(ethnicityCounts),
-        backgroundColor: ['#3B82F6', '#FBBF24', '#10B981', '#EF4444', '#8B5CF6'],
-        borderColor: '#FFFFFF',
-        borderWidth: 1,
-      },
-    ],
-  };
-
-  const pieOptions = {
-    responsive: true,
-    plugins: {
-      legend: { position: 'bottom' as const, labels: { font: { size: 14, family: 'Inter, sans-serif' }, color: '#1F2937' } },
-      title: {
-        display: true,
-        font: { size: 18, family: 'Inter, sans-serif' },
-        color: '#1F2937',
-      },
-    },
-  };
-
-  return (
-    <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100 mt-6">
-      <h2 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2">
-        <Users className="h-5 w-5 text-blue-600" />
-        Diversity Metrics
-      </h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <h3 className="text-lg font-semibold text-blue-900 mb-2">Gender Distribution</h3>
-          <Pie data={genderData} options={{ ...pieOptions, plugins: { ...pieOptions.plugins, title: { ...pieOptions.plugins.title, text: 'Gender Distribution' } } }} />
-        </div>
-        <div>
-          <h3 className="text-lg font-semibold text-blue-900 mb-2">Ethnicity Distribution</h3>
-          <Pie data={ethnicityData} options={{ ...pieOptions, plugins: { ...pieOptions.plugins, title: { ...pieOptions.plugins.title, text: 'Ethnicity Distribution' } } }} />
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Updated JobOpeningsBreakdown component with improved UI
-const JobOpeningsBreakdown: React.FC<{ applicants: JobApplicant[]; jobOpenings: JobOpening[] }> = ({ applicants, jobOpenings }) => {
-  const jobStats = jobOpenings.map((job) => {
-    const jobApplicants = applicants.filter((applicant) => applicant.job_title === job.title);
-    return {
-      title: job.title,
-      positions: job.positions,
-      company:job.company,
-      status: job.status,
-      total: jobApplicants.length,
-      open: jobApplicants.filter((a) => a.status === 'Open').length,
-      shortlisted: jobApplicants.filter((a) => a.status === 'Shortlisted').length,
-      assessment: jobApplicants.filter((a) => a.status === 'Assessment Stage').length,
-      interview: jobApplicants.filter((a) => a.status === 'Interview Stage').length,
-      hired: jobApplicants.filter((a) => a.status === 'Hired').length,
-      closed: jobApplicants.filter((a) => a.status === 'Closed').length,
-      rejected: jobApplicants.filter((a) => a.status === 'Rejected').length,
-    };
-  });
-
-  return (
-    <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100 mt-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-bold text-blue-900 flex items-center gap-2">
-          <Briefcase className="h-5 w-5 text-blue-600" />
-          Job Openings Breakdown
-        </h2>
+      
+      companyData[a.client][a.job_title].cvUploaded++;
+      
+      const statusKey = a.status.charAt(0).toLowerCase() + a.status.slice(1);
+      if (companyData[a.client][a.job_title][statusKey] !== undefined) {
+        companyData[a.client][a.job_title][statusKey]++;
+      }
+    });
+    
+    // Add job data
+    Object.entries(companyData).forEach(([company, jobs]) => {
+      Object.entries(jobs).forEach(([jobTitle, stats]: [string, any]) => {
+        const openPositions = filteredJobs.filter(
+          (j) => j.client === company && j.title === jobTitle && j.status === "Open"
+        ).length;
         
-      </div>
-      
-      <div className="max-h-[500px] overflow-y-auto rounded-lg border border-gray-200">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gradient-to-r from-blue-50 to-blue-100 sticky top-0">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-blue-900 uppercase tracking-wider">Job Title</th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-blue-900 uppercase tracking-wider">Company</th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-blue-900 uppercase tracking-wider">Positions</th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-blue-900 uppercase tracking-wider">Status</th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-blue-900 uppercase tracking-wider">Total</th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-blue-900 uppercase tracking-wider">Open</th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-blue-900 uppercase tracking-wider">Shortlisted</th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-blue-900 uppercase tracking-wider">Assessment</th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-blue-900 uppercase tracking-wider">Interview</th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-blue-900 uppercase tracking-wider">Hired</th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-blue-900 uppercase tracking-wider">Closed</th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-blue-900 uppercase tracking-wider">Rejected</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {jobStats.map((job, index) => (
-              <tr 
-                key={job.title} 
-                className={`hover:bg-blue-50 transition-all duration-200 ${
-                  index % 2 === 0 ? 'bg-gray-50' : 'bg-white'
-                }`}
-              >
-                <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {job.title}
-                </td>
-                 <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
-                  {job.company}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center font-semibold">
-                  {job.positions}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-center">
-                  <span
-                    className={`px-3 py-1.5 text-xs font-semibold rounded-full transition-all ${
-                      job.status === 'Open' 
-                        ? 'bg-green-100 text-green-800 hover:bg-green-200' 
-                        : 'bg-red-100 text-red-800 hover:bg-red-200'
-                    }`}
-                  >
-                    {job.status}
-                  </span>
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center font-bold ">
-                  {job.total}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center">
-                  <span className={`px-2 py-1 rounded ${job.open > 0 ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-500'}`}>
-                    {job.open}
-                  </span>
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center">
-                  <span className={`px-2 py-1 rounded ${job.shortlisted > 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-500'}`}>
-                    {job.shortlisted}
-                  </span>
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center">
-                  <span className={`px-2 py-1 rounded ${job.assessment > 0 ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-500'}`}>
-                    {job.assessment}
-                  </span>
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center">
-                  <span className={`px-2 py-1 rounded ${job.interview > 0 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-500'}`}>
-                    {job.interview}
-                  </span>
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center">
-                  <span className={`px-2 py-1 rounded ${job.hired > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-500'}`}>
-                    {job.hired}
-                  </span>
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center">
-                  <span className={`px-2 py-1 rounded ${job.closed > 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-500'}`}>
-                    {job.closed}
-                  </span>
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 text-center">
-                  <span className={`px-2 py-1 rounded ${job.rejected > 0 ? 'bg-rose-100 text-rose-800' : 'bg-gray-100 text-gray-500'}`}>
-                    {job.rejected}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      
-      <div className="mt-4 flex justify-between items-center text-sm text-gray-600">
-        <div>
-          Showing <span className="font-semibold">{jobStats.length}</span> job openings
-        </div>
-        <div className="flex gap-4">
-          <span className="font-medium">Total Applicants: {applicants.length}</span>
-          <span className="font-medium">Open Positions: {jobOpenings.filter(job => job.status === 'Open').length}</span>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// RecentActivity component
-const RecentActivity: React.FC = () => (
-  <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100">
-    <h2 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2">
-      <Activity className="h-5 w-5 text-blue-600" />
-      Recent Activity
-    </h2>
-    <ul className="divide-y divide-gray-200 max-h-64 overflow-y-auto">
-      {dummyActivities.map((activity) => (
-        <li key={activity.id} className="py-2">
-          <p className="text-sm text-gray-900">{activity.action}</p>
-          <p className="text-xs text-gray-500">{activity.timestamp}</p>
-        </li>
-      ))}
-    </ul>
-  </div>
-);
-
-// ScheduleOverview component
-const ScheduleOverview: React.FC = () => (
-  <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100">
-    <h2 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2">
-      <Calendar className="h-5 w-5 text-blue-600" />
-      Upcoming Schedule
-    </h2>
-    <ul className="divide-y divide-gray-200 max-h-64 overflow-y-auto">
-      {dummyEvents.map((event) => (
-        <li key={event.id} className="py-2">
-          <p className="text-sm text-gray-900">{event.title}</p>
-          <p className="text-xs text-gray-500">{event.date}</p>
-        </li>
-      ))}
-    </ul>
-  </div>
-);
-
-// AnalyticsCharts component
-const AnalyticsCharts: React.FC<{ jobOpenings: JobOpening[] }> = ({ jobOpenings }) => {
-  const data = {
-    labels: jobOpenings.map((job) => job.title),
-    datasets: [
-      {
-        label: 'Applicants',
-        data: jobOpenings.map((job) => job.applicants),
-        backgroundColor: '#3B82F6',
-        borderColor: '#2563EB',
-        borderWidth: 1,
-      },
-    ],
+        csvRows.push(
+          `${company},${jobTitle},${openPositions},${stats.cvUploaded},${stats.tagged},${stats.shortlisted},${stats.assessmentStage},${stats.interviewStage},${stats.offered},${stats.offerRejected},${stats.rejected},${stats.joined}`
+        );
+      });
+    });
+    
+    const csvContent = csvRows.join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `recruiter-dashboard-${selectedClient}-${timePeriod}-${
+      new Date().toISOString().split("T")[0]
+    }.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
-  const options = {
-    responsive: true,
-    plugins: {
-      legend: { position: 'top' as const, labels: { font: { size: 14, family: 'Inter, sans-serif' }, color: '#1F2937' } },
-      title: {
-        display: true,
-        text: 'Applicants by Job Opening',
-        font: { size: 18, family: 'Inter, sans-serif' },
-        color: '#1F2937',
-      },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        ticks: { stepSize: 1, color: '#1F2937' },
-      },
-      x: {
-        ticks: { color: '#1F2937' },
-      },
-    },
-  };
-
-  return (
-    <div className="bg-white shadow-lg rounded-xl p-6 border border-gray-100">
-      <h2 className="text-xl font-bold text-blue-900 mb-4 flex items-center gap-2">
-        <Users className="h-5 w-5 text-blue-600" />
-        Applicants by Job
-      </h2>
-      <Bar data={data} options={options} />
-    </div>
-  );
-};
-const FunnelChart: React.FC<{ applicants: JobApplicant[] }> = ({ applicants }) => {
-  const funnelStages = [
-    { label: 'Open', value: 100, color: '#F59E0B' },
-    { label: 'Tagged', value: 80, color: '#FB923C' },
-    { label: 'Shortlisted', value: 60, color: '#FCA5A5' },
-    { label: 'Assessment Stage', value: 40, color: '#93C5FD' },
-    { label: 'Interview Stage', value: 25, color: '#60A5FA' },
-    { label: 'Offered', value: 15, color: '#34D399' },
-    { label: 'Joined', value: 10, color: '#10B981' }
+  const candidateStatusOrder = [
+    "Applied",
+    "Tagged",
+    "Shortlisted",
+    "AssessmentStage",
+    "InterviewStage",
+    "Offered",
+    "OfferRejected",
+    "Rejected",
+    "Joined",
   ];
 
-  const maxValue = funnelStages[0].value;
+  const candidatePipelineData = useMemo(() => {
+    const clientGroups =
+      selectedClient === "All"
+        ? clients.filter((c) => c !== "All")
+        : [selectedClient];
+    const colors = [
+      "#E0E7FF",
+      "#C7D2FE",
+      "#A5B4FC",
+      "#FBBF24",
+      "#818CF8",
+      "#6366F1",
+      "#F59E0B",
+      "#EF4444",
+      "#10B981",
+    ];
+    return {
+      labels: clientGroups,
+      datasets: candidateStatusOrder.map((status, idx) => ({
+        label: status
+          .replace(/([A-Z])/g, " $1")
+          .replace(/^./, (str) => str.toUpperCase()),
+        data: clientGroups.map((client) => {
+          const clientApplicants = filteredApplicants.filter(
+            (a) => a.client === client
+          );
+          return clientApplicants.filter((a) => a.status === status).length;
+        }),
+        backgroundColor: colors[idx % colors.length],
+        borderColor: "#FFFFFF",
+        borderWidth: 1,
+      })),
+    };
+  }, [selectedClient, clients, filteredApplicants]);
+
+  const funnelStages = [
+    "Tagged",
+    "Shortlisted",
+    "AssessmentStage",
+    "InterviewStage",
+    "Offered",
+    "OfferRejected",
+    "Rejected",
+    "Joined",
+  ];
+
+  const funnelData = useMemo(() => {
+    const totalApplicants = filteredApplicants.length;
+    const stageData = funnelStages.map(
+      (stage) => filteredApplicants.filter((a) => a.status === stage).length
+    );
+    
+    return {
+      labels: [
+        "Total CV Uploaded",
+        ...funnelStages.map((s) =>
+          s
+            .replace(/([A-Z])/g, " $1")
+            .replace(/^./, (str) => str.toUpperCase())
+            .replace("Stage", " Stage")
+        )
+      ],
+      datasets: [
+        {
+          label: "Candidates",
+          data: [totalApplicants, ...stageData],
+          backgroundColor: [
+            "#6366F1",
+            "#E0E7FF",
+            "#C7D2FE",
+            "#A5B4FC",
+            "#FBBF24",
+            "#818CF8",
+            "#F59E0B",
+            "#EF4444",
+            "#10B981",
+          ],
+          borderColor: "#FFFFFF",
+          borderWidth: 1,
+          borderRadius: 4,
+        },
+      ],
+    };
+  }, [filteredApplicants]);
+
+  const jobStatusData = useMemo(() => {
+    const statusCounts = filteredJobs.reduce((acc, job) => {
+      acc[job.status] = (acc[job.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    return {
+      labels: ["Open", "Offered", "Joined", "Cancelled"],
+      datasets: [
+        {
+          data: [
+            statusCounts["Open"] || 0,
+            statusCounts["Offered"] || 0,
+            statusCounts["Joined"] || 0,
+            statusCounts["Cancelled"] || 0,
+          ],
+          backgroundColor: ["#6366F1", "#F59E0B", "#10B981", "#EF4444"],
+          borderColor: "#FFFFFF",
+          borderWidth: 2,
+        },
+      ],
+    };
+  }, [filteredJobs]);
+
+  // Generate monthly metrics from current data
+  const monthlyMetrics: MetricData[] = useMemo(() => {
+    const metrics = apiData?.metrics || {};
+    const totalApplicants = apiData?.summary?.total_applicants || 0;
+    const monthLabels = timePeriod === "week" 
+      ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+      : timePeriod === "month"
+      ? ["Week 1", "Week 2", "Week 3", "Week 4"]
+      : ["Month 1", "Month 2", "Month 3"];
+
+    return monthLabels.map((label, index) => {
+      const factor = (index + 1) / monthLabels.length;
+      return {
+        month: label,
+        totalCVUploaded: Math.floor(totalApplicants * factor),
+        tagged: Math.floor((metrics.Tagged || 0) * factor),
+        shortlisted: Math.floor((metrics.Shortlisted || 0) * factor),
+        assessmentStage: Math.floor((metrics["Assessment Stage"] || 0) * factor),
+        interviews: Math.floor((metrics["Interview Stage"] || 0) * factor),
+        offers: Math.floor((metrics.Offered || 0) * factor),
+        joined: Math.floor((metrics.Joined || 0) * factor),
+      };
+    });
+  }, [apiData, timePeriod]);
+
+  const trendData = useMemo(
+    () => ({
+      labels: monthlyMetrics.map((m) => m.month),
+      datasets: [
+ {
+  label: "Total CV Uploaded",
+  data: monthlyMetrics.map((m) => m.totalCVUploaded),
+  borderColor: "#ec4899", // pink-500
+  backgroundColor: "rgba(236,72,153,0.08)", // lighter pink fill
+  fill: true,
+  tension: 0.4,
+  borderWidth: 2,
+  pointRadius: 3,
+  pointBackgroundColor: "#ec4899",
+},
+
+        {
+          label: "Tagged",
+          data: monthlyMetrics.map((m) => m.tagged),
+          borderColor: "#6366F1",
+          backgroundColor: "rgba(99,102,241,0.08)",
+          fill: true,
+          tension: 0.4,
+          borderWidth: 2,
+          pointRadius: 3,
+          pointBackgroundColor: "#6366F1",
+        },
+        {
+          label: "Shortlisted",
+          data: monthlyMetrics.map((m) => m.shortlisted),
+          borderColor: "#A5B4FC",
+          backgroundColor: "rgba(165,180,252,0.08)",
+          fill: true,
+          tension: 0.4,
+          borderWidth: 2,
+          pointRadius: 3,
+          pointBackgroundColor: "#A5B4FC",
+        },
+        {
+          label: "Assessment Stage",
+          data: monthlyMetrics.map((m) => m.assessmentStage),
+          borderColor: "#FBBF24",
+          backgroundColor: "rgba(251,191,36,0.08)",
+          fill: true,
+          tension: 0.4,
+          borderWidth: 2,
+          pointRadius: 3,
+          pointBackgroundColor: "#FBBF24",
+        },
+        {
+          label: "Interviews",
+          data: monthlyMetrics.map((m) => m.interviews),
+          borderColor: "#F59E0B",
+          backgroundColor: "rgba(245,158,11,0.08)",
+          fill: true,
+          tension: 0.4,
+          borderWidth: 2,
+          pointRadius: 3,
+          pointBackgroundColor: "#F59E0B",
+        },
+        {
+          label: "Offers",
+          data: monthlyMetrics.map((m) => m.offers),
+          borderColor: "#8B5CF6",
+          backgroundColor: "rgba(139,92,246,0.08)",
+          fill: true,
+          tension: 0.4,
+          borderWidth: 2,
+          pointRadius: 3,
+          pointBackgroundColor: "#8B5CF6",
+        },
+        {
+          label: "Joined",
+          data: monthlyMetrics.map((m) => m.joined),
+          borderColor: "#10B981",
+          backgroundColor: "rgba(16,185,129,0.08)",
+          fill: true,
+          tension: 0.4,
+          borderWidth: 2,
+          pointRadius: 3,
+          pointBackgroundColor: "#10B981",
+        },
+      ],
+    }),
+    [monthlyMetrics]
+  );
+
+  const handleJobStatusClick = (elements: any[]) => {
+    if (!elements.length) return;
+    const clickedIndex = elements[0].index;
+    const status = jobStatusData.labels[clickedIndex];
+    router.push(`/jobs/status/${status.toLowerCase()}`);
+  };
+
+  const handleCandidatePipelineClick = (elements: any[]) => {
+    if (!elements.length) return;
+    const datasetIndex = elements[0].datasetIndex;
+    const clientIndex = elements[0].index;
+    const client = candidatePipelineData.labels[clientIndex];
+    const status = candidatePipelineData.datasets[datasetIndex].label;
+    router.push(`/candidates?client=${client}&status=${status.toLowerCase()}`);
+  };
+
+  const chartHover = (event: ChartEvent, elements: ActiveElement[]) => {
+    const nativeEvent = event.native as unknown as MouseEvent;
+    const target = nativeEvent?.target as HTMLElement;
+    if (target) target.style.cursor = elements[0] ? "pointer" : "default";
+  };
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-slate-600">Loading dashboard data...</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
-    <div className="bg-white shadow-md rounded-lg p-4 border border-gray-100">
-      <h3 className="text-sm font-bold text-gray-700 mb-3">
-        Recruitment Process
-      </h3>
-      
-      {/* Funnel aligned left */}
-      <div className="relative w-full space-y-1">
-        {funnelStages.map((stage, index) => {
-          const widthPercent = (stage.value / maxValue) * 100;
-          const prevWidthPercent = index > 0 ? (funnelStages[index - 1].value / maxValue) * 100 : 100;
-          
-          return (
-            <div key={stage.label} className="flex items-center gap-2">
-              {/* Label closer + left aligned */}
-              <div className="w-24">
-                <span className="text-[11px] text-gray-600">{stage.label}</span>
-              </div>
-              
-              {/* Funnel Shape */}
-              <div className="flex-1" style={{ height: '32px' }}>
-                <svg 
-                  width="80%" 
-                  height="32" 
-                  viewBox="0 0 700 32" 
-                  preserveAspectRatio="none"
-                  className="overflow-visible"
-                >
-                  <defs>
-                    <filter id={`shadow-${index}`} x="-50%" y="-50%" width="200%" height="200%">
-                      <feGaussianBlur in="SourceAlpha" stdDeviation="0.5"/>
-                      <feOffset dx="0" dy="0.5" result="offsetblur"/>
-                      <feComponentTransfer>
-                        <feFuncA type="linear" slope="0.2"/>
-                      </feComponentTransfer>
-                      <feMerge>
-                        <feMergeNode/>
-                        <feMergeNode in="SourceGraphic"/>
-                      </feMerge>
-                    </filter>
-                  </defs>
-                  
-                  <polygon
-                    points={`
-                      ${(100 - prevWidthPercent) / 2 * 7},0
-                      ${(100 + prevWidthPercent) / 2 * 7},0
-                      ${(100 + widthPercent) / 2 * 7},32
-                      ${(100 - widthPercent) / 2 * 7},32
-                    `}
-                    fill={stage.color}
-                    filter={`url(#shadow-${index})`}
-                  />
-                  
-                  <text
-                    x="350"
-                    y="21"
-                    textAnchor="middle"
-                    className="fill-white"
-                    style={{ fontSize: '13px', fontWeight: '600' }}
-                  >
-                    {stage.value}
-                  </text>
-                </svg>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      
-      {/* Summary Stats compact */}
-      <div className="mt-3 pt-2 border-t border-gray-200">
-        <div className="grid grid-cols-3 gap-2 text-center">
+    <main className="min-h-screen bg-slate-50">
+      <div className="w-full mx-auto space-y-4">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <p className="text-[10px] text-gray-500">Applied</p>
-            <p className="text-base font-semibold text-gray-800">{funnelStages[0].value}</p>
-          </div>
-          <div>
-            <p className="text-[10px] text-gray-500">Conversion</p>
-            <p className="text-base font-semibold text-green-600">
-              {((funnelStages[funnelStages.length - 1].value / funnelStages[0].value) * 100).toFixed(0)}%
+            <h1 className="text-xl font-bold text-slate-800">
+              Recruiter Analytics
+            </h1>
+            <p className="text-md text-slate-500 mt-0.5">
+              Monitor performance and track hiring progress
             </p>
           </div>
-          <div>
-            <p className="text-[10px] text-gray-500">Offered</p>
-            <p className="text-base font-semibold text-gray-800">{funnelStages[funnelStages.length - 1].value}</p>
-          </div>
+          <button
+            type="button"
+            className="flex items-center justify-center gap-2 px-3 py-2 bg-white text-slate-700 rounded-lg shadow-sm border border-slate-200 hover:border-slate-300 transition-all text-md font-medium"
+            onClick={exportCSV}
+          >
+            <Download className="h-3.5 w-3.5" />
+            Export Data
+          </button>
         </div>
+
+        {/* Filters */}
+        <section className="bg-white p-3 rounded-lg shadow-sm border border-slate-200">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              <Filter className="h-4 w-4 text-slate-400" />
+              <span className="text-md font-medium text-slate-600">
+                Clients:
+              </span>
+            </div>
+
+            <select
+              value={selectedClient}
+              onChange={(e) => setSelectedClient(e.target.value)}
+              className="px-3 py-1.5 border border-slate-200 rounded-lg text-md focus:outline-none focus:ring-1 focus:ring-indigo-400 text-slate-700 bg-white"
+            >
+              {clients.map((client) => (
+                <option key={client} value={client}>
+                  {client}
+                </option>
+              ))}
+            </select>
+
+            <div className="flex items-center gap-1.5 ml-auto">
+              <Calendar className="h-5 w-5 text-slate-400" />
+              <div className="flex gap-0.5 bg-slate-100 p-0.5 rounded-md">
+                {(["week", "month", "quarter"] as const).map((period) => (
+                  <button
+                    key={period}
+                    type="button"
+                    onClick={() => setTimePeriod(period)}
+                    className={`px-2 py-1 rounded text-md font-medium transition-all ${
+                      timePeriod === period
+                        ? "bg-white text-indigo-600 shadow-sm"
+                        : "text-slate-600 hover:text-slate-800"
+                    }`}
+                  >
+                    {period.charAt(0).toUpperCase() + period.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* KPI Cards */}
+        <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <KpiCard
+            icon={<Building2 className="h-4 w-4" />}
+            value={activeClients}
+            label="Active Clients"
+            color="violet"
+          />
+          <KpiCard
+            icon={<Briefcase className="h-4 w-4" />}
+            value={filteredJobs.filter((j) => j.status === "Open").length}
+            label="Open Positions"
+            color="amber"
+          />
+          <KpiCard
+            icon={<Users className="h-4 w-4" />}
+            value={kpiMetrics.totalApplicants}
+            label="Total cv uploaded"
+            trend="+5.8%"
+            color="indigo"
+          />
+          <KpiCard
+            icon={<UserCheck className="h-4 w-4" />}
+            value={
+              filteredApplicants.filter((a) => a.status === "Joined").length
+            }
+            label="Successfully Joined"
+            trend="+3.2%"
+            color="emerald"
+          />
+        </section>
+
+        {/* Main Charts */}
+        <section className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          {/* Applicant Funnel */}
+          <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200">
+            <div className="flex justify-between items-center">
+              <SectionHeader
+                title="Applicant Funnel"
+                subtitle="Stage-wise breakdown"
+              />
+            </div>
+
+            <div className="h-64 mt-4">
+              <Bar
+                data={funnelData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  indexAxis: "y",
+                  plugins: {
+                    legend: { display: false },
+                    datalabels: {
+                      anchor: 'end',
+                      align: 'end',
+                      color: '#1e293b',
+                      font: {
+                        weight: 'bold',
+                        size: 12,
+                      },
+                      formatter: (value) => value > 0 ? value : '',
+                    },
+                  },
+                  scales: {
+                    x: {
+                      beginAtZero: true,
+                      grid: { color: "#f1f5f9" },
+                      border: { display: false },
+                      ticks: {
+                        stepSize: 10,
+                        font: { size: 14 },
+                        color: "#64748b",
+                        callback: function(value) {
+                          return value;
+                        }
+                      },
+                    },
+                    y: {
+                      grid: { display: false },
+                      border: { display: false },
+                      ticks: {
+                        font: { size: 14 },
+                        color: "#475569",
+                      },
+                    },
+                  },
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Job Status */}
+          <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200">
+            <div className="flex justify-between items-start mb-2">
+              <SectionHeader
+                title="Job Status"
+                subtitle="Current distribution"
+              />
+            </div>
+
+            <div className="h-64 flex items-center justify-center cursor-pointer mt-2">
+              <Doughnut
+                data={jobStatusData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    datalabels: {
+                      display: false,
+                    },
+                    tooltip: {
+                      callbacks: {
+                        label: (context) => {
+                          const dataset = context.dataset.data as number[];
+                          const total = dataset.reduce(
+                            (acc, curr) => acc + curr,
+                            0
+                          );
+                          const value = context.parsed;
+                          return `${context.label}: ${value}`;
+                        },
+                      },
+                    },
+                    legend: {
+                      position: "bottom",
+                      // padding:24,
+                      labels: { usePointStyle: true, pointStyle: "circle" , font: { size: 14 } ,  padding: 24,},
+                      
+                    },
+                  },
+                  onClick: (event, elements) => {
+                    handleJobStatusClick(elements);
+                  },
+                }}
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* Recruitment Trends */}
+        <section className="grid grid-cols-1 gap-4">
+          <div className="xl:col-span-2 bg-white rounded-lg p-4 shadow-sm border border-slate-200">
+            <SectionHeader
+              title="Recruitment Trends"
+              subtitle="Performance overview"
+            />
+            <div className="h-64 mt-3">
+              <Line
+                data={trendData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    datalabels: {
+                      display: true,
+                      align: 'top',
+                      anchor: 'end',
+                      color: '#1e293b',
+                      font: {
+                        weight: 'bold',
+                        size: 10,
+                      },
+                      formatter: (value, context) => {
+                        // Only show label on last data point of each line
+                        const datasetLength = context.dataset.data.length;
+                        return context.dataIndex === datasetLength - 1 && value > 0 ? value : '';
+                      },
+                    },
+                    legend: {
+                      display: true,
+                      position: "top",
+                      labels: {
+                        padding: 24,
+                        font: { size: 14 },
+                        usePointStyle: true,
+                        pointStyle: "circle",
+                        color: "#475569",
+                      },
+                    },
+                  },
+                  scales: {
+                    y: {
+                      beginAtZero: true,
+                      grid: { color: "#f1f5f9" },
+                      border: { display: false },
+                      ticks: {
+                        stepSize: 10,
+                        font: { size: 14 },
+                        color: "#64748b",
+                      },
+                    },
+                    x: {
+                      grid: { display: false },
+                      border: { display: false },
+                      ticks: {
+                        font: { size: 14 },
+                        color: "#64748b",
+                      },
+                    },
+                  },
+                }}
+              />
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  );
+}
+
+interface CardProps {
+  icon: React.ReactNode;
+  value: string | number;
+  label: string;
+  trend?: string;
+  color: "indigo" | "amber" | "emerald" | "violet";
+}
+
+function KpiCard({ icon, value, label, trend, color }: CardProps) {
+  const colorStyles = {
+    indigo: {
+      bg: "bg-indigo-50",
+      text: "text-indigo-600",
+    },
+    amber: {
+      bg: "bg-amber-50",
+      text: "text-amber-600",
+    },
+    emerald: {
+      bg: "bg-emerald-50",
+      text: "text-emerald-600",
+    },
+    violet: {
+      bg: "bg-violet-50",
+      text: "text-violet-600",
+    },
+  };
+
+  return (
+    <div className="group bg-white rounded-lg p-3 shadow-sm border border-slate-200 hover:shadow-md transition-all">
+      <div className="flex items-start justify-between mb-2">
+        <div
+          className={`w-8 h-8 rounded-lg ${colorStyles[color].bg} flex items-center justify-center ${colorStyles[color].text}`}
+        >
+          {icon}
+        </div>
+       
+          <div className="flex items-center gap-1  text-5xl font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">
+            <span>{value}</span>
+          </div>
+    
+      </div>
+      <div className="">
+        <p className="text-md text-slate-500 font-medium">{label}</p>
       </div>
     </div>
   );
-};
+}
 
-// Main Dashboard Component
-export default function RecruiterDashboard() {
-  const [applicants] = useState<JobApplicant[]>(dummyApplicants);
-  const [jobOpenings] = useState<JobOpening[]>(dummyJobOpenings);
+interface HeaderProps {
+  title: string;
+  subtitle?: string;
+}
 
+function SectionHeader({ title, subtitle }: HeaderProps) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-100 to-blue-50 py-8 px-4">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-3xl font-bold text-blue-900 mb-8 flex items-center gap-2">
-          <Users className="h-6 w-6 text-blue-600" />
-          Recruiter Dashboard
-        </h1>
-
-        {/* Overview Cards */}
-        <DashboardCards applicants={applicants} jobOpenings={jobOpenings} />
-        <JobOpeningsBreakdown applicants={applicants} jobOpenings={jobOpenings} />
- <div className='flex grid-cols-3 py-5 justify-between'><FunnelChart applicants={applicants} /><StatusBarChart applicants={applicants} jobOpenings={jobOpenings} /> </div> 
-        {/* Top Section: QuickStats and OfferLetterTracking */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          <div className="lg:col-span-1">
-            <ScheduleOverview />
-            <div className='mt-2'>
-              <RecentActivity/>
-            </div>
-             
-          </div>
-          <div className="lg:col-span-2"> 
-            <OfferLetterTracking applicants={applicants} />
-          </div>
-        </div>
-
-        {/* Dashboard Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
-          {/* Left Column: StatusBarChart */}
-          {/* <div className="lg:col-span-1">
-            <StatusBarChart applicants={applicants} jobOpenings={jobOpenings} />
-          </div> */}
-
-          {/* Right Column: AnalyticsCharts */}
-          <div className="lg:col-span-2">
-            <CandidateStatusBarChart applicants={applicants} jobOpenings={jobOpenings} />
-          </div>
-        </div>
- {/* <FunnelChart applicants={applicants} />/ */}
-        
-        <JobOpeningsBreakdown applicants={applicants} jobOpenings={jobOpenings} />
-        {/* Job Openings Breakdown */}
-
-      </div>
+    <div>
+      <h3 className="text-lg font-semibold text-slate-800">{title}</h3>
+      {subtitle && <p className="text-md text-slate-500 mt-0.5">{subtitle}</p>}
     </div>
   );
 }

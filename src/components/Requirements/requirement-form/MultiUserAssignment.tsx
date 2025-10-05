@@ -67,7 +67,7 @@ export const MultiUserAssignment: React.FC<MultiUserAssignmentProps> = ({
   // Calculate totals
   const totalAllocated = assignments.reduce((sum, assignment) => sum + assignment.allocation, 0);
   const remainingVacancies = totalVacancies - totalAllocated;
-  const isValid = totalAllocated === totalVacancies && totalVacancies > 0;
+  // const isValid = totalAllocated === totalVacancies && totalVacancies > 0;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

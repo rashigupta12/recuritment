@@ -16,6 +16,7 @@ interface ToDo {
   description?: string;
   custom_job_id?: string;
   custom_job_title?: string;
+  custom_job_title?: string;
   assigned_by?: string;
   assigned_by_full_name?: string;
   creation?: string;
@@ -128,11 +129,15 @@ export const TodoDetailModal = ({ todoId, onClose,setActiveTab }: TodoDetailModa
     switch (priority.toLowerCase()) {
       case 'high':
         return 'bg-red-50 text-red-700 border-red-200';
+        return 'bg-red-50 text-red-700 border-red-200';
       case 'medium':
+        return 'bg-amber-50 text-amber-700 border-amber-200';
         return 'bg-amber-50 text-amber-700 border-amber-200';
       case 'low':
         return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
       default:
+        return 'bg-slate-50 text-slate-700 border-slate-200';
         return 'bg-slate-50 text-slate-700 border-slate-200';
     }
   };
@@ -141,17 +146,30 @@ export const TodoDetailModal = ({ todoId, onClose,setActiveTab }: TodoDetailModa
     switch (status.toLowerCase()) {
       case 'open':
         return 'bg-blue-50 text-blue-700 border-blue-200';
+        return 'bg-blue-50 text-blue-700 border-blue-200';
       case 'closed':
+        return 'bg-slate-50 text-slate-700 border-slate-200';
         return 'bg-slate-50 text-slate-700 border-slate-200';
       case 'cancelled':
         return 'bg-red-50 text-red-700 border-red-200';
+        return 'bg-red-50 text-red-700 border-red-200';
       default:
+        return 'bg-indigo-50 text-indigo-700 border-indigo-200';
         return 'bg-indigo-50 text-indigo-700 border-indigo-200';
     }
   };
 
   if (loading) {
     return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full">
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative">
+              <div className="animate-spin rounded-full h-12 w-12 border-4 border-slate-200 border-t-blue-600"></div>
+              <div className="absolute inset-0 rounded-full bg-blue-50/20"></div>
+            </div>
+            <p className="text-slate-700 font-medium">Loading task details...</p>
+          </div>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full">
           <div className="flex flex-col items-center gap-4">
@@ -168,6 +186,21 @@ export const TodoDetailModal = ({ todoId, onClose,setActiveTab }: TodoDetailModa
 
   if (!todo) {
     return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-14 h-14 rounded-full bg-red-50 flex items-center justify-center">
+              <X className="text-red-600" size={28} />
+            </div>
+            <h3 className="text-xl font-semibold text-slate-900">Task Not Found</h3>
+            <p className="text-slate-600 text-center">The requested task could not be loaded. Please try again.</p>
+            <button
+              onClick={onClose}
+              className="mt-2 px-6 py-2.5 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors duration-200 font-medium"
+            >
+              Close
+            </button>
+          </div>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full">
           <div className="flex flex-col items-center gap-4">
@@ -274,6 +307,6 @@ export const TodoDetailModal = ({ todoId, onClose,setActiveTab }: TodoDetailModa
           </div>
         </div>
       </div>
-    </div>
-  );
-}
+      </div>
+    );
+  }

@@ -99,10 +99,10 @@ const getNavigationItems = (role: AllowedRole): NavigationItem[] => {
       { icon: Home, label: 'Dashboard', href: roleBasePath },
       { icon: FolderOpen, label: 'Jobs Assigned', href: `${roleBasePath}/todos` },
       // { icon: FolderOpen, label: 'Add Applicant', href: `${roleBasePath}/applicants` },
-      { icon: Users, label: 'View All Applicants', href: `${roleBasePath}/viewapplicant` },
-      { icon: Users, label: 'Shortlisted Applicants', href: `${roleBasePath}/shortlistedapplicants` },
+      { icon: Users, label: 'Candidate Tracker', href: `${roleBasePath}/viewapplicant` },
+      // { icon: Users, label: 'Shortlisted Applicants', href: `${roleBasePath}/shortlistedapplicants` },
       // {icon:FolderOpen,label:'Add Multiple Applicants',href:`${roleBasePath}/addmultipleapplicants`},
-      { icon: Users, label: 'Assesment Staged Applicants', href: `${roleBasePath}/assessmentStagedApplicants` }
+      // { icon: Users, label: 'Assesment Staged Applicants', href: `${roleBasePath}/assessmentStagedApplicants` }
 
     ],
   };
@@ -257,7 +257,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 <Link
                   key={index}
                   href={item.href}
-                  className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${isActive
+                  className={`group flex items-center px-3 py-2 text-md font-medium rounded-lg transition-all duration-200 ${isActive
                       ? "text-white shadow-sm"
                       : "text-gray-600 hover:text-gray-900 hover:bg-gray-100/80"
                     } ${sidebarCollapsed ? "justify-center" : ""}`}
@@ -280,11 +280,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
                   {!sidebarCollapsed && (
                     <>
-                      <span className="flex-1 truncate">{item.label}</span>
+                      <span className="flex-1 truncate text-md">{item.label}</span>
                       {item.badge && (
                         <Badge
                           variant="destructive"
-                          className="ml-2 h-4 w-4 flex items-center justify-center p-0 text-xs flex-shrink-0"
+                          className="ml-2 h-4 w-4 flex items-center justify-center p-0 text-md flex-shrink-0"
                         >
                           {item.badge}
                         </Badge>
@@ -326,7 +326,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   <div className="flex justify-center">
                     <Avatar className="h-8 w-8 cursor-pointer">
                       <AvatarFallback
-                        className="text-white font-semibold text-xs"
+                        className="text-white font-semibold text-md"
                         style={{ backgroundColor: brandConfig.colors.primary }}
                       >
                         {user.full_name.charAt(0).toUpperCase()}
@@ -335,8 +335,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="right" className="ml-2">
-                  <p className="font-medium">{user.full_name}</p>
-                  <p className="text-xs text-gray-500">{user.email}</p>
+                  <p className="font-medium text-md">{user.full_name}</p>
+                  <p className="text-md text-gray-500">{user.email}</p>
                   <Badge variant="secondary" className="text-xs mt-1">
                     {ROLE_DISPLAY_NAMES[currentRole]}
                   </Badge>
@@ -346,19 +346,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <div className="flex items-center space-x-2">
                 <Avatar className="h-8 w-8 flex-shrink-0">
                   <AvatarFallback
-                    className="text-white font-semibold text-xs"
+                    className="text-white font-semibold text-md"
                     style={{ backgroundColor: brandConfig.colors.primary }}
                   >
                     {user.full_name.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-gray-900 truncate">
+                  <p className="text-lg font-medium text-gray-900 truncate">
                     {user.full_name}
                   </p>
                   <Badge
                     variant="secondary"
-                    className="text-xs mt-0.5"
+                    className="text-ms mt-0.5"
                     style={{
                       backgroundColor: `${brandConfig.colors.primary}15`,
                       color: brandConfig.colors.primary,

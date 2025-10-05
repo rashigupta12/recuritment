@@ -206,7 +206,8 @@ export default function AssessmentStagedApplicants() {
         {filteredApplicants.length === 0 ? (
           <p className="text-center text-gray-600">No Assessment Stage applicants found.</p>
         ) : (
-          <ApplicantsTable applicants={filteredApplicants} showCheckboxes={false} />
+          // <ApplicantsTable applicants={filteredApplicants} showCheckboxes={false} />
+          <p></p>
         )}
       </div>
     </div>

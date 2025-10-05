@@ -1,15 +1,10 @@
 'use client'
 import { frappeAPI } from '@/lib/api/frappeClient';
 import {
-  AlertCircle,
-  Check,
   Loader2,
-  Search,
-  Trash2,
-  UserPlus,
   X
 } from 'lucide-react';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 type Assignment = {
   userEmail: string;
@@ -80,7 +75,7 @@ export const MultiUserAssignment: React.FC<MultiUserAssignmentProps> = ({
 
  const totalAllocated = assignments.reduce((sum, a) => sum + a.allocation, 0);
   const remaining = totalVacancies - totalAllocated;
-  const isOverAllocated = totalAllocated > totalVacancies;
+  // const isOverAllocated = totalAllocated > totalVacancies;
 
   const loadUsers = async () => {
     if (users.length > 0) return;
@@ -96,11 +91,11 @@ export const MultiUserAssignment: React.FC<MultiUserAssignmentProps> = ({
     }
   };
 
-  const updateAssignments = useCallback((newA: Assignment[]) => {
-    setAssignments(newA);
-    const validAssignments = newA.filter(a => a.allocation > 0);
-    onAssignToChange(formatAssignTo(validAssignments));
-  }, [onAssignToChange]);
+  // const updateAssignments = useCallback((newA: Assignment[]) => {
+  //   setAssignments(newA);
+  //   const validAssignments = newA.filter(a => a.allocation > 0);
+  //   onAssignToChange(formatAssignTo(validAssignments));
+  // }, [onAssignToChange]);
 
   const addAssignment = (user: User) => {
     const newAssignments = [...assignments, { userEmail: user.email, userName: user.full_name, allocation: 1 }];
