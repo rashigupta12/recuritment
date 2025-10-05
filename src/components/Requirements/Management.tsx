@@ -508,7 +508,7 @@ const StaffingPlanCreator: React.FC = () => {
                           <th className="p-3 font-medium text-center" style={{ width: '80px', minWidth: '80px', maxWidth: '80px' }}>
                             Exp (Yrs)
                           </th>
-                          <th className="p-3 font-medium" style={{ width: '150px', minWidth: '150px', maxWidth: '150px' }}>
+                          <th className="p-3 font-medium " style={{ width: '150px', minWidth: '150px', maxWidth: '150px' }}>
                             Location
                           </th>
                           <th className="p-3 font-medium" style={{ width: '120px', minWidth: '120px', maxWidth: '120px' }}>
@@ -614,7 +614,7 @@ const StaffingPlanCreator: React.FC = () => {
                               {/* Upload JD */}
                               <td className="p-3" style={{ width: '120px' }}>
                                 <div className="flex ">
-                                  <label className="flex items-center space-x-1 cursor-pointer text-blue-600 hover:text-blue-800 transition-colors">
+                                  <label className="flex items-end space-x-1 cursor-pointer text-blue-600 hover:text-blue-800 transition-colors">
                                     {uploadingJDs[index] ? (
                                       <>
                                         <Loader2 className="h-4 w-4 animate-spin" />

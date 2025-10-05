@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { JobOpeningModal } from './requirement-view/JobopeningModal';
+import { useAuth } from '@/contexts/AuthContext';
 
 
 // Type definitions
@@ -75,6 +76,7 @@ const StaffingPlansTable: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const {user} = useAuth()
 
   const fetchStaffingPlans = async () => {
     setIsLoading(true);
@@ -83,8 +85,9 @@ const StaffingPlansTable: React.FC = () => {
     try {
       const response = await frappeAPI.makeAuthenticatedRequest(
         "GET",
-        "/resource/Staffing Plan?order_by=creation%20desc"
+        `/resource/Staffing Plan?filters=[["owner","=","${user?.email}"]]&order_by=creation%20desc`
       );
+
 
       const plansData = response.data || [];
       const detailedPlans = await Promise.all(
