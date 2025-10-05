@@ -616,8 +616,9 @@ createBulkApplicants: async (applicantsData: Array<Record<string, unknown>>) => 
     `/resource/Job Applicant?filters=[["owner","=","${email}"],["job_title","=","${jobId}"]]&order_by=creation desc`
   );
 },
-  
-
+deleteApplicant: async (applicantName: string) => {
+  return await frappeAPI.makeAuthenticatedRequest('DELETE', `/resource/Job Applicant/${applicantName}`);
+},
   updateApplicantStatus :async(name: string, data: { status: string }) => {
   return await frappeAPI.makeAuthenticatedRequest('PUT', `/resource/Job Applicant/${encodeURIComponent(name)}`, data);
 },

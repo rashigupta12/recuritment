@@ -359,15 +359,15 @@ export default function BulkApplicantForm({ initialJobId , onFormSubmitSuccess }
   };
 
   return (
-    <div className="bg-gray-50 px-4 py-4">
+    <div className=" px-4">
       <div className="mx-auto">
 
         <div className="space-y-4">
           {applicantRows.map((row, index) => (
-            <div key={row.id} className="bg-white rounded-lg shadow-md p-6">
+            <div key={row.id} className="">
               {/* Row Header */}
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-semibold text-gray-900"> New Applicant </h2>
+                {/* <h2 className="text-xl font-semibold text-gray-900"> New Applicant </h2> */}
                 {applicantRows.length > 1 && (
                   <button
                     type="button"
@@ -532,7 +532,7 @@ export default function BulkApplicantForm({ initialJobId , onFormSubmitSuccess }
                     {row.errors.applicant_name && <p className="text-red-600 text-sm mt-1">{row.errors.applicant_name}</p>}
                   </div>
                 </div> */}
-<div className="grid md:grid-cols-2 gap-6 items-start">
+<div className="grid md:grid-cols-1 px-4 gap-6 items-start">
   {/* Upload Resume */}
   <div>
     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -558,6 +558,13 @@ export default function BulkApplicantForm({ initialJobId , onFormSubmitSuccess }
     {row.resume_attachment && (
       <p className="text-sm text-green-600 mt-1">✓ Resume uploaded</p>
     )}
+      {row.isAutofilling && (
+    <p className="text-sm text-blue-600 mt-2 flex items-center justify-center gap-2">
+      <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      Please be patient, data is being fetched...
+    </p>
+  )}
+  {row.autofillError && <p className="text-red-600 text-sm mt-2">{row.autofillError}</p>}
     {row.errors.resume_attachment && (
       <p className="text-red-600 text-sm mt-1">
         {row.errors.resume_attachment}
@@ -589,7 +596,7 @@ export default function BulkApplicantForm({ initialJobId , onFormSubmitSuccess }
 </div>
 
                 {/* Personal Information */}
-                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex-1 grid grid-cols-1 md:grid-cols-1 px-4 pt-2 gap-4">
                  
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>

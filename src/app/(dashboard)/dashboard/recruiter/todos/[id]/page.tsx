@@ -33,11 +33,11 @@ export default function TodoDetailPage() {
   };
 
   // ✅ Improved refresh function
-  const handleFormSubmitSuccess = () => {
-    console.log('🔄 Refreshing applicants list...');
-    setRefreshKey(prev => prev + 1); // Increment key to force re-render
-    setIsSheetOpen(false);
-  };
+ const handleFormSubmitSuccess = () => {
+  console.log('🔄 Refreshing applicants list...');
+  setIsSheetOpen(false);
+  setRefreshKey(prev => prev + 1);
+};
 
   // ✅ Force refresh function that can be passed down
   const refreshApplicants = () => {
@@ -92,17 +92,17 @@ export default function TodoDetailPage() {
             <button
               onClick={() => setActiveTab('details')}
               className={`px-4 py-1 rounded-full text-sm font-medium transition ${activeTab === 'details'
-                  ? "bg-blue-100 text-primary border border-primary"
-                  : "text-gray-500 hover:text-gray-700"
+                ? "bg-blue-100 text-primary border border-primary"
+                : "text-gray-500 hover:text-gray-700"
                 }`}
             >
-              Task Details
+              Job Details
             </button>
             <button
               onClick={() => setActiveTab('applicants')}
               className={`px-4 py-1 rounded-full text-sm font-medium transition ${activeTab === 'applicants'
-                  ? "bg-blue-100 text-primary border border-primary"
-                  : "text-gray-500 hover:text-gray-700"
+                ? "bg-blue-100 text-primary border border-primary"
+                : "text-gray-500 hover:text-gray-700"
                 }`}
             >
               Tagged Applicants
@@ -117,6 +117,7 @@ export default function TodoDetailPage() {
           <TodoDetailModal
             todoId={todoId}
             onClose={handleClose}
+            setActiveTab={setActiveTab}
           />
         )}
 
@@ -131,7 +132,7 @@ export default function TodoDetailPage() {
               <Plus className="w-8 h-8" />
             </button>
 
-            <h1 className="text-2xl font-bold text-gray-900 mb-4"></h1>
+            <h1 className="text-2xl font-bold text-gray-900 mb-4 pb-4"></h1>
             {jobId && todoData ? (
               <>
                 {/* ✅ Multiple Applicants Form in Sheet */}
@@ -150,21 +151,21 @@ export default function TodoDetailPage() {
                     </div>
                   </SheetContent>
                 </Sheet> */}
-<Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-  <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
-    <SheetHeader>
-      <SheetTitle className="text-2xl font-bold text-gray-900">
-        Add Applicants
-      </SheetTitle>
-    </SheetHeader>
-    <div className="mt-6">
-      <MultipleApplicantsForm
-        initialJobId={jobId}
-        onFormSubmitSuccess={handleFormSubmitSuccess}
-      />
-    </div>
-  </SheetContent>
-</Sheet>
+                <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+                  <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+                    <SheetHeader>
+                      <SheetTitle className="text-2xl font-bold text-gray-900">
+                        Add Applicants
+                      </SheetTitle>
+                    </SheetHeader>
+                    <div className="mt-0">
+                      <MultipleApplicantsForm
+                        initialJobId={jobId}
+                        onFormSubmitSuccess={handleFormSubmitSuccess}
+                      />
+                    </div>
+                  </SheetContent>
+                </Sheet>
                 {/* ✅ Tagged Applicants List with refresh key */}
                 <TaggedApplicants
                   key={`tagged-applicants-${refreshKey}`} // ✅ Force re-render
@@ -172,7 +173,7 @@ export default function TodoDetailPage() {
                   ownerEmail={todoData.owner_email || 'recruiter@gennextit.com'}
                   todoData={todoData}
                   refreshTrigger={refreshKey}
-                   // ✅ Additional refresh prop
+                // ✅ Additional refresh prop
                 />
               </>
             ) : (
