@@ -93,7 +93,8 @@ export default function TaggedApplicants({
   const [assessmentRound, setAssessmentRound] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [refreshKey, setRefreshKey] = useState<number>(0);
-  
+  const [showDowngradeWarning, setShowDowngradeWarning] = useState<boolean>(false);
+const [downgradeInfo, setDowngradeInfo] = useState<{from: string, to: string} | null>(null);
   const router = useRouter();
 
   // Handle applicant selection
@@ -108,7 +109,32 @@ export default function TaggedApplicants({
       return prev;
     });
   };
-   
+   // Helper function to get status hierarchy level
+const getStatusLevel = (status: string): number => {
+  const statusLevels: { [key: string]: number } = {
+    "open": 0,
+    "tagged": 1,
+    "shortlisted": 2,
+    "assessment ": 3,
+    "interview": 4,
+    "interview reject": -1,
+    "offered": 5,
+    "offer drop": -1,
+    "joined": 6
+  };
+  return statusLevels[status.toLowerCase()] ?? 0;
+};
+
+// Helper function to check if it's a downgrade
+const isStatusDowngrade = (currentStatus: string, newStatus: string): boolean => {
+  const currentLevel = getStatusLevel(currentStatus);
+  const newLevel = getStatusLevel(newStatus);
+  
+  // Ignore negative levels (reject/drop states)
+  if (currentLevel === -1 || newLevel === -1) return false;
+  
+  return newLevel < currentLevel;
+};
   const handleDeleteApplicant = async (applicant: JobApplicant) => {
     const canDelete = ['tagged', 'open'].includes(applicant.status?.toLowerCase() || '');
 
@@ -188,191 +214,6 @@ export default function TaggedApplicants({
     setFilteredApplicants(filtered);
   }, [applicants, searchQuery]);
 
-  // useEffect(() => {
-  //   const fetchApplicants = async () => {
-  //     try {
-  //       setLoading(true);
-
-  //       const response: any = await frappeAPI.getTaggedApplicantsByJobId(
-  //         jobId,
-  //         ownerEmail
-  //       );
-  //       console.log("📦 Initial API Response:", response);
-
-  //       const applicantNames = response.data || [];
-  //       console.log("📊 Applicant names:", applicantNames);
-
-  //       if (applicantNames.length === 0) {
-  //         setApplicants([]);
-  //         setFilteredApplicants([]);
-  //         setLoading(false);
-  //         return;
-  //       }
-
-  //       const applicantsPromises = applicantNames.map(
-  //         async (applicant: any) => {
-  //           try {
-  //             console.log(
-  //               `📥 Fetching details for applicant: ${applicant.name}`
-  //             );
-  //             const applicantDetail = await frappeAPI.getApplicantBYId(
-  //               applicant.name
-  //             );
-  //             console.log(
-  //               `✅ Applicant details for ${applicant.name}:`,
-  //               applicantDetail.data
-  //             );
-
-  //             if (applicantDetail.data) {
-  //               console.log(`📎 Resume attachment for ${applicant.name}:`, {
-  //                 hasResume: !!applicantDetail.data.resume_attachment,
-  //                 resumeValue: applicantDetail.data.resume_attachment,
-  //                 fullData: applicantDetail.data,
-  //               });
-  //             }
-
-  //             return applicantDetail.data;
-  //           } catch (err) {
-  //             console.error(
-  //               `❌ Error fetching details for ${applicant.name}:`,
-  //               err
-  //             );
-  //             return {
-  //               name: applicant.name,
-  //               email_id: applicant.email_id || "Not available",
-  //             };
-  //           }
-  //         }
-  //       );
-
-  //       const applicantsData = await Promise.all(applicantsPromises);
-  //       console.log("🎉 All applicants data:", applicantsData);
-
-  //       console.log("🔍 Resume Attachment Summary:");
-  //       applicantsData.forEach((applicant, index) => {
-  //         if (applicant) {
-  //           console.log(
-  //             `Applicant ${index + 1}: ${
-  //               applicant.applicant_name || applicant.name
-  //             }`,
-  //             {
-  //               hasResume: !!applicant.resume_attachment,
-  //               resumeValue: applicant.resume_attachment,
-  //               resumeType: typeof applicant.resume_attachment,
-  //             }
-  //           );
-  //         }
-  //       });
-
-  //       setApplicants(applicantsData.filter((applicant) => applicant !== null));
-  //       setFilteredApplicants(
-  //         applicantsData.filter((applicant) => applicant !== null)
-  //       );
-  //     } catch (err: any) {
-  //       console.error("❌ Error in fetchApplicants:", err);
-  //       console.error("Error details:", err.response || err.message);
-  //       setError("Failed to fetch applicants. Please try again later.");
-  //       setApplicants([]);
-  //       setFilteredApplicants([]);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-
-  //   if (jobId && ownerEmail) {
-  //     fetchApplicants();
-  //   } else {
-  //     setLoading(false);
-  //     setError("Job ID or owner email not provided");
-  //     console.log("❌ Missing data:", { jobId, ownerEmail });
-  //   }
-  // }, [jobId, ownerEmail, refreshTrigger, refreshKey]);
-  // Replace the current useEffect with this improved version
-  // useEffect(() => {
-  //   const fetchApplicants = async () => {
-  //     try {
-  //       setLoading(true);
-  //       console.log('🔄 Fetching applicants - refreshTrigger:', refreshTrigger);
-  //       console.log('📋 Job ID:', jobId, 'Owner Email:', ownerEmail);
-
-  //       const response: any = await frappeAPI.getTaggedApplicantsByJobId(
-  //         jobId,
-  //         ownerEmail
-  //       );
-  //       console.log("📦 API Response:", response);
-
-  //       const applicantNames = response.data || [];
-  //       console.log("📊 Applicant names found:", applicantNames.length);
-
-  //       if (applicantNames.length === 0) {
-  //         console.log('ℹ️ No applicants found for this job');
-  //         setApplicants([]);
-  //         setFilteredApplicants([]);
-  //         setLoading(false);
-  //         return;
-  //       }
-
-  //       // Fetch detailed information for each applicant
-  //       const applicantsPromises = applicantNames.map(async (applicant: any) => {
-  //         try {
-  //           console.log(`📥 Fetching details for: ${applicant.name}`);
-  //           const applicantDetail = await frappeAPI.getApplicantBYId(applicant.name);
-
-  //           if (applicantDetail.data) {
-  //             console.log(`✅ Successfully fetched: ${applicant.name}`, {
-  //               name: applicantDetail.data.applicant_name || applicantDetail.data.name,
-  //               hasResume: !!applicantDetail.data.resume_attachment,
-  //               status: applicantDetail.data.status
-  //             });
-  //             return applicantDetail.data;
-  //           }
-  //           return null;
-  //         } catch (err) {
-  //           console.error(`❌ Error fetching ${applicant.name}:`, err);
-  //           return {
-  //             name: applicant.name,
-  //             email_id: applicant.email_id || "Not available",
-  //             applicant_name: applicant.applicant_name || "Unknown",
-  //             status: applicant.status || "Unknown"
-  //           };
-  //         }
-  //       });
-
-  //       const applicantsData = await Promise.all(applicantsPromises);
-  //       const validApplicants = applicantsData.filter(applicant => applicant !== null);
-
-  //       console.log("🎉 Final applicants data:", {
-  //         totalFetched: validApplicants.length,
-  //         applicants: validApplicants.map(app => ({
-  //           name: app.applicant_name || app.name,
-  //           status: app.status,
-  //           hasResume: !!app.resume_attachment
-  //         }))
-  //       });
-
-  //       setApplicants(validApplicants);
-  //       setFilteredApplicants(validApplicants);
-
-  //     } catch (err: any) {
-  //       console.error("❌ Error in fetchApplicants:", err);
-  //       console.error("Error details:", err.response?.data || err.message);
-  //       setError("Failed to fetch applicants. Please try again later.");
-  //       setApplicants([]);
-  //       setFilteredApplicants([]);
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   };
-
-  //   if (jobId && ownerEmail) {
-  //     console.log('🚀 Starting data fetch...');
-  //     fetchApplicants();
-  //   } else {
-  //     console.log('❌ Missing required data:', { jobId, ownerEmail });
-  //     setLoading(false);
-  //     setError("Job ID or owner email not provided");
-  //   }
-  // }, [jobId, ownerEmail, refreshTrigger,refreshKey]); // ✅ refreshTrigger is in dependencies
 useEffect(() => {
   const fetchApplicants = async () => {
     if (!jobId || !ownerEmail) {
@@ -454,14 +295,14 @@ useEffect(() => {
 
   // Handler to open the status update modal
   const handleOpenStatusModal = () => {
-    if (selectedApplicants.length === 0) {
-      toast.error("Please select at least one applicant.");
-      return;
-    }
-    setIsStatusModalOpen(true);
-    setSelectedStatus("");
-    setModalError(null);
-  };
+  if (selectedApplicants.length === 0) {
+    toast.error("Please select at least one applicant.");
+    return;
+  }
+  setIsStatusModalOpen(true);
+  setSelectedStatus("");
+  setModalError(null);
+};
 
   // Handler to close the status modal
   const handleCloseStatusModal = () => {
@@ -503,7 +344,30 @@ useEffect(() => {
     setAssessmentRound("");
     setModalError(null);
   };
-
+const handleStatusChangeRequest = () => {
+  if (!selectedStatus) {
+    setModalError("Please select a status.");
+    return;
+  }
+  
+  // Check if any selected applicant is being downgraded
+  const downgrades = selectedApplicants.filter(applicant => 
+    applicant.status && isStatusDowngrade(applicant.status, selectedStatus)
+  );
+  
+  if (downgrades.length > 0) {
+    // Show warning popup
+    const firstDowngrade = downgrades[0];
+    setDowngradeInfo({
+      from: firstDowngrade.status || "",
+      to: selectedStatus
+    });
+    setShowDowngradeWarning(true);
+  } else {
+    // No downgrades, proceed directly
+    handleConfirmStatusChange();
+  }
+};
   // Handler for starting assessment
   // Handler for starting assessment
   const handleStartAssessment = async () => {
@@ -568,9 +432,9 @@ useEffect(() => {
       const statusUpdatePromises = selectedApplicants.map(async (applicant) => {
         try {
           await frappeAPI.updateApplicantStatus(applicant.name, {
-            status: "Assessment Stage",
+            status: "Assessment",
           });
-          console.log(`✅ Status updated to "Assessment Stage" for ${applicant.name}`);
+          console.log(`✅ Status updated to "Assessment" for ${applicant.name}`);
         } catch (err: any) {
           console.error(`❌ Failed to update status for ${applicant.name}:`, err);
           throw new Error(`Failed to update status for ${applicant.applicant_name || applicant.name}`);
@@ -605,7 +469,7 @@ useEffect(() => {
       );
 
       setAssessmentSuccess(
-        `Assessment(s) created successfully with ID(s): ${assessmentIds}. Applicant status updated to "Assessment Stage".`
+        `Assessment(s) created successfully with ID(s): ${assessmentIds}. Applicant status updated to "Assessment ".`
       );
       toast.success(
         `Assessment created and status updated to "Assessment Stage" successfully!`
@@ -657,7 +521,7 @@ useEffect(() => {
         return "bg-blue-100 text-blue-800 border-blue-200";
       case "shortlisted":
         return "bg-purple-100 text-purple-800 border-purple-200";
-      case "assessment stage":
+      case "assessment":
         return "bg-yellow-100 text-yellow-800 border-yellow-200";
       case "hired":
         return "bg-green-100 text-green-800 border-green-200";
@@ -975,8 +839,8 @@ useEffect(() => {
                 <option value="joined">Joined</option> */}
                 {/* <option value="Tagged">Tagged</option> */}
                 <option value="Shortlisted">Shortlisted</option>
-                <option value="Assessment Stage">Assessment</option>
-                <option value="Interview Stage">Interview</option>
+                <option value="Assessment">Assessment</option>
+                <option value="Interview">Interview</option>
                  <option value="Interview Reject">Interview reject</option>
                   <option value="Offered">Offered</option>
                 <option value="Offer Drop">Offer Drop</option>
@@ -984,7 +848,7 @@ useEffect(() => {
               </select>
             </div>
             <div className="mb-6">
-              <p className="text-gray-600 font-medium mb-2 text-sm">
+              <p className="text-gray-600 font-medium mb-2 text-md">
                 Selected Applicants ({selectedApplicants.length})
               </p>
               <div className="space-y-3 max-h-64 overflow-y-auto">
@@ -1028,7 +892,7 @@ useEffect(() => {
                 Cancel
               </button>
               <button
-                onClick={handleConfirmStatusChange}
+                onClick={handleStatusChangeRequest}
                 disabled={!selectedStatus}
                 className="px-5 py-2.5 text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-lg transition-all font-medium shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
                 aria-label="Confirm status change"
@@ -1147,6 +1011,77 @@ useEffect(() => {
           </div>
         </div>
       )}
+      {showDowngradeWarning && downgradeInfo && (
+  <div
+    className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]"
+    role="dialog"
+    aria-modal="true"
+  >
+    <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+      <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-3">
+        <h2 className="text-xl font-bold text-red-600 flex items-center gap-2">
+          <AlertCircle className="h-6 w-6" />
+          Warning: Status Downgrade
+        </h2>
+        <button
+          onClick={() => {
+            setShowDowngradeWarning(false);
+            setDowngradeInfo(null);
+          }}
+          className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors rounded-full hover:bg-gray-100"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+      
+      <div className="mb-6">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+          <p className="text-gray-800 font-semibold mb-2">
+            You are moving applicant(s) from a higher stage to a lower stage:
+          </p>
+          <div className="flex items-center justify-center gap-3 my-3">
+            <span className="px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full font-medium">
+              {downgradeInfo.from}
+            </span>
+            <span className="text-gray-500">→</span>
+            <span className="px-3 py-1.5 bg-orange-100 text-orange-800 rounded-full font-medium">
+              {downgradeInfo.to}
+            </span>
+          </div>
+          <p className="text-gray-700 text-sm mt-3">
+            This action will move {selectedApplicants.length} applicant(s) backwards in the hiring process.
+          </p>
+        </div>
+        
+        <p className="text-gray-600 font-medium text-sm">
+          Are you sure you want to proceed?
+        </p>
+      </div>
+      
+      <div className="flex justify-end space-x-3 pt-3 border-t border-gray-100">
+        <button
+          onClick={() => {
+            setShowDowngradeWarning(false);
+            setDowngradeInfo(null);
+          }}
+          className="px-5 py-2.5 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-all font-medium shadow-sm text-sm"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={() => {
+            setShowDowngradeWarning(false);
+            setDowngradeInfo(null);
+            handleConfirmStatusChange();
+          }}
+          className="px-5 py-2.5 text-white bg-red-600 hover:bg-red-700 rounded-lg transition-all font-medium shadow-md text-sm"
+        >
+          Yes, Proceed
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   );
 }
