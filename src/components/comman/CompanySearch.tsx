@@ -420,7 +420,7 @@ useEffect(() => {
       }}
     >
       {isSearching ? (
-        <div className="px-4 py-2 text-sm text-gray-500 flex items-center">
+        <div className="px-4 py-2 text-md text-gray-500 flex items-center">
           <Loader2 className="h-4 w-4 animate-spin mr-2" />
           Searching companies...
         </div>
@@ -476,7 +476,7 @@ useEffect(() => {
           Create company for &quot;{searchQuery} &quot;
         </div>
       ) : (
-        <div className="px-4 py-2 text-sm text-gray-500">
+        <div className="px-4 py-2 text-md text-gray-500">
           Start typing to search companies...
         </div>
       )}
@@ -534,7 +534,7 @@ useEffect(() => {
 
         {/* NEW: Auto-fetch status */}
         {isAutoFetching && (
-          <div className="mt-2 text-sm text-blue-600 flex items-center">
+          <div className="mt-2 text-md text-blue-600 flex items-center">
             <Loader2 className="h-3 w-3 animate-spin mr-1" />
             Auto-fetching organization details...
           </div>
@@ -554,7 +554,7 @@ useEffect(() => {
                 <h3 className="font-medium text-gray-900">
                   {selectedCompany.company_name}
                 </h3>
-                <div className="text-sm text-gray-600 space-y-1">
+                <div className="text-md text-gray-600 space-y-1">
                   <div className="flex items-center">
                     <MapPin className="h-3 w-3 mr-2" />
                     {selectedCompany.country}
@@ -573,12 +573,12 @@ useEffect(() => {
                   )}
                   {/* NEW: Display additional fields if available */}
                   {selectedCompany.default_currency && (
-                    <div className="text-sm text-gray-600">
+                    <div className="text-md text-gray-600">
                       Currency: {selectedCompany.default_currency}
                     </div>
                   )}
                   {selectedCompany.phone && (
-                    <div className="text-sm text-gray-600">
+                    <div className="text-md text-gray-600">
                       Phone: {selectedCompany.phone}
                     </div>
                   )}
@@ -592,7 +592,7 @@ useEffect(() => {
       {/* Create/Edit Company Dialog */}
       {showCompanyDialog && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white">
               <h2 className="text-xl font-bold text-gray-900">
                 {selectedCompany ? "Edit Company" : "Add New Company"}
@@ -606,7 +606,7 @@ useEffect(() => {
             </div>
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-md font-medium text-gray-700 mb-1">
                   Company Name *
                 </label>
                 <input
@@ -628,7 +628,7 @@ useEffect(() => {
               
               <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-md font-medium text-gray-700 mb-1">
                     Country *
                   </label>
                   <select
@@ -660,7 +660,7 @@ useEffect(() => {
               </div>
 
              <div>
-  <label className="block text-sm font-medium text-gray-700 mb-1">
+  <label className="block text-md font-medium text-gray-700 mb-1">
     Website
   </label>
   <input
@@ -687,7 +687,7 @@ useEffect(() => {
 
               <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-md font-medium text-gray-700 mb-1">
                     Email
                   </label>
                   <input
@@ -703,7 +703,7 @@ useEffect(() => {
               </div>
               <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-md font-medium text-gray-700 mb-1">
                     Address
                   </label>
                   <input

@@ -221,16 +221,16 @@ const getStageColor = (stage: string): string => {
 
 // Components
 const StatCard: React.FC<StatCardProps> = ({ title, value, change, icon: Icon, trend = 'up', subtitle }) => (
-  <div className="bg-white p-6 rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-200">
+  <div className="bg-white p-3 rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-200">
     <div className="flex items-center justify-between mb-4">
-      <div className="flex items-center space-x-3">
-        <div className="p-2 bg-blue-50 rounded-lg">
+      <div className="flex items-center space-x-2">
+        <div className=" bg-blue-50 rounded-lg">
           <Icon className="h-5 w-5 text-blue-600" />
         </div>
-        <h3 className="text-sm font-medium text-gray-600">{title}</h3>
+        <h3 className="text-lg font-medium text-gray-600">{title}</h3>
       </div>
       {change && (
-        <div className={`flex items-center space-x-1 text-sm ${
+        <div className={`flex items-center space-x-1 text-md ${
           trend === 'up' ? 'text-green-600' : 'text-red-600'
         }`}>
           {trend === 'up' ? (
@@ -245,7 +245,7 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, change, icon: Icon, t
     <div className="space-y-1">
       <div className="text-2xl font-bold text-gray-900">{value}</div>
       {subtitle && (
-        <div className="text-sm text-gray-500">{subtitle}</div>
+        <div className="text-md text-gray-500">{subtitle}</div>
       )}
     </div>
   </div>
@@ -255,24 +255,24 @@ const LeadCard: React.FC<LeadCardProps> = ({ lead }) => (
   <div className="bg-white p-4 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors">
     <div className="flex items-start justify-between mb-3">
       <div className="flex-1">
-        <h4 className="font-semibold text-gray-900 text-sm">{lead.name}</h4>
-        <p className="text-xs text-gray-600 mt-1">{lead.contact}</p>
+        <h4 className="font-semibold text-gray-900 text-md">{lead.name}</h4>
+        <p className="text-sm text-gray-600 mt-1">{lead.contact}</p>
       </div>
-      <div className={`px-2 py-1 rounded-full text-xs border ${getPriorityColor(lead.priority)}`}>
+      <div className={`px-2 py-1 rounded-full text-sm capitalize border ${getPriorityColor(lead.priority)}`}>
         {lead.priority}
       </div>
     </div>
     
     <div className="flex items-center justify-between mb-2">
-      <span className={`px-2 py-1 rounded-full text-xs border ${getStageColor(lead.stage)}`}>
+      <span className={`px-2 py-1 rounded-full text-sm border ${getStageColor(lead.stage)}`}>
         {lead.stage}
       </span>
-      <span className="text-sm font-semibold text-green-600">
+      <span className="text-lg font-semibold text-green-600">
         {formatCurrency(lead.dealValue)}
       </span>
     </div>
     
-    <div className="text-xs text-gray-500">
+    <div className="text-sm text-gray-500">
       Last activity: {formatDate(lead.lastActivity)}
     </div>
   </div>
@@ -282,16 +282,16 @@ const OnboardingCard: React.FC<OnboardingCardProps> = ({ item }) => (
   <div className="bg-white p-4 rounded-lg border border-gray-200">
     <div className="flex items-start justify-between mb-3">
       <div className="flex-1">
-        <h4 className="font-semibold text-gray-900 text-sm">{item.company}</h4>
-        <p className="text-xs text-gray-600">{item.contact}</p>
+        <h4 className="font-semibold text-gray-900 text-lg">{item.company}</h4>
+        <p className="text-md text-gray-600">{item.contact}</p>
       </div>
-      <span className="text-sm font-semibold text-green-600">
+      <span className="text-lg font-semibold text-green-600">
         {formatCurrency(item.contractValue)}
       </span>
     </div>
     
     <div className="space-y-2">
-      <div className="flex items-center justify-between text-xs">
+      <div className="flex items-center justify-between text-md">
         <span className="text-gray-500">Status:</span>
         <span className="bg-blue-50 text-blue-700 px-2 py-1 rounded">{item.status}</span>
       </div>
@@ -311,27 +311,27 @@ const RequirementCard: React.FC<RequirementCardProps> = ({ requirement }) => (
   <div className="bg-white p-4 rounded-lg border border-gray-200">
     <div className="flex items-start justify-between mb-3">
       <div className="flex-1">
-        <h4 className="font-semibold text-gray-900 text-sm">{requirement.company}</h4>
+        <h4 className="font-semibold text-gray-900 text-lg">{requirement.company}</h4>
         <div className="flex items-center space-x-2 mt-1">
           <Users className="h-3 w-3 text-gray-400" />
-          <span className="text-xs text-gray-600">{requirement.positions} positions</span>
+          <span className="text-md text-gray-600">{requirement.positions} positions</span>
         </div>
       </div>
-      <div className={`px-2 py-1 rounded-full text-xs border ${getPriorityColor(requirement.priority)}`}>
+      <div className={`px-2 py-1 rounded-full text-md border ${getPriorityColor(requirement.priority)}`}>
         {requirement.priority}
       </div>
     </div>
     
     <div className="space-y-2">
-      <div className="flex items-center justify-between text-xs">
+      <div className="flex items-center justify-between text-md">
         <span className="text-gray-500">Budget:</span>
         <span className="font-semibold text-green-600">{formatCurrency(requirement.totalBudget)}</span>
       </div>
-      <div className="flex items-center justify-between text-xs">
+      <div className="flex items-center justify-between text-md">
         <span className="text-gray-500">Assigned:</span>
         <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded">{requirement.assignedTo}</span>
       </div>
-      <div className="flex items-center justify-between text-xs">
+      <div className="flex items-center justify-between text-md">
         <span className="text-gray-500">Deadline:</span>
         <span className="text-red-600 font-medium">{formatDate(requirement.deadline)}</span>
       </div>
@@ -343,7 +343,7 @@ const MiniChart: React.FC<MiniChartProps> = ({ data, type = 'bar' }) => {
   if (type === 'bar') {
     const maxValue = Math.max(...data.map((d: ChartDataPoint) => d.leads));
     return (
-      <div className="flex items-end space-x-1 h-20">
+      <div className="flex items-end space-x-1 h-20 mt-20">
         {data.slice(-6).map((item: ChartDataPoint, index: number) => (
           <div key={index} className="flex-1 flex flex-col items-center">
             <div 
@@ -354,7 +354,7 @@ const MiniChart: React.FC<MiniChartProps> = ({ data, type = 'bar' }) => {
               className="w-full bg-green-200 rounded-b"
               style={{ height: `${(item.conversions / maxValue) * 60}px`, minHeight: '2px' }}
             ></div>
-            <span className="text-xs text-gray-500 mt-1">{item.month}</span>
+            <span className="text-md text-gray-500 mt-1">{item.month}</span>
           </div>
         ))}
       </div>
@@ -425,11 +425,11 @@ export default function SalesManagerDashboard() {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-semibold text-gray-900">Lead Performance</h2>
             <div className="flex space-x-2">
-              <span className="flex items-center text-sm text-gray-600">
+              <span className="flex items-center text-md text-gray-600">
                 <div className="w-3 h-3 bg-blue-200 rounded mr-2"></div>
                 Leads
               </span>
-              <span className="flex items-center text-sm text-gray-600">
+              <span className="flex items-center text-md text-gray-600">
                 <div className="w-3 h-3 bg-green-200 rounded mr-2"></div>
                 Conversions
               </span>
@@ -444,21 +444,22 @@ export default function SalesManagerDashboard() {
             <button className="w-full flex items-center justify-between p-3 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">
               <div className="flex items-center">
                 <UserPlus className="h-4 w-4 text-blue-600 mr-3" />
-                <span className="text-sm font-medium">Add New Lead</span>
+                
+                <span className="text-md font-medium">Add New Lead</span>
               </div>
               <ArrowUpRight className="h-4 w-4 text-blue-600" />
             </button>
             <button className="w-full flex items-center justify-between p-3 bg-green-50 hover:bg-green-100 rounded-lg transition-colors">
               <div className="flex items-center">
                 <FileText className="h-4 w-4 text-green-600 mr-3" />
-                <span className="text-sm font-medium">Create Requirement</span>
+                <span className="text-md font-medium">Create Requirement</span>
               </div>
               <ArrowUpRight className="h-4 w-4 text-green-600" />
             </button>
             <button className="w-full flex items-center justify-between p-3 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors">
               <div className="flex items-center">
                 <Briefcase className="h-4 w-4 text-purple-600 mr-3" />
-                <span className="text-sm font-medium">View Onboarding</span>
+                <span className="text-md font-medium">View Onboarding</span>
               </div>
               <ArrowUpRight className="h-4 w-4 text-purple-600" />
             </button>
@@ -471,7 +472,7 @@ export default function SalesManagerDashboard() {
         {/* Recent Leads */}
         <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Recent Leads</h2>
+            <h2 className="text-xl font-semibold text-gray-900">Recent Leads</h2>
             <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
               View All
             </button>
@@ -486,7 +487,7 @@ export default function SalesManagerDashboard() {
         {/* Onboarding Pipeline */}
         <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Onboarding</h2>
+            <h2 className="text-xl font-semibold text-gray-900">Onboarding</h2>
             <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
               View All
             </button>
@@ -501,7 +502,7 @@ export default function SalesManagerDashboard() {
         {/* Active Requirements */}
         <div className="bg-gray-50 p-6 rounded-xl border border-gray-200">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Requirements</h2>
+            <h2 className="text-xl font-semibold text-gray-900">Requirements</h2>
             <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
               View All
             </button>
@@ -515,7 +516,7 @@ export default function SalesManagerDashboard() {
       </div>
 
       {/* Additional Insights */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-xl border border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Pipeline Distribution</h2>
           <div className="space-y-3">
@@ -564,7 +565,7 @@ export default function SalesManagerDashboard() {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }

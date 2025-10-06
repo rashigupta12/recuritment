@@ -599,6 +599,19 @@ deleteApplicant: async (applicantName: string) => {
   return await frappeAPI.makeAuthenticatedRequest('PUT', `/resource/Job Applicant/${encodeURIComponent(name)}`, data);
 },
 
+createFeedback: async (feedbackData: Record<string, unknown>) => {
+    return await frappeAPI.makeAuthenticatedRequest('POST', '/resource/Issue', feedbackData);
+  },
+  editFeedback: async (feedbackId: string, feedbackData: Record<string, unknown>) => {
+    return await frappeAPI.makeAuthenticatedRequest('PUT', `/resource/Issue/${feedbackId}`, feedbackData);
+  },
+  getFeedbackByUserId: async (userId: string) => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Issue?filters=[["raised_by","=","${userId}"]]&order_by=modified desc`);
+  },
+  getFeedbackById: async (feedbackId: string) => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Issue/${feedbackId}`);
+  },
+
   
    upload: async (file: File, options: {
     is_private?: boolean;

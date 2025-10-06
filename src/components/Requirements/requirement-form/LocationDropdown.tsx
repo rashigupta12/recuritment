@@ -96,7 +96,7 @@ const LocationDropdown: React.FC<LocationDropdownProps> = ({
             setIsOpen(true);
           }
         }}
-        className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+        className="w-full px-2 py-1.5 text-md border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
         placeholder="Search Location"
       />
 
@@ -107,7 +107,7 @@ const LocationDropdown: React.FC<LocationDropdownProps> = ({
           style={{ top: pos.top, left: pos.left, width: 250 }} // width increased here
         >
           {loading ? (
-            <div className="flex items-center justify-center p-2 text-sm text-gray-500">
+            <div className="flex items-center justify-center p-2 text-md text-gray-500">
               <Loader2 className="h-4 w-4 animate-spin mr-2" /> Searching...
             </div>
           ) : results.length > 0 ? (
@@ -127,7 +127,7 @@ const LocationDropdown: React.FC<LocationDropdownProps> = ({
               </div>
             ))
           ) : (
-            <div className="p-2 text-sm text-gray-500">No locations found</div>
+            <div className="p-2 text-md text-gray-500">No locations found</div>
           )}
         </div>
       )}

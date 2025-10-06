@@ -19,11 +19,11 @@ export const LeadsTable = ({
       <table className="w-full">
         <thead className="bg-blue-500 font-bold">
           <tr>
-            <th className="px-4 py-3 text-left text-md  font-bold text-white uppercase tracking-wider">
-              Company Info.
+            <th className="px-4 py-3 text-left text-md   text-white uppercase tracking-wider">
+              Company 
             </th>
             <th className="px-4 py-3 text-left text-md font-medium text-white uppercase tracking-wider">
-              Contact Info.
+              Contact 
             </th>
             
             <th className="px-4 py-3 text-left text-md font-medium text-white uppercase tracking-wider">
@@ -33,13 +33,17 @@ export const LeadsTable = ({
               Offering
             </th>
             <th className="px-4 py-3 text-left text-md font-medium text-white uppercase tracking-wider">
-              Salary/<br></br>Hiring
+              Salary<br/>(LPA)
             </th>
             <th className="px-4 py-3 text-left text-md font-medium text-white uppercase tracking-wider">
-              Fee
+              No. Of<br/>
+              vac
             </th>
             <th className="px-4 py-3 text-left text-md font-medium text-white uppercase tracking-wider">
-              Deal Value
+              Fee<br/>(%/K)
+            </th>
+            <th className="px-4 py-3 text-left text-md font-medium text-white uppercase tracking-wider">
+              Deal<br/> Value(L)
             </th>
             {/* <th className="px-4 py-3 text-left text-sm font-medium text-white uppercase tracking-wider">
               Owner
@@ -198,15 +202,28 @@ const LeadsTableRow = ({ lead, onView, onEdit }: LeadsTableRowProps) => {
                 : "-"}
             </div>
 
-            <div className="text-md text-gray-900 flex items-center">
-              <UsersIcon className="h-3 w-3 mr-1 text-gray-900" />
-              {lead.custom_estimated_hiring_ || "-"}
-            </div>
+            
           </>
         ) : (
           "-"
         )}
       </td>
+
+  <td className="px-4 py-2 whitespace-nowrap">
+        {lead.custom_estimated_hiring_ ? (
+          <>
+           <div className="text-md text-gray-900 flex items-center">
+              <UsersIcon className="h-3 w-3 mr-1 text-gray-900" />
+              {lead.custom_estimated_hiring_ || "-"}
+            </div>
+
+            
+          </>
+        ) : (
+          "-"
+        )}
+      </td>
+      
 
       <td className="px-4 py-2 whitespace-nowrap">
         {lead.custom_fee ? (

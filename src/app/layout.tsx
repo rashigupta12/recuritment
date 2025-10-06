@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import { Toaster } from 'sonner';
+
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import { getBrandConfig } from '@/lib/brand/config';
 import './globals.css';
+import { Toaster } from 'react-hot-toast';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -32,16 +33,42 @@ export default function RootLayout({
         <ThemeProvider>
           <AuthProvider>
             {children}
-            <Toaster 
-              position="top-right" 
-              toastOptions={{
+           <Toaster
+            position="top-right"
+            containerStyle={{
+              top: 20,
+              right: 20,
+              zIndex: 9999,
+            }}
+            toastOptions={{
+              className: "",
+              style: {
+                border: "1px solid #713200",
+                padding: "16px",
+                color: "#713200",
+                fontSize: "14px",
+                maxWidth: "350px",
+                wordBreak: "break-word",
+                zIndex: 9999,
+              },
+              success: {
+                className: "border border-green-500 text-green-700",
                 style: {
-                  background: 'var(--brand-background)',
-                  color: 'var(--brand-foreground)',
-                  border: '1px solid var(--brand-primary)',
+                  border: "1px solid #22c55e",
+                  color: "#15803d",
                 },
-              }}
-            />
+              },
+              error: {
+                className: "border border-red-500 text-red-700",
+                style: {
+                  border: "1px solid #ef4444",
+                  color: "#dc2626",
+                },
+              },
+              duration: 3000,
+            }}
+            gutter={8}
+          />
           </AuthProvider>
         </ThemeProvider>
       </body>
