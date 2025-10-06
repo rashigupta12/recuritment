@@ -1,7 +1,7 @@
 /*eslint-disable  @typescript-eslint/no-explicit-any*/
 "use client";
 import { frappeAPI } from "@/lib/api/frappeClient";
-import { Edit, Loader2, Mail, Phone, Plus, User, X } from "lucide-react";
+import { Building, Edit, Loader2, Mail, Phone, Plus, User, X } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
@@ -183,7 +183,7 @@ const DesignationDropdown: React.FC<{
             style={{ top: pos.top, left: pos.left, width: pos.width }}
           >
             {loading ? (
-              <div className="flex items-center justify-center p-3 text-sm text-gray-500">
+              <div className="flex items-center justify-center p-3 text-md text-gray-500">
                 <Loader2 className="h-4 w-4 animate-spin mr-2" /> Searching...
               </div>
             ) : results.length > 0 ? (
@@ -203,7 +203,7 @@ const DesignationDropdown: React.FC<{
                 </div>
               ))
             ) : searchQuery ? (
-              <div className="p-3 text-sm text-gray-500">
+              <div className="p-3 text-md text-gray-500">
                 No designations found
               </div>
             ) : null}
@@ -570,7 +570,7 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
       }}
     >
       {isSearching ? (
-        <div className="px-4 py-2 text-sm text-gray-500 flex items-center">
+        <div className="px-4 py-2 text-md text-gray-500 flex items-center">
           <Loader2 className="h-4 w-4 animate-spin mr-2" />
           Searching contacts...
         </div>
@@ -589,12 +589,12 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
                   </p>
                   <div className="text-xs text-gray-500 mt-1 space-y-1">
                     {contact.designation && (
-                      <div className="text-sm text-gray-600">
+                      <div className="text-md text-gray-600">
                         {contact.designation}
                       </div>
                     )}
                     {contact.organization && (
-                      <div className="text-sm text-gray-600 font-medium">
+                      <div className="text-md text-gray-600 font-medium">
                         📍 {contact.organization}
                       </div>
                     )}
@@ -639,7 +639,7 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
           Create contact for &quot;{searchQuery}&quot;
         </div>
       ) : (
-        <div className="px-4 py-2 text-sm text-gray-500">
+        <div className="px-4 py-2 text-md text-gray-500">
           Start typing to search contacts...
         </div>
       )}
@@ -722,15 +722,15 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
                 <h3 className="font-medium text-gray-900">
                   {selectedContact.name}
                 </h3>
-                <div className="text-sm text-gray-600 space-y-1">
+                <div className="text-md text-gray-600 space-y-1">
                   {selectedContact.designation && (
-                    <div className="text-sm text-gray-600">
+                    <div className="text-md text-gray-600">
                       {selectedContact.designation}
                     </div>
                   )}
                   {selectedContact.organization && (
-                    <div className="text-sm text-gray-600 font-medium">
-                      📍 {selectedContact.organization}
+                    <div className="text-md text-gray-600 font-medium">
+                      <Building className="h-3 w-3"/> {selectedContact.organization}
                     </div>
                   )}
                   {selectedContact.email && (
@@ -754,7 +754,7 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
 
       {showContactDialog && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white">
               <h2 className="text-xl font-bold text-gray-900">
                 {selectedContact ? "Edit Contact" : "Add New Contact"}
@@ -769,7 +769,7 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
             <div className="p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-md font-medium text-gray-700 mb-1">
                     First Name *
                   </label>
                   <input
@@ -789,7 +789,7 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-md font-medium text-gray-700 mb-1">
                     Last Name
                   </label>
                   <input
@@ -810,7 +810,7 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-md font-medium text-gray-700 mb-1">
                     Designation
                   </label>
                   <DesignationDropdown
@@ -821,7 +821,7 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-md font-medium text-gray-700 mb-1">
                     Gender
                   </label>
                   <select
@@ -842,7 +842,7 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-md font-medium text-gray-700 mb-1">
                   Email
                 </label>
                 <input
@@ -868,7 +868,7 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-md font-medium text-gray-700 mb-1">
                   Phone
                 </label>
                 <input

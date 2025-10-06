@@ -321,7 +321,7 @@ const LoginPage = () => {
                 <div className="space-y-3">
                   <Label 
                     htmlFor="username" 
-                    className="text-[var(--brand-foreground)] font-medium text-sm"
+                    className="text-[var(--brand-foreground)] font-medium text-md"
                   >
                     Username
                   </Label>
@@ -335,14 +335,14 @@ const LoginPage = () => {
                     onChange={handleInputChange}
                     required
                     disabled={isLoggingIn}
-                    className="h-12 border-gray-200 focus:border-[var(--brand-primary)] focus:ring-[var(--brand-primary)]/20 rounded-lg text-base"
+                    className="h-12 border-gray-200 focus:border-[var(--brand-primary)] focus:ring-[var(--brand-primary)]/20 rounded-lg text-md"
                   />
                 </div>
 
                 <div className="space-y-3">
                   <Label 
                     htmlFor="password" 
-                    className="text-[var(--brand-foreground)] font-medium text-sm"
+                    className="text-[var(--brand-foreground)] font-medium text-md"
                   >
                     Password
                   </Label>
@@ -357,7 +357,7 @@ const LoginPage = () => {
                       onChange={handleInputChange}
                       required
                       disabled={isLoggingIn}
-                      className="h-12 pr-12 border-gray-200 focus:border-[var(--brand-primary)] focus:ring-[var(--brand-primary)]/20 rounded-lg text-base"
+                      className="h-12 pr-12 border-gray-200 focus:border-[var(--brand-primary)] focus:ring-[var(--brand-primary)]/20 rounded-lg text-md"
                     />
                     <button
                       type="button"

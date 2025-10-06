@@ -588,7 +588,7 @@ const LeadForm: React.FC<LeadFormProps> = ({
                     <select
                       value={formData.custom_stage}
                       onChange={(e) => handleStageChange(e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 text-md border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                     >
                        {stages.map((stg) => (
                         <option key={stg} value={stg}>
@@ -605,7 +605,7 @@ const LeadForm: React.FC<LeadFormProps> = ({
                     <select
                       value={formData.custom_offerings}
                       onChange={(e) => updateFormField("custom_offerings", e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 text-md border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                     >
                       {offerings.map((offer) => (
                         <option key={offer} value={offer}>
@@ -637,7 +637,7 @@ const LeadForm: React.FC<LeadFormProps> = ({
                         const value = e.target.value;
                         updateFormField("custom_estimated_hiring_", value === "" ? 0 : parseInt(value, 10));
                       }}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
+                      className="w-full px-3 py-2 text-md border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
                       placeholder="e.g., 50"
                       min="0"
                     />
@@ -654,7 +654,7 @@ const LeadForm: React.FC<LeadFormProps> = ({
                         const value = e.target.value.replace(/,/g, "");
                         updateFormField("custom_average_salary", value === "" ? 0 : parseFloat(value));
                       }}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
+                      className="w-full px-3 py-2 text-md border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
                       placeholder="e.g., 8,00,000"
                     />
                   </div>
@@ -723,7 +723,7 @@ const LeadForm: React.FC<LeadFormProps> = ({
                           const value = e.target.value.replace(/,/g, "");
                           updateFormField("custom_fixed_charges", value === "" ? 0 : parseFloat(value));
                         }}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
+                        className="w-full px-3 py-2 text-md border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
                         placeholder="e.g., 50,000"
                       />
                     </div>
@@ -738,7 +738,7 @@ const LeadForm: React.FC<LeadFormProps> = ({
                       value={formData.custom_expected_close_date}
                       min={new Date().toISOString().split("T")[0]}
                       onChange={(e) => updateFormField("custom_expected_close_date", e.target.value)}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-3 py-2 text-md border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
                 </div>
@@ -751,7 +751,7 @@ const LeadForm: React.FC<LeadFormProps> = ({
                     type="text"
                     value={formData.custom_deal_value === 0 ? "" : Math.round(formData.custom_deal_value).toLocaleString("en-IN")}
                     readOnly
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md bg-gray-50 text-gray-600"
+                    className="w-full px-3 py-2 text-md border border-gray-300 rounded-md bg-gray-50 text-gray-600"
                     placeholder="Auto-calculated"
                   />
                   <p className="text-xs text-gray-500 mt-1">

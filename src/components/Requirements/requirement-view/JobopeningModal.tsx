@@ -225,7 +225,7 @@ const handleAllocation = async () => {
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-[500px] max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl w-[1000px] max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between px-5 py-3 border-b">
           <h2 className="text-lg font-semibold text-gray-900">
             {hasJobId ? "Job Allocation" : "New Job Opening"}
@@ -238,7 +238,7 @@ const handleAllocation = async () => {
           </button>
         </div>
 
-        <div className="p-5 space-y-5 text-sm">
+        <div className="p-5 space-y-5 text-md">
           {!hasJobId && (
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -333,15 +333,16 @@ const handleAllocation = async () => {
           )}
 
           {hasJobId && (
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <span className="text-gray-500">Position:</span>{" "}
-                {staffingDetail.designation}
-              </div>
+            <div className="grid grid-cols-2 gap-3">
               <div>
                 <span className="text-gray-500">Company:</span>{" "}
                 {staffingPlan.company}
               </div>
+              <div>
+                <span className="text-gray-500">Position:</span>{" "}
+                {staffingDetail.designation}
+              </div>
+              
               <div>
                 <span className="text-gray-500">Location:</span>{" "}
                 {staffingDetail.location}
@@ -374,7 +375,7 @@ const handleAllocation = async () => {
                 />
                 <label
                   htmlFor="isPublished"
-                  className="text-gray-900 text-xs font-bold cursor-pointer select-none"
+                  className="text-gray-900 text-md font-bold cursor-pointer select-none"
                 >
                   Publish
                 </label>
@@ -386,7 +387,7 @@ const handleAllocation = async () => {
                   checked={confirmInfo}
                   onChange={(e) => setConfirmInfo(e.target.checked)}
                 />
-                <span className="text-gray-700 text-xs">
+                <span className="text-gray-700 text-md">
                   I confirm all information is correct.
                 </span>
               </div>

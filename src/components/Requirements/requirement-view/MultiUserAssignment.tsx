@@ -140,14 +140,14 @@ export const MultiUserAssignment: React.FC<MultiUserAssignmentProps> = ({
   };
 
   if (totalVacancies === 0) {
-    return <div className="text-xs text-gray-400 text-center py-2">Set vacancies first</div>;
+    return <div className="text-md text-gray-400 text-center py-2">Set vacancies first</div>;
   }
 
   return (
     <div className="space-y-2">
       <div className="border rounded p-2 space-y-1 bg-gray-50">
         {assignments.map((a, i) => (
-          <div key={a.userEmail} className="flex items-center justify-between text-xs bg-white rounded p-1">
+          <div key={a.userEmail} className="flex items-center justify-between text-md bg-white rounded p-1">
             <span className="truncate capitalize">{a.userName}</span>
             <div className="flex items-center gap-1">
               <input
@@ -176,7 +176,7 @@ export const MultiUserAssignment: React.FC<MultiUserAssignmentProps> = ({
             </div>
           </div>
         ))}
-        <div className="flex items-center justify-between text-xs pt-1">
+        <div className="flex items-center justify-between text-md pt-1">
           <span className="text-gray-600">Allocated {totalAllocated}/{totalVacancies}</span>
           {remaining > 0 && (
             <button
@@ -196,7 +196,7 @@ export const MultiUserAssignment: React.FC<MultiUserAssignmentProps> = ({
             value={searchTerm}
             placeholder="Search users"
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full mb-2 border px-2 py-1 text-sm rounded"
+            className="w-full mb-2 border px-2 py-1 text-md rounded"
           />
           {isLoading ? (
             <div className="text-center py-4">
@@ -211,7 +211,7 @@ export const MultiUserAssignment: React.FC<MultiUserAssignmentProps> = ({
               <button
                 key={u.email}
                 onClick={() => addAssignment(u)}
-                className="block w-full text-left px-2 py-1 hover:bg-gray-100 text-sm"
+                className="block w-full text-left px-2 py-1 hover:bg-gray-100 text-md"
               >
                 {u.full_name} ({u.email})
               </button>

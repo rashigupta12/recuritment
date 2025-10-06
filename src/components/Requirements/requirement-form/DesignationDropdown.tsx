@@ -188,7 +188,7 @@ const addNewDesignation = async () => {
       }}
     >
       {loading ? (
-        <div className="px-4 py-2 text-sm text-gray-500 flex items-center">
+        <div className="px-4 py-2 text-md text-gray-500 flex items-center">
           <Loader2 className="h-4 w-4 animate-spin mr-2" />
           Searching designations...
         </div>
@@ -228,7 +228,7 @@ const addNewDesignation = async () => {
           </div>
         </div>
       ) : (
-        <div className="px-4 py-2 text-sm text-gray-500">
+        <div className="px-4 py-2 text-md text-gray-500">
           Start typing to search designations
         </div>
       )}
@@ -245,7 +245,7 @@ const addNewDesignation = async () => {
             placeholder="Search designation..."
             value={searchQuery}
             onChange={handleSearchChange}
-            className="w-full px-3 py-2 text-xs border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 capitalize"
+            className="w-full px-3 py-2 text-md border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 capitalize"
             onFocus={() => {
               if (searchQuery && !isOpen) {
                 fetchDesignations(searchQuery);
@@ -263,7 +263,7 @@ const addNewDesignation = async () => {
           onClose={() => setShowAddDialog(false)}
         >
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Designation Name</label>
+            <label className="block text-md font-medium text-gray-700 mb-1">Designation Name</label>
             <input
               type="text"
               value={newDesignation}
@@ -287,7 +287,7 @@ const addNewDesignation = async () => {
                   setShowAddDialog(false);
                   dialogRef.current?.close();
                 }}
-                className="flex-1 px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                className="flex-1 px-4 py-2 text-md text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
               >
                 Cancel
               </button>
@@ -295,7 +295,7 @@ const addNewDesignation = async () => {
                 type="button"
                 onClick={addNewDesignation}
                 disabled={!newDesignation.trim() || loading}
-                className="flex-1 px-4 py-2 text-sm text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+                className="flex-1 px-4 py-2 text-md text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
               >
                 {loading ? (
                   <>

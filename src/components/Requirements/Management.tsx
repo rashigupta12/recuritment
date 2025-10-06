@@ -397,7 +397,7 @@ const StaffingPlanCreator: React.FC = () => {
                   {isEditMode ? "Edit Job Board" : "Create Job Board"}
                 </h1>
                 {isEditMode && (
-                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
+                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-md">
                     Edit Mode
                   </span>
                 )}
@@ -443,7 +443,7 @@ const StaffingPlanCreator: React.FC = () => {
               </div>
             )}
 
-            {!selectedLead && !isLoadingLead && (
+            {/* {!selectedLead && !isLoadingLead && (
               <LeadSearchSection
                 onLeadSelect={setSelectedLead}
                 selectedLead={selectedLead}
@@ -463,7 +463,7 @@ const StaffingPlanCreator: React.FC = () => {
                   </button>
                 )}
               </div>
-            )}
+            )} */}
           </div>
 
           {/* Form Content */}
@@ -491,8 +491,8 @@ const StaffingPlanCreator: React.FC = () => {
                 <div className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="w-full text-md" style={{ tableLayout: 'fixed', minWidth: '1200px' }}>
-                      <thead className="bg-gray-100">
-                        <tr className="text-left text-gray-700 border-b border-gray-200">
+                      <thead className="bg-primary">
+                        <tr className="text-left text-white border-b border-gray-200">
                           <th className="p-3 font-medium" style={{ width: '200px', minWidth: '200px', maxWidth: '200px' }}>
                             Designation
                           </th>
@@ -614,16 +614,16 @@ const StaffingPlanCreator: React.FC = () => {
                               {/* Upload JD */}
                               <td className="p-3" style={{ width: '120px' }}>
                                 <div className="flex ">
-                                  <label className="flex items-end space-x-1 cursor-pointer text-blue-600 hover:text-blue-800 transition-colors">
+                                  <label className="flex items-end space-x-1 cursor-pointer text-blue-600 hover:text-blue-800 transition-colors pr-1">
                                     {uploadingJDs[index] ? (
                                       <>
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                        <span className="text-sm">Parsing...</span>
+                                        <Loader2 className="h-4 w-4 animate-spin mb-1" />
+                                        <span className="text-md">Parsing...</span>
                                       </>
                                     ) : (
                                       <>
-                                        <Upload className="h-4 w-4" />
-                                        <span className="text-sm">Upload</span>
+                                        <Upload className="h-4 w-4 mb-1" />
+                                        <span className="text-md">Upload</span>
                                       </>
                                     )}
                                     <input
@@ -639,7 +639,7 @@ const StaffingPlanCreator: React.FC = () => {
                                   </label>
                                   {pendingJDFiles[index] && !uploadingJDs[index] && (
                                     <FileText 
-                                      className="h-4 w-4 text-orange-600" 
+                                      className="h-4 w-4 text-orange-600  " 
                                     />
                                   )}
                                   {item.attachmentsoptional && !pendingJDFiles[index] && (
@@ -672,7 +672,7 @@ const StaffingPlanCreator: React.FC = () => {
                               <tr className="bg-gray-50">
                                 <td colSpan={8} className="p-3">
                                   <div className="space-y-2">
-                                    <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                                    <label className="text-md font-medium text-gray-700 flex items-center gap-1">
                                       <FileText className="h-3 w-3" />
                                       Job Description Summary (Editable)
                                     </label>
@@ -681,7 +681,7 @@ const StaffingPlanCreator: React.FC = () => {
                                       onChange={(e) =>
                                         updateStaffingItem(index, "job_description", e.target.value)
                                       }
-                                      className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent text-md resize-y min-h-[100px]"
+                                      className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent text-md resize-y min-h-[300px]"
                                       placeholder="Upload a JD file to auto-generate a summary here, or type manually. You can edit the generated summary as needed."
                                     />
                                   </div>
