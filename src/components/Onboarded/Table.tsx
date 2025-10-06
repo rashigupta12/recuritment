@@ -23,37 +23,38 @@ export const LeadsTable = ({
 }: LeadsTableProps) => {
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-      <table className="w-full">
-        <thead className="bg-gray-50">
+      <table className="w-full bg-blue-500">
+        <thead className="">
           <tr>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Contact Info.
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            
+            <th className="px-4 py-3 text-left text-md  font-bold text-white uppercase tracking-wider">
               Company Info.
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-4 py-3 text-left text-md  font-bold text-white uppercase tracking-wider">
+              Contact Info.
+            </th>
+            <th className="px-4 py-3 text-left text-md  font-bold text-white uppercase tracking-wider">
               Stage
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-4 py-3 text-left text-md  font-bold text-white uppercase tracking-wider">
               Offering
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-4 py-3 text-left text-md  font-bold text-white uppercase tracking-wider">
               Salary/Hiring
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-4 py-3 text-left text-md  font-bold text-white uppercase tracking-wider">
               Fee
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-4 py-3 text-left text-md  font-bold text-white uppercase tracking-wider">
               Deal Value
             </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            {/* <th className="px-4 py-3 text-left text-md  font-bold text-white uppercase tracking-wider">
               Owner
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            </th> */}
+            <th className="px-4 py-3 text-left text-md  font-bold text-white uppercase tracking-wider">
               Created On
             </th>
-            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-md  font-bold text-white uppercase tracking-wider">
               Actions
             </th>
           </tr>
@@ -162,6 +163,7 @@ const LeadsTableRow = ({
       </td>
       <td className="px-4 py-2 whitespace-nowrap">
         <div className="text-sm text-gray-900">{formatCompanyName(lead.company_name) || "-"}</div>
+        <div className="text-md text-gray-900">{lead.company_name || "-"}</div>
 
         <a
           href={
@@ -171,7 +173,7 @@ const LeadsTableRow = ({
           }
           target="_blank"
           rel="noopener noreferrer"
-          className="text-xs text-blue-500 hover:underline normal-case p-0 m-0 pt-10"
+          className="text-md text-blue-500 hover:underline normal-case p-0 m-0 pt-10"
         >
           {lead.website}
         </a>
@@ -181,13 +183,41 @@ const LeadsTableRow = ({
           {lead.industry || "-"}
         </div> */}
       </td>
-      <td className="px-4 py-2">
-        <div className="text-sm text-gray-900">
-          {formatTextWithLines(lead.custom_stage)}
+      <td className="px-4 py-2 whitespace-nowrap">
+        <div className="flex items-center">
+          <div className="">
+            <div className="text-md font-medium text-gray-900">
+              {lead.custom_full_name || lead.lead_name || "-"}
+            </div>
+            <div className="text-md text-gray-500 normal-case">
+              {lead.custom_email_address || "-"}
+            </div>
+            {/* <div className="text-xs text-gray-500">
+              {lead.custom_phone_number || "-"}
+            </div> */}
+          </div>
+        </div>
+      </td>
+      
+     <td className="px-4 py-2">
+        <div className="text-sm text-gray-900 uppercase ">
+          {lead.custom_stage
+      ? (() => {
+          // remove special characters like /, -, etc.
+          const clean = lead.custom_stage.replace(/[^a-zA-Z\s]/g, "").trim();
+          const words = clean.split(/\s+/);
+          if (words.length === 1) {
+            // single word → take first two letters
+            return words[0].slice(0, 2);
+          }
+          // multiple words → take first letter of each
+          return words.map((w) => w.charAt(0)).join("");
+        })()
+      : "-"}
         </div>
       </td>
       <td className="px-4 py-2">
-        <div className="text-sm text-gray-900">
+        <div className="text-md text-gray-900">
           {formatTextWithLines(lead.custom_offerings)}
         </div>
       </td>
@@ -195,14 +225,14 @@ const LeadsTableRow = ({
     <td className="px-4 py-2 whitespace-nowrap">
             {lead.custom_average_salary && lead.custom_estimated_hiring_ ? (
               <>
-                <div className="text-sm text-gray-900 flex items-center">
+                <div className="text-md text-gray-900 flex items-center">
                   {/* <IndianRupee className="h-3 w-3 text-gray-900" /> */}
                   {lead.custom_average_salary
                     ? formatToIndianCurrency(Number(lead.custom_average_salary))
                     : "-"}
                 </div>
     
-                <div className="text-sm text-gray-900 flex items-center">
+                <div className="text-md text-gray-900 flex items-center">
                   <UsersIcon className="h-3 w-3 mr-1 text-gray-900" />
                   {lead.custom_estimated_hiring_ || "-"}
                 </div>
@@ -214,18 +244,18 @@ const LeadsTableRow = ({
 
       <td className="px-4 py-2 whitespace-nowrap">
         {lead.custom_fee ? (
-          <div className="text-sm text-gray-900 flex items-center">
+          <div className="text-md text-gray-900 flex items-center">
             {lead.custom_fee }%
           </div>
         ) : (
-          <div className="text-sm text-gray-900 flex items-center">
+          <div className="text-md text-gray-900 flex items-center">
             {formatToIndianCurrency(Number(lead.custom_fixed_charges))}
           </div>
         )}
       </td>
    <td className="px-4 py-2 whitespace-nowrap">
         {lead.custom_deal_value ? (
-          <div className="text-sm text-gray-900 flex items-center">
+          <div className="text-md text-gray-900 flex items-center">
             {/* <IndianRupee className="h-3 w-3 text-gray-900" /> */}
             {formatToIndianCurrency(Number(lead.custom_deal_value))}
           </div>
@@ -233,11 +263,11 @@ const LeadsTableRow = ({
           "-"
         )}
       </td>
-      <td className="px-4 py-2">
-        <div className="text-sm text-gray-900">
+      {/* <td className="px-4 py-2">
+        <div className="text-md text-gray-900">
           {formatTextWithLines(lead.custom_lead_owner_name)}
         </div>
-      </td>
+      </td> */}
 
           <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
         {(() => {
@@ -245,7 +275,7 @@ const LeadsTableRow = ({
           return (
             <div className="flex flex-col leading-tight">
               <span>{date}</span>
-              <span className="text-xs text-gray-500">{time}</span>
+              <span className="text-md text-gray-500">{time}</span>
             </div>
           );
         })()}
