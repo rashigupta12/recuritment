@@ -597,7 +597,7 @@ export default function SalesManagerDashboard() {
             Sales Manager Dashboard
           </h1>
           <p className="text-xl text-gray-600 mb-2">
-            We're building something amazing for you
+            We &apos;re building something amazing for you
           </p>
           <div className="w-24 h-1 bg-blue-600 mx-auto rounded-full"></div>
         </div>
