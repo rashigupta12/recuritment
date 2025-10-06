@@ -606,7 +606,7 @@ createFeedback: async (feedbackData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('PUT', `/resource/Issue/${feedbackId}`, feedbackData);
   },
   getFeedbackByUserId: async (userId: string) => {
-    return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Issue?filters=[["customer","=","${userId}"]]&order_by=modified desc`);
+    return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Issue?filters=[["raised_by","=","${userId}"]]&order_by=modified desc`);
   },
   getFeedbackById: async (feedbackId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Issue/${feedbackId}`);

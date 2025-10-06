@@ -201,11 +201,11 @@ return createPortal(
         onClick={stopPropagation}
       >
         {/* Header */}
-        <div className="bg-emerald-500 text-white p-4 flex-shrink-0">
+        <div className="bg-primary text-white p-4 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {getIssueTypeIcon(feedback.issue_type)}
-              <h2 className="text-xl font-bold">Feedback Details</h2>
+              <h2 className="text-xl font-bold"> Details</h2>
             </div>
             <button
               onClick={onClose}
