@@ -98,7 +98,7 @@ export default function TodoDetailPage() {
           <div className="flex justify-center space-x-4 ">
             <button
               onClick={() => setActiveTab('details')}
-              className={`px-4 py-1 rounded-full text-sm font-medium transition ${activeTab === 'details'
+              className={`px-4 py-1 rounded-full text-lg font-bold transition ${activeTab === 'details'
                 ? "bg-blue-100 text-primary border border-primary"
                 : "text-gray-500 hover:text-gray-700"
                 }`}
@@ -107,7 +107,7 @@ export default function TodoDetailPage() {
             </button>
             <button
               onClick={() => setActiveTab('applicants')}
-              className={`px-4 py-1 rounded-full text-sm font-medium transition ${activeTab === 'applicants'
+              className={`px-4 py-1 rounded-full text-lg font-bold transition ${activeTab === 'applicants'
                 ? "bg-blue-100 text-primary border border-primary"
                 : "text-gray-500 hover:text-gray-700"
                 }`}
