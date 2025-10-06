@@ -28,6 +28,61 @@ import { LeadSearchSection } from "./LeadSerach";
 import CurrencyDropdown from "./requirement-form/CurrencyDropDown";
 import DesignationDropdown from "./requirement-form/DesignationDropdown";
 import LocationDropdown from "./requirement-form/LocationDropdown";
+import toast from "react-hot-toast";
+
+const TOAST_ID = "global-toast";
+
+export const showToast = {
+  success: (message: string) =>
+    toast.success(message, { id: TOAST_ID }),
+  error: (message: string) =>
+    toast.error(message, { id: TOAST_ID }),
+  loading: (message: string) =>
+    toast.loading(message, { id: TOAST_ID }),
+  dismiss: () => toast.dismiss(TOAST_ID),
+};
+
+// Validation function
+const validateStaffingItem = (item: StaffingPlanItem, index: number): boolean => {
+  const { designation, vacancies, currency, estimated_cost_per_position, min_experience_reqyrs, location } = item;
+  
+  if (!designation?.trim()) {
+    showToast.error(`Row ${index + 1}: Designation is required`);
+    return false;
+  }
+  
+  if (!vacancies || vacancies <= 0) {
+    showToast.error(`Row ${index + 1}: Vacancies must be greater than 0`);
+    return false;
+  }
+  
+  if (!currency?.trim()) {
+    showToast.error(`Row ${index + 1}: Currency is required`);
+    return false;
+  }
+  
+  if (!estimated_cost_per_position || estimated_cost_per_position <= 0) {
+    showToast.error(`Row ${index + 1}: Average salary must be greater than 0`);
+    return false;
+  }
+  
+  if (min_experience_reqyrs === undefined || min_experience_reqyrs < 0) {
+    showToast.error(`Row ${index + 1}: Experience must be 0 or greater`);
+    return false;
+  }
+  
+  if (!location?.trim()) {
+    showToast.error(`Row ${index + 1}: Location is required`);
+    return false;
+  }
+  
+  return true;
+};
+
+// Check if all existing rows have designation
+const allRowsHaveDesignation = (staffingDetails: StaffingPlanItem[]): boolean => {
+  return staffingDetails.every(item => item.designation?.trim());
+};
 
 // Main Component
 const StaffingPlanCreator: React.FC = () => {
@@ -166,6 +221,12 @@ const StaffingPlanCreator: React.FC = () => {
 
   // Staffing Details Management
   const addStaffingItem = () => {
+    // Check if all existing rows have designation before adding new one
+    if (!allRowsHaveDesignation(formData.staffing_details)) {
+      showToast.error("Please fill designation for all existing rows before adding a new one");
+      return;
+    }
+
     setFormData((prev) => ({
       ...prev,
       staffing_details: [
@@ -272,6 +333,18 @@ const StaffingPlanCreator: React.FC = () => {
 
     if (!formData.staffing_details.length) {
       setError("Please add at least one staffing requirement");
+      return;
+    }
+
+    // Validate all rows before submission
+    let allValid = true;
+    formData.staffing_details.forEach((item, index) => {
+      if (!validateStaffingItem(item, index)) {
+        allValid = false;
+      }
+    });
+
+    if (!allValid) {
       return;
     }
 
@@ -480,7 +553,9 @@ const StaffingPlanCreator: React.FC = () => {
                   </div>
                   <button
                     onClick={addStaffingItem}
-                    className="flex items-center space-x-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-md transition-colors"
+                    disabled={!allRowsHaveDesignation(formData.staffing_details)}
+                    className="flex items-center space-x-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={!allRowsHaveDesignation(formData.staffing_details) ? "Please fill designation for all existing rows" : "Add new requirement"}
                   >
                     <Plus className="h-4 w-4" />
                     <span>Add Requirement</span>

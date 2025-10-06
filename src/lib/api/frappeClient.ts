@@ -441,7 +441,152 @@ checkFirstLogin: async (username: string) => {
   //   return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Lead`);
   // },
 
-  
+   getAllLeadsDetailed: async (email: string) => {
+    const fields = [
+      "name",
+      "custom_full_name",
+      "custom_phone_number", 
+      "custom_email_address",
+      "status",
+      "company_name",
+      "custom_expected_hiring_volume",
+      "industry",
+      "city",
+      "custom_budgetinr",
+      "website",
+      "state",
+      "country",
+      "creation",
+      "lead_name",
+      "email_id",
+      "custom_stage",
+      "custom_offerings",
+      "custom_estimated_hiring_",
+      "custom_average_salary",
+      "custom_fee",
+      "custom_deal_value",
+      "custom_expected_close_date",
+      "custom_fixed_charges",
+      "owner",
+      "lead_owner",
+      "custom_lead_owner_name",
+      "mobile_no"
+    ];
+
+   return await frappeAPI.makeAuthenticatedRequest(
+  'GET', 
+  `/resource/Lead?fields=${JSON.stringify(fields)}&filters=[["lead_owner", "=", "${email}"]]&order_by=modified%20desc&limit_page_length=0`
+);
+
+  },
+
+ getContractReadyLeads: async (email: string) => {
+  const fields = [
+    "name",
+    "custom_full_name",
+    "custom_phone_number", 
+    "custom_email_address",
+    "status",
+    "company_name",
+    "custom_expected_hiring_volume",
+    "industry",
+    "city",
+    "custom_budgetinr",
+    "website",
+    "state",
+    "country",
+    "creation",
+    "lead_name",
+    "email_id",
+    "custom_stage",
+    "custom_offerings",
+    "custom_estimated_hiring_",
+    "custom_average_salary",
+    "custom_fee",
+    "custom_deal_value",
+    "custom_expected_close_date",
+    "custom_fixed_charges",
+    "owner",
+    "lead_owner",
+    "custom_lead_owner_name",
+    "mobile_no"
+  ];
+
+  // Get customers that have been converted from leads (contract-ready)
+  return await frappeAPI.makeAuthenticatedRequest(
+    'GET', 
+    `/resource/Customer?fields=${JSON.stringify([
+      "name",
+      "customer_name", 
+      "lead_name",
+      "email_id",
+      "mobile_no",
+      "industry",
+      "website"
+    ])}&filters=[["owner", "=", "${email}"],["lead_name", "!=", ""]]&order_by=modified%20desc&limit_page_length=0`
+  ).then(async (customersResponse) => {
+    const customers = customersResponse.data || [];
+    
+    if (customers.length === 0) {
+      return { data: [] };
+    }
+
+    // Get all lead IDs from customers
+    const leadIds = customers
+      .map((customer: any) => customer.lead_name)
+      .filter(Boolean);
+
+    if (leadIds.length === 0) {
+      return { data: [] };
+    }
+
+    // Fetch all leads in a single batch request, ordered by last modified
+    const leadFilters = JSON.stringify([["name", "in", leadIds]]);
+    return await frappeAPI.makeAuthenticatedRequest(
+      'GET',
+      `/resource/Lead?fields=${JSON.stringify(fields)}&filters=${leadFilters}&order_by=modified%20desc&limit_page_length=0`
+    );
+  });
+},
+
+
+  getContractReadyLeadsOptimized: async (email: string) => {
+    const fields = [
+      "name",
+      "custom_full_name",
+      "custom_phone_number", 
+      "custom_email_address",
+      "status",
+      "company_name",
+      "custom_expected_hiring_volume",
+      "industry",
+      "city",
+      "custom_budgetinr",
+      "website",
+      "state",
+      "country",
+      "creation",
+      "custom_stage",
+      "custom_offerings",
+      "custom_estimated_hiring_",
+      "custom_average_salary",
+      "custom_fee",
+      "custom_deal_value",
+      "custom_expected_close_date",
+      "custom_fixed_charges",
+      "owner",
+      "lead_owner",
+      "custom_lead_owner_name",
+      "mobile_no"
+    ];
+
+    // Single query to get leads that have associated customers
+    return await frappeAPI.makeAuthenticatedRequest(
+      'GET', 
+      `/resource/Lead?fields=${JSON.stringify(fields)}&filters=[["lead_owner", "=", "${email}"],["custom_stage", "=", "onboarded"]]&order_by=creation desc&limit_page_length=0`
+    );
+  },
+
 
   getLeadById: async (leadId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Lead/${leadId}`);
@@ -485,6 +630,8 @@ checkFirstLogin: async (username: string) => {
   getOpportunityBYId: async (TodoId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Opportunity/${TodoId}`);
   },
+
+  
 
   createStaffingPlan: async(StaffingData :Record<string, unknown>)=>{
  return await frappeAPI.makeAuthenticatedRequest('POST', '/resource/Staffing Plan', StaffingData);

@@ -3,8 +3,10 @@
 
 import { frappeAPI } from '@/lib/api/frappeClient';
 import { AllowedRole, getAllowedRoles, ROLE_ROUTES } from '@/lib/constants/roles';
+import { showToast } from '@/lib/toast/showToast';
 import { useRouter } from 'next/navigation';
-import { ReactNode, createContext, useContext, useEffect, useState, useCallback } from 'react';
+import { ReactNode, createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
+
 
 interface AuthUser {
   username: string;
@@ -53,8 +55,8 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-// Session timeout (24 hours)
-const SESSION_TIMEOUT = 24 * 60 * 60 * 1000;
+const SESSION_TIMEOUT = 24 * 60 * 60 * 1000; // 24 hours
+const SESSION_CHECK_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
 // Helper function to set secure cookies
 function setCookie(name: string, value: string, days: number = 1) {
@@ -68,12 +70,33 @@ function deleteCookie(name: string) {
 }
 
 function clearAllAuthData(username?: string) {
+  // Clear localStorage
   localStorage.removeItem('frappe_user');
+  
+  // Clear cookies
   deleteCookie('frappe_user');
   
   if (username) {
     localStorage.removeItem(`currentRole_${username}`);
     deleteCookie(`currentRole_${username}`);
+  }
+}
+
+// Optimized: Set both cookie and localStorage in parallel
+function setAuthData(userData: AuthUser, role?: AllowedRole) {
+  const userJson = JSON.stringify(userData);
+  
+  // Set both in parallel
+  Promise.all([
+    Promise.resolve(localStorage.setItem('frappe_user', userJson)),
+    Promise.resolve(setCookie('frappe_user', userJson))
+  ]);
+  
+  if (role && userData.username) {
+    Promise.all([
+      Promise.resolve(localStorage.setItem(`currentRole_${userData.username}`, role)),
+      Promise.resolve(setCookie(`currentRole_${userData.username}`, role))
+    ]);
   }
 }
 
@@ -85,8 +108,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [error, setError] = useState<string | null>(null);
   const [sessionValid, setSessionValid] = useState(false);
   const router = useRouter();
+  
+  // Use refs to prevent duplicate checks
+  const isCheckingSession = useRef(false);
+  const sessionCheckTimer = useRef<NodeJS.Timeout | null>(null);
+  const hasInitialized = useRef(false);
 
-  // Strict authentication check
   const isAuthenticated = !!(
     user && 
     user.authenticated === true && 
@@ -96,72 +123,107 @@ export function AuthProvider({ children }: AuthProviderProps) {
     sessionValid
   );
 
-  // Session validation
+  // Optimized session validation with caching
   const validateSession = useCallback(async (): Promise<boolean> => {
-    try {
-      const sessionCheck = await frappeAPI.checkSession();
-      
-      if (!sessionCheck.authenticated) {
-        console.log('Session validation failed - not authenticated');
-        setSessionValid(false);
-        return false;
-      }
+    // Prevent duplicate checks
+    if (isCheckingSession.current) {
+      return sessionValid;
+    }
 
-      // Check session age
+    isCheckingSession.current = true;
+
+    try {
+      // Quick local check first
       const storedUser = localStorage.getItem('frappe_user');
       if (storedUser) {
         const userData = JSON.parse(storedUser);
         const sessionAge = Date.now() - (userData.loginTime || 0);
         
         if (sessionAge > SESSION_TIMEOUT) {
-          console.log('Session expired due to timeout');
+          // console.log('Session expired due to timeout');
+          // showToast.error('Your session has expired. Please log in again.');
           setSessionValid(false);
           return false;
         }
       }
 
+      // Then check with server
+      const sessionCheck = await frappeAPI.checkSession();
+      
+      if (!sessionCheck.authenticated) {
+        // console.log('Session validation failed - not authenticated');
+        // showToast.error('Session expired. Please log in again.');
+        setSessionValid(false);
+        return false;
+      }
+
       setSessionValid(true);
       return true;
     } catch (error) {
-      console.error('Session validation error:', error);
+      // console.error('Session validation error:', error);
+      // showToast.error('Failed to validate session. Please try again.');
       setSessionValid(false);
       return false;
+    } finally {
+      isCheckingSession.current = false;
     }
-  }, []);
+  }, [sessionValid]);
 
-  // Periodic session validation
+  // Optimized periodic session validation
   useEffect(() => {
-    if (user && !user.requiresPasswordReset) {
-      const interval = setInterval(() => {
-        validateSession().then(valid => {
-          if (!valid) {
-            logout();
-          }
-        });
-      }, 5 * 60 * 1000); // Check every 5 minutes
+    if (user && !user.requiresPasswordReset && sessionValid) {
+      // Clear existing timer
+      if (sessionCheckTimer.current) {
+        clearInterval(sessionCheckTimer.current);
+      }
 
-      return () => clearInterval(interval);
+      // Set new timer
+      sessionCheckTimer.current = setInterval(async () => {
+        const valid = await validateSession();
+        if (!valid) {
+          await logout();
+        }
+      }, SESSION_CHECK_INTERVAL);
+
+      return () => {
+        if (sessionCheckTimer.current) {
+          clearInterval(sessionCheckTimer.current);
+        }
+      };
     }
-  }, [user, validateSession]);
+  }, [user, sessionValid, validateSession]);
 
-  // Persist current role and set cookie for middleware
-  useEffect(() => {
-    if (currentRole && user?.username && user.authenticated) {
-      localStorage.setItem(`currentRole_${user.username}`, currentRole);
-      setCookie(`currentRole_${user.username}`, currentRole);
+  // Optimized initial auth check
+  const checkAuthStatus = useCallback(async () => {
+    // Prevent duplicate initialization
+    if (hasInitialized.current) {
+      return;
     }
-  }, [currentRole, user?.username, user?.authenticated]);
 
-  const checkAuthStatus = async () => {
+    hasInitialized.current = true;
+
     try {
       setLoading(true);
       setError(null);
       
-      // First validate session
+      // Quick local check first
+      const storedUser = localStorage.getItem('frappe_user');
+      const storedData = storedUser ? JSON.parse(storedUser) : null;
+      
+      // If local data shows password reset needed, handle immediately
+      if (storedData?.requiresPasswordReset === true) {
+        setUser(storedData);
+        setSessionValid(false);
+        setLoading(false);
+        return;
+      }
+      
+      // Validate session
       const isValid = await validateSession();
       if (!isValid) {
         console.log('Session validation failed during auth check');
         clearAllAuthData();
+        setLoading(false);
         return;
       }
 
@@ -172,15 +234,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const userData = sessionCheck.user;
         const frappeRoles = sessionCheck.details?.roles || [];
         
-        console.log('Session check - user data:', userData);
-        console.log('Session check - frappe roles:', frappeRoles);
-        
         // Check if password reset is required
         const firstLoginCheck = await frappeAPI.checkFirstLogin(username);
         
         if (firstLoginCheck.requiresPasswordReset) {
-          console.log('Password reset required for user:', username);
-          
           const passwordResetUser: AuthUser = {
             username,
             full_name: userData?.full_name || username,
@@ -192,25 +249,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
           };
           
           setUser(passwordResetUser);
-          setCookie('frappe_user', JSON.stringify(passwordResetUser));
+          setAuthData(passwordResetUser);
           setSessionValid(false);
+          setLoading(false);
           return;
         }
 
         // Get allowed roles
         const allowedRoles = getAllowedRoles(frappeRoles);
-        console.log('Allowed roles after mapping:', allowedRoles);
         
         if (allowedRoles.length === 0) {
           console.error('No valid roles found for user:', username);
+          showToast.error('No valid roles assigned to your account. Please contact administrator.');
           await logout();
-          setError('No valid roles assigned to your account. Please contact your administrator.');
+          setError('No valid roles assigned to your account.');
+          setLoading(false);
           return;
         }
 
         setAvailableRoles(allowedRoles);
 
-        // Set current role
+        // Get saved role or use first available
         const savedRole = localStorage.getItem(`currentRole_${username}`);
         const initialRole = (savedRole && allowedRoles.includes(savedRole as AllowedRole)) 
           ? (savedRole as AllowedRole) 
@@ -228,20 +287,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
           loginTime: Date.now()
         };
 
+        // Set all state at once
         setUser(finalUser);
-        
-        // Set cookies for middleware
-        setCookie('frappe_user', JSON.stringify(finalUser));
-        setCookie(`currentRole_${username}`, initialRole);
+        setAuthData(finalUser, initialRole);
         
         console.log('Authentication successful:', { finalUser, initialRole, allowedRoles });
+        // showToast.success(`Welcome back, ${finalUser.full_name || finalUser.username}!`);
       } else {
         console.log('Session check failed - not authenticated');
         clearAllAuthData();
         setSessionValid(false);
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
+      // console.error('Auth check failed:', error);
+      // showToast.error('Failed to check authentication status. Please try again.');
       clearAllAuthData();
       setUser(null);
       setCurrentRole(null);
@@ -250,9 +309,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [validateSession]);
 
-  // Check auth status on mount
+  // Check auth status on mount only
   useEffect(() => {
     checkAuthStatus();
   }, []);
@@ -262,18 +321,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setLoading(true);
       setError(null);
       
-      console.log('Starting login process for:', username);
-      
       // Clear any existing auth data
       clearAllAuthData();
       
       const response = await frappeAPI.login(username, password);
-      console.log('Login response:', response);
       
       if (response.success) {
         // Check if first login
         const firstLoginCheck = await frappeAPI.checkFirstLogin(username);
-        console.log('First login check:', firstLoginCheck);
         
         if (firstLoginCheck.requiresPasswordReset) {
           const passwordResetUser: AuthUser = {
@@ -287,24 +342,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
           };
           
           setUser(passwordResetUser);
-          setCookie('frappe_user', JSON.stringify(passwordResetUser));
+          setAuthData(passwordResetUser);
           setSessionValid(false);
+          
+          showToast.success('Please set a new password to continue.');
+          // Immediate redirect
+          router.replace('/first-time-password-reset');
           
           return { success: true, requiresPasswordReset: true };
         }
 
         // Process roles
         const rawRoles = response.details?.roles || [];
-        console.log('Raw roles from login:', rawRoles);
-        
         const allowedRoles = getAllowedRoles(rawRoles);
-        console.log('Allowed roles after login:', allowedRoles);
         
         if (allowedRoles.length === 0) {
           await frappeAPI.logout();
+          showToast.error('No valid roles assigned to your account. Please contact administrator.');
           return { 
             success: false, 
-            error: 'No valid roles assigned to your account. Please contact your administrator.' 
+            error: 'No valid roles assigned to your account.' 
           };
         }
 
@@ -325,26 +382,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         setUser(finalUser);
         setSessionValid(true);
+        setAuthData(finalUser, initialRole);
         
-        // Set cookies for middleware
-        setCookie('frappe_user', JSON.stringify(finalUser));
-        setCookie(`currentRole_${username}`, initialRole);
-        
-        console.log('Login successful, redirecting to:', ROLE_ROUTES[initialRole]);
-        
-        // Force redirect immediately
-        setTimeout(() => {
-          router.push(ROLE_ROUTES[initialRole]);
-        }, 100);
+        showToast.success(`Welcome, ${finalUser.full_name || finalUser.username}!`);
+        // Immediate redirect
+        router.replace(ROLE_ROUTES[initialRole]);
 
         return { success: true };
       }
       
+      showToast.error(response.error || 'Login failed. Please check your credentials.');
       return { success: false, error: response.error || 'Login failed' };
     } catch (error) {
       console.error('Login error:', error);
       clearAllAuthData();
       const errorMessage = error instanceof Error ? error.message : 'Login failed';
+      showToast.error(errorMessage);
       setError(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
@@ -357,12 +410,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setLoading(true);
       setError(null);
 
-      console.log('Starting password reset for:', username);
       const result = await frappeAPI.resetFirstTimePassword(username, newPassword);
       
       if (result.success) {
-        console.log('Password reset successful');
-        
         // Clear all auth data and force re-login
         clearAllAuthData(username);
         setUser(null);
@@ -370,18 +420,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setAvailableRoles([]);
         setSessionValid(false);
         
-        // Redirect to login page for fresh authentication
-        setTimeout(() => {
-          router.push('/login?message=Password updated successfully. Please log in again.');
-        }, 100);
+        showToast.success('Password updated successfully. Please log in with your new password.');
+        // Immediate redirect
+        router.replace('/login?message=Password updated successfully. Please log in again.');
 
         return { success: true };
       }
       
+      showToast.error(result.error || 'Password reset failed. Please try again.');
       return { success: false, error: result.error || 'Password reset failed' };
     } catch (error) {
       console.error('Password reset error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Password reset failed';
+      showToast.error(errorMessage);
       setError(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
@@ -393,12 +444,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (availableRoles.includes(role) && user?.authenticated) {
       setCurrentRole(role);
       if (user) {
-        localStorage.setItem(`currentRole_${user.username}`, role);
-        setCookie(`currentRole_${user.username}`, role);
+        setAuthData(user, role);
       }
       
+      showToast.success(`Switched to ${role} view`);
       // Navigate to new role dashboard
-      router.push(ROLE_ROUTES[role]);
+      router.replace(ROLE_ROUTES[role]);
+    } else {
+      showToast.error('Failed to switch role. Please try again.');
     }
   };
 
@@ -412,9 +465,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Clear all auth data
       clearAllAuthData(user?.username);
       
+      showToast.success('You have been logged out successfully.');
+      
     } catch (error) {
       console.error('Logout error:', error);
-      // Still clear local data even if API call fails
+      showToast.error('Failed to logout properly. Please try again.');
       clearAllAuthData(user?.username);
     } finally {
       // Reset all state
@@ -425,12 +480,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setSessionValid(false);
       setLoading(false);
       
-      // Always redirect to login
-      router.push('/login');
+      // Clear timers
+      if (sessionCheckTimer.current) {
+        clearInterval(sessionCheckTimer.current);
+      }
+      
+      // Immediate redirect
+      router.replace('/login');
     }
   };
 
-  const clearError = () => setError(null);
+  const clearError = () => {
+    setError(null);
+  };
 
   const value = {
     user,

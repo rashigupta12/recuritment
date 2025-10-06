@@ -244,7 +244,7 @@ const handleJobSuccess = (planIndex: number,
                       {plan.staffing_details.map((detail, detailIndex) => (
                         <tr key={`${plan.name}-${detailIndex}`} className="hover:bg-gray-50 transition-colors">
                           {detailIndex === 0 && (
-                            <td className="px-6 py-4 align-top" rowSpan={plan.staffing_details.length}>
+                            <td className="px-6 py-4 align-top capitalize" rowSpan={plan.staffing_details.length}>
                               <div className="flex flex-col space-y-2">
                                 <div className="flex items-center">
                                   <Building className="h-5 w-5 text-gray-400 mr-2" />
@@ -261,7 +261,7 @@ const handleJobSuccess = (planIndex: number,
                                   </div>
                                   <div className="flex items-center">
                                     <Mail className="h-4 w-4 text-gray-400 mr-1" />
-                                    <span className="text-blue-600 hover:underline cursor-pointer">
+                                    <span className="text-blue-600 hover:underline cursor-pointer normal-case">
                                       {plan.custom_contact_email}
                                     </span>
                                   </div>
@@ -270,7 +270,7 @@ const handleJobSuccess = (planIndex: number,
                             </td>
                           )}
 
-                          <td className="px-6 py-4">
+                          <td className="px-6 py-4 capitalize">
                             <div className="flex flex-col">
                               <span className="font-medium text-gray-900 text-sm">{detail.designation}</span>
                               <div className="text-sm text-gray-500 mt-1">

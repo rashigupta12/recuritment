@@ -1,6 +1,6 @@
 import { Building2, IndianRupee, Users } from "lucide-react";
 import { Lead } from "@/stores/leadStore";
-import { formatToIndianCurrency } from "./helper";
+import { formatToIndianCurrency, formatToIndianCurrencystats } from "./helper";
 
 interface LeadsStatsProps {
   leads: Lead[];
@@ -31,7 +31,7 @@ export const LeadsStats = ({ leads }: LeadsStatsProps) => {
     },
     {
       title: "Total Revenue",
-      value: formatToIndianCurrency(totalRevenue),
+      value: formatToIndianCurrencystats(totalRevenue),
       icon: IndianRupee,
       bgColor: "bg-purple-100",
       textColor: "text-purple-600"

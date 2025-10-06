@@ -213,7 +213,7 @@ const LoginPage = () => {
                     priority
                   />
                 </div>
-                <h1 className="text-3xl font-bold ">{brandConfig.name}</h1>
+                <h1 className="text-4xl font-bold ">{brandConfig.name}</h1>
               </div>
             </div>
 
@@ -225,7 +225,7 @@ const LoginPage = () => {
               </span>
             </h2>
 
-            <p className="text-lg text-white/90 mb-8 leading-relaxed">
+            <p className="text-xl text-white/90 mb-8 leading-relaxed">
               At HEVHIRE, we blend AI-driven automation with human expertise to deliver 
               faster, smarter, and globally scalable hiring solutions — ensuring every 
               match is both technically precise and culturally aligned.
@@ -233,23 +233,23 @@ const LoginPage = () => {
 
             {/* Features list */}
             <div className="space-y-4">
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-3 text-md">
                 <div className="w-6 h-6 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
                   <CheckCircle className="w-4 h-4" />
                 </div>
-                <span className="text-white/90">AI-powered candidate screening</span>
+                <span className="text-white/90 text-lg">AI-powered candidate screening</span>
               </div>
               <div className="flex items-center space-x-3">
                 <div className="w-6 h-6 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
                   <Users className="w-4 h-4" />
                 </div>
-                <span className="text-white/90">Precise cultural & technical fit</span>
+                <span className="text-white/90 text-lg">Precise cultural & technical fit</span>
               </div>
               <div className="flex items-center space-x-3">
                 <div className="w-6 h-6 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
                   <Zap className="w-4 h-4" />
                 </div>
-                <span className="text-white/90">Dedicated global support</span>
+                <span className="text-white/90 text-lg">Dedicated global support</span>
               </div>
             </div>
           </div>
@@ -311,112 +311,112 @@ const LoginPage = () => {
               <CardTitle className="text-2xl font-bold text-center text-[var(--brand-foreground)]">
                 Sign In
               </CardTitle>
-              <CardDescription className="text-center text-[var(--brand-muted-foreground)] text-base">
+              <CardDescription className="text-center text-[var(--brand-muted-foreground)] text-md">
                 Access your professional dashboard
               </CardDescription>
             </CardHeader>
             
-            <CardContent className="pb-8">
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-3">
-                  <Label 
-                    htmlFor="username" 
-                    className="text-[var(--brand-foreground)] font-medium text-md"
-                  >
-                    Username
-                  </Label>
-                  <Input
-                    id="username"
-                    name="username"
-                    type="text"
-                    autoComplete="username"
-                    placeholder="Enter your username"
-                    value={formData.username}
-                    onChange={handleInputChange}
-                    required
-                    disabled={isLoggingIn}
-                    className="h-12 border-gray-200 focus:border-[var(--brand-primary)] focus:ring-[var(--brand-primary)]/20 rounded-lg text-md"
-                  />
-                </div>
+       <CardContent className="pb-8">
+  <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="space-y-2">
+      <Label 
+        htmlFor="username" 
+        className="text-[var(--brand-foreground)] font-medium text-lg"
+      >
+        Username
+      </Label>
+      <Input
+        id="username"
+        name="username"
+        type="text"
+        autoComplete="username"
+        placeholder="Enter your username"
+        value={formData.username}
+        onChange={handleInputChange}
+        required
+        disabled={isLoggingIn}
+        className="h-12 text-lg border-gray-200 focus:border-[var(--brand-primary)] focus:ring-[var(--brand-primary)]/20 rounded-lg " // Increased height to h-14
+      />
+    </div>
 
-                <div className="space-y-3">
-                  <Label 
-                    htmlFor="password" 
-                    className="text-[var(--brand-foreground)] font-medium text-md"
-                  >
-                    Password
-                  </Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      name="password"
-                      type={showPassword ? 'text' : 'password'}
-                      autoComplete="current-password"
-                      placeholder="Enter your password"
-                      value={formData.password}
-                      onChange={handleInputChange}
-                      required
-                      disabled={isLoggingIn}
-                      className="h-12 pr-12 border-gray-200 focus:border-[var(--brand-primary)] focus:ring-[var(--brand-primary)]/20 rounded-lg text-md"
-                    />
-                    <button
-                      type="button"
-                      className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-[var(--brand-primary)] transition-colors"
-                      onClick={() => setShowPassword(!showPassword)}
-                      disabled={isLoggingIn}
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-5 w-5" />
-                      ) : (
-                        <Eye className="h-5 w-5" />
-                      )}
-                    </button>
-                  </div>
-                </div>
+    <div className="space-y-2">
+      <Label 
+        htmlFor="password" 
+        className="text-[var(--brand-foreground)] font-medium text-lg"
+      >
+        Password
+      </Label>
+      <div className="relative">
+        <Input
+          id="password"
+          name="password"
+          type={showPassword ? 'text' : 'password'}
+          autoComplete="current-password"
+          placeholder="Enter your password"
+          value={formData.password}
+          onChange={handleInputChange}
+          required
+          disabled={isLoggingIn}
+          className="h-12 text-lg pr-12 border-gray-200 focus:border-[var(--brand-primary)] focus:ring-[var(--brand-primary)]/20 rounded-lg " // Increased height to h-14
+        />
+        <button
+          type="button"
+          className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-[var(--brand-primary)] transition-colors"
+          onClick={() => setShowPassword(!showPassword)}
+          disabled={isLoggingIn}
+        >
+          {showPassword ? (
+            <EyeOff className="h-6 w-6" />
+          ) : (
+            <Eye className="h-6 w-6" /> 
+          )}
+        </button>
+      </div>
+    </div>
 
-                <Button
-                  type="submit"
-                  disabled={isLoggingIn || !formData.username.trim() || !formData.password}
-                  className="w-full h-12 text-base font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{
-                    backgroundColor: brandConfig.colors.primary,
-                    color: 'white'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isLoggingIn && formData.username.trim() && formData.password) {
-                      e.currentTarget.style.backgroundColor = brandConfig.colors.secondary;
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isLoggingIn && formData.username.trim() && formData.password) {
-                      e.currentTarget.style.backgroundColor = brandConfig.colors.primary;
-                    }
-                  }}
-                >
-                  {isLoggingIn ? (
-                    <div className="flex items-center justify-center">
-                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                      <span>Signing in...</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-center">
-                      <Shield className="mr-2 h-5 w-5" />
-                      <span>Sign In Securely</span>
-                    </div>
-                  )}
-                </Button>
-              </form>
-            </CardContent>
+    <Button
+      type="submit"
+      disabled={isLoggingIn || !formData.username.trim() || !formData.password}
+      className="w-full h-14 text-lg font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed" // Increased height to h-14 and text to text-lg
+      style={{
+        backgroundColor: brandConfig.colors.primary,
+        color: 'white'
+      }}
+      onMouseEnter={(e) => {
+        if (!isLoggingIn && formData.username.trim() && formData.password) {
+          e.currentTarget.style.backgroundColor = brandConfig.colors.secondary;
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!isLoggingIn && formData.username.trim() && formData.password) {
+          e.currentTarget.style.backgroundColor = brandConfig.colors.primary;
+        }
+      }}
+    >
+      {isLoggingIn ? (
+        <div className="flex items-center justify-center">
+          <Loader2 className="mr-3 h-6 w-6 animate-spin" /> {/* Increased icon size */}
+          <span>Signing in...</span>
+        </div>
+      ) : (
+        <div className="flex items-center justify-center">
+          <Shield className="mr-3 h-6 w-6" /> {/* Increased icon size */}
+          <span>Sign In Securely</span>
+        </div>
+      )}
+    </Button>
+  </form>
+</CardContent>
           </Card>
 
           {/* Footer */}
           <div className="text-center space-y-4">
-            <p className="text-sm text-[var(--brand-muted-foreground)]">
+            <p className="text-lg text-[var(--brand-muted-foreground)]">
               Having trouble? Contact your system administrator
             </p>
             
             {/* Trust indicators */}
-            <div className="flex items-center justify-center space-x-6 text-xs text-gray-400">
+            <div className="flex items-center justify-center space-x-6 text-md text-gray-400">
               <div className="flex items-center space-x-1">
                 <Shield className="w-3 h-3" />
                 <span>Secure</span>

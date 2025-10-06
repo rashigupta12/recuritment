@@ -1,9 +1,8 @@
-// Updated main LeadsManagement component
 "use client";
 import { useAuth } from "@/contexts/AuthContext";
 import { frappeAPI } from "@/lib/api/frappeClient";
 import { Lead, useLeadStore } from "@/stores/leadStore";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import LeadDetailModal from "./Details";
 import { LoadingState } from "./LoadingState";
 import { LeadsHeader } from "./Header";
@@ -17,101 +16,79 @@ const LeadsManagement = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [showModal, setShowModal] = useState(false);
-  const [currentView, setCurrentView] = useState<"list" | "add" | "edit">(
-    "list"
-  );
-  const [showConfirmation, setShowConfirmation] = useState(false);
-  const [pendingView, setPendingView] = useState<"list" | "add" | "edit">(
-    "list"
-  );
+  const [currentView, setCurrentView] = useState<"list" | "add" | "edit">("list");
+  
   const { user } = useAuth();
 
-  // Function to fetch leads
-  const fetchLeads = async (email: string) => {
+  // Optimized function to fetch leads with batch processing
+  const fetchLeads = useCallback(async (email: string) => {
     try {
       setLoading(true);
-      const response = await frappeAPI.getAllLeads(email);
-      const leadList = response.data || [];
-
-      const detailedLeads = await Promise.all(
-        leadList.map(async (lead: { name: string }) => {
-          try {
-            const leadDetails = await frappeAPI.getLeadById(lead.name);
-            return leadDetails.data;
-          } catch (err) {
-            console.error(`Error fetching details for ${lead.name}:`, err);
-            return null;
-          }
-        })
-      );
-
-      setLeads(detailedLeads.filter(Boolean));
+      
+      // Fetch all leads with necessary fields in single request
+      const response = await frappeAPI.getAllLeadsDetailed(email);
+      
+      if (response.data && Array.isArray(response.data)) {
+        setLeads(response.data);
+      } else {
+        console.error("Unexpected response format:", response);
+        setLeads([]);
+      }
     } catch (error) {
       console.error("Error fetching leads:", error);
+      setLeads([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [setLeads, setLoading]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user?.email) return;
     fetchLeads(user.email);
-  }, [setLeads, setLoading, user]);
+  }, [user, fetchLeads]);
 
-  // Filter leads based on search query
-  const filteredLeads = leads.filter((lead) => {
-    if (!searchQuery) return true;
+  // Memoized filtered leads for better performance
+  const filteredLeads = useMemo(() => {
+    if (!searchQuery) return leads;
+    
     const searchLower = searchQuery.toLowerCase();
-    return (
-      (lead.custom_full_name || "").toLowerCase().includes(searchLower) ||
-      (lead.company_name || "").toLowerCase().includes(searchLower) ||
-      (lead.custom_email_address || "").toLowerCase().includes(searchLower) ||
-      (lead.industry || "").toLowerCase().includes(searchLower) ||
-      (lead.city || "").toLowerCase().includes(searchLower)
-    );
-  });
+    return leads.filter((lead) => {
+      return (
+        (lead.custom_full_name || "").toLowerCase().includes(searchLower) ||
+        (lead.company_name || "").toLowerCase().includes(searchLower) ||
+        (lead.custom_email_address || "").toLowerCase().includes(searchLower) ||
+        (lead.industry || "").toLowerCase().includes(searchLower) ||
+        (lead.city || "").toLowerCase().includes(searchLower)
+      );
+    });
+  }, [leads, searchQuery]);
 
   // Event handlers
-  const handleFormClose = () => {
+  const handleFormClose = useCallback(() => {
     setCurrentView("list");
-    if (user) {
-      fetchLeads(user?.email);
+    if (user?.email) {
+      fetchLeads(user.email);
     }
-  };
+  }, [user, fetchLeads]);
 
-  const handleViewLead = (lead: Lead) => {
+  const handleViewLead = useCallback((lead: Lead) => {
     setSelectedLead(lead);
     setShowModal(true);
-  };
+  }, []);
 
-  const handleCloseModal = () => {
+  const handleCloseModal = useCallback(() => {
     setShowModal(false);
     setSelectedLead(null);
-  };
+  }, []);
 
-  const handleBack = () => {
-    setPendingView("list");
-    setShowConfirmation(true);
-  };
-
-  // const handleConfirmBack = () => {
-  //   setShowConfirmation(false);
-  //   setCurrentView(pendingView);
-  // };
-
-  // const handleCancelBack = () => {
-  //   setShowConfirmation(false);
-  //   setPendingView("list");
-  // };
-
-  const handleAddLead = () => {
+  const handleAddLead = useCallback(() => {
     setCurrentView("add");
-  };
+  }, []);
 
-  const handleEditLead = (lead: Lead) => {
+  const handleEditLead = useCallback((lead: Lead) => {
     setSelectedLead(lead);
     setCurrentView("edit");
-  };
+  }, []);
 
   // Render loading state
   if (loading) {
@@ -121,23 +98,12 @@ const LeadsManagement = () => {
   // Render form view (add or edit)
   if (currentView === "add" || currentView === "edit") {
     return (
-      <>
-        {/* <LeadsHeader
-          searchQuery=""
-          onSearchChange={() => {}}
-          onAddLead={() => {}}
-          showBackButton={true}
-          onBack={handleBack}
-        /> */}
-
-        <LeadsFormView
-          currentView={currentView}
-          selectedLead={selectedLead}
-          onBack={handleBack}
-          onFormClose={handleFormClose}
-          // Remove onConfirmBack and onCancelBack as well since LeadsFormView handles them internally
-        />
-      </>
+      <LeadsFormView
+        currentView={currentView}
+        selectedLead={selectedLead}
+        onBack={handleFormClose}
+        onFormClose={handleFormClose}
+      />
     );
   }
 
@@ -150,10 +116,9 @@ const LeadsManagement = () => {
         onAddLead={handleAddLead}
       />
 
-      <LeadsStats leads={leads} />
+      {/* <LeadsStats leads={leads} /> */}
 
       <div className="w-full mx-auto py-2">
-        {/* Desktop Table View */}
         {filteredLeads.length > 0 ? (
           <>
             <div className="hidden lg:block">
@@ -164,7 +129,6 @@ const LeadsManagement = () => {
               />
             </div>
 
-            {/* Mobile Card View */}
             <LeadsMobileView
               leads={filteredLeads}
               onViewLead={handleViewLead}
@@ -187,7 +151,6 @@ const LeadsManagement = () => {
         )}
       </div>
 
-      {/* Lead Detail Modal */}
       {showModal && (
         <LeadDetailModal lead={selectedLead} onClose={handleCloseModal} />
       )}

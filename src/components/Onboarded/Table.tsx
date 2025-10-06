@@ -1,13 +1,14 @@
-// components/Leads/LeadsTable.tsx
+'use client'
+import React, { useState, useCallback, memo } from "react";
 import { Lead } from "@/stores/leadStore";
-import { EditIcon, Factory, IndianRupee, UsersIcon } from "lucide-react";
+import { EditIcon, UsersIcon } from "lucide-react";
 import { formatToIndianCurrency } from "../Leads/helper";
 
 interface LeadsTableProps {
   leads: Lead[];
   onViewLead: (lead: Lead) => void;
   onEditLead: (lead: Lead) => void;
-  onCreateContract: (lead: Lead) => void; // New prop for contract creation
+  onCreateContract: (lead: Lead) => Promise<void>; // async prop for contract creation
 }
 
 export const LeadsTable = ({
@@ -16,41 +17,53 @@ export const LeadsTable = ({
   onEditLead,
   onCreateContract,
 }: LeadsTableProps) => {
+  // Track loading state for each lead's "Create Requirement" button
+  const [loadingLeadId, setLoadingLeadId] = useState<string | null>(null);
+
+  // Wrap the create contract handler with loading state and debounce
+  const handleCreateContract = useCallback(
+    async (lead: Lead) => {
+      if (loadingLeadId !== null) return; // prevent if already loading
+      setLoadingLeadId(lead.id || "");
+      try {
+        await onCreateContract(lead);
+      } finally {
+        setLoadingLeadId(null);
+      }
+    },
+    [loadingLeadId, onCreateContract]
+  );
+
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
       <table className="w-full bg-blue-500">
-        <thead className="">
+        <thead>
           <tr>
-            <th className="px-4 py-3 text-left text-md  font-bold text-white uppercase tracking-wider">
-              Company Info.
+            <th className="px-4 py-3 text-left text-md font-medium text-white uppercase tracking-wider">
+              Company
             </th>
-            <th className="px-4 py-3 text-left text-md  font-bold text-white uppercase tracking-wider">
-              Contact Info.
+            <th className="px-4 py-3 text-left text-md font-medium text-white uppercase tracking-wider">
+              Contact
             </th>
-            {/* <th className="px-4 py-3 text-left text-md  font-bold text-white uppercase tracking-wider">
-              Stage
-            </th> */}
-            <th className="px-4 py-3 text-left text-md  font-bold text-white uppercase tracking-wider">
+            <th className="px-4 py-3 text-left text-md font-medium text-white uppercase tracking-wider">
               Offering
             </th>
-            <th className="px-4 py-3 text-left text-md  font-bold text-white uppercase tracking-wider">
-              Salary/
-              <br />
-              Hiring
+            <th className="px-4 py-3 text-left text-md font-medium text-white uppercase tracking-wider">
+              Salary<br/>(LPA)
             </th>
-            <th className="px-4 py-3 text-left text-md  font-bold text-white uppercase tracking-wider">
-              Fee
+            <th className="px-4 py-3 text-left text-md font-medium text-white uppercase tracking-wider">
+              No. Of<br/>vac
             </th>
-            <th className="px-4 py-3 text-left text-md  font-bold text-white uppercase tracking-wider">
-              Deal Value
+            <th className="px-4 py-3 text-left text-md font-medium text-white uppercase tracking-wider">
+              Fee<br/>(%/K)
             </th>
-            {/* <th className="px-4 py-3 text-left text-md  font-bold text-white uppercase tracking-wider">
-              Owner
-            </th> */}
-            <th className="px-4 py-3 text-left text-md  font-bold text-white uppercase tracking-wider">
+            <th className="px-4 py-3 text-left text-md font-medium text-white uppercase tracking-wider">
+              Deal<br/> Value(L)
+            </th>
+            <th className="px-4 py-3 text-left text-md font-medium text-white uppercase tracking-wider">
               Created On
             </th>
-            <th className="px-6 py-3 text-left text-md  font-bold text-white uppercase tracking-wider">
+            <th className="px-6 py-3 text-left text-md font-medium text-white uppercase tracking-wider">
               Actions
             </th>
           </tr>
@@ -58,11 +71,12 @@ export const LeadsTable = ({
         <tbody className="bg-white divide-y divide-gray-200">
           {leads.map((lead, index) => (
             <LeadsTableRow
-              key={lead.name || lead.id || index}
+              key={lead.id || lead.name || index}
               lead={lead}
               onView={() => onViewLead(lead)}
               onEdit={() => onEditLead(lead)}
-              onCreateContract={() => onCreateContract(lead)}
+              onCreateContract={() => handleCreateContract(lead)}
+              isLoading={loadingLeadId === lead.id}
             />
           ))}
         </tbody>
@@ -71,38 +85,14 @@ export const LeadsTable = ({
   );
 };
 
-// components/Leads/LeadsTableRow.tsx
+
 interface LeadsTableRowProps {
   lead: Lead;
   onView: () => void;
   onEdit: () => void;
   onCreateContract: () => void;
+  isLoading: boolean;
 }
-const formatCompanyName = (name: string) => {
-  if (!name) return "-";
-  const trimmed = name.trim();
-  if (trimmed.length <= 30) return trimmed;
-  return `${trimmed.slice(0, 30)}\n${trimmed.slice(30)}`;
-};
-// Helper function to split and format text with line breaks
-const formatTextWithLines = (text: string | null | undefined) => {
-  if (!text) return <span>-</span>;
-
-  const words = text
-    .split(/[\-/]+/)
-    .filter((word) => word.length > 0)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
-
-  return (
-    <div className="flex flex-col gap-0.5">
-      {words.map((word, index) => (
-        <span key={index} className="leading-tight">
-          {word}
-        </span>
-      ))}
-    </div>
-  );
-};
 const formatDateAndTime = (dateString?: string) => {
   if (!dateString) return { date: "-", time: "-" };
   const date = new Date(dateString);
@@ -118,145 +108,98 @@ const formatDateAndTime = (dateString?: string) => {
     minute: "2-digit",
     hour12: false, // 24h format
   }); // hh:mm
-  // helper function
 
   return { date: formattedDate, time: formattedTime };
 };
+const LeadsTableRow = memo(
+  ({ lead, onView, onEdit, onCreateContract, isLoading }: LeadsTableRowProps) => {
+    // Check if lead is eligible for contract creation
+    const canCreateContract =
+      lead.custom_stage === "Contract" ||
+      lead.custom_stage === "Onboarded" ||
+      lead.custom_stage === "Follow-Up / Relationship Management";
 
-const LeadsTableRow = ({
-  lead,
-  onView,
-  onEdit,
-  onCreateContract,
-}: LeadsTableRowProps) => {
-  // Check if lead is eligible for contract creation
-  const canCreateContract =
-    lead.custom_stage === "Contract" ||
-    lead.custom_stage === "Onboarded" ||
-    lead.custom_stage === "Follow-Up / Relationship Management";
+    // Check if lead can be edited
+    const canEdit =
+      lead.custom_stage !== "Contract" &&
+      lead.custom_stage !== "Onboarded" &&
+      lead.custom_stage !== "Follow-Up / Relationship Management";
 
-  // Check if lead can be edited
-  const canEdit =
-    lead.custom_stage !== "Contract" &&
-    lead.custom_stage !== "Onboarded" &&
-    lead.custom_stage !== "Follow-Up / Relationship Management";
-
-  return (
-    <tr className="hover:bg-gray-50">
-      <td className="px-4 py-2 whitespace-nowrap">
-        <div className="text-md capitalize text-gray-900">
-          {lead.company_name || "-"}
-        </div>
-
-        <a
-          href={
-            lead.website?.startsWith("http")
-              ? lead.website
-              : `https://${lead.website}`
-          }
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-md text-blue-500 hover:underline normal-case p-0 m-0 pt-10"
-        >
-          {lead.website}
-        </a>
-
-        {/* <div className="text-xs text-gray-500 flex items-center">
-          <Factory className="h-3 w-3 mr-1 text-gray-400" />
-          {lead.industry || "-"}
-        </div> */}
-      </td>
-      <td className="px-4 py-2 whitespace-nowrap">
-        <div className="flex items-center">
-          <div className="">
-            <div className="text-md capitalize font-medium text-gray-900">
-              {lead.custom_full_name || lead.lead_name || "-"}
-            </div>
-            <div className="text-md text-gray-500 normal-case">
-              {lead.custom_email_address || "-"}
-            </div>
-            {/* <div className="text-xs text-gray-500">
-              {lead.custom_phone_number || "-"}
-            </div> */}
+    return (
+      <tr className="hover:bg-gray-50">
+        <td className="px-4 py-2 max-w-[230px]">
+          <div className="text-md text-gray-900 break-all whitespace-normal">
+            {lead.company_name || "-"}
           </div>
-        </div>
-      </td>
-
-      {/*  */}
-
-      {/* <td className="px-4 py-2">
-        <div className="text-md text-gray-900 uppercase ">
-          {lead.custom_stage
-            ? (() => {
-                // remove special characters like /, -, etc.
-                const clean = lead.custom_stage
-                  .replace(/[^a-zA-Z\s]/g, "")
-                  .trim();
-                const words = clean.split(/\s+/);
-                if (words.length === 1) {
-                  // single word → take first two letters
-                  return words[0].slice(0, 2);
-                }
-                // multiple words → take first letter of each
-                return words.map((w) => w.charAt(0)).join("");
-              })()
-            : "-"}
-        </div>
-      </td> */}
-      <td className="px-4 py-2">
-        <div className="text-md text-gray-900">
-          {formatTextWithLines(lead.custom_offerings)}
-        </div>
-      </td>
-
-      <td className="px-4 py-2 whitespace-nowrap">
-        {lead.custom_average_salary && lead.custom_estimated_hiring_ ? (
-          <>
-            <div className="text-md text-gray-900 flex items-center">
-              {/* <IndianRupee className="h-3 w-3 text-gray-900" /> */}
-              {lead.custom_average_salary
-                ? formatToIndianCurrency(Number(lead.custom_average_salary))
-                : "-"}
+          <a
+            href={
+              lead.website?.startsWith("http")
+                ? lead.website
+                : `https://${lead.website}`
+            }
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-md text-blue-500 hover:underline normal-case p-0 m-0 pt-10"
+          >
+            {lead.website}
+          </a>
+        </td>
+        <td className="px-4 py-2 whitespace-nowrap">
+          <div className="flex items-center">
+            <div>
+              <div className="text-md font-medium text-gray-900 capitalize">
+                {lead.custom_full_name || lead.lead_name || "-"}
+              </div>
+              <div className="text-xs text-gray-500 normal-case">
+                {lead.custom_email_address || "-"}
+              </div>
             </div>
-
+          </div>
+        </td>
+        <td className="px-4 py-2">
+          <div className="text-md text-gray-900">
+            {/* Use your helper formatTextWithLines if needed */}
+            {lead.custom_offerings || "-"}
+          </div>
+        </td>
+        <td className="px-4 py-2 whitespace-nowrap">
+          {lead.custom_average_salary ? (
+            <div className="text-md text-gray-900">
+              {formatToIndianCurrency(Number(lead.custom_average_salary))}
+            </div>
+          ) : (
+            "-"
+          )}
+        </td>
+        <td className="px-4 py-2 whitespace-nowrap">
+          {lead.custom_estimated_hiring_ ? (
             <div className="text-md text-gray-900 flex items-center">
               <UsersIcon className="h-3 w-3 mr-1 text-gray-900" />
-              {lead.custom_estimated_hiring_ || "-"}
+              {lead.custom_estimated_hiring_}
             </div>
-          </>
-        ) : (
-          "-"
-        )}
-      </td>
-
-      <td className="px-4 py-2 whitespace-nowrap">
-        {lead.custom_fee ? (
-          <div className="text-md text-gray-900 flex items-center">
-            {lead.custom_fee}%
-          </div>
-        ) : (
-          <div className="text-md text-gray-900 flex items-center">
-            {(Number(lead.custom_fixed_charges) / 1000).toFixed(0)} K
-          </div>
-        )}
-      </td>
-      <td className="px-4 py-2 whitespace-nowrap">
-        {lead.custom_deal_value ? (
-          <div className="text-md text-gray-900 flex items-center">
-            {/* <IndianRupee className="h-3 w-3 text-gray-900" /> */}
-            {formatToIndianCurrency(Number(lead.custom_deal_value))}
-          </div>
-        ) : (
-          "-"
-        )}
-      </td>
-      {/* <td className="px-4 py-2">
-        <div className="text-md text-gray-900">
-          {formatTextWithLines(lead.custom_lead_owner_name)}
-        </div>
-      </td> */}
-
-      <td className="px-4 py-2 whitespace-nowrap text-md text-gray-900">
+          ) : (
+            "-"
+          )}
+        </td>
+        <td className="px-4 py-2 whitespace-nowrap">
+          {lead.custom_fee ? (
+            <div className="text-md text-gray-900 flex items-center">{lead.custom_fee}%</div>
+          ) : lead.custom_fixed_charges ? (
+            <div className="text-md text-gray-900 flex items-center">{(Number(lead.custom_fixed_charges) / 1000).toFixed(0)}K</div>
+          ) : (
+            "-"
+          )}
+        </td>
+        <td className="px-4 py-2 whitespace-nowrap">
+          {lead.custom_deal_value ? (
+            <div className="text-md text-gray-900">
+              {formatToIndianCurrency(Number(lead.custom_deal_value))}
+            </div>
+          ) : (
+            "-"
+          )}
+        </td>
+        <td className="px-4 py-2 whitespace-nowrap text-md text-gray-900">
         {(() => {
           const { date, time } = formatDateAndTime(lead.creation);
           return (
@@ -267,43 +210,34 @@ const LeadsTableRow = ({
           );
         })()}
       </td>
-      <td className="px-6 py-2 whitespace-nowrap">
-        <div className="flex items-center gap-2">
-          {/* Contract Button - Show for eligible leads */}
-          {canCreateContract && (
-            <button
-              onClick={onCreateContract}
-              className="flex items-center gap-1 bg-primary hover:bg-secondary text-white px-2 py-1 rounded text-md transition-colors whitespace-nowrap"
-              title="Create Staffing Plan"
-            >
-              {/* <FileText className="h-3 w-3" /> */}
-              <span>Create Requirement</span>
-            </button>
-          )}
+        <td className="px-6 py-2 whitespace-nowrap">
+          <div className="flex items-center gap-2">
+            {canCreateContract && (
+              <button
+                onClick={onCreateContract}
+                className={`flex items-center gap-1 bg-primary text-white px-2 py-1 rounded text-md transition-colors whitespace-nowrap hover:bg-secondary ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                title="Create Staffing Plan"
+                disabled={isLoading}
+              >
+                {isLoading ? "Processing..." : "Create "}
+              </button>
+            )}
+            {canEdit ? (
+              <button
+                onClick={onEdit}
+                className="p-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors"
+                title="Edit Lead"
+              >
+                <EditIcon className="h-4 w-4" />
+              </button>
+            ) : (
+              <div className="w-4 h-4" /> // Spacer
+            )}
+          </div>
+        </td>
+      </tr>
+    );
+  }
+);
 
-          {/* Edit Button */}
-          {canEdit ? (
-            <button
-              onClick={onEdit}
-              className="p-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors"
-              title="Edit Lead"
-            >
-              <EditIcon className="h-4 w-4" />
-            </button>
-          ) : (
-            <div className="w-4 h-4"></div> // Spacer for consistent alignment
-          )}
-
-          {/* View Button */}
-          {/* <button
-            onClick={onView}
-            className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
-            title="View Lead Details"
-          >
-            <Eye className="h-4 w-4" />
-          </button> */}
-        </div>
-      </td>
-    </tr>
-  );
-};
+export default LeadsTableRow;

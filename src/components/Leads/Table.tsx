@@ -20,12 +20,12 @@ export const LeadsTable = ({
         <thead className="bg-blue-500 font-bold">
           <tr>
             <th className="px-4 py-3 text-left text-md   text-white uppercase tracking-wider">
-              Company 
+              Company
             </th>
             <th className="px-4 py-3 text-left text-md font-medium text-white uppercase tracking-wider">
-              Contact 
+              Contact
             </th>
-            
+
             <th className="px-4 py-3 text-left text-md font-medium text-white uppercase tracking-wider">
               Stage
             </th>
@@ -33,17 +33,23 @@ export const LeadsTable = ({
               Offering
             </th>
             <th className="px-4 py-3 text-left text-md font-medium text-white uppercase tracking-wider">
-              Salary<br/>(LPA)
+              Salary
+              <br />
+              (LPA)
             </th>
             <th className="px-4 py-3 text-left text-md font-medium text-white uppercase tracking-wider">
-              No. Of<br/>
+              No. Of
+              <br />
               vac
             </th>
             <th className="px-4 py-3 text-left text-md font-medium text-white uppercase tracking-wider">
-              Fee<br/>(%/K)
+              Fee
+              <br />
+              (%/K)
             </th>
             <th className="px-4 py-3 text-left text-md font-medium text-white uppercase tracking-wider">
-              Deal<br/> Value(L)
+              Deal
+              <br /> Value(L)
             </th>
             {/* <th className="px-4 py-3 text-left text-sm font-medium text-white uppercase tracking-wider">
               Owner
@@ -135,24 +141,24 @@ const formatDateAndTime = (dateString?: string) => {
 const LeadsTableRow = ({ lead, onView, onEdit }: LeadsTableRowProps) => {
   return (
     <tr className="hover:bg-gray-50">
-       <td className="px-4 py-2 max-w-[230px]">
-  <div className="text-md text-gray-900 break-all whitespace-normal">
-    {formatCompanyName(lead.company_name) || "-"}
-  </div>
+      <td className="px-4 py-2 max-w-[230px]">
+        <div className="text-md text-gray-900 break-all whitespace-normal">
+          {formatCompanyName(lead.company_name) || "-"}
+        </div>
 
-  <a
-    href={
-      lead.website?.startsWith("http")
-        ? lead.website
-        : `https://${lead.website}`
-    }
-    target="_blank"
-    rel="noopener noreferrer"
-    className="text-md text-blue-500 hover:underline normal-case p-0 m-0 pt-10"
-  >
-    {lead.website}
-  </a>
-</td>
+        <a
+          href={
+            lead.website?.startsWith("http")
+              ? lead.website
+              : `https://${lead.website}`
+          }
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-md text-blue-500 hover:underline normal-case p-0 m-0 pt-10"
+        >
+          {lead.website}
+        </a>
+      </td>
       <td className="px-4 py-2 whitespace-nowrap">
         <div className="flex items-center">
           <div className="">
@@ -168,22 +174,24 @@ const LeadsTableRow = ({ lead, onView, onEdit }: LeadsTableRowProps) => {
           </div>
         </div>
       </td>
-     
-    <td className="px-4 py-2">
+
+      <td className="px-4 py-2">
         <div className="text-md text-gray-900 uppercase ">
           {lead.custom_stage
-      ? (() => {
-          // remove special characters like /, -, etc.
-          const clean = lead.custom_stage.replace(/[^a-zA-Z\s]/g, "").trim();
-          const words = clean.split(/\s+/);
-          if (words.length === 1) {
-            // single word → take first two letters
-            return words[0].slice(0, 2);
-          }
-          // multiple words → take first letter of each
-          return words.map((w) => w.charAt(0)).join("");
-        })()
-      : "-"}
+            ? (() => {
+                // remove special characters like /, -, etc.
+                const clean = lead.custom_stage
+                  .replace(/[^a-zA-Z\s]/g, "")
+                  .trim();
+                const words = clean.split(/\s+/);
+                if (words.length === 1) {
+                  // single word → take first two letters
+                  return words[0].slice(0, 2);
+                }
+                // multiple words → take first letter of each
+                return words.map((w) => w.charAt(0)).join("");
+              })()
+            : "-"}
         </div>
       </td>
       <td className="px-4 py-2">
@@ -193,7 +201,7 @@ const LeadsTableRow = ({ lead, onView, onEdit }: LeadsTableRowProps) => {
       </td>
 
       <td className="px-4 py-2 whitespace-nowrap">
-        {lead.custom_average_salary && lead.custom_estimated_hiring_ ? (
+        {lead.custom_average_salary  ? (
           <>
             <div className="text-md text-gray-900 flex items-center">
               {/* <IndianRupee className="h-3 w-3 text-gray-900" /> */}
@@ -201,29 +209,24 @@ const LeadsTableRow = ({ lead, onView, onEdit }: LeadsTableRowProps) => {
                 ? formatToIndianCurrency(Number(lead.custom_average_salary))
                 : "-"}
             </div>
-
-            
           </>
         ) : (
           "-"
         )}
       </td>
 
-  <td className="px-4 py-2 whitespace-nowrap">
+      <td className="px-4 py-2 whitespace-nowrap">
         {lead.custom_estimated_hiring_ ? (
           <>
-           <div className="text-md text-gray-900 flex items-center">
+            <div className="text-md text-gray-900 flex items-center">
               <UsersIcon className="h-3 w-3 mr-1 text-gray-900" />
               {lead.custom_estimated_hiring_ || "-"}
             </div>
-
-            
           </>
         ) : (
           "-"
         )}
       </td>
-      
 
       <td className="px-4 py-2 whitespace-nowrap">
         {lead.custom_fee ? (
@@ -232,9 +235,9 @@ const LeadsTableRow = ({ lead, onView, onEdit }: LeadsTableRowProps) => {
           </div>
         ) : (
           <div className="text-md text-gray-900 flex items-center">
-           {lead.custom_fixed_charges
-        ? `${(Number(lead.custom_fixed_charges) / 1000).toFixed(0)}K`
-        : "-"}
+            {lead.custom_fixed_charges
+              ? `${(Number(lead.custom_fixed_charges) / 1000).toFixed(0)}K`
+              : "-"}
           </div>
         )}
       </td>
