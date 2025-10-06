@@ -288,7 +288,7 @@ export default function ViewApplicantPage() {
     );
   }
 
-  console.log("gfdjsg" , selectedApplicant)
+  // console.log("gfdjsg" , selectedApplicant)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 ">
@@ -318,8 +318,8 @@ export default function ViewApplicantPage() {
                 <option value="Open">Open</option>
                 <option value="Tagged">Tagged</option>
                 <option value="Shortlisted">Shortlisted</option>
-                <option value="Assessment Stage">Assessment</option>
-                <option value="Interview Stage">Interview</option>
+                <option value="Assessment">Assessment</option>
+                <option value="Interview">Interview</option>
                  <option value="Interview Reject">Interview reject</option>
                   <option value="Offered">Offered</option>
                 <option value="Offer Drop">Offer Drop</option>
@@ -408,13 +408,16 @@ export default function ViewApplicantPage() {
                 onChange={(e) => setSelectedStatus(e.target.value)}
               >
                 <option value="">Select a status...</option>
+                <option value="all">All Status</option>
                 <option value="Open">Open</option>
+                <option value="Tagged">Tagged</option>
                 <option value="Shortlisted">Shortlisted</option>
-                <option value="Assessment Stage">Assessment Stage</option>
-                <option value="Interview Stage">Interview Stage</option>
-                <option value="Hired">Hired</option>
-                <option value="Rejected">Rejected</option>
-                <option value="Closed">Closed</option>
+                <option value="Assessment">Assessment</option>
+                <option value="Interview">Interview</option>
+                 <option value="Interview Reject">Interview reject</option>
+                  <option value="Offered">Offered</option>
+                <option value="Offer Drop">Offer Drop</option>
+                <option value="Joined">Joined</option>
               </select>
             </div>
 

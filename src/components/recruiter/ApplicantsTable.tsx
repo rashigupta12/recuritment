@@ -112,7 +112,7 @@ export function ApplicantsTable({
   return (
     <div className="bg-white shadow-md rounded-lg border border-blue-100 overflow-hidden w-full">
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200 text-xs sm:text-sm">
+        <table className="min-w-full divide-y divide-gray-200 text-md sm:text-md">
           <thead className="bg-blue-500 text-white">
             <tr>
               {showCheckboxes && (
@@ -157,7 +157,7 @@ export function ApplicantsTable({
                     </td>
                   )}
                  
-                  <td className="px-2 sm:px-4 py-4 font-semibold text-blue-900 truncate">
+                  <td className="px-2 sm:px-4 py-4 font-semibold text-md text-blue-900 truncate">
                     {applicant.applicant_name
                       ? applicant.applicant_name
                           .toLowerCase()
