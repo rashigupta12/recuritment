@@ -115,7 +115,7 @@ const getStatusLevel = (status: string): number => {
     "open": 0,
     "tagged": 1,
     "shortlisted": 2,
-    "assessment ": 3,
+    "assessment": 3,
     "interview": 4,
     "interview reject": -1,
     "offered": 5,
