@@ -729,9 +729,11 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
                     </div>
                   )}
                   {selectedContact.organization && (
-                    <div className="text-md text-gray-600 font-medium">
-                      <Building className="h-3 w-3"/> {selectedContact.organization}
-                    </div>
+                   <div className="flex items-center gap-2 text-md text-gray-600 font-medium">
+  <Building className="h-4 w-4" />
+  <span>{selectedContact.organization}</span>
+</div>
+
                   )}
                   {selectedContact.email && (
                     <div className="flex items-center">

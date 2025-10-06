@@ -1,4 +1,3 @@
-// components/Leads/LeadsTable.tsx
 import { Lead } from "@/stores/leadStore";
 import { EditIcon, Eye, Factory, IndianRupee, UsersIcon } from "lucide-react";
 import { formatToIndianCurrency } from "./helper";
@@ -19,13 +18,12 @@ export const LeadsTable = ({
       <table className="w-full">
         <thead className="bg-blue-500 font-bold">
           <tr>
-            <th className="px-4 py-3 text-left text-md   text-white uppercase tracking-wider">
+            <th className="px-4 py-3 text-left text-md text-white uppercase tracking-wider">
               Company 
             </th>
             <th className="px-4 py-3 text-left text-md font-medium text-white uppercase tracking-wider">
               Contact 
             </th>
-            
             <th className="px-4 py-3 text-left text-md font-medium text-white uppercase tracking-wider">
               Stage
             </th>
@@ -36,36 +34,33 @@ export const LeadsTable = ({
               Salary<br/>(LPA)
             </th>
             <th className="px-4 py-3 text-left text-md font-medium text-white uppercase tracking-wider">
-              No. Of<br/>
-              vac
+              No. Of<br/>vac
             </th>
             <th className="px-4 py-3 text-left text-md font-medium text-white uppercase tracking-wider">
               Fee<br/>(%/K)
             </th>
             <th className="px-4 py-3 text-left text-md font-medium text-white uppercase tracking-wider">
-              Deal<br/> Value(L)
+              Deal<br/>Value(L)
             </th>
-            {/* <th className="px-4 py-3 text-left text-sm font-medium text-white uppercase tracking-wider">
-              Owner
-            </th> */}
             <th className="px-4 py-3 text-left text-sm font-medium text-white uppercase tracking-wider">
               Created On
             </th>
-
             <th className="px-6 py-3 text-left text-sm font-medium text-white uppercase tracking-wider">
               Actions
             </th>
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
-          {leads.map((lead, index) => (
-            <LeadsTableRow
-              key={lead.name || lead.id || index}
-              lead={lead}
-              onView={() => onViewLead(lead)}
-              onEdit={() => onEditLead(lead)}
-            />
-          ))}
+          {leads
+            .filter((lead) => lead.custom_stage?.toLowerCase() !== "onboarded")
+            .map((lead, index) => (
+              <LeadsTableRow
+                key={lead.name || lead.id || index}
+                lead={lead}
+                onView={() => onViewLead(lead)}
+                onEdit={() => onEditLead(lead)}
+              />
+            ))}
         </tbody>
       </table>
     </div>
@@ -135,24 +130,23 @@ const formatDateAndTime = (dateString?: string) => {
 const LeadsTableRow = ({ lead, onView, onEdit }: LeadsTableRowProps) => {
   return (
     <tr className="hover:bg-gray-50">
-       <td className="px-4 py-2 max-w-[230px]">
-  <div className="text-md text-gray-900 break-all whitespace-normal">
-    {formatCompanyName(lead.company_name) || "-"}
-  </div>
-
-  <a
-    href={
-      lead.website?.startsWith("http")
-        ? lead.website
-        : `https://${lead.website}`
-    }
-    target="_blank"
-    rel="noopener noreferrer"
-    className="text-md text-blue-500 hover:underline normal-case p-0 m-0 pt-10"
-  >
-    {lead.website}
-  </a>
-</td>
+      <td className="px-4 py-2 max-w-[230px]">
+        <div className="text-md text-gray-900 break-all whitespace-normal">
+          {formatCompanyName(lead.company_name) || "-"}
+        </div>
+        <a
+          href={
+            lead.website?.startsWith("http")
+              ? lead.website
+              : `https://${lead.website}`
+          }
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-md text-blue-500 hover:underline normal-case p-0 m-0 pt-10"
+        >
+          {lead.website}
+        </a>
+      </td>
       <td className="px-4 py-2 whitespace-nowrap">
         <div className="flex items-center">
           <div className="">
@@ -162,28 +156,24 @@ const LeadsTableRow = ({ lead, onView, onEdit }: LeadsTableRowProps) => {
             <div className="text-xs text-gray-500 normal-case">
               {lead.custom_email_address || "-"}
             </div>
-            {/* <div className="text-xs text-gray-500">
-              {lead.custom_phone_number || "-"}
-            </div> */}
           </div>
         </div>
       </td>
-     
-    <td className="px-4 py-2">
+      <td className="px-4 py-2">
         <div className="text-md text-gray-900 uppercase ">
           {lead.custom_stage
-      ? (() => {
-          // remove special characters like /, -, etc.
-          const clean = lead.custom_stage.replace(/[^a-zA-Z\s]/g, "").trim();
-          const words = clean.split(/\s+/);
-          if (words.length === 1) {
-            // single word → take first two letters
-            return words[0].slice(0, 2);
-          }
-          // multiple words → take first letter of each
-          return words.map((w) => w.charAt(0)).join("");
-        })()
-      : "-"}
+            ? (() => {
+                // remove special characters like /, -, etc.
+                const clean = lead.custom_stage.replace(/[^a-zA-Z\s]/g, "").trim();
+                const words = clean.split(/\s+/);
+                if (words.length === 1) {
+                  // single word → take first two letters
+                  return words[0].slice(0, 2);
+                }
+                // multiple words → take first letter of each
+                return words.map((w) => w.charAt(0)).join("");
+              })()
+            : "-"}
         </div>
       </td>
       <td className="px-4 py-2">
@@ -191,40 +181,31 @@ const LeadsTableRow = ({ lead, onView, onEdit }: LeadsTableRowProps) => {
           {formatTextWithLines(lead.custom_offerings)}
         </div>
       </td>
-
       <td className="px-4 py-2 whitespace-nowrap">
         {lead.custom_average_salary && lead.custom_estimated_hiring_ ? (
           <>
             <div className="text-md text-gray-900 flex items-center">
-              {/* <IndianRupee className="h-3 w-3 text-gray-900" /> */}
               {lead.custom_average_salary
                 ? formatToIndianCurrency(Number(lead.custom_average_salary))
                 : "-"}
             </div>
-
-            
           </>
         ) : (
           "-"
         )}
       </td>
-
-  <td className="px-4 py-2 whitespace-nowrap">
+      <td className="px-4 py-2 whitespace-nowrap">
         {lead.custom_estimated_hiring_ ? (
           <>
-           <div className="text-md text-gray-900 flex items-center">
+            <div className="text-md text-gray-900 flex items-center">
               <UsersIcon className="h-3 w-3 mr-1 text-gray-900" />
               {lead.custom_estimated_hiring_ || "-"}
             </div>
-
-            
           </>
         ) : (
           "-"
         )}
       </td>
-      
-
       <td className="px-4 py-2 whitespace-nowrap">
         {lead.custom_fee ? (
           <div className="text-md text-gray-900 flex items-center">
@@ -232,28 +213,21 @@ const LeadsTableRow = ({ lead, onView, onEdit }: LeadsTableRowProps) => {
           </div>
         ) : (
           <div className="text-md text-gray-900 flex items-center">
-           {lead.custom_fixed_charges
-        ? `${(Number(lead.custom_fixed_charges) / 1000).toFixed(0)}K`
-        : "-"}
+            {lead.custom_fixed_charges
+              ? `${(Number(lead.custom_fixed_charges) / 1000).toFixed(0)}K`
+              : "-"}
           </div>
         )}
       </td>
       <td className="px-4 py-2 whitespace-nowrap">
         {lead.custom_deal_value ? (
           <div className="text-md text-gray-900 flex items-center">
-            {/* <IndianRupee className="h-3 w-3 text-gray-900" /> */}
             {formatToIndianCurrency(Number(lead.custom_deal_value))}
           </div>
         ) : (
           "-"
         )}
       </td>
-
-      {/* <td className="px-4 py-2">
-        <div className="text-sm text-gray-900">
-          {formatTextWithLines(lead.custom_lead_owner_name)}
-        </div>
-      </td> */}
       <td className="px-4 py-2 whitespace-nowrap text-md text-gray-900">
         {(() => {
           const { date, time } = formatDateAndTime(lead.creation);
@@ -265,7 +239,6 @@ const LeadsTableRow = ({ lead, onView, onEdit }: LeadsTableRowProps) => {
           );
         })()}
       </td>
-
       <td className="px-6 py-2 whitespace-nowrap">
         <div className="flex items-center gap-3">
           {lead.custom_stage !== "Onboarded" &&
@@ -277,7 +250,6 @@ const LeadsTableRow = ({ lead, onView, onEdit }: LeadsTableRowProps) => {
           ) : (
             <div className="h-5 w-5"></div> // optional placeholder to keep spacing
           )}
-
           <Eye
             className="h-5 w-5 text-blue-400 cursor-pointer hover:text-blue-600 transition-colors"
             onClick={onView}
