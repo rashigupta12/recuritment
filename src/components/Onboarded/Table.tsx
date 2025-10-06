@@ -40,7 +40,8 @@ export const LeadsTable = ({
               Offering
             </th>
             <th className="px-4 py-3 text-left text-md  font-bold text-white uppercase tracking-wider">
-              Salary/Hiring
+              Salary/
+              <br />Hiring
             </th>
             <th className="px-4 py-3 text-left text-md  font-bold text-white uppercase tracking-wider">
               Fee
@@ -149,10 +150,10 @@ const LeadsTableRow = ({
       <td className="px-4 py-2 whitespace-nowrap">
         <div className="flex items-center">
           <div className="">
-            <div className="text-sm font-medium text-gray-900">
+            <div className="text-md capitalize font-medium text-gray-900">
               {lead.custom_full_name || lead.lead_name || "-"}
             </div>
-            <div className="text-xs text-gray-500 normal-case">
+            <div className="text-md text-gray-500 normal-case">
               {lead.custom_email_address || "-"}
             </div>
             {/* <div className="text-xs text-gray-500">
@@ -162,8 +163,8 @@ const LeadsTableRow = ({
         </div>
       </td>
       <td className="px-4 py-2 whitespace-nowrap">
-        <div className="text-sm text-gray-900">{formatCompanyName(lead.company_name) || "-"}</div>
-        <div className="text-md text-gray-900">{lead.company_name || "-"}</div>
+        <div className="text-md capitalize text-gray-900">{lead.company_name || "-"}</div>
+    
 
         <a
           href={
@@ -183,24 +184,10 @@ const LeadsTableRow = ({
           {lead.industry || "-"}
         </div> */}
       </td>
-      <td className="px-4 py-2 whitespace-nowrap">
-        <div className="flex items-center">
-          <div className="">
-            <div className="text-md font-medium text-gray-900">
-              {lead.custom_full_name || lead.lead_name || "-"}
-            </div>
-            <div className="text-md text-gray-500 normal-case">
-              {lead.custom_email_address || "-"}
-            </div>
-            {/* <div className="text-xs text-gray-500">
-              {lead.custom_phone_number || "-"}
-            </div> */}
-          </div>
-        </div>
-      </td>
+      {/*  */}
       
      <td className="px-4 py-2">
-        <div className="text-sm text-gray-900 uppercase ">
+        <div className="text-md text-gray-900 uppercase ">
           {lead.custom_stage
       ? (() => {
           // remove special characters like /, -, etc.
@@ -249,7 +236,7 @@ const LeadsTableRow = ({
           </div>
         ) : (
           <div className="text-md text-gray-900 flex items-center">
-            {formatToIndianCurrency(Number(lead.custom_fixed_charges))}
+            {(Number(lead.custom_fixed_charges) / 1000).toFixed(0)} K
           </div>
         )}
       </td>
@@ -269,7 +256,7 @@ const LeadsTableRow = ({
         </div>
       </td> */}
 
-          <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+          <td className="px-4 py-2 whitespace-nowrap text-md text-gray-900">
         {(() => {
           const { date, time } = formatDateAndTime(lead.creation);
           return (
