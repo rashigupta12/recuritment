@@ -382,12 +382,12 @@ const handleStatusChangeRequest = () => {
       return;
     }
 
-    const fromTimeDate = new Date(`${fromTime}`);
-    const toTimeDate = new Date(`${toTime}`);
-    if (fromTimeDate >= toTimeDate) {
-      setModalError("From time must be earlier than to time.");
-      return;
-    }
+    const fromDateTime = new Date(`${scheduledOn}T${fromTime}`);
+  const toDateTime = new Date(`${scheduledOn}T${toTime}`);
+    if (fromDateTime >= toDateTime) {
+    setModalError("Start time must be earlier than end time.");
+    return;
+  }
 
     try {
       setAssessmentError(null);
