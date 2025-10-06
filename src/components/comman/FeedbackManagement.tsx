@@ -8,46 +8,7 @@ import FeedbackDetails from "../feedback/FeedBackDetails";
 import { useAuth } from "@/contexts/AuthContext";
 import { frappeAPI } from "@/lib/api/frappeClient";
 import { showToast } from "@/lib/toast/showToast";
-
-// Types
-interface ImageAttachment {
-  name: string;
-  owner: string;
-  modified_by: string;
-  docstatus: number;
-  idx: number;
-  image: string;
-  remarks?: string;
-  parent: string;
-  parentfield: string;
-  parenttype: string;
-  doctype: string;
-}
-
-interface FeedbackItem {
-  name: string;
-  owner: string;
-  creation: string;
-  modified: string;
-  modified_by: string;
-  docstatus: number;
-  idx: number;
-  naming_series: string;
-  subject: string;
-  customer: string;
-  status: "Open" | "Replied" | "On Hold" | "Resolved" | "Closed";
-  priority: "Low" | "Medium" | "High";
-  issue_type: "Bug Report" | "Feature Request" | "General Feedback";
-  description: string;
-  resolution_details?: string;
-  opening_date: string;
-  opening_time: string;
-  agreement_status: string;
-  company: string;
-  via_customer_portal: number;
-  doctype: string;
-  custom_images: ImageAttachment[];
-}
+import { FeedbackItem, ImageAttachment } from "@/types/feedback";
 
 interface FeedbackComponentProps {
   open: boolean;
@@ -83,8 +44,17 @@ const FeedbackComponent: React.FC<FeedbackComponentProps> = ({
         }
       );
 
-      const feedbacks = await Promise.all(feedbackPromises);
-      setFeedbacks(feedbacks);
+      const feedbacksData = await Promise.all(feedbackPromises);
+      
+      // Transform the data to match our FeedbackItem interface
+      const transformedFeedbacks: FeedbackItem[] = feedbacksData.map((feedback: any) => ({
+        ...feedback,
+        custom_image_attachements: feedback.custom_image_attachements || feedback.custom_images || [],
+        raised_by: feedback.raised_by || user.email || '',
+        issue_type: feedback.issue_type || 'General Feedback'
+      }));
+      
+      setFeedbacks(transformedFeedbacks);
     } catch (error) {
       console.error("Error fetching feedbacks:", error);
       showToast.error("Failed to load feedbacks. Please try again.");
@@ -99,34 +69,33 @@ const FeedbackComponent: React.FC<FeedbackComponentProps> = ({
     }
   }, [open, activeView, user?.email]);
 
- const handleSubmitFeedback = async (feedbackData: Partial<FeedbackItem>) => {
-  try {
-    const apiData = {
-      ...feedbackData,
-      raised_by: user?.email,         // Map user email here
-      status: "Open",                 // Set default status
-      issue_type: "Query",            // Use backend-accepted issue_type
-    };
+  const handleSubmitFeedback = async (feedbackData: Partial<FeedbackItem>) => {
+    try {
+      const apiData = {
+        ...feedbackData,
+        raised_by: user?.email,
+        status: "Open",
+        issue_type: "Query",
+      };
 
-    // Remove any undefined keys
-    Object.keys(apiData).forEach(
-      (key) =>
-        (apiData as Record<string, any>)[key] === undefined &&
-        delete (apiData as Record<string, any>)[key]
-    );
+      // Remove any undefined keys
+      Object.keys(apiData).forEach(
+        (key) =>
+          (apiData as Record<string, any>)[key] === undefined &&
+          delete (apiData as Record<string, any>)[key]
+      );
 
-    await frappeAPI.createFeedback(apiData);
+      await frappeAPI.createFeedback(apiData);
 
-    showToast.success("Feedback submitted successfully!");
-    setActiveView("list");
-    await fetchFeedbacks();
-  } catch (error) {
-    console.error("Error submitting feedback:", error);
-    showToast.error("Failed to submit feedback. Please try again.");
-    throw error;
-  }
-};
-
+      showToast.success("Feedback submitted successfully!");
+      setActiveView("list");
+      await fetchFeedbacks();
+    } catch (error) {
+      console.error("Error submitting feedback:", error);
+      showToast.error("Failed to submit feedback. Please try again.");
+      throw error;
+    }
+  };
 
   const handleNewFeedback = () => {
     setSelectedFeedback(null);

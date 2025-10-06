@@ -13,47 +13,8 @@ import React, { useState } from "react";
 import AttachmentPreviewModal from "./AttachmentperviewModal";
 import { Button } from "../ui/button";
 import { createPortal } from "react-dom";
+import { FeedbackItem, ImageAttachment } from "@/types/feedback";
 
-// Types
-interface ImageAttachment {
-  name: string;
-  owner: string;
-  modified_by: string;
-  docstatus: number;
-  idx: number;
-  image: string;
-  remarks?: string;
-  parent: string;
-  parentfield: string;
-  parenttype: string;
-  doctype: string;
-}
-
-interface FeedbackItem {
-  custom_image_attachements: ImageAttachment[];
-  name: string;
-  owner: string;
-  creation: string;
-  modified: string;
-  modified_by: string;
-  docstatus: number;
-  idx: number;
-  naming_series: string;
-  subject: string;
-  customer: string;
-  status: "Open" | "Replied" | "On Hold" | "Resolved" | "Closed";
-  priority: "Low" | "Medium" | "High";
-  issue_type: "Bug Report" | "Feature Request" | "General Feedback" | "Query";
-  description: string;
-  resolution_details?: string;
-  opening_date: string;
-  opening_time: string;
-  agreement_status: string;
-  company: string;
-  via_customer_portal: number;
-  doctype: string;
-  raised_by: string;
-}
 
 // Helper function to strip HTML tags
 const stripHtml = (html: string): string => {
