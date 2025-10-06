@@ -645,7 +645,7 @@ const LeadForm: React.FC<LeadFormProps> = ({
 
                   <div>
                     <label className="block text-md font-medium text-gray-700 mb-1">
-                      Avg Salary (INR)
+                     Annual Avg Salary (INR)
                     </label>
                     <input
                       type="text"
