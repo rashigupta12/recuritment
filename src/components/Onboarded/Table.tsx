@@ -240,4 +240,6 @@ const LeadsTableRow = memo(
   }
 );
 
+LeadsTableRow.displayName = "LeadsTableRow";
+
 export default LeadsTableRow;

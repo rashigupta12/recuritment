@@ -1,18 +1,15 @@
 'use client'
-/*eslint-disable @typescript-eslint/no-explicit-any */
 import {
-  ActiveElement,
   ArcElement,
   BarElement,
   CategoryScale,
-  ChartEvent,
   Chart as ChartJS,
   Filler,
   Legend,
   LinearScale,
   LineElement,
   PointElement,
-  Tooltip,
+  Tooltip
 } from "chart.js";
 import ChartDataLabels from "chartjs-plugin-datalabels";
 import {
@@ -21,12 +18,11 @@ import {
   Calendar,
   Download,
   Filter,
-  TrendingUp,
   UserCheck,
-  Users,
+  Users
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Bar, Doughnut, Line } from "react-chartjs-2";
 
 ChartJS.register(
