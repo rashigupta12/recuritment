@@ -13,6 +13,7 @@ import React, { useState } from "react";
 import AttachmentPreviewModal from "./AttachmentperviewModal";
 import { Button } from "../ui/button";
 import { createPortal } from "react-dom";
+
 // Types
 interface ImageAttachment {
   name: string;
@@ -29,6 +30,7 @@ interface ImageAttachment {
 }
 
 interface FeedbackItem {
+  custom_image_attachements: ImageAttachment[];
   name: string;
   owner: string;
   creation: string;
@@ -41,7 +43,7 @@ interface FeedbackItem {
   customer: string;
   status: "Open" | "Replied" | "On Hold" | "Resolved" | "Closed";
   priority: "Low" | "Medium" | "High";
-  issue_type: "Bug Report" | "Feature Request" | "General Feedback";
+  issue_type: "Bug Report" | "Feature Request" | "General Feedback" | "Query";
   description: string;
   resolution_details?: string;
   opening_date: string;
@@ -50,7 +52,7 @@ interface FeedbackItem {
   company: string;
   via_customer_portal: number;
   doctype: string;
-  custom_images: ImageAttachment[];
+  raised_by: string;
 }
 
 // Helper function to strip HTML tags
@@ -67,7 +69,7 @@ const renderHtmlContent = (htmlContent: string): string => {
 };
 
 // Helper function to check if file is an image
-const isImageFile = (attachment: any): boolean => {
+const isImageFile = (attachment: ImageAttachment): boolean => {
   const filename = attachment?.image;
 
   if (!filename) return false;
@@ -93,6 +95,8 @@ const FeedbackDetails: React.FC<{
   const [showAttachmentPreview, setShowAttachmentPreview] = useState(false);
   const [currentAttachmentIndex, setCurrentAttachmentIndex] = useState(0);
 
+  console.log(feedback);
+
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
       onClose();
@@ -101,7 +105,7 @@ const FeedbackDetails: React.FC<{
 
   const stopPropagation = (e: React.MouseEvent) => {
     e.stopPropagation();
-  }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -140,13 +144,14 @@ const FeedbackDetails: React.FC<{
       case "Feature Request":
         return <PlusCircle className="h-5 w-5" />;
       case "General Feedback":
+      case "Query":
         return <MessageCircle className="h-5 w-5" />;
       default:
         return <MessageCircle className="h-5 w-5" />;
     }
   };
 
-  const getImageUrl = (attachment: any) => {
+  const getImageUrl = (attachment: ImageAttachment) => {
     const imageurl = process.env.NEXT_PUBLIC_FRAPPE_BASE_URL;
     const url = attachment.image;
 
@@ -167,7 +172,7 @@ const FeedbackDetails: React.FC<{
     return `${imageurl}/${url}`;
   };
 
-  const handleAttachmentView = (attachment: any, index: number) => {
+  const handleAttachmentView = (attachment: ImageAttachment, index: number) => {
     if (isImageFile(attachment)) {
       setCurrentAttachmentIndex(index);
       setShowAttachmentPreview(true);
@@ -191,7 +196,8 @@ const FeedbackDetails: React.FC<{
       return "Invalid Date";
     }
   };
-return createPortal(
+
+  return createPortal(
     <div 
       className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[10001] flex items-center justify-center p-4"
       onClick={handleBackdropClick}
@@ -205,7 +211,7 @@ return createPortal(
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {getIssueTypeIcon(feedback.issue_type)}
-              <h2 className="text-xl font-bold"> Details</h2>
+              <h2 className="text-xl font-bold">Issue Details</h2>
             </div>
             <button
               onClick={onClose}
@@ -269,7 +275,7 @@ return createPortal(
             </div>
 
             {/* Resolution Details if available */}
-            {feedback.resolution_details && feedback.status === "Replied" && (
+            {feedback.resolution_details && (
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-3">
                   <CheckCircle className="h-5 w-5 text-green-600" />
@@ -284,7 +290,7 @@ return createPortal(
             )}
 
             {/* Dates */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-1">
                   Created
@@ -297,18 +303,35 @@ return createPortal(
                   </span>
                 </div>
               </div>
-            </div>
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-1">
+                  Last Updated
+                </h4>
+                <div className="flex items-center gap-2 text-gray-600">
+                  <Calendar className="h-4 w-4" />
+                  <span>{fmt(feedback.modified)}</span>
+                </div>
+              </div>
+            </div> */}
+
+            {/* Raised By */}
+            {/* <div>
+              <h4 className="text-sm font-medium text-gray-700 mb-1">
+                Raised By
+              </h4>
+              <p className="text-gray-600">{feedback.raised_by}</p>
+            </div> */}
 
             {/* Attachments */}
-            {feedback.custom_images && feedback.custom_images.length > 0 && (
+            {feedback.custom_image_attachements && feedback.custom_image_attachements.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
                   <Paperclip className="h-5 w-5" />
-                  Attachments ({feedback.custom_images.length})
+                  Attachments ({feedback.custom_image_attachements.length})
                 </h3>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {feedback.custom_images.map((attachment, index) => {
+                  {feedback.custom_image_attachements.map((attachment, index) => {
                     const isImage = isImageFile(attachment);
                     const fileName =
                       attachment.image?.split("/").pop() ||
@@ -316,7 +339,7 @@ return createPortal(
 
                     return (
                       <div
-                        key={index}
+                        key={attachment.name || index}
                         className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                       >
                         <div className="flex items-center gap-3">
@@ -366,13 +389,16 @@ return createPortal(
           </div>
         </div>
 
-        <AttachmentPreviewModal
-          isOpen={showAttachmentPreview}
-          onClose={() => setShowAttachmentPreview(false)}
-          attachments={feedback.custom_images || []}
-          currentIndex={currentAttachmentIndex}
-          onIndexChange={setCurrentAttachmentIndex}
-        />
+        {/* Attachment Preview Modal */}
+        {feedback.custom_image_attachements && feedback.custom_image_attachements.length > 0 && (
+          <AttachmentPreviewModal
+            isOpen={showAttachmentPreview}
+            onClose={() => setShowAttachmentPreview(false)}
+            attachments={feedback.custom_image_attachements}
+            currentIndex={currentAttachmentIndex}
+            onIndexChange={setCurrentAttachmentIndex}
+          />
+        )}
       </div>
     </div>,
     document.body

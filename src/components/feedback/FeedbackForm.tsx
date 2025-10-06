@@ -98,39 +98,30 @@ const FeedbackForm: React.FC<{
     }
   };
 
-  const onFormSubmit = async (data: FeedbackFormData) => {
-    const currentDate = new Date();
-    try {
-      const feedbackData = {
-        ...data,
-        custom_images: images.map((img, idx) => ({
-          name: `img-${idx}-${Date.now()}`,
-          owner: user?.email || "",
-          modified_by: user?.email || "",
-          docstatus: 0,
-          idx: idx + 1,
-          image: img.url,
-          remarks: img.remarks || "",
-          parent: "",
-          parentfield: "custom_images",
-          parenttype: "Feedback",
-          doctype: "ImageAttachment",
-        })),
-        opening_date: currentDate.toISOString().split("T")[0],
-        opening_time: currentDate.toTimeString().split(" ")[0],
-        status: "Open",
-        raised_by: user?.email || "",
-      };
-      await onSubmit(feedbackData);
-      showToast.success("Feedback submitted successfully!");
-      reset();
-      setImages([]);
-      onClose();
-    } catch (error) {
-      console.error("Error submitting feedback:", error);
-      showToast.error("Failed to submit feedback. Please try again.");
-    }
-  };
+const onFormSubmit = async (data: FeedbackFormData) => {
+  const currentDate = new Date();
+  try {
+    const feedbackData = {
+      ...data,
+      custom_image_attachements: images.map((img) => ({
+        image: img.url
+      })),
+      opening_date: currentDate.toISOString().split('T')[0],
+      opening_time: currentDate.toTimeString().split(' ')[0],
+      status: "Open",
+      raised_by: user?.email || "",
+    };
+    
+    await onSubmit(feedbackData);
+    showToast.success("Feedback submitted successfully!");
+    reset();
+    setImages([]);
+    onClose();
+  } catch (error) {
+    console.error("Error submitting feedback:", error);
+    showToast.error("Failed to submit feedback. Please try again.");
+  }
+};
 
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === backdropRef.current) {
@@ -264,7 +255,7 @@ const FeedbackForm: React.FC<{
                 </p>
               )}
             </div>
-{/* 
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Attachments (Optional)
@@ -279,7 +270,7 @@ const FeedbackForm: React.FC<{
               {isUploading && (
                 <p className="text-sm text-gray-500 mt-2">Uploading image...</p>
               )}
-            </div> */}
+            </div>
 
             <div className="flex justify-end gap-3 pt-6 border-t border-gray-200 ">
               <Button
