@@ -82,7 +82,12 @@ interface LeadsTableRowProps {
   onEdit: () => void;
   onCreateContract: () => void;
 }
-
+const formatCompanyName = (name: string) => {
+  if (!name) return "-";
+  const trimmed = name.trim();
+  if (trimmed.length <= 30) return trimmed;
+  return `${trimmed.slice(0, 30)}\n${trimmed.slice(30)}`;
+};
 // Helper function to split and format text with line breaks
 const formatTextWithLines = (text: string | null | undefined) => {
   if (!text) return <span>-</span>;
@@ -116,6 +121,8 @@ const formatDateAndTime = (dateString?: string) => {
     minute: "2-digit",
     hour12: false, // 24h format
   }); // hh:mm
+// helper function
+
 
   return { date: formattedDate, time: formattedTime };
 };
@@ -154,7 +161,7 @@ const LeadsTableRow = ({
         </div>
       </td>
       <td className="px-4 py-2 whitespace-nowrap">
-        <div className="text-sm text-gray-900">{lead.company_name || "-"}</div>
+        <div className="text-sm text-gray-900">{formatCompanyName(lead.company_name) || "-"}</div>
 
         <a
           href={

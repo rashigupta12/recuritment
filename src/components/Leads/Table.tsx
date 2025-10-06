@@ -95,7 +95,20 @@ const formatTextWithLines = (text: string | null | undefined) => {
     </div>
   );
 };
+// helper function
+const formatCompanyName = (name: string) => {
+  if (!name) return "-";
+  const trimmed = name.trim();
 
+  // if short, return as is
+  if (trimmed.length <= 30) return trimmed;
+
+  // find nearest space before 30th character
+  const splitIndex = trimmed.lastIndexOf(" ", 30);
+  if (splitIndex === -1) return trimmed; // no space found, skip splitting
+
+  return `${trimmed.slice(0, splitIndex)}\n${trimmed.slice(splitIndex + 1)}`;
+};
 const formatDateAndTime = (dateString?: string) => {
   if (!dateString) return { date: "-", time: "-" };
   const date = new Date(dateString);
@@ -118,31 +131,28 @@ const formatDateAndTime = (dateString?: string) => {
 const LeadsTableRow = ({ lead, onView, onEdit }: LeadsTableRowProps) => {
   return (
     <tr className="hover:bg-gray-50">
-       <td className="px-4 py-2 whitespace-nowrap">
-        <div className="text-md text-gray-900">{lead.company_name || "-"}</div>
+       <td className="px-4 py-2 max-w-[230px]">
+  <div className="text-md text-gray-900 break-all whitespace-normal">
+    {formatCompanyName(lead.company_name) || "-"}
+  </div>
 
-        <a
-          href={
-            lead.website?.startsWith("http")
-              ? lead.website
-              : `https://${lead.website}`
-          }
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-md text-blue-500 hover:underline normal-case p-0 m-0 pt-10"
-        >
-          {lead.website}
-        </a>
-
-        {/* <div className="text-xs text-gray-500 flex items-center">
-          <Factory className="h-3 w-3 mr-1 text-gray-400" />
-          {lead.industry || "-"}
-        </div> */}
-      </td>
+  <a
+    href={
+      lead.website?.startsWith("http")
+        ? lead.website
+        : `https://${lead.website}`
+    }
+    target="_blank"
+    rel="noopener noreferrer"
+    className="text-md text-blue-500 hover:underline normal-case p-0 m-0 pt-10"
+  >
+    {lead.website}
+  </a>
+</td>
       <td className="px-4 py-2 whitespace-nowrap">
         <div className="flex items-center">
           <div className="">
-            <div className="text-md font-medium text-gray-900">
+            <div className="text-md font-medium text-gray-900 capitalize">
               {lead.custom_full_name || lead.lead_name || "-"}
             </div>
             <div className="text-xs text-gray-500 normal-case">
@@ -156,7 +166,7 @@ const LeadsTableRow = ({ lead, onView, onEdit }: LeadsTableRowProps) => {
       </td>
      
     <td className="px-4 py-2">
-        <div className="text-sm text-gray-900 uppercase ">
+        <div className="text-md text-gray-900 uppercase ">
           {lead.custom_stage
       ? (() => {
           // remove special characters like /, -, etc.
@@ -205,7 +215,9 @@ const LeadsTableRow = ({ lead, onView, onEdit }: LeadsTableRowProps) => {
           </div>
         ) : (
           <div className="text-md text-gray-900 flex items-center">
-            {formatToIndianCurrency(Number(lead.custom_fixed_charges))}
+           {lead.custom_fixed_charges
+        ? `${(Number(lead.custom_fixed_charges) / 1000).toFixed(0)}K`
+        : "-"}
           </div>
         )}
       </td>
@@ -225,7 +237,7 @@ const LeadsTableRow = ({ lead, onView, onEdit }: LeadsTableRowProps) => {
           {formatTextWithLines(lead.custom_lead_owner_name)}
         </div>
       </td> */}
-      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+      <td className="px-4 py-2 whitespace-nowrap text-md text-gray-900">
         {(() => {
           const { date, time } = formatDateAndTime(lead.creation);
           return (
