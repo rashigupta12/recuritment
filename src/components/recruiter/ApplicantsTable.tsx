@@ -11,6 +11,7 @@ interface ApplicantsTableProps {
   onSelectApplicant: (name: string) => void;
   showCheckboxes: boolean;
   showStatus: boolean;
+  onRowClick?: (applicant: JobApplicant) => void; // Optional onRowClick prop
 }
 
 type SortField = "name" | "email" | "job_title" | "status";
@@ -22,6 +23,7 @@ export const ApplicantsTable = ({
   onSelectApplicant,
   showCheckboxes,
   showStatus,
+  onRowClick, // Add onRowClick to props
 }: ApplicantsTableProps) => {
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
@@ -109,7 +111,7 @@ export const ApplicantsTable = ({
                 <th className="px-2 sm:px-4 py-4 text-left">Select</th>
               )}
               <th className="px-2 sm:px-4 py-4 text-left">Designation</th>
-              <SortableHeader field="name" >Name</SortableHeader>
+              <SortableHeader field="name">Name</SortableHeader>
               <SortableHeader field="email">Email</SortableHeader>
               <th className="px-2 sm:px-4 py-4 text-left">Phone</th>
               {showStatus && (
@@ -121,9 +123,13 @@ export const ApplicantsTable = ({
             {sortedApplicants.map((applicant, index) => (
               <tr
                 key={applicant.name}
+                onClick={() => {
+                  console.log('Row clicked:', applicant); // Debug log
+                  onRowClick?.(applicant); // Trigger onRowClick
+                }}
                 className={`${
                   index % 2 === 0 ? "bg-white" : "bg-blue-50"
-                } hover:bg-blue-100 transition duration-100`}
+                } hover:bg-blue-100 transition duration-100 cursor-pointer`} // Add cursor-pointer
               >
                 {showCheckboxes && (
                   <td className="px-2 sm:px-4 py-4">
@@ -131,6 +137,7 @@ export const ApplicantsTable = ({
                       type="checkbox"
                       checked={selectedApplicants.includes(applicant.name)}
                       onChange={() => onSelectApplicant(applicant.name)}
+                      onClick={(e) => e.stopPropagation()} // Prevent row click on checkbox
                       className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600 border-gray-300 rounded"
                     />
                   </td>
@@ -145,7 +152,6 @@ export const ApplicantsTable = ({
                         .replace(/\b\w/g, (char) => char.toUpperCase())
                     : "N/A"}
                 </td>
-
                 <td className="px-2 sm:px-4 py-4 truncate">
                   {applicant.email_id || "N/A"}
                 </td>
