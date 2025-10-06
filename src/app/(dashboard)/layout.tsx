@@ -1,7 +1,6 @@
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 "use client";
 
-
 import FeedbackComponent from "@/components/comman/FeedbackManagement";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -80,11 +79,6 @@ const getNavigationItems = (role: AllowedRole): NavigationItem[] => {
     ],
     "Projects User": [
       { icon: Home, label: "Dashboard", href: roleBasePath },
-      // {
-      //   icon: FolderOpen,
-      //   label: "My Projects",
-      //   href: `${roleBasePath}/my-projects`,
-      // },
     ],
     "Delivery Manager": [
       { icon: Home, label: "Dashboard", href: roleBasePath },
@@ -125,6 +119,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
 
   // Auto-collapse on mobile, remember desktop state
   useEffect(() => {
@@ -424,7 +419,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           )}
         </div>
 
-       <div
+        <div
           className={`lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 shadow-lg transform transition-transform duration-300 ease-in-out ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
           }`}
@@ -573,7 +568,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
         </div>
 
-
         {/* Main Content */}
         <div
           className="flex-1 flex flex-col min-h-screen lg:ml-16 transition-all duration-300 ease-in-out"
@@ -655,15 +649,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     </div>
                     <DropdownMenuSeparator />
 
-                    {/* FIXED: Feedback button outside DropdownMenuItem */}
-                    <div className="px-2 py-1.5">
-                      <FeedbackComponent className="w-full">
-                        <button className="w-full flex items-center gap-2 text-sm text-blue-600 rounded-md transition-colors">
-                          <MessageCircle className="h-4 w-4" />
-                          <span>HelpDesk</span>
-                        </button>
-                      </FeedbackComponent>
-                    </div>
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setFeedbackModalOpen(true);
+                      }}
+                    >
+                      <MessageCircle className="mr-2 h-4 w-4" />
+                      <span>HelpDesk</span>
+                    </DropdownMenuItem>
 
                     <DropdownMenuSeparator />
 
@@ -685,6 +680,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <div className="p-4 sm:p-6 lg:p-5 min-h-full">{children}</div>
           </main>
         </div>
+
+        {/* Feedback Component */}
+        <FeedbackComponent 
+          open={feedbackModalOpen}
+          onOpenChange={setFeedbackModalOpen}
+        />
 
         {/* Mobile sidebar overlay */}
         {sidebarOpen && (

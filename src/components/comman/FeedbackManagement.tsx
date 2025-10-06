@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
+
 import React, { useEffect, useState } from "react";
 import FeedbackList from "../feedback/FeedBackList";
 import FeedbackForm from "../feedback/FeedbackForm";
@@ -47,22 +49,22 @@ interface FeedbackItem {
   custom_images: ImageAttachment[];
 }
 
-// FIXED: Use a single state to track which modal is active
-type ModalState = "none" | "list" | "form" | "details";
+interface FeedbackComponentProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
 
-const FeedbackComponent: React.FC<{
-  children: React.ReactNode;
-  className?: string;
-}> = ({ children, className }) => {
+const FeedbackComponent: React.FC<FeedbackComponentProps> = ({
+  open,
+  onOpenChange,
+}) => {
   const { user } = useAuth();
   
-  // CRITICAL FIX: Single state for modal management
-  const [activeModal, setActiveModal] = useState<ModalState>("none");
+  const [activeView, setActiveView] = useState<"list" | "form" | "details">("list");
   const [selectedFeedback, setSelectedFeedback] = useState<FeedbackItem | null>(null);
   const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  // Fetch feedbacks for the current user
   const fetchFeedbacks = async () => {
     if (!user?.email) return;
 
@@ -92,113 +94,90 @@ const FeedbackComponent: React.FC<{
   };
 
   useEffect(() => {
-    if (activeModal === "list") {
+    if (open && activeView === "list") {
       fetchFeedbacks();
     }
-  }, [activeModal, user?.email]);
+  }, [open, activeView, user?.email]);
 
-  const handleSubmitFeedback = async (feedbackData: Partial<FeedbackItem>) => {
-    try {
-      const apiData = {
-        ...feedbackData,
-        customer: user?.email,
-        subject: feedbackData.subject,
-        description: feedbackData.description,
-        issue_type: feedbackData.issue_type,
-        priority: feedbackData.priority,
-        status: "Open",
-      };
+ const handleSubmitFeedback = async (feedbackData: Partial<FeedbackItem>) => {
+  try {
+    const apiData = {
+      ...feedbackData,
+      raised_by: user?.email,         // Map user email here
+      status: "Open",                 // Set default status
+      issue_type: "Query",            // Use backend-accepted issue_type
+    };
 
-      Object.keys(apiData as Record<string, any>).forEach(
-        (key) =>
-          (apiData as Record<string, any>)[key] === undefined &&
-          delete (apiData as Record<string, any>)[key]
-      );
+    // Remove any undefined keys
+    Object.keys(apiData).forEach(
+      (key) =>
+        (apiData as Record<string, any>)[key] === undefined &&
+        delete (apiData as Record<string, any>)[key]
+    );
 
-      await frappeAPI.createFeedback(apiData);
+    await frappeAPI.createFeedback(apiData);
 
-      showToast.success("Feedback submitted successfully!");
-      
-      // Return to list after submission
-      setActiveModal("list");
-      await fetchFeedbacks();
-    } catch (error) {
-      console.error("Error submitting feedback:", error);
-      showToast.error("Failed to submit feedback. Please try again.");
-      throw error;
-    }
-  };
+    showToast.success("Feedback submitted successfully!");
+    setActiveView("list");
+    await fetchFeedbacks();
+  } catch (error) {
+    console.error("Error submitting feedback:", error);
+    showToast.error("Failed to submit feedback. Please try again.");
+    throw error;
+  }
+};
 
-  // FIXED: Simple state transitions
+
   const handleNewFeedback = () => {
-    console.log("Opening new feedback form");
     setSelectedFeedback(null);
-    setActiveModal("form");
+    setActiveView("form");
   };
 
   const handleViewFeedback = (feedback: FeedbackItem) => {
-    console.log("Viewing feedback:", feedback.name);
     setSelectedFeedback(feedback);
-    setActiveModal("details");
+    setActiveView("details");
   };
 
   const handleCloseDetails = () => {
     setSelectedFeedback(null);
-    setActiveModal("list");
+    setActiveView("list");
   };
 
   const handleCloseForm = () => {
     setSelectedFeedback(null);
-    setActiveModal("list");
+    setActiveView("list");
   };
 
-  const handleCloseList = () => {
+  const handleCloseAll = () => {
     setSelectedFeedback(null);
-    setActiveModal("none");
+    setActiveView("list");
+    onOpenChange(false);
   };
 
-  const handleTriggerClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    console.log("Trigger clicked - opening list");
-    setActiveModal("list");
-  };
+  if (!open) return null;
 
   return (
     <>
-      <div
-        className={className}
-        onClick={handleTriggerClick}
-        style={{ cursor: "pointer" }}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            setActiveModal("list");
-          }
-        }}
-      >
-        {children}
-      </div>
-
-      {/* FIXED: Simpler conditional rendering */}
-      <FeedbackList
-        isOpen={activeModal === "list"}
-        onClose={handleCloseList}
-        feedbacks={feedbacks}
-        loading={loading}
-        onViewFeedback={handleViewFeedback}
-        onNewFeedback={handleNewFeedback}
-      />
+      {activeView === "list" && (
+        <FeedbackList
+          isOpen={true}
+          onClose={handleCloseAll}
+          feedbacks={feedbacks}
+          loading={loading}
+          onViewFeedback={handleViewFeedback}
+          onNewFeedback={handleNewFeedback}
+        />
+      )}
       
-      <FeedbackForm
-        isOpen={activeModal === "form"}
-        onClose={handleCloseForm}
-        onSubmit={handleSubmitFeedback}
-      />
+      {activeView === "form" && (
+        <FeedbackForm
+          isOpen={true}
+          onClose={handleCloseForm}
+          onSubmit={handleSubmitFeedback}
+        />
+      )}
       
-      {selectedFeedback && (
+      {activeView === "details" && selectedFeedback && (
         <FeedbackDetails
           feedback={selectedFeedback}
           onClose={handleCloseDetails}
