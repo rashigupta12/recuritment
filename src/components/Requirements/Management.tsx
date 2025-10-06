@@ -397,12 +397,12 @@ const StaffingPlanCreator: React.FC = () => {
                   {isEditMode ? "Edit Job Board" : "Create Job Board"}
                 </h1>
                 {isEditMode && (
-                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">
+                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
                     Edit Mode
                   </span>
                 )}
                 {isLoadingLead && (
-                  <div className="flex items-center text-sm text-blue-600">
+                  <div className="flex items-center text-md text-blue-600">
                     <Loader2 className="h-4 w-4 animate-spin mr-1" />
                     Loading lead...
                   </div>
@@ -415,7 +415,7 @@ const StaffingPlanCreator: React.FC = () => {
                   <button
                     onClick={handleSubmit}
                     disabled={isSaving || !formData.custom_lead}
-                    className="flex items-center space-x-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-sm transition-colors disabled:opacity-50"
+                    className="flex items-center space-x-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-md transition-colors disabled:opacity-50"
                   >
                     {isSaving ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -437,7 +437,7 @@ const StaffingPlanCreator: React.FC = () => {
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded p-2 text-sm text-red-800 mb-2 flex items-center">
+              <div className="bg-red-50 border border-red-200 rounded p-2 text-md text-red-800 mb-2 flex items-center">
                 <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
                 {error}
               </div>
@@ -451,7 +451,7 @@ const StaffingPlanCreator: React.FC = () => {
               />
             )}
             {selectedLead && (
-              <div className="bg-green-50 border border-green-200 rounded p-2 text-sm text-green-800">
+              <div className="bg-green-50 border border-green-200 rounded p-2 text-md text-green-800">
                 <span className="font-medium">Selected Lead:</span>{" "}
                 {selectedLead.custom_full_name} - {selectedLead.company_name}
                 {!isEditMode && (
@@ -474,13 +474,13 @@ const StaffingPlanCreator: React.FC = () => {
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center space-x-2">
                     <Users className="h-4 w-4 text-purple-500" />
-                    <h3 className="text-sm font-medium text-gray-900">
+                    <h3 className="text-md font-medium text-gray-900">
                       Requirements
                     </h3>
                   </div>
                   <button
                     onClick={addStaffingItem}
-                    className="flex items-center space-x-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-sm transition-colors"
+                    className="flex items-center space-x-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-md transition-colors"
                   >
                     <Plus className="h-4 w-4" />
                     <span>Add Requirement</span>
@@ -490,7 +490,7 @@ const StaffingPlanCreator: React.FC = () => {
                 {/* Table */}
                 <div className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
                   <div className="overflow-x-auto">
-                    <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: '1200px' }}>
+                    <table className="w-full text-md" style={{ tableLayout: 'fixed', minWidth: '1200px' }}>
                       <thead className="bg-gray-100">
                         <tr className="text-left text-gray-700 border-b border-gray-200">
                           <th className="p-3 font-medium" style={{ width: '200px', minWidth: '200px', maxWidth: '200px' }}>
@@ -618,12 +618,12 @@ const StaffingPlanCreator: React.FC = () => {
                                     {uploadingJDs[index] ? (
                                       <>
                                         <Loader2 className="h-4 w-4 animate-spin" />
-                                        <span className="text-xs">Parsing...</span>
+                                        <span className="text-sm">Parsing...</span>
                                       </>
                                     ) : (
                                       <>
                                         <Upload className="h-4 w-4" />
-                                        <span className="text-xs">Upload</span>
+                                        <span className="text-sm">Upload</span>
                                       </>
                                     )}
                                     <input
@@ -672,7 +672,7 @@ const StaffingPlanCreator: React.FC = () => {
                               <tr className="bg-gray-50">
                                 <td colSpan={8} className="p-3">
                                   <div className="space-y-2">
-                                    <label className="text-xs font-medium text-gray-700 flex items-center gap-1">
+                                    <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
                                       <FileText className="h-3 w-3" />
                                       Job Description Summary (Editable)
                                     </label>
@@ -681,7 +681,7 @@ const StaffingPlanCreator: React.FC = () => {
                                       onChange={(e) =>
                                         updateStaffingItem(index, "job_description", e.target.value)
                                       }
-                                      className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm resize-y min-h-[100px]"
+                                      className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent text-md resize-y min-h-[100px]"
                                       placeholder="Upload a JD file to auto-generate a summary here, or type manually. You can edit the generated summary as needed."
                                     />
                                   </div>
@@ -704,7 +704,7 @@ const StaffingPlanCreator: React.FC = () => {
       {successMessage && (
         <div className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg flex items-center space-x-2 z-50 animate-in slide-in-from-bottom max-w-md">
           <CheckCircle className="h-4 w-4 flex-shrink-0" />
-          <span className="text-sm">{successMessage}</span>
+          <span className="text-md">{successMessage}</span>
         </div>
       )}
     </div>

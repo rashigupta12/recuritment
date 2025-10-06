@@ -77,9 +77,7 @@ const getNavigationItems = (role: AllowedRole): NavigationItem[] => {
       { icon: Home, label: "Dashboard", href: roleBasePath },
       { icon: FolderOpen, label: "Projects", href: `${roleBasePath}/projects` },
     ],
-    "Projects User": [
-      { icon: Home, label: "Dashboard", href: roleBasePath },
-    ],
+    "Projects User": [{ icon: Home, label: "Dashboard", href: roleBasePath }],
     "Delivery Manager": [
       { icon: Home, label: "Dashboard", href: roleBasePath },
       {
@@ -647,7 +645,40 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                         {ROLE_DISPLAY_NAMES[currentRole]}
                       </Badge>
                     </div>
+
                     <DropdownMenuSeparator />
+
+                    {availableRoles.length > 1 && (
+                      <>
+                        <DropdownMenuItem className="flex flex-col items-start">
+                          <span className="text-xs text-muted-foreground mb-1">
+                            Switch Role
+                          </span>
+                          {availableRoles.map((role) => (
+                            <Button
+                              key={role}
+                              variant={
+                                role === currentRole ? "secondary" : "ghost"
+                              }
+                              size="sm"
+                              className="w-full justify-start text-xs mb-1"
+                              onClick={() => handleRoleSwitch(role)}
+                            >
+                              {ROLE_DISPLAY_NAMES[role]}
+                              {role === currentRole && (
+                                <Badge
+                                  variant="secondary"
+                                  className="ml-auto text-xs"
+                                >
+                                  Active
+                                </Badge>
+                              )}
+                            </Button>
+                          ))}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                      </>
+                    )}
 
                     <DropdownMenuItem
                       onClick={(e) => {
@@ -682,7 +713,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
 
         {/* Feedback Component */}
-        <FeedbackComponent 
+        <FeedbackComponent
           open={feedbackModalOpen}
           onOpenChange={setFeedbackModalOpen}
         />

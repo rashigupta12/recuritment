@@ -218,22 +218,22 @@ const handleJobSuccess = (planIndex: number,
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                       Company & Contact
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                       Position Details
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                       Location & Experience
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                       Vacancies & Budget
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -273,7 +273,7 @@ const handleJobSuccess = (planIndex: number,
                           <td className="px-6 py-4">
                             <div className="flex flex-col">
                               <span className="font-medium text-gray-900 text-sm">{detail.designation}</span>
-                              <div className="text-xs text-gray-500 mt-1">
+                              <div className="text-sm text-gray-500 mt-1">
                                 <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-800">
                                   {detail.number_of_positions} {detail.number_of_positions === 1 ? 'Position' : 'Positions'}
                                 </span>
@@ -314,17 +314,17 @@ const handleJobSuccess = (planIndex: number,
                             <div className="flex flex-col space-y-1">
                               {detail.job_id ? (
                                 <>
-                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-sm bg-green-100 text-green-800">
                                     Job Created
                                   </span>
                                   {detail.assign_to && (
-                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
                                       Allocated
                                     </span>
                                   )}
                                 </>
                               ) : (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-800">
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-sm bg-gray-100 text-gray-800">
                                   Pending
                                 </span>
                               )}

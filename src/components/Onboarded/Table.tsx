@@ -273,7 +273,7 @@ const LeadsTableRow = ({
           {canCreateContract && (
             <button
               onClick={onCreateContract}
-              className="flex items-center gap-1 bg-primary hover:bg-secondary text-white px-2 py-1 rounded text-xs transition-colors whitespace-nowrap"
+              className="flex items-center gap-1 bg-primary hover:bg-secondary text-white px-2 py-1 rounded text-md transition-colors whitespace-nowrap"
               title="Create Staffing Plan"
             >
               {/* <FileText className="h-3 w-3" /> */}

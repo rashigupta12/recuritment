@@ -183,7 +183,7 @@ const FeedbackList: React.FC<{
                 No Issues Found
               </h3>
               <p className="text-gray-500 mb-6">
-                You haven't submitted any Issue yet.
+                You haven &apos;t submitted any Issue yet.
               </p>
             </div>
           ) : (
