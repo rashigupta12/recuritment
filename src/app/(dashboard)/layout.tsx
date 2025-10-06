@@ -1,6 +1,8 @@
 /* eslint-disable  @typescript-eslint/no-explicit-any */
 "use client";
 
+
+import FeedbackComponent from "@/components/comman/FeedbackManagement";
 import { useTheme } from "@/components/providers/ThemeProvider";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +30,7 @@ import {
   Home,
   LogOut,
   Menu,
+  MessageCircle,
   Target,
   TrendingUp,
   User,
@@ -65,27 +68,23 @@ const getNavigationItems = (role: AllowedRole): NavigationItem[] => {
       { icon: Home, label: "Dashboard", href: roleBasePath },
       { icon: Target, label: "Leads", href: `${roleBasePath}/leads` },
       { icon: Users, label: "Customers", href: `${roleBasePath}/contract` },
-
       {
         icon: TrendingUp,
         label: "Requirements",
         href: `${roleBasePath}/requirements`,
       },
-      // { icon: Users, label: "openings", href: `${roleBasePath}/opening` },
-      // { icon: FolderOpen, label: "Allocations", href: `${roleBasePath}/allocations` },
     ],
     "Projects Manager": [
       { icon: Home, label: "Dashboard", href: roleBasePath },
       { icon: FolderOpen, label: "Projects", href: `${roleBasePath}/projects` },
-
     ],
     "Projects User": [
       { icon: Home, label: "Dashboard", href: roleBasePath },
-      {
-        icon: FolderOpen,
-        label: "My Projects",
-        href: `${roleBasePath}/my-projects`,
-      },
+      // {
+      //   icon: FolderOpen,
+      //   label: "My Projects",
+      //   href: `${roleBasePath}/my-projects`,
+      // },
     ],
     "Delivery Manager": [
       { icon: Home, label: "Dashboard", href: roleBasePath },
@@ -95,15 +94,18 @@ const getNavigationItems = (role: AllowedRole): NavigationItem[] => {
         href: `${roleBasePath}/deliveries`,
       },
     ],
-    'Recruiter': [
-      { icon: Home, label: 'Dashboard', href: roleBasePath },
-      { icon: FolderOpen, label: 'Jobs Assigned', href: `${roleBasePath}/todos` },
-      // { icon: FolderOpen, label: 'Add Applicant', href: `${roleBasePath}/applicants` },
-      { icon: Users, label: 'Candidate Tracker', href: `${roleBasePath}/viewapplicant` },
-      // { icon: Users, label: 'Shortlisted Applicants', href: `${roleBasePath}/shortlistedapplicants` },
-      // {icon:FolderOpen,label:'Add Multiple Applicants',href:`${roleBasePath}/addmultipleapplicants`},
-      // { icon: Users, label: 'Assesment Staged Applicants', href: `${roleBasePath}/assessmentStagedApplicants` }
-
+    Recruiter: [
+      { icon: Home, label: "Dashboard", href: roleBasePath },
+      {
+        icon: FolderOpen,
+        label: "Jobs Assigned",
+        href: `${roleBasePath}/todos`,
+      },
+      {
+        icon: Users,
+        label: "Candidate Tracker",
+        href: `${roleBasePath}/viewapplicant`,
+      },
     ],
   };
 
@@ -132,12 +134,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       }
     };
 
-    // Load collapsed state from localStorage
     const savedCollapsedState = localStorage.getItem("sidebar-collapsed");
     if (savedCollapsedState) {
       setSidebarCollapsed(JSON.parse(savedCollapsedState));
     } else {
-      // Default to collapsed for better space efficiency
       setSidebarCollapsed(true);
     }
 
@@ -145,7 +145,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Save collapsed state to localStorage
   useEffect(() => {
     localStorage.setItem("sidebar-collapsed", JSON.stringify(sidebarCollapsed));
   }, [sidebarCollapsed]);
@@ -176,7 +175,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     await logout();
   };
 
-  // Improved active state logic
   const isNavItemActive = (href: string): boolean => {
     if (
       href.endsWith(
@@ -191,9 +189,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     );
   };
 
-  // Dynamic styles for sidebar width
   const sidebarStyles = {
-    width: sidebarCollapsed ? "4rem" : "14rem", // 64px collapsed, 224px expanded
+    width: sidebarCollapsed ? "4rem" : "14rem",
   };
 
   return (
@@ -204,17 +201,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 bg-white/95 backdrop-blur-sm border-r border-gray-200/60 shadow-sm transition-all duration-300 ease-in-out"
           style={sidebarStyles}
         >
-          {/* Sidebar Header - Compact */}
           <div className="flex items-center justify-center h-14 px-3 border-b border-gray-200/60 flex-shrink-0">
             <Link
               href="/dashboard"
-              className={`flex items-center ${sidebarCollapsed ? "justify-center" : "space-x-2"
-                }`}
+              className={`flex items-center ${
+                sidebarCollapsed ? "justify-center" : "space-x-2"
+              }`}
             >
-              <div
-                className="rounded-lg flex items-center justify-center flex-shrink-0"
-
-              >
+              <div className="rounded-lg flex items-center justify-center flex-shrink-0">
                 {!sidebarCollapsed && (
                   <Image
                     src={brandConfig.logo}
@@ -225,15 +219,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   />
                 )}
               </div>
-              {/* {!sidebarCollapsed && (
-                // <span className="text-lg font-bold text-gray-900 truncate">
-                //   {brandConfig.name}
-                // </span>
-              )} */}
             </Link>
           </div>
 
-          {/* Toggle Button - Floating */}
           <div className="relative flex-shrink-0">
             <Button
               variant="ghost"
@@ -249,7 +237,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </Button>
           </div>
 
-          {/* Navigation - More compact */}
           <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto min-h-0">
             {navigationItems.map((item, index) => {
               const isActive = isNavItemActive(item.href);
@@ -257,30 +244,34 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 <Link
                   key={index}
                   href={item.href}
-                  className={`group flex items-center px-3 py-2 text-md font-medium rounded-lg transition-all duration-200 ${isActive
+                  className={`group flex items-center px-3 py-2 text-md font-medium rounded-lg transition-all duration-200 ${
+                    isActive
                       ? "text-white shadow-sm"
                       : "text-gray-600 hover:text-gray-900 hover:bg-gray-100/80"
-                    } ${sidebarCollapsed ? "justify-center" : ""}`}
+                  } ${sidebarCollapsed ? "justify-center" : ""}`}
                   style={
                     isActive
                       ? {
-                        backgroundColor: brandConfig.colors.primary,
-                        boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                      }
+                          backgroundColor: brandConfig.colors.primary,
+                          boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                        }
                       : {}
                   }
                   onClick={() => setSidebarOpen(false)}
                 >
                   <item.icon
-                    className={`h-4 w-4 flex-shrink-0 ${isActive
+                    className={`h-4 w-4 flex-shrink-0 ${
+                      isActive
                         ? "text-white"
                         : "text-gray-400 group-hover:text-gray-600"
-                      } ${sidebarCollapsed ? "" : "mr-3"}`}
+                    } ${sidebarCollapsed ? "" : "mr-3"}`}
                   />
 
                   {!sidebarCollapsed && (
                     <>
-                      <span className="flex-1 truncate text-md">{item.label}</span>
+                      <span className="flex-1 truncate text-md">
+                        {item.label}
+                      </span>
                       {item.badge && (
                         <Badge
                           variant="destructive"
@@ -294,7 +285,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 </Link>
               );
 
-              // Wrap with tooltip when collapsed
               if (sidebarCollapsed) {
                 return (
                   <Tooltip key={index}>
@@ -315,10 +305,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             })}
           </nav>
 
-          {/* User Info - Compact */}
           <div
-            className={`p-3 border-t border-gray-200/60 flex-shrink-0 ${sidebarCollapsed ? "px-2" : "px-3"
-              }`}
+            className={`p-3 border-t border-gray-200/60 flex-shrink-0 ${
+              sidebarCollapsed ? "px-2" : "px-3"
+            }`}
           >
             {sidebarCollapsed ? (
               <Tooltip>
@@ -372,11 +362,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             )}
           </div>
 
-          {/* Role Switcher - Compact */}
           {availableRoles.length > 1 && (
             <div
-              className={`p-2 border-t border-gray-200/60 flex-shrink-0 ${sidebarCollapsed ? "px-2" : "px-3"
-                }`}
+              className={`p-2 border-t border-gray-200/60 flex-shrink-0 ${
+                sidebarCollapsed ? "px-2" : "px-3"
+              }`}
             >
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -434,10 +424,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           )}
         </div>
 
-        {/* Mobile Sidebar */}
-        <div
-          className={`lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 shadow-lg transform transition-transform duration-300 ease-in-out ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
-            }`}
+       <div
+          className={`lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 shadow-lg transform transition-transform duration-300 ease-in-out ${
+            sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
         >
           <div className="flex flex-col h-full">
             <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 flex-shrink-0">
@@ -506,10 +496,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   <Link
                     key={index}
                     href={item.href}
-                    className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${isActive
+                    className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                      isActive
                         ? "text-white shadow-sm"
                         : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-                      }`}
+                    }`}
                     style={
                       isActive
                         ? { backgroundColor: brandConfig.colors.primary }
@@ -518,10 +509,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     onClick={() => setSidebarOpen(false)}
                   >
                     <item.icon
-                      className={`mr-3 h-5 w-5 ${isActive
+                      className={`mr-3 h-5 w-5 ${
+                        isActive
                           ? "text-white"
                           : "text-gray-400 group-hover:text-gray-500"
-                        }`}
+                      }`}
                     />
                     <span className="flex-1">{item.label}</span>
                     {item.badge && (
@@ -581,6 +573,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
         </div>
 
+
         {/* Main Content */}
         <div
           className="flex-1 flex flex-col min-h-screen lg:ml-16 transition-all duration-300 ease-in-out"
@@ -597,7 +590,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <header className="bg-white/95 backdrop-blur-sm border-b border-gray-200/60 px-4 py-2.5 shadow-sm flex-shrink-0">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                {/* Mobile menu button */}
                 <Button
                   variant="ghost"
                   size="sm"
@@ -608,29 +600,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 </Button>
 
                 <div className="flex items-center space-x-3">
-                  {/* Show company name when sidebar is collapsed on desktop */}
-                  {/* {sidebarCollapsed && (
-                    <div className="hidden lg:flex items-center space-x-2">
-                      <span className="text-lg font-semibold text-gray-900 pl-2">
-                        {brandConfig.name}
-                      </span>
-                      <div className="w-px h-6 bg-gray-300 mx-2"></div>
-                    </div>
-                  )} */}
                   {sidebarCollapsed && (
                     <div className="hidden lg:flex items-center space-x-2">
                       <Image
                         src={brandConfig.logo}
                         alt={brandConfig.name}
-                        width={150}   // chhoti size
+                        width={150}
                         height={150}
                         className="object-contain"
                       />
-
-
                     </div>
                   )}
-
                 </div>
               </div>
 
@@ -674,6 +654,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                       </Badge>
                     </div>
                     <DropdownMenuSeparator />
+
+                    {/* FIXED: Feedback button outside DropdownMenuItem */}
+                    <div className="px-2 py-1.5">
+                      <FeedbackComponent className="w-full">
+                        <button className="w-full flex items-center gap-2 text-sm text-blue-600 rounded-md transition-colors">
+                          <MessageCircle className="h-4 w-4" />
+                          <span>HelpDesk</span>
+                        </button>
+                      </FeedbackComponent>
+                    </div>
+
+                    <DropdownMenuSeparator />
+
                     <DropdownMenuItem
                       onClick={handleLogout}
                       className="text-red-600"
@@ -687,7 +680,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
           </header>
 
-          {/* Main Content Area - FIXED for scrolling */}
+          {/* Main Content Area */}
           <main className="flex-1 bg-gray-50/50 overflow-auto">
             <div className="p-4 sm:p-6 lg:p-5 min-h-full">{children}</div>
           </main>
