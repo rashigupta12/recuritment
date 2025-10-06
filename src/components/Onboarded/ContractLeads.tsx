@@ -112,40 +112,37 @@ const handleCreateContract = useCallback(async (lead: Lead) => {
     <div className="min-h-screen bg-gray-50">
       <div className="w-full mx-auto py-2">
 
-        <div className=" flex ">
-        {/* Header */}
-        <div className="mb-6 ">
-          <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
-        </div>
+      <div className="flex justify-between items-center mb-6">
+  {/* Header */}
+  <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
 
-        {/* Search Bar */}
-        <div className="mb-4">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search leads by name, company, email, industry, or city..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            />
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg
-                className="h-5 w-5 text-gray-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
-            </div>
-          </div>
-        </div>
-        </div>
+  {/* Search Bar */}
+  <div className="relative w-1/2">
+    <input
+      type="text"
+      placeholder="Search leads by name, company, email, industry, or city..."
+      value={searchQuery}
+      onChange={(e) => setSearchQuery(e.target.value)}
+      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+    />
+    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+      <svg
+        className="h-5 w-5 text-gray-400"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+        />
+      </svg>
+    </div>
+  </div>
+</div>
+
 
         {/* Desktop Table View */}
         {filteredLeads.length > 0 ? (
