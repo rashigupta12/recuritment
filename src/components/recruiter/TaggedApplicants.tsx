@@ -837,7 +837,7 @@ const handleStatusChangeRequest = () => {
                 <option value="offer rejected">Offer Rejected</option>
                 <option value="Rejected">Rejected</option>
                 <option value="joined">Joined</option> */}
-                {/* <option value="Tagged">Tagged</option> */}
+                <option value="Tagged">Tagged</option>
                 <option value="Shortlisted">Shortlisted</option>
                 <option value="Assessment">Assessment</option>
                 <option value="Interview">Interview</option>
