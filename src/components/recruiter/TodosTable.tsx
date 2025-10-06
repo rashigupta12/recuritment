@@ -147,7 +147,7 @@ export const TodosTable = ({ todos, onViewTodo }: TodosTableProps) => {
             <SortableHeader field="status">Status</SortableHeader>
           </tr>
         </thead>
-        <tbody className="divide-y divide-blue-50 text-xs sm:text-sm">
+        <tbody className="divide-y divide-blue-50 text-md sm:text-md">
           {sortedTodos.length > 0 ? (
             sortedTodos.map((todo, index) => (
               <tr
@@ -162,7 +162,7 @@ export const TodosTable = ({ todos, onViewTodo }: TodosTableProps) => {
                     : <span className="text-gray-400">Not set</span>}
                 </td>
                 {/* Aging */}
-                <td className="px-2 sm:px-4 py-4 whitespace-nowrap">{calculateAging(todo.custom_date_assigned)}</td>
+                <td className="px-2 sm:px-4 py-4 text-md whitespace-nowrap">{calculateAging(todo.custom_date_assigned)}</td>
                 {/* Company */}
                 <td className="px-2 sm:px-4 py-4">{extractCompany(todo.description)}</td>
                 {/* Job Title */}
