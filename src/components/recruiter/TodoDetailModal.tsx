@@ -200,12 +200,12 @@ export const TodoDetailModal = ({
                 </div>
                 <div>
                   <h1 className="text-xl font-bold text-slate-900 capitalize">{extractDesignation(todo.description)}</h1>
-                  <p className="text-slate-600 text-sm mt-0.5">Comprehensive overview of company and job description.</p>
+                 
                 </div>
               </div>
 
               <div className="flex items-center gap-3">
-                <span className={`px-3.5 py-1.5 text-xs font-semibold rounded-lg border `}>
+                <span className={`px-3.5 py-1.5 text-lg font-semibold rounded-lg border `}>
                   Budget: {extractBudget(todo.description)}
                 </span>
                 {/* ✅ Updated button handler */}
