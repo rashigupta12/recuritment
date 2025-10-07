@@ -76,20 +76,44 @@ export const MultiUserAssignment: React.FC<MultiUserAssignmentProps> = ({
  const totalAllocated = assignments.reduce((sum, a) => sum + a.allocation, 0);
   const remaining = totalVacancies - totalAllocated;
   // const isOverAllocated = totalAllocated > totalVacancies;
+const loadUsers = async () => {
+  if (users.length > 0) return;
+  setIsLoading(true);
+  try {
+    const response = await frappeAPI.makeAuthenticatedRequest(
+      "GET",
+      '/resource/User?fields=["full_name","email","roles.role"]&limit_page_length=0'
+    );
 
-  const loadUsers = async () => {
-    if (users.length > 0) return;
-    setIsLoading(true);
-    try {
-      const response = await frappeAPI.makeAuthenticatedRequest(
-        "GET",
-        "/resource/User?fields=[\"full_name\",\"email\"]&limit_page_length=50"
-      );
-      setUsers(response.data || []);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    const allUsers = response.data || [];
+
+    // Keep only users who have "Recruiter" role
+    const recruiters = allUsers.filter((user: any) => user.role === "Recruiter");
+
+    // Group by email to remove duplicates
+    const uniqueRecruitersMap: Record<string, any> = {};
+    recruiters.forEach((user: { email: string | number; full_name: any; }) => {
+      if (!uniqueRecruitersMap[user.email]) {
+        uniqueRecruitersMap[user.email] = {
+          full_name: user.full_name,
+          email: user.email
+        };
+      }
+    });
+
+    const uniqueRecruiters = Object.values(uniqueRecruitersMap);
+
+    setUsers(uniqueRecruiters);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+
+
+
+
+
 
   // const updateAssignments = useCallback((newA: Assignment[]) => {
   //   setAssignments(newA);

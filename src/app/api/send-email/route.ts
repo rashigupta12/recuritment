@@ -54,37 +54,52 @@ export async function POST(request: NextRequest) {
             to: emailData.to_email,
             subject: emailData.subject,
             text: emailData.message,
-            html: `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; text-align: center; color: white;">
-                        <h1 style="margin: 0; font-size: 24px;">${process.env.COMPANY_NAME}</h1>
-                    </div>
-                    <div style="padding: 20px; background: #f9f9f9;">
-                        ${emailData.message.replace(/\n/g, '<br>')}
-                    </div>
-                    <div style="padding: 20px; background: white; border-top: 1px solid #eee;">
-                        <h3 style="color: #333; margin-bottom: 10px;">Candidate Summary:</h3>
-                        <ul style="list-style: none; padding: 0;">
-                            ${emailData.applicants.map((applicant, index) => `
-                                <li style="padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
-                                    <strong>${index + 1}. ${applicant.applicant_name || 'N/A'}</strong><br>
-                                    ${applicant.email_id ? `Email: ${applicant.email_id}<br>` : ''}
-                                    ${applicant.designation ? `Position: ${applicant.designation}<br>` : ''}
-                                   
-                                </li>
-                            `).join('')}
-                        </ul>
-                    </div>
-                    <div style="padding: 15px; background: #f8f9fa; border-top: 1px solid #dee2e6; margin-top: 20px;">
-                        <p style="margin: 0; color: #6c757d; font-size: 14px;">
-                            Total resumes attached: ${attachments.length} out of ${emailData.applicants.length} applicants
-                        </p>
-                    </div>
-                    <div style="padding: 20px; background: #f5f5f5; text-align: center; color: #666;">
-                        <p>This email was sent from ${process.env.COMPANY_NAME}</p>
-                    </div>
-                </div>
-            `,
+html: `
+  <div style="font-family: Arial, sans-serif; max-width: 650px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden;">
+      
+      <!-- Header with White Background for Logo -->
+      <div style="background: #ffffff; padding: 25px; text-align: center; border-bottom: 4px solid #1e3a8a;">
+          <img src="https://recruitment-hevhire.vercel.app/_next/image?url=%2Fbrands%2Fdefault%2Fimage.png&w=384&q=75" 
+               alt="HevHire Logo" 
+               style="max-width: 160px; margin-bottom: 4px;" />
+          <p style="color: #1e3a8a; font-size: 14px; margin: 0; font-weight: 500;">The Hiring Evolution</p>
+      </div>
+
+      <!-- Message Body -->
+      <div style="padding: 25px; background: #f9fafb;">
+          <p style="font-size: 16px; color: #1e293b; line-height: 1.6; margin: 0;">
+              ${emailData.message.replace(/\n/g, '<br>')}
+          </p>
+      </div>
+
+      <!-- Candidate Summary -->
+      <div style="padding: 25px; background: white; border-top: 1px solid #e5e7eb;">
+          <h3 style="color: #1e3a8a; font-size: 18px; margin-bottom: 15px;">Candidate Summary:</h3>
+          <ul style="list-style: none; padding: 0; margin: 0;">
+              ${emailData.applicants.map((applicant, index) => `
+                  <li style="padding: 10px 0; border-bottom: 1px solid #f1f5f9;">
+                      <strong style="color: #0f172a;">${index + 1}. ${applicant.applicant_name || 'N/A'}</strong><br>
+                      ${applicant.email_id ? `<span style="color: #475569;">Email:</span> ${applicant.email_id}<br>` : ''}
+                      ${applicant.designation ? `<span style="color: #475569;">Position:</span> ${applicant.designation}<br>` : ''}
+                  </li>
+              `).join('')}
+          </ul>
+      </div>
+
+      <!-- Attachment Summary -->
+      <div style="padding: 15px; background: #eff6ff; border-top: 1px solid #cbd5e1;">
+          <p style="margin: 0; color: #1e40af; font-size: 14px; text-align: center;">
+              📎 Total resumes attached: ${attachments.length} out of ${emailData.applicants.length} applicants
+          </p>
+      </div>
+
+      <!-- Footer -->
+      <div style="padding: 20px; background: #1e3a8a; text-align: center; color: #f8fafc;">
+          <p style="margin: 0; font-size: 14px;">This email was sent from <strong style="color: #ffffff;">HevHire</strong></p>
+      </div>
+  </div>
+`,
+
             attachments: attachments
         };
 

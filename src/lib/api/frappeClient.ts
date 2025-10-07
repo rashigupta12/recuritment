@@ -609,7 +609,7 @@ checkFirstLogin: async (username: string) => {
     return await frappeAPI.makeAuthenticatedRequest('POST', '/resource/Contact', contactData);
   },
    updateContact: async (contactId: string, contactData: Record<string, unknown>) => {
-    return await frappeAPI.makeAuthenticatedRequest('PUT', `/resource/contact/${contactId}`, contactData);
+    return await frappeAPI.makeAuthenticatedRequest('PUT', `/resource/Contact/${contactId}`, contactData);
   },
    createCompany: async (companyData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('POST', '/resource/Company', companyData);
