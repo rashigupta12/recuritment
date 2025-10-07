@@ -2,6 +2,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { frappeAPI } from '@/lib/api/frappeClient';
 import { ApplicantsTable } from '@/components/recruiter/ApplicantsTable';
@@ -16,7 +17,7 @@ export interface JobApplicant {
   job_title?: string;
   designation?: string;
   status?: string;
-  custom_company_name?:string;
+  custom_company_name?: string;
   resume_attachment?: string;
   custom_experience?: Array<{
     company_name: string;
@@ -56,6 +57,8 @@ export default function ViewApplicantPage() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [selectedApplicant, setSelectedApplicant] = useState<JobApplicant | null>(null);
+  const searchParams = useSearchParams();
+  const statusParam = searchParams.get('status') || 'all'; // Default to 'all' if null
   const router = useRouter();
 
   const fetchApplicantsData = async (email: string): Promise<JobApplicant[]> => {
@@ -63,7 +66,6 @@ export default function ViewApplicantPage() {
       const response = await frappeAPI.getAllApplicants(email);
       const result: ApiResponse = response;
       console.log('All applicants with full details:', result.data);
-      
       return result.data || [];
     } catch (error) {
       console.error('Error fetching applicants:', error);
@@ -90,13 +92,19 @@ export default function ViewApplicantPage() {
         setUserEmail(email);
 
         const detailedApplicants = await fetchApplicantsData(email);
-        console.log(detailedApplicants)
         setApplicants(detailedApplicants);
-        setFilteredApplicants(detailedApplicants);
+
+        // Filter applicants based on the 'status' query parameter
+        let filtered = detailedApplicants;
+        if (statusParam && statusParam.toLowerCase() !== 'all') {
+          filtered = detailedApplicants.filter((applicant) =>
+            applicant.status?.toLowerCase() === statusParam.toLowerCase()
+          );
+        }
+        setFilteredApplicants(filtered);
       } catch (err: any) {
         console.error('Fetch error:', err);
         let errorMessage = 'An error occurred while fetching applicants.';
-        
         if (err.message?.includes('Session expired') || err.response?.status === 401 || err.response?.status === 403) {
           errorMessage = 'Session expired. Please log in again.';
           setIsAuthenticated(false);
@@ -113,7 +121,7 @@ export default function ViewApplicantPage() {
     };
 
     checkAuthAndFetchApplicants();
-  }, [router]);
+  }, [router, statusParam]);
 
   // Handle search and status filter
   useEffect(() => {
@@ -131,15 +139,19 @@ export default function ViewApplicantPage() {
       );
     }
 
-    // Apply status filter
-    if (statusFilter !== 'all') {
+    // Apply status filter (override with query param if present)
+    if (statusParam && statusParam.toLowerCase() !== 'all') {
+      filtered = filtered.filter(
+        (applicant) => applicant.status?.toLowerCase() === statusParam.toLowerCase()
+      );
+    } else if (statusFilter !== 'all') {
       filtered = filtered.filter(
         (applicant) => applicant.status?.toLowerCase() === statusFilter.toLowerCase()
       );
     }
 
     setFilteredApplicants(filtered);
-  }, [applicants, searchQuery, statusFilter]);
+  }, [applicants, searchQuery, statusFilter, statusParam]);
 
   // Handle checkbox selection
   const handleSelectApplicant = (name: string) => {
@@ -176,7 +188,7 @@ export default function ViewApplicantPage() {
     try {
       setLoading(true);
       const failedUpdates: string[] = [];
-      
+
       // Update status for all selected applicants
       for (const name of selectedApplicants) {
         if (!name) {
@@ -248,18 +260,22 @@ export default function ViewApplicantPage() {
     switch (status?.toLowerCase()) {
       case 'open':
         return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'tagged':
+        return 'bg-purple-100 text-purple-800 border-purple-200';
       case 'shortlisted':
         return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'assessment stage':
+      case 'assessment':
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'interview stage':
+      case 'interview':
         return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'hired':
+      case 'offered':
         return 'bg-green-100 text-green-800 border-green-200';
-      case 'rejected':
+      case 'offerrejected':
         return 'bg-red-100 text-red-800 border-red-200';
-      case 'closed':
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'offerdrop':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'joined':
+        return 'bg-green-100 text-green-800 border-green-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
@@ -287,8 +303,6 @@ export default function ViewApplicantPage() {
       </div>
     );
   }
-
-  // console.log("gfdjsg" , selectedApplicant)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 ">
@@ -320,11 +334,10 @@ export default function ViewApplicantPage() {
                 <option value="Shortlisted">Shortlisted</option>
                 <option value="Assessment">Assessment</option>
                 <option value="Interview">Interview</option>
-                 <option value="Interview Reject">Interview reject</option>
-                  <option value="Offered">Offered</option>
+                <option value="Interview Reject">Interview Reject</option>
+                <option value="Offered">Offered</option>
                 <option value="Offer Drop">Offer Drop</option>
                 <option value="Joined">Joined</option>
-               
               </select>
               <button
                 onClick={handleChangeStatus}
@@ -414,8 +427,8 @@ export default function ViewApplicantPage() {
                 <option value="Shortlisted">Shortlisted</option>
                 <option value="Assessment">Assessment</option>
                 <option value="Interview">Interview</option>
-                 <option value="Interview Reject">Interview reject</option>
-                  <option value="Offered">Offered</option>
+                <option value="Interview Reject">Interview Reject</option>
+                <option value="Offered">Offered</option>
                 <option value="Offer Drop">Offer Drop</option>
                 <option value="Joined">Joined</option>
               </select>
@@ -445,7 +458,6 @@ export default function ViewApplicantPage() {
 
       {/* Applicant Details Modal */}
       {selectedApplicant && (
-        
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" role="dialog" aria-modal="true" aria-labelledby="details-modal-title">
           <div className="bg-white rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
@@ -510,7 +522,7 @@ export default function ViewApplicantPage() {
                   <p className="text-sm font-medium text-gray-700">Resume</p>
                   {selectedApplicant.resume_attachment ? (
                     <a
-                       href={`https://recruiter.gennextit.com${selectedApplicant.resume_attachment}`}
+                      href={`https://recruiter.gennextit.com${selectedApplicant.resume_attachment}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-600 hover:text-blue-800 underline text-sm"

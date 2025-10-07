@@ -57,8 +57,8 @@ interface JobApplicant {
     | "Shortlisted"
     | "AssessmentStage"
     | "InterviewStage"
+    | "InterviewRejected"
     | "Offered"
-    | "OfferRejected"
     | "Rejected"
     | "Joined";
   appliedDate: string;
@@ -82,6 +82,7 @@ interface MetricData {
   shortlisted: number;
   assessmentStage: number;
   interviews: number;
+  interviewRejected: number; // Added
   offers: number;
   joined: number;
 }
@@ -89,9 +90,7 @@ interface MetricData {
 export default function RecruiterDashboard() {
   const router = useRouter();
   const [selectedClient, setSelectedClient] = useState<string>("All");
-  const [timePeriod, setTimePeriod] = useState<"week" | "month" | "quarter">(
-    "month"
-  );
+  const [timePeriod, setTimePeriod] = useState<"week" | "month" | "quarter">("month");
   const { user } = useAuth();
   console.log(user);
   const [apiData, setApiData] = useState<any>(null);
@@ -147,6 +146,7 @@ export default function RecruiterDashboard() {
       shortlisted_applicants_by_company: "Shortlisted",
       assessment_stage_applicants_by_company: "AssessmentStage",
       interview_stage_applicants_by_company: "InterviewStage",
+      interview_rejected_applicants_by_company: "InterviewRejected", // Added
       offered_applicants_by_company: "Offered",
       rejected_applicants_by_company: "Rejected",
       joined_applicants_by_company: "Joined",
@@ -251,7 +251,7 @@ export default function RecruiterDashboard() {
 
     // Header row
     csvRows.push(
-      "Company Name,Job Title,Open Positions,CV's Uploaded,Tagged,Shortlisted,Assessment Stage,Interview Stage,Offered,Offer Rejected,Rejected,Joined"
+      "Company Name,Job Title,Open Positions,CV's Uploaded,Tagged,Shortlisted,Assessment Stage,Interview Stage,Interview Rejected,Offered,Rejected,Joined"
     );
 
     // Group data by company and job title
@@ -268,8 +268,8 @@ export default function RecruiterDashboard() {
           shortlisted: 0,
           assessmentStage: 0,
           interviewStage: 0,
+          interviewRejected: 0, // Corrected to camelCase
           offered: 0,
-          offerRejected: 0,
           rejected: 0,
           joined: 0,
         };
@@ -292,7 +292,7 @@ export default function RecruiterDashboard() {
         ).length;
 
         csvRows.push(
-          `${company},${jobTitle},${openPositions},${stats.cvUploaded},${stats.tagged},${stats.shortlisted},${stats.assessmentStage},${stats.interviewStage},${stats.offered},${stats.offerRejected},${stats.rejected},${stats.joined}`
+          `${company},${jobTitle},${openPositions},${stats.cvUploaded},${stats.tagged},${stats.shortlisted},${stats.assessmentStage},${stats.interviewStage},${stats.interviewRejected},${stats.offered},${stats.rejected},${stats.joined}`
         );
       });
     });
@@ -317,8 +317,8 @@ export default function RecruiterDashboard() {
     "Shortlisted",
     "AssessmentStage",
     "InterviewStage",
+    "InterviewRejected",
     "Offered",
-    "OfferRejected",
     "Rejected",
     "Joined",
   ];
@@ -363,8 +363,8 @@ export default function RecruiterDashboard() {
     "Shortlisted",
     "Assessment",
     "Interview",
+    "InterviewRejected",
     "Offered",
-    "OfferRejected",
     "Offer Drop",
     "Joined",
   ];
@@ -431,8 +431,7 @@ export default function RecruiterDashboard() {
     };
   }, [filteredJobs]);
 
-  // Generate monthly metrics from current data
-// Generate monthly metrics from current data filtered by selected company
+  // Generate monthly metrics from current data filtered by selected company
   const monthlyMetrics: MetricData[] = useMemo(() => {
     const monthLabels =
       timePeriod === "week"
@@ -451,6 +450,7 @@ export default function RecruiterDashboard() {
     const shortlistedCount = getStatusCount("Shortlisted");
     const assessmentCount = getStatusCount("AssessmentStage");
     const interviewCount = getStatusCount("InterviewStage");
+    const interviewRejectedCount = getStatusCount("InterviewRejected"); // Added
     const offeredCount = getStatusCount("Offered");
     const joinedCount = getStatusCount("Joined");
 
@@ -463,6 +463,7 @@ export default function RecruiterDashboard() {
         shortlisted: Math.floor(shortlistedCount * factor),
         assessmentStage: Math.floor(assessmentCount * factor),
         interviews: Math.floor(interviewCount * factor),
+        interviewRejected: Math.floor(interviewRejectedCount * factor), // Added
         offers: Math.floor(offeredCount * factor),
         joined: Math.floor(joinedCount * factor),
       };
@@ -476,15 +477,14 @@ export default function RecruiterDashboard() {
         {
           label: "Total CV's Uploaded",
           data: monthlyMetrics.map((m) => m.totalCVUploaded),
-          borderColor: "#ec4899", // pink-500
-          backgroundColor: "rgba(236,72,153,0.08)", // lighter pink fill
+          borderColor: "#ec4899",
+          backgroundColor: "rgba(236,72,153,0.08)",
           fill: true,
           tension: 0.4,
           borderWidth: 2,
           pointRadius: 3,
           pointBackgroundColor: "#ec4899",
         },
-
         {
           label: "Tagged",
           data: monthlyMetrics.map((m) => m.tagged),
@@ -528,6 +528,17 @@ export default function RecruiterDashboard() {
           borderWidth: 2,
           pointRadius: 3,
           pointBackgroundColor: "#F59E0B",
+        },
+        {
+          label: "Interview Rejected",
+          data: monthlyMetrics.map((m) => m.interviewRejected),
+          borderColor: "#818CF8",
+          backgroundColor: "rgba(129,140,248,0.08)",
+          fill: true,
+          tension: 0.4,
+          borderWidth: 2,
+          pointRadius: 3,
+          pointBackgroundColor: "#818CF8",
         },
         {
           label: "Offers",
@@ -576,6 +587,31 @@ export default function RecruiterDashboard() {
     const nativeEvent = event.native as unknown as MouseEvent;
     const target = nativeEvent?.target as HTMLElement;
     if (target) target.style.cursor = elements[0] ? "pointer" : "default";
+  };
+
+  const handleFunnelClick = (elements: any[]) => {
+    if (!elements.length) return;
+    const clickedIndex = elements[0].index;
+    const labels = funnelData.labels;
+    console.log("Clicked label:", labels[clickedIndex]); // Debug log
+    const statusMap: Record<string, string> = {
+      "Tagged": "tagged",
+      "Shortlisted": "shortlisted",
+      "Assessment Stage": "assessmentstage",
+      "Interview Stage": "interviewstage",
+      "Interview Rejected": "interviewRejected", // Corrected to camelCase
+      "Offered": "offered",
+      "Offer Drop": "offerdrop",
+      "Joined": "joined",
+    };
+    const clickedLabel = labels[clickedIndex].trim(); // Remove any trailing spaces
+    if (clickedLabel === "Total CV's Uploaded") {
+      router.push(`/dashboard/recruiter/todos`); // Direct navigation for Total CV's Uploaded
+    } else {
+      const status = statusMap[clickedLabel] || "all"; // Fallback to "all" if no match
+      console.log("Mapped status:", status); // Debug log
+      router.push(`/dashboard/recruiter/viewapplicant?status=${status}`);
+    }
   };
 
   if (loading) {
@@ -693,10 +729,7 @@ export default function RecruiterDashboard() {
           {/* Applicant Funnel */}
           <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200">
             <div className="flex justify-between items-center">
-              <SectionHeader
-                title="Applicant Funnel"
-                subtitle="Stage-wise breakdown"
-              />
+              <SectionHeader title="Applicant Funnel" subtitle="Stage-wise breakdown" />
             </div>
 
             <div className="h-64 mt-4">
@@ -742,6 +775,7 @@ export default function RecruiterDashboard() {
                       },
                     },
                   },
+                  onClick: (event, elements) => handleFunnelClick(elements),
                 }}
               />
             </div>
@@ -750,10 +784,7 @@ export default function RecruiterDashboard() {
           {/* Job Status */}
           <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200">
             <div className="flex justify-between items-start mb-2">
-              <SectionHeader
-                title="Job Status"
-                subtitle="Current distribution"
-              />
+              <SectionHeader title="Job Status" subtitle="Current distribution" />
             </div>
 
             <div className="h-64 flex items-center justify-center cursor-pointer mt-2">
@@ -770,10 +801,7 @@ export default function RecruiterDashboard() {
                       callbacks: {
                         label: (context) => {
                           const dataset = context.dataset.data as number[];
-                          const total = dataset.reduce(
-                            (acc, curr) => acc + curr,
-                            0
-                          );
+                          const total = dataset.reduce((acc, curr) => acc + curr, 0);
                           const value = context.parsed;
                           return `${context.label}: ${value}`;
                         },
@@ -781,7 +809,6 @@ export default function RecruiterDashboard() {
                     },
                     legend: {
                       position: "bottom",
-                      // padding:24,
                       labels: {
                         usePointStyle: true,
                         pointStyle: "circle",
@@ -823,10 +850,8 @@ export default function RecruiterDashboard() {
                         size: 10,
                       },
                       formatter: (value, context) => {
-                        // Only show label on last data point of each line
                         const datasetLength = context.dataset.data.length;
-                        return context.dataIndex === datasetLength - 1 &&
-                          value > 0
+                        return context.dataIndex === datasetLength - 1 && value > 0
                           ? value
                           : "";
                       },
@@ -901,8 +926,28 @@ function KpiCard({ icon, value, label, trend, color }: CardProps) {
     },
   };
 
+  const router = useRouter();
+  const handleCardClick = () => {
+    switch (label) {
+      case "Active Clients":
+        router.push("/dashboard/recruiter/todos");
+        break;
+      case "Open Positions":
+        router.push("/dashboard/recruiter/todos");
+        break;
+      case "Total CV's uploaded":
+        router.push("/dashboard/recruiter/viewapplicant");
+        break;
+      case "Successfully Joined":
+        router.push("/dashboard/recruiter/viewapplicant?status=joined");
+        break;
+    }
+  };
   return (
-    <div className="group bg-white rounded-lg p-3 shadow-sm border border-slate-200 hover:shadow-md transition-all">
+    <div
+      className={`group bg-white rounded-lg p-3 shadow-sm border border-slate-200 hover:shadow-md transition-all ${label === "Active Clients" ? "cursor-pointer" : ""}`}
+      onClick={handleCardClick}
+    >
       <div className="flex items-start justify-between mb-2">
         <div
           className={`w-8 h-8 rounded-lg ${colorStyles[color].bg} flex items-center justify-center ${colorStyles[color].text}`}
@@ -910,7 +955,7 @@ function KpiCard({ icon, value, label, trend, color }: CardProps) {
           {icon}
         </div>
 
-        <div className="flex items-center gap-1  text-5xl font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">
+        <div className="flex items-center gap-1 text-5xl font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">
           <span>{value}</span>
         </div>
       </div>
