@@ -529,13 +529,13 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
     try {
       setIsSaving(true);
 
-      let contactId: string;
-      let contactName: string;
+      // let contactId: string;
+      // let contactName: string;
 
       // This function is only called for UPDATE now
       await frappeAPI.updateContact(selectedContact!.contactId!, pendingContactData);
-      contactId = selectedContact!.contactId!;
-      contactName = `${contactForm.first_name} ${contactForm.last_name}`.trim();
+      const contactId = selectedContact!.contactId!;
+      const contactName = `${contactForm.first_name} ${contactForm.last_name}`.trim();
 
       const simplifiedContact: SimplifiedContact = {
         name: contactName,
@@ -577,13 +577,13 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
     try {
       setIsSaving(true);
 
-      let contactId: string;
-      let contactName: string;
+      // let contactId: string;
+      // let contactName: string;
 
       // This function is only for CREATE
       const response = await frappeAPI.createContact(contactData);
-      contactId = response.data.name;
-      contactName = `${contactForm.first_name} ${contactForm.last_name}`.trim();
+      const contactId = response.data.name;
+      const contactName = `${contactForm.first_name} ${contactForm.last_name}`.trim();
 
       const simplifiedContact: SimplifiedContact = {
         name: contactName,
