@@ -23,7 +23,6 @@ import {
   Calendar,
   Download,
   Filter,
-  TrendingUp,
   UserCheck,
   Users,
 } from "lucide-react";
@@ -52,13 +51,14 @@ interface JobApplicant {
   job_title: string;
   client: string;
   status:
-    | "Applied"
+    | "Open"
     | "Tagged"
     | "Shortlisted"
-    | "AssessmentStage"
-    | "InterviewStage"
+    | "Assessment"
+    | "Interview"
     | "InterviewRejected"
     | "Offered"
+    | "OfferDrop"
     | "Rejected"
     | "Joined";
   appliedDate: string;
@@ -78,12 +78,14 @@ interface JobOpening {
 interface MetricData {
   month: string;
   totalCVUploaded: number;
+  open: number;
   tagged: number;
   shortlisted: number;
-  assessmentStage: number;
-  interviews: number;
-  interviewRejected: number; // Added
-  offers: number;
+  assessment: number;
+  interview: number;
+  interviewRejected: number;
+  offered: number;
+  offerDrop: number;
   joined: number;
 }
 
@@ -92,7 +94,6 @@ export default function RecruiterDashboard() {
   const [selectedClient, setSelectedClient] = useState<string>("All");
   const [timePeriod, setTimePeriod] = useState<"week" | "month" | "quarter">("month");
   const { user } = useAuth();
-  console.log(user);
   const [apiData, setApiData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -141,13 +142,17 @@ export default function RecruiterDashboard() {
     if (!apiData) return [];
 
     const allApplicants: JobApplicant[] = [];
-    const statusMapping: Record<string, string> = {
+    
+    // Updated status mapping to match API keys and correct status values
+    const statusMapping: Record<string, JobApplicant["status"]> = {
+      open_applicants_by_company: "Open",
       tagged_applicants_by_company: "Tagged",
       shortlisted_applicants_by_company: "Shortlisted",
-      assessment_stage_applicants_by_company: "AssessmentStage",
-      interview_stage_applicants_by_company: "InterviewStage",
-      interview_rejected_applicants_by_company: "InterviewRejected", // Added
+      assessment_stage_applicants_by_company: "Assessment",
+      interview_stage_applicants_by_company: "Interview",
+      interview_rejected_applicants_by_company: "InterviewRejected",
       offered_applicants_by_company: "Offered",
+      offer_drop_applicants_by_company: "OfferDrop",
       rejected_applicants_by_company: "Rejected",
       joined_applicants_by_company: "Joined",
     };
@@ -165,7 +170,7 @@ export default function RecruiterDashboard() {
               email: applicant.email_id,
               job_title: applicant.designation,
               client: company,
-              status: status as any,
+              status: status,
               appliedDate: new Date().toISOString().split("T")[0],
               lastUpdated: new Date().toISOString().split("T")[0],
             });
@@ -232,7 +237,7 @@ export default function RecruiterDashboard() {
   const kpiMetrics = useMemo(() => {
     const total = apiData?.summary?.total_applicants || 0;
     const tagged = apiData?.metrics?.Tagged || 0;
-    const interviews = apiData?.metrics?.["Interview Stage"] || 0;
+    const interviews = apiData?.metrics?.Interview || 0;
     const offered = apiData?.metrics?.Offered || 0;
     const joined = apiData?.metrics?.Joined || 0;
 
@@ -251,7 +256,7 @@ export default function RecruiterDashboard() {
 
     // Header row
     csvRows.push(
-      "Company Name,Job Title,Open Positions,CV's Uploaded,Tagged,Shortlisted,Assessment Stage,Interview Stage,Interview Rejected,Offered,Rejected,Joined"
+      "Company Name,Job Title,Open Positions,CV's Uploaded,Open,Tagged,Shortlisted,Assessment,Interview,Interview Rejected,Offered,Offer Drop,Rejected,Joined"
     );
 
     // Group data by company and job title
@@ -264,12 +269,14 @@ export default function RecruiterDashboard() {
       if (!companyData[a.client][a.job_title]) {
         companyData[a.client][a.job_title] = {
           cvUploaded: 0,
+          open: 0,
           tagged: 0,
           shortlisted: 0,
-          assessmentStage: 0,
-          interviewStage: 0,
-          interviewRejected: 0, // Corrected to camelCase
+          assessment: 0,
+          interview: 0,
+          interviewRejected: 0,
           offered: 0,
+          offerDrop: 0,
           rejected: 0,
           joined: 0,
         };
@@ -277,6 +284,7 @@ export default function RecruiterDashboard() {
 
       companyData[a.client][a.job_title].cvUploaded++;
 
+      // Map status to lowercase property name
       const statusKey = a.status.charAt(0).toLowerCase() + a.status.slice(1);
       if (companyData[a.client][a.job_title][statusKey] !== undefined) {
         companyData[a.client][a.job_title][statusKey]++;
@@ -292,7 +300,7 @@ export default function RecruiterDashboard() {
         ).length;
 
         csvRows.push(
-          `${company},${jobTitle},${openPositions},${stats.cvUploaded},${stats.tagged},${stats.shortlisted},${stats.assessmentStage},${stats.interviewStage},${stats.interviewRejected},${stats.offered},${stats.rejected},${stats.joined}`
+          `${company},${jobTitle},${openPositions},${stats.cvUploaded},${stats.open},${stats.tagged},${stats.shortlisted},${stats.assessment},${stats.interview},${stats.interviewRejected},${stats.offered},${stats.offerDrop},${stats.rejected},${stats.joined}`
         );
       });
     });
@@ -311,15 +319,16 @@ export default function RecruiterDashboard() {
     URL.revokeObjectURL(url);
   };
 
-  const candidateStatusOrder = [
-    "Applied",
+  // Updated candidate status order
+  const candidateStatusOrder: JobApplicant["status"][] = [
+    "Open",
     "Tagged",
     "Shortlisted",
-    "AssessmentStage",
-    "InterviewStage",
+    "Assessment",
+    "Interview",
     "InterviewRejected",
     "Offered",
-    "Rejected",
+    "OfferDrop",
     "Joined",
   ];
 
@@ -329,22 +338,23 @@ export default function RecruiterDashboard() {
         ? clients.filter((c) => c !== "All")
         : [selectedClient];
     const colors = [
-      "#E0E7FF",
-      "#C7D2FE",
-      "#A5B4FC",
-      "#FBBF24",
-      "#818CF8",
-      "#6366F1",
-      "#F59E0B",
-      "#EF4444",
-      "#10B981",
+      "#94A3B8", // Open - slate
+      "#E0E7FF", // Tagged - indigo light
+      "#C7D2FE", // Shortlisted - indigo lighter
+      "#A5B4FC", // Assessment - indigo
+      "#FBBF24", // Interview - amber
+      "#818CF8", // Interview Rejected - indigo-violet
+      "#6366F1", // Offered - indigo bold
+      "#F59E0B", // Offer Drop - amber bold
+      "#10B981", // Joined - emerald
     ];
     return {
       labels: clientGroups,
       datasets: candidateStatusOrder.map((status, idx) => ({
         label: status
           .replace(/([A-Z])/g, " $1")
-          .replace(/^./, (str) => str.toUpperCase()),
+          .replace(/^./, (str) => str.toUpperCase())
+          .trim(),
         data: clientGroups.map((client) => {
           const clientApplicants = filteredApplicants.filter(
             (a) => a.client === client
@@ -358,14 +368,16 @@ export default function RecruiterDashboard() {
     };
   }, [selectedClient, clients, filteredApplicants]);
 
-  const funnelStages = [
+  // Updated funnel stages
+  const funnelStages: JobApplicant["status"][] = [
+    "Open",
     "Tagged",
     "Shortlisted",
     "Assessment",
     "Interview",
     "InterviewRejected",
     "Offered",
-    "Offer Drop",
+    "OfferDrop",
     "Joined",
   ];
 
@@ -382,7 +394,7 @@ export default function RecruiterDashboard() {
           s
             .replace(/([A-Z])/g, " $1")
             .replace(/^./, (str) => str.toUpperCase())
-            .replace("Stage", " Stage")
+            .trim()
         ),
       ],
       datasets: [
@@ -390,15 +402,16 @@ export default function RecruiterDashboard() {
           label: "Candidates",
           data: [totalApplicants, ...stageData],
           backgroundColor: [
-            "#6366F1",
-            "#E0E7FF",
-            "#C7D2FE",
-            "#A5B4FC",
-            "#FBBF24",
-            "#818CF8",
-            "#F59E0B",
-            "#EF4444",
-            "#10B981",
+            "#6366F1", // Total
+            "#94A3B8", // Open
+            "#E0E7FF", // Tagged
+            "#C7D2FE", // Shortlisted
+            "#A5B4FC", // Assessment
+            "#FBBF24", // Interview
+            "#818CF8", // Interview Rejected
+            "#8B5CF6", // Offered
+            "#F59E0B", // Offer Drop
+            "#10B981", // Joined
           ],
           borderColor: "#FFFFFF",
           borderWidth: 1,
@@ -441,17 +454,19 @@ export default function RecruiterDashboard() {
         : ["Month 1", "Month 2", "Month 3"];
 
     // Get counts for selected company or all companies
-    const getStatusCount = (status: string) => {
+    const getStatusCount = (status: JobApplicant["status"]) => {
       return filteredApplicants.filter((a) => a.status === status).length;
     };
 
     const totalCVCount = filteredApplicants.length;
+    const openCount = getStatusCount("Open");
     const taggedCount = getStatusCount("Tagged");
     const shortlistedCount = getStatusCount("Shortlisted");
-    const assessmentCount = getStatusCount("AssessmentStage");
-    const interviewCount = getStatusCount("InterviewStage");
-    const interviewRejectedCount = getStatusCount("InterviewRejected"); // Added
+    const assessmentCount = getStatusCount("Assessment");
+    const interviewCount = getStatusCount("Interview");
+    const interviewRejectedCount = getStatusCount("InterviewRejected");
     const offeredCount = getStatusCount("Offered");
+    const offerDropCount = getStatusCount("OfferDrop");
     const joinedCount = getStatusCount("Joined");
 
     return monthLabels.map((label, index) => {
@@ -459,12 +474,14 @@ export default function RecruiterDashboard() {
       return {
         month: label,
         totalCVUploaded: Math.floor(totalCVCount * factor),
+        open: Math.floor(openCount * factor),
         tagged: Math.floor(taggedCount * factor),
         shortlisted: Math.floor(shortlistedCount * factor),
-        assessmentStage: Math.floor(assessmentCount * factor),
-        interviews: Math.floor(interviewCount * factor),
-        interviewRejected: Math.floor(interviewRejectedCount * factor), // Added
-        offers: Math.floor(offeredCount * factor),
+        assessment: Math.floor(assessmentCount * factor),
+        interview: Math.floor(interviewCount * factor),
+        interviewRejected: Math.floor(interviewRejectedCount * factor),
+        offered: Math.floor(offeredCount * factor),
+        offerDrop: Math.floor(offerDropCount * factor),
         joined: Math.floor(joinedCount * factor),
       };
     });
@@ -484,6 +501,17 @@ export default function RecruiterDashboard() {
           borderWidth: 2,
           pointRadius: 3,
           pointBackgroundColor: "#ec4899",
+        },
+        {
+          label: "Open",
+          data: monthlyMetrics.map((m) => m.open),
+          borderColor: "#94A3B8",
+          backgroundColor: "rgba(148,163,184,0.08)",
+          fill: true,
+          tension: 0.4,
+          borderWidth: 2,
+          pointRadius: 3,
+          pointBackgroundColor: "#94A3B8",
         },
         {
           label: "Tagged",
@@ -509,7 +537,7 @@ export default function RecruiterDashboard() {
         },
         {
           label: "Assessment",
-          data: monthlyMetrics.map((m) => m.assessmentStage),
+          data: monthlyMetrics.map((m) => m.assessment),
           borderColor: "#FBBF24",
           backgroundColor: "rgba(251,191,36,0.08)",
           fill: true,
@@ -519,8 +547,8 @@ export default function RecruiterDashboard() {
           pointBackgroundColor: "#FBBF24",
         },
         {
-          label: "Interviews",
-          data: monthlyMetrics.map((m) => m.interviews),
+          label: "Interview",
+          data: monthlyMetrics.map((m) => m.interview),
           borderColor: "#F59E0B",
           backgroundColor: "rgba(245,158,11,0.08)",
           fill: true,
@@ -541,8 +569,8 @@ export default function RecruiterDashboard() {
           pointBackgroundColor: "#818CF8",
         },
         {
-          label: "Offers",
-          data: monthlyMetrics.map((m) => m.offers),
+          label: "Offered",
+          data: monthlyMetrics.map((m) => m.offered),
           borderColor: "#8B5CF6",
           backgroundColor: "rgba(139,92,246,0.08)",
           fill: true,
@@ -550,6 +578,17 @@ export default function RecruiterDashboard() {
           borderWidth: 2,
           pointRadius: 3,
           pointBackgroundColor: "#8B5CF6",
+        },
+        {
+          label: "Offer Drop",
+          data: monthlyMetrics.map((m) => m.offerDrop),
+          borderColor: "#D97706",
+          backgroundColor: "rgba(217,119,6,0.08)",
+          fill: true,
+          tension: 0.4,
+          borderWidth: 2,
+          pointRadius: 3,
+          pointBackgroundColor: "#D97706",
         },
         {
           label: "Joined",
@@ -593,23 +632,26 @@ export default function RecruiterDashboard() {
     if (!elements.length) return;
     const clickedIndex = elements[0].index;
     const labels = funnelData.labels;
-    console.log("Clicked label:", labels[clickedIndex]); // Debug log
+    
+    // Updated status mapping with correct values
     const statusMap: Record<string, string> = {
+      "Open": "open",
       "Tagged": "tagged",
       "Shortlisted": "shortlisted",
-      "Assessment Stage": "assessmentstage",
-      "Interview Stage": "interviewstage",
-      "Interview Rejected": "interviewRejected", // Corrected to camelCase
+      "Assessment": "assessment",
+      "Interview": "interview",
+      "Interview Rejected": "interviewrejected",
       "Offered": "offered",
       "Offer Drop": "offerdrop",
       "Joined": "joined",
     };
-    const clickedLabel = labels[clickedIndex].trim(); // Remove any trailing spaces
+    
+    const clickedLabel = labels[clickedIndex].trim();
+    
     if (clickedLabel === "Total CV's Uploaded") {
-      router.push(`/dashboard/recruiter/todos`); // Direct navigation for Total CV's Uploaded
+      router.push(`/dashboard/recruiter/viewapplicant`);
     } else {
-      const status = statusMap[clickedLabel] || "all"; // Fallback to "all" if no match
-      console.log("Mapped status:", status); // Debug log
+      const status = statusMap[clickedLabel] || "all";
       router.push(`/dashboard/recruiter/viewapplicant?status=${status}`);
     }
   };
