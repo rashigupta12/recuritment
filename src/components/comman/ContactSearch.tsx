@@ -1,9 +1,10 @@
-/*eslint-disable  @typescript-eslint/no-explicit-any*/
+/*eslint-disable @typescript-eslint/no-explicit-any*/
 "use client";
 import { frappeAPI } from "@/lib/api/frappeClient";
 import { Building, Edit, Loader2, Mail, Phone, Plus, User, X } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import SuccessDialog from "../comman/SuccessDialog";
 
 // -------- Type Definitions --------
 type Email = { email_id: string; is_primary: number };
@@ -252,6 +253,8 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
   const [showDropdown, setShowDropdown] = useState(false);
   const [showContactDialog, setShowContactDialog] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
   const [dropdownPosition, setDropdownPosition] = useState({
     top: 0,
     left: 0,
@@ -517,10 +520,12 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
         await frappeAPI.updateContact(selectedContact.contactId, contactData);
         contactId = selectedContact.contactId;
         contactName = `${contactForm.first_name} ${contactForm.last_name}`.trim();
+        setSuccessMessage("Contact updated successfully!");
       } else {
         const response = await frappeAPI.createContact(contactData);
         contactId = response.data.name;
         contactName = `${contactForm.first_name} ${contactForm.last_name}`.trim();
+        setSuccessMessage("Are you sure want to update this contact?");
       }
 
       const simplifiedContact: SimplifiedContact = {
@@ -537,12 +542,16 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
 
       onContactSelect(simplifiedContact);
       setSearchQuery(contactName);
-      setShowContactDialog(false);
-      setContactForm(initialContactFormState);
 
       if (contactForm.organization.trim() && onOrganizationAutoFetch) {
         onOrganizationAutoFetch(contactForm.organization.trim());
       }
+
+      // Ensure contact dialog is closed before showing success dialog
+      setShowContactDialog(false);
+      // Force a re-render to ensure the dialog is gone before showing SuccessDialog
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      setShowSuccessDialog(true);
     } catch (error) {
       console.error(error);
       alert("Failed to save contact. Please try again.");
@@ -556,72 +565,85 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
     setContactForm(initialContactFormState);
   };
 
+  const handleSuccessConfirm = () => {
+    setShowSuccessDialog(false);
+    setContactForm(initialContactFormState); // Reset form after confirmation
+  };
+
+  const handleSuccessCancel = () => {
+    setShowSuccessDialog(false);
+    // Optionally reopen the dialog if needed, but typically not required after success
+  };
+
   const hasValidContact = Boolean(selectedContact);
 
-  const DropdownContent = () => (
-    <div
-      ref={dropdownRef}
-      className="fixed bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-y-auto"
-      style={{
-        top: dropdownPosition.top,
-        left: dropdownPosition.left,
-        width: dropdownPosition.width,
-        zIndex: 9999,
-      }}
-    >
-      {isSearching ? (
-        <div className="px-4 py-2 text-md text-gray-500 flex items-center">
-          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-          Searching contacts...
-        </div>
-      ) : searchResults.length > 0 ? (
-        <div className="overflow-y-auto max-h-[calc(60vh-100px)]">
-          {searchResults.map((contact, index) => (
-            <div
-              key={contact.name || index}
-              className="px-4 py-3 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
-              onClick={() => handleContactSelect(contact)}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-900 truncate">
-                    {getFullName(contact)}
-                  </p>
-                  <div className="text-xs text-gray-500 mt-1 space-y-1">
-                    {contact.designation && (
-                      <div className="text-md text-gray-600">
-                        {contact.designation}
-                      </div>
-                    )}
-                    {contact.organization && (
-                      <div className="text-md text-gray-600 font-medium">
-                        📍 {contact.organization}
-                      </div>
-                    )}
-                    {contact.gender && (
-                      <div className="flex items-center">
-                        <span className="mr-2">{contact.gender}</span>
-                      </div>
-                    )}
-                    {getPrimaryEmail(contact) && (
-                      <div className="flex items-center">
-                        <Mail className="h-3 w-3 mr-1 flex-shrink-0" />
-                        <span className="truncate">
-                          {getPrimaryEmail(contact)}
-                        </span>
-                      </div>
-                    )}
-                    {getPrimaryPhone(contact) && (
-                      <div className="flex items-center">
-                        <Phone className="h-3 w-3 mr-1 flex-shrink-0" />
-                        <span>{getPrimaryPhone(contact)}</span>
-                      </div>
-                    )}
-                  </div>
+ const DropdownContent = () => (
+  <div
+    ref={dropdownRef}
+    className={`fixed bg-white shadow-lg rounded-md max-h-60 overflow-y-auto ${
+      selectedContact ? '' : 'border border-gray-200'
+    }`}
+    style={{
+      top: dropdownPosition.top,
+      left: dropdownPosition.left,
+      width: dropdownPosition.width,
+      zIndex: 9999,
+    }}
+  >
+    {isSearching ? (
+      <div className="px-4 py-2 text-md text-gray-500 flex items-center">
+        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+        Searching contacts...
+      </div>
+    ) : searchResults.length > 0 ? (
+      <div className="overflow-y-auto max-h-[calc(60vh-100px)]">
+        {searchResults.map((contact, index) => (
+          <div
+            key={contact.name || index}
+            className="px-4 py-3 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+            onClick={() => handleContactSelect(contact)}
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-gray-900 truncate">
+                  {getFullName(contact)}
+                </p>
+                <div className="text-xs text-gray-500 mt-1 space-y-1">
+                  {contact.designation && (
+                    <div className="text-md text-gray-600">
+                      {contact.designation}
+                    </div>
+                  )}
+                  {contact.organization && (
+                    <div className="text-md text-gray-600 font-medium">
+                      📍 {contact.organization}
+                    </div>
+                  )}
+                  {contact.gender && (
+                    <div className="flex items-center">
+                      <span className="mr-2">{contact.gender}</span>
+                    </div>
+                  )}
+                  {getPrimaryEmail(contact) && (
+                    <div className="flex items-center">
+                      <Mail className="h-3 w-3 mr-1 flex-shrink-0" />
+                      <span className="truncate">
+                        {getPrimaryEmail(contact)}
+                      </span>
+                    </div>
+                  )}
+                  {getPrimaryPhone(contact) && (
+                    <div className="flex items-center">
+                      <Phone className="h-3 w-3 mr-1 flex-shrink-0" />
+                      <span>{getPrimaryPhone(contact)}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
-          ))}
+          </div>
+        ))}
+        {!selectedContact && (
           <div
             className="px-4 py-3 hover:bg-primary/5 cursor-pointer border-t bg-gray-50 text-primary font-medium"
             onClick={handleCreateContact}
@@ -629,133 +651,63 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
             <Plus className="h-4 w-4 inline mr-2" />
             Add New Contact
           </div>
-        </div>
-      ) : searchQuery ? (
-        <div
-          className="px-4 py-3 hover:bg-primary/5 cursor-pointer text-primary font-medium"
-          onClick={handleCreateContact}
-        >
-          <Plus className="h-4 w-4 inline mr-2" />
-          Create contact for &quot;{searchQuery}&quot;
-        </div>
-      ) : (
-        <div className="px-4 py-2 text-md text-gray-500">
-          Start typing to search contacts...
-        </div>
-      )}
-      {(contactMeta.uniqueDesignations.length > 0 ||
-        contactMeta.uniqueGenders.length > 0 ||
-        contactMeta.uniqueOrganizations.length > 0) && (
-        <div className="px-4 py-2 border-t text-xs text-gray-400 bg-gray-50">
-          <div>
-            <span className="font-medium">Designations:</span>{" "}
-            {contactMeta.uniqueDesignations.join(", ")}
-          </div>
-          <div>
-            <span className="font-medium">Genders:</span>{" "}
-            {contactMeta.uniqueGenders.join(", ")}
-          </div>
-          <div>
-            <span className="font-medium">Organizations:</span>{" "}
-            {contactMeta.uniqueOrganizations.join(", ")}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
-  return (
-    <div className="space-y-4">
-      <div className="w-full">
-        <div className="relative">
-          <div className="flex items-center">
-            <User className="absolute left-3 h-4 w-4 text-gray-400" />
-            <input
-              ref={inputRef}
-              type="text"
-              placeholder="Search contacts by name, email, or phone..."
-              value={searchQuery}
-              onChange={handleSearchChange}
-              onFocus={handleInputFocus}
-              className="w-full pl-10 pr-20 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors capitalize"
-            />
-
-            <div className="absolute right-2 flex items-center space-x-1 z-10">
-              {isSearching && (
-                <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
-              )}
-              {!isSearching && (hasValidContact || searchQuery.trim()) && (
-                <>
-                  {hasValidContact && (
-                    <button
-                      type="button"
-                      onClick={handleEditContact}
-                      className="p-1 rounded-full text-gray-500 hover:text-primary hover:bg-primary/10 transition-colors flex-shrink-0"
-                      title="Edit contact"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={handleClearContact}
-                    className="p-1 rounded-full text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors flex-shrink-0"
-                    title="Clear contact"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-        {showDropdown &&
-          typeof document !== "undefined" &&
-          createPortal(<DropdownContent />, document.body)}
+        )}
       </div>
-
-      {selectedContact && (
-        <div className="border border-primary/20 rounded-lg p-4 py-2 bg-primary/5 animate-in fade-in-50">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div>
-                <h3 className="font-medium text-gray-900">
-                  {selectedContact.name}
-                </h3>
-                <div className="text-md text-gray-600 space-y-1">
-                  {selectedContact.designation && (
-                    <div className="text-md text-gray-600">
-                      {selectedContact.designation}
-                    </div>
-                  )}
-                  {selectedContact.organization && (
-                   <div className="flex items-center gap-2 text-md text-gray-600 font-medium">
-  <Building className="h-4 w-4" />
-  <span>{selectedContact.organization}</span>
-</div>
-
-                  )}
-                  {selectedContact.email && (
-                    <div className="flex items-center">
-                      <Mail className="h-3 w-3 mr-2" />
-                      {selectedContact.email}
-                    </div>
-                  )}
-                  {selectedContact.phone && (
-                    <div className="flex items-center">
-                      <Phone className="h-3 w-3 mr-2" />
-                      {selectedContact.phone}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+    ) : searchQuery && !selectedContact ? (
+      <div
+        className="px-4 py-3 hover:bg-primary/5 cursor-pointer text-primary font-medium"
+        onClick={handleCreateContact}
+      >
+        <Plus className="h-4 w-4 inline mr-2" />
+        Create contact for &quot;{searchQuery}&quot;
+      </div>
+    ) : !selectedContact ? (
+      <div className="px-4 py-2 text-md text-gray-500">
+        Start typing to search contacts...
+      </div>
+    ) : null}
+    {(contactMeta.uniqueDesignations.length > 0 ||
+      contactMeta.uniqueGenders.length > 0 ||
+      contactMeta.uniqueOrganizations.length > 0) && (
+      <div className="px-4 py-2 border-t text-xs text-gray-400 bg-gray-50">
+        <div>
+          <span className="font-medium">Designations:</span>{" "}
+          {contactMeta.uniqueDesignations.join(", ")}
         </div>
-      )}
+        <div>
+          <span className="font-medium">Genders:</span>{" "}
+          {contactMeta.uniqueGenders.join(", ")}
+        </div>
+        <div>
+          <span className="font-medium">Organizations:</span>{" "}
+          {contactMeta.uniqueOrganizations.join(", ")}
+        </div>
+      </div>
+    )}
+  </div>
+);
 
-      {showContactDialog && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+  // Ensure SuccessDialog has a higher z-index
+  const renderSuccessDialog = () => {
+    if (showSuccessDialog && typeof document !== "undefined") {
+      return createPortal(
+        <SuccessDialog
+          isOpen={showSuccessDialog}
+          onConfirm={handleSuccessConfirm}
+          onCancel={handleSuccessCancel}
+          message={successMessage}
+        />,
+        document.body
+      );
+    }
+    return null;
+  };
+
+  // Ensure Contact Dialog has a controlled z-index
+  const renderContactDialog = () => {
+    if (showContactDialog) {
+      return (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[70] p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white">
               <h2 className="text-xl font-bold text-gray-900">
@@ -912,7 +864,102 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
             </div>
           </div>
         </div>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <div className="space-y-4">
+      {renderSuccessDialog()}
+      <div className="w-full">
+        <div className="relative">
+          <div className="flex items-center">
+            <User className="absolute left-3 h-4 w-4 text-gray-400" />
+            <input
+              ref={inputRef}
+              type="text"
+              placeholder="Search contacts by name, email, or phone..."
+              value={searchQuery}
+              onChange={handleSearchChange}
+              onFocus={handleInputFocus}
+              className="w-full pl-10 pr-20 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors capitalize"
+            />
+
+            <div className="absolute right-2 flex items-center space-x-1 z-10">
+              {isSearching && (
+                <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
+              )}
+              {!isSearching && (hasValidContact || searchQuery.trim()) && (
+                <>
+                  {hasValidContact && (
+                    <button
+                      type="button"
+                      onClick={handleEditContact}
+                      className="p-1 rounded-full text-gray-500 hover:text-primary hover:bg-primary/10 transition-colors flex-shrink-0"
+                      title="Edit contact"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleClearContact}
+                    className="p-1 rounded-full text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors flex-shrink-0"
+                    title="Clear contact"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+        {showDropdown &&
+          typeof document !== "undefined" &&
+          createPortal(<DropdownContent />, document.body)}
+      </div>
+
+      {selectedContact && (
+        <div className="border border-primary/20 rounded-lg p-4 py-2 bg-primary/5 animate-in fade-in-50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div>
+                <h3 className="font-medium text-gray-900">
+                  {selectedContact.name}
+                </h3>
+                <div className="text-md text-gray-600 space-y-1">
+                  {selectedContact.designation && (
+                    <div className="text-md text-gray-600">
+                      {selectedContact.designation}
+                    </div>
+                  )}
+                  {selectedContact.organization && (
+                    <div className="flex items-center gap-2 text-md text-gray-600 font-medium">
+                      <Building className="h-4 w-4" />
+                      <span>{selectedContact.organization}</span>
+                    </div>
+                  )}
+                  {selectedContact.email && (
+                    <div className="flex items-center">
+                      <Mail className="h-3 w-3 mr-2" />
+                      {selectedContact.email}
+                    </div>
+                  )}
+                  {selectedContact.phone && (
+                    <div className="flex items-center">
+                      <Phone className="h-3 w-3 mr-2" />
+                      {selectedContact.phone}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
+
+      {renderContactDialog()}
     </div>
   );
 };
