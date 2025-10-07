@@ -155,20 +155,20 @@ const CurrencyDropdown: React.FC<CurrencyDropdownProps> = ({
 
   return (
     <>
-      <div className="relative w-full">
-        <button
-          ref={triggerRef}
-          type="button"
-          onClick={() => !disabled && setIsOpen(!isOpen)}
-          disabled={disabled}
-          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <span className="flex ">
-           
-            <span className='text-xs'>{value || 'Select Currency'}</span>
-          </span>
-          <ChevronDown className={`h-3 w-3 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-        </button>
+      <div className="relative w-full pl-4">
+     <button
+  ref={triggerRef}
+  type="button"
+  onClick={() => !disabled && setIsOpen(!isOpen)}
+  disabled={disabled}
+  className="px-2 py-1.5 text-md border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed w-20"
+>
+  <span className="flex">
+    <span className='text-md'>{value || 'Select Currency'}</span>
+  </span>
+  <ChevronDown className={`h-3 w-3 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+</button>
+
       </div>
 
       {/* Dropdown Portal - Fixed positioning like MultiUserAssignment */}

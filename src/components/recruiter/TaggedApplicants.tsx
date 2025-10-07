@@ -41,9 +41,8 @@ interface Props {
   ownerEmail: string;
   todoData?: any;
   refreshTrigger?: number;
-    onRefresh?: () => void; // ✅ Add this prop
-   jobTitle?:string;
-
+  onRefresh?: () => void;
+  jobTitle?: string;
 }
 
 interface AssessmentResponse {
@@ -68,24 +67,17 @@ export default function TaggedApplicants({
   onRefresh
 }: Props) {
   const [applicants, setApplicants] = useState<JobApplicant[]>([]);
-  const [filteredApplicants, setFilteredApplicants] = useState<JobApplicant[]>(
-    []
-  );
+  const [filteredApplicants, setFilteredApplicants] = useState<JobApplicant[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedApplicants, setSelectedApplicants] = useState<JobApplicant[]>(
-    []
-  );
+  const [selectedApplicants, setSelectedApplicants] = useState<JobApplicant[]>([]);
   const [showEmailPopup, setShowEmailPopup] = useState<boolean>(false);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState<boolean>(false);
-  const [isAssessmentModalOpen, setIsAssessmentModalOpen] =
-    useState<boolean>(false);
+  const [isAssessmentModalOpen, setIsAssessmentModalOpen] = useState<boolean>(false);
   const [selectedStatus, setSelectedStatus] = useState<string>("");
   const [modalError, setModalError] = useState<string | null>(null);
   const [assessmentError, setAssessmentError] = useState<string | null>(null);
-  const [assessmentSuccess, setAssessmentSuccess] = useState<string | null>(
-    null
-  );
+  const [assessmentSuccess, setAssessmentSuccess] = useState<string | null>(null);
   const [scheduledOn, setScheduledOn] = useState<string>("");
   const [fromTime, setFromTime] = useState<string>("");
   const [toTime, setToTime] = useState<string>("");
@@ -94,8 +86,45 @@ export default function TaggedApplicants({
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [refreshKey, setRefreshKey] = useState<number>(0);
   const [showDowngradeWarning, setShowDowngradeWarning] = useState<boolean>(false);
-const [downgradeInfo, setDowngradeInfo] = useState<{from: string, to: string} | null>(null);
+  const [downgradeInfo, setDowngradeInfo] = useState<{from: string, to: string} | null>(null);
   const router = useRouter();
+
+  // Auto-dismiss error messages after 3 seconds
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
+  useEffect(() => {
+    if (modalError) {
+      const timer = setTimeout(() => {
+        setModalError(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [modalError]);
+
+  useEffect(() => {
+    if (assessmentError) {
+      const timer = setTimeout(() => {
+        setAssessmentError(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [assessmentError]);
+
+  useEffect(() => {
+    if (assessmentSuccess) {
+      const timer = setTimeout(() => {
+        setAssessmentSuccess(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [assessmentSuccess]);
 
   // Handle applicant selection
   const handleSelectApplicant = (name: string) => {
@@ -109,32 +138,34 @@ const [downgradeInfo, setDowngradeInfo] = useState<{from: string, to: string} | 
       return prev;
     });
   };
-   // Helper function to get status hierarchy level
-const getStatusLevel = (status: string): number => {
-  const statusLevels: { [key: string]: number } = {
-    "open": 0,
-    "tagged": 1,
-    "shortlisted": 2,
-    "assessment": 3,
-    "interview": 4,
-    "interview reject": -1,
-    "offered": 5,
-    "offer drop": -1,
-    "joined": 6
-  };
-  return statusLevels[status.toLowerCase()] ?? 0;
-};
 
-// Helper function to check if it's a downgrade
-const isStatusDowngrade = (currentStatus: string, newStatus: string): boolean => {
-  const currentLevel = getStatusLevel(currentStatus);
-  const newLevel = getStatusLevel(newStatus);
-  
-  // Ignore negative levels (reject/drop states)
-  if (currentLevel === -1 || newLevel === -1) return false;
-  
-  return newLevel < currentLevel;
-};
+  // Helper function to get status hierarchy level
+  const getStatusLevel = (status: string): number => {
+    const statusLevels: { [key: string]: number } = {
+      "open": 0,
+      "tagged": 1,
+      "shortlisted": 2,
+      "assessment": 3,
+      "interview": 4,
+      "interview reject": -1,
+      "offered": 5,
+      "offer drop": -1,
+      "joined": 6
+    };
+    return statusLevels[status.toLowerCase()] ?? 0;
+  };
+
+  // Helper function to check if it's a downgrade
+  const isStatusDowngrade = (currentStatus: string, newStatus: string): boolean => {
+    const currentLevel = getStatusLevel(currentStatus);
+    const newLevel = getStatusLevel(newStatus);
+    
+    // Ignore negative levels (reject/drop states)
+    if (currentLevel === -1 || newLevel === -1) return false;
+    
+    return newLevel < currentLevel;
+  };
+
   const handleDeleteApplicant = async (applicant: JobApplicant) => {
     const canDelete = ['tagged', 'open'].includes(applicant.status?.toLowerCase() || '');
 
@@ -158,7 +189,7 @@ const isStatusDowngrade = (currentStatus: string, newStatus: string): boolean =>
 
       // Trigger refresh
       setRefreshKey((prev) => prev + 1);
-        if (onRefresh) {
+      if (onRefresh) {
         onRefresh();
       } else {
         // Fallback: increment local refresh key
@@ -166,8 +197,6 @@ const isStatusDowngrade = (currentStatus: string, newStatus: string): boolean =>
       }
       
       toast.success(`${applicant.applicant_name || applicant.name} deleted successfully`);
-    
-
     } catch (err: any) {
       console.error('Delete error:', err);
       let errorMessage = 'Failed to delete applicant';
@@ -185,6 +214,7 @@ const isStatusDowngrade = (currentStatus: string, newStatus: string): boolean =>
       setLoading(false);
     }
   };
+
   // Handler for select all
   const handleSelectAll = () => {
     if (selectedApplicants.length === applicants.length) {
@@ -203,106 +233,77 @@ const isStatusDowngrade = (currentStatus: string, newStatus: string): boolean =>
       filtered = filtered.filter(
         (applicant) =>
           applicant.applicant_name?.toLowerCase().includes(query) ||
-          false ||
           applicant.email_id?.toLowerCase().includes(query) ||
-          false ||
-          applicant.job_title?.toLowerCase().includes(query) ||
-          false
+          applicant.job_title?.toLowerCase().includes(query)
       );
     }
 
     setFilteredApplicants(filtered);
   }, [applicants, searchQuery]);
 
-useEffect(() => {
-  const fetchApplicants = async () => {
-    if (!jobId || !ownerEmail) {
-      console.log('❌ Missing required data:', { jobId, ownerEmail });
-      setLoading(false);
-      setError("Job ID or owner email not provided");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      console.log('🔄 Fetching applicants - refreshTrigger:', refreshTrigger);
-
-      const response: any = await frappeAPI.getTaggedApplicantsByJobId(jobId, ownerEmail);
-      const applicantNames = response.data || [];
-
-      if (applicantNames.length === 0) {
-        setApplicants([]);
-        setFilteredApplicants([]);
+  useEffect(() => {
+    const fetchApplicants = async () => {
+      if (!jobId || !ownerEmail) {
+        console.log('❌ Missing required data:', { jobId, ownerEmail });
         setLoading(false);
+        setError("Job ID or owner email not provided");
         return;
       }
 
-      const applicantsPromises = applicantNames.map(async (applicant: any) => {
-        try {
-          const applicantDetail = await frappeAPI.getApplicantBYId(applicant.name);
-          return applicantDetail.data;
-        } catch (err) {
-          console.error(`Error fetching details for ${applicant.name}:`, err);
-          return null;
+      try {
+        setLoading(true);
+        console.log('🔄 Fetching applicants - refreshTrigger:', refreshTrigger);
+
+        const response: any = await frappeAPI.getTaggedApplicantsByJobId(jobId, ownerEmail);
+        const applicantNames = response.data || [];
+
+        if (applicantNames.length === 0) {
+          setApplicants([]);
+          setFilteredApplicants([]);
+          setLoading(false);
+          return;
         }
-      });
 
-      const applicantsData = await Promise.all(applicantsPromises);
-      const validApplicants = applicantsData.filter(applicant => applicant !== null);
+        const applicantsPromises = applicantNames.map(async (applicant: any) => {
+          try {
+            const applicantDetail = await frappeAPI.getApplicantBYId(applicant.name);
+            return applicantDetail.data;
+          } catch (err) {
+            console.error(`Error fetching details for ${applicant.name}:`, err);
+            return null;
+          }
+        });
 
-      setApplicants(validApplicants);
-      setFilteredApplicants(validApplicants);
-      setError(null);
+        const applicantsData = await Promise.all(applicantsPromises);
+        const validApplicants = applicantsData.filter(applicant => applicant !== null);
 
-    } catch (err: any) {
-      console.error("❌ Error in fetchApplicants:", err);
-      setError("Failed to fetch applicants. Please try again later.");
-      setApplicants([]);
-      setFilteredApplicants([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+        setApplicants(validApplicants);
+        setFilteredApplicants(validApplicants);
+        setError(null);
 
-  fetchApplicants();
-}, [jobId, ownerEmail, refreshTrigger]);
-  // Add this useEffect to debug when refreshTrigger changes
-  useEffect(() => {
-    console.log('🔄 refreshTrigger changed:', refreshTrigger);
-    console.log('📊 Current applicants count:', applicants.length);
-  }, [refreshTrigger]);
+      } catch (err: any) {
+        console.error("❌ Error in fetchApplicants:", err);
+        setError("Failed to fetch applicants. Please try again later.");
+        setApplicants([]);
+        setFilteredApplicants([]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Add this useEffect to debug when applicants change
-  useEffect(() => {
-    console.log('👥 Applicants list updated:', {
-      count: applicants.length,
-      applicants: applicants.map(app => ({
-        name: app.applicant_name || app.name,
-        status: app.status
-      }))
-    });
-  }, [applicants]);
-  useEffect(() => {
-    console.log("🔄 Selected Applicants Updated:", {
-      count: selectedApplicants.length,
-      applicants: selectedApplicants.map((app) => ({
-        name: app.applicant_name || app.name,
-        hasResume: !!app.resume_attachment,
-        resumeValue: app.resume_attachment,
-      })),
-    });
-  }, [selectedApplicants]);
+    fetchApplicants();
+  }, [jobId, ownerEmail, refreshTrigger]);
 
   // Handler to open the status update modal
   const handleOpenStatusModal = () => {
-  if (selectedApplicants.length === 0) {
-    toast.error("Please select at least one applicant.");
-    return;
-  }
-  setIsStatusModalOpen(true);
-  setSelectedStatus("");
-  setModalError(null);
-};
+    if (selectedApplicants.length === 0) {
+      toast.error("Please select at least one applicant.");
+      return;
+    }
+    setIsStatusModalOpen(true);
+    setSelectedStatus("");
+    setModalError(null);
+  };
 
   // Handler to close the status modal
   const handleCloseStatusModal = () => {
@@ -314,9 +315,7 @@ useEffect(() => {
   // Handler to open the assessment modal
   const handleOpenAssessmentModal = () => {
     if (selectedApplicants.length === 0) {
-      setAssessmentError(
-        "Please select at least one applicant to start the assessment."
-      );
+      setAssessmentError("Please select at least one applicant to start the assessment.");
       setAssessmentSuccess(null);
       return;
     }
@@ -324,9 +323,7 @@ useEffect(() => {
       (applicant) => applicant.status?.toLowerCase() === "shortlisted"
     );
     if (!allShortlisted) {
-      setAssessmentError(
-        'Assessment can only be created for applicants with "Shortlisted" status.'
-      );
+      setAssessmentError('Assessment can only be created for applicants with "Shortlisted" status.');
       setAssessmentSuccess(null);
       return;
     }
@@ -344,50 +341,45 @@ useEffect(() => {
     setAssessmentRound("");
     setModalError(null);
   };
-const handleStatusChangeRequest = () => {
-  if (!selectedStatus) {
-    setModalError("Please select a status.");
-    return;
-  }
-  
-  // Check if any selected applicant is being downgraded
-  const downgrades = selectedApplicants.filter(applicant => 
-    applicant.status && isStatusDowngrade(applicant.status, selectedStatus)
-  );
-  
-  if (downgrades.length > 0) {
-    // Show warning popup
-    const firstDowngrade = downgrades[0];
-    setDowngradeInfo({
-      from: firstDowngrade.status || "",
-      to: selectedStatus
-    });
-    setShowDowngradeWarning(true);
-  } else {
-    // No downgrades, proceed directly
-    handleConfirmStatusChange();
-  }
-};
-  // Handler for starting assessment
+
+  const handleStatusChangeRequest = () => {
+    if (!selectedStatus) {
+      setModalError("Please select a status.");
+      return;
+    }
+    
+    // Check if any selected applicant is being downgraded
+    const downgrades = selectedApplicants.filter(applicant => 
+      applicant.status && isStatusDowngrade(applicant.status, selectedStatus)
+    );
+    
+    if (downgrades.length > 0) {
+      // Show warning popup
+      const firstDowngrade = downgrades[0];
+      setDowngradeInfo({
+        from: firstDowngrade.status || "",
+        to: selectedStatus
+      });
+      setShowDowngradeWarning(true);
+    } else {
+      // No downgrades, proceed directly
+      handleConfirmStatusChange();
+    }
+  };
+
   // Handler for starting assessment
   const handleStartAssessment = async () => {
-    if (
-      !scheduledOn ||
-      !fromTime ||
-      !toTime ||
-      !assessmentLink ||
-      !assessmentRound
-    ) {
+    if (!scheduledOn || !fromTime || !toTime || !assessmentLink || !assessmentRound) {
       setModalError("Please fill in all assessment details.");
       return;
     }
 
     const fromDateTime = new Date(`${scheduledOn}T${fromTime}`);
-  const toDateTime = new Date(`${scheduledOn}T${toTime}`);
+    const toDateTime = new Date(`${scheduledOn}T${toTime}`);
     if (fromDateTime >= toDateTime) {
-    setModalError("Start time must be earlier than end time.");
-    return;
-  }
+      setModalError("Start time must be earlier than end time.");
+      return;
+    }
 
     try {
       setAssessmentError(null);
@@ -411,10 +403,7 @@ const handleStatusChangeRequest = () => {
       }
 
       let assessmentIds: string;
-      if (
-        response.message?.created_assessments &&
-        Array.isArray(response.message.created_assessments)
-      ) {
+      if (response.message?.created_assessments && Array.isArray(response.message.created_assessments)) {
         assessmentIds = response.message.created_assessments.join(", ");
       } else if (response.message?.name) {
         assessmentIds = response.message.name;
@@ -423,9 +412,7 @@ const handleStatusChangeRequest = () => {
       } else if (response.data && (response.data.name || response.data.id)) {
         assessmentIds = response.data.name || response.data.id;
       } else {
-        throw new Error(
-          "Invalid response structure: Missing assessment ID(s)."
-        );
+        throw new Error("Invalid response structure: Missing assessment ID(s).");
       }
 
       // Update status to "Assessment Stage" for all selected applicants
@@ -444,10 +431,7 @@ const handleStatusChangeRequest = () => {
       await Promise.all(statusUpdatePromises);
 
       // Refresh applicants list
-      const refreshResponse: any = await frappeAPI.getTaggedApplicantsByJobId(
-        jobId,
-        ownerEmail
-      );
+      const refreshResponse: any = await frappeAPI.getTaggedApplicantsByJobId(jobId, ownerEmail);
       const applicantNames = refreshResponse.data || [];
       const applicantsPromises = applicantNames.map(async (applicant: any) => {
         try {
@@ -464,16 +448,10 @@ const handleStatusChangeRequest = () => {
 
       const applicantsData = await Promise.all(applicantsPromises);
       setApplicants(applicantsData.filter((applicant) => applicant !== null));
-      setFilteredApplicants(
-        applicantsData.filter((applicant) => applicant !== null)
-      );
+      setFilteredApplicants(applicantsData.filter((applicant) => applicant !== null));
 
-      setAssessmentSuccess(
-        `Assessment(s) created successfully with ID(s): ${assessmentIds}. Applicant status updated to "Assessment ".`
-      );
-      toast.success(
-        `Assessment created and status updated to "Assessment Stage" successfully!`
-      );
+      setAssessmentSuccess(`Assessment(s) created successfully with ID(s): ${assessmentIds}. Applicant status updated to "Assessment".`);
+      toast.success(`Assessment created and status updated to "Assessment Stage" successfully!`);
 
       setIsAssessmentModalOpen(false);
       setSelectedApplicants([]);
@@ -490,16 +468,13 @@ const handleStatusChangeRequest = () => {
         response: err.response?.data,
         rawResponse: err.response,
       });
-      let errorMessage =
-        "Failed to create assessment. Please try again or contact support.";
+      let errorMessage = "Failed to create assessment. Please try again or contact support.";
       if (err.message.includes("Missing assessment ID")) {
-        errorMessage =
-          "Invalid response from API: Missing assessment ID(s). Please contact support.";
+        errorMessage = "Invalid response from API: Missing assessment ID(s). Please contact support.";
       } else if (err.message.includes("Failed to update status")) {
         errorMessage = `Assessment created but ${err.message}. Please update status manually.`;
       } else if (err.response?.status === 404) {
-        errorMessage =
-          "Assessment API endpoint not found. Please verify the Frappe method or contact support.";
+        errorMessage = "Assessment API endpoint not found. Please verify the Frappe method or contact support.";
       } else if (err.response?.status === 401 || err.response?.status === 403) {
         errorMessage = "Unauthorized access. Please log in again.";
         router.push("/login");
@@ -558,18 +533,13 @@ const handleStatusChangeRequest = () => {
           continue;
         }
         try {
-          console.log(
-            `Sending PUT request to update status for ${name} to ${selectedStatus}`
-          );
+          console.log(`Sending PUT request to update status for ${name} to ${selectedStatus}`);
           await frappeAPI.updateApplicantStatus(name, {
             status: selectedStatus,
           });
         } catch (err: any) {
           console.error(`Failed to update status for ${name}:`, err);
-          if (
-            err?.exc_type === "DoesNotExistError" ||
-            err.response?.status === 404
-          ) {
+          if (err?.exc_type === "DoesNotExistError" || err.response?.status === 404) {
             failedUpdates.push(name);
           } else {
             throw err;
@@ -577,16 +547,11 @@ const handleStatusChangeRequest = () => {
         }
       }
 
-      const response: any = await frappeAPI.getTaggedApplicantsByJobId(
-        jobId,
-        ownerEmail
-      );
+      const response: any = await frappeAPI.getTaggedApplicantsByJobId(jobId, ownerEmail);
       const applicantNames = response.data || [];
       const applicantsPromises = applicantNames.map(async (applicant: any) => {
         try {
-          const applicantDetail = await frappeAPI.getApplicantBYId(
-            applicant.name
-          );
+          const applicantDetail = await frappeAPI.getApplicantBYId(applicant.name);
           return applicantDetail.data;
         } catch (err) {
           console.error(`Error fetching details for ${applicant.name}:`, err);
@@ -599,20 +564,14 @@ const handleStatusChangeRequest = () => {
 
       const applicantsData = await Promise.all(applicantsPromises);
       setApplicants(applicantsData.filter((applicant) => applicant !== null));
-      setFilteredApplicants(
-        applicantsData.filter((applicant) => applicant !== null)
-      );
+      setFilteredApplicants(applicantsData.filter((applicant) => applicant !== null));
       setSelectedApplicants([]);
       setSelectedStatus("");
       setIsStatusModalOpen(false);
       setRefreshKey((prev) => prev + 1);
 
       if (failedUpdates.length > 0) {
-        toast.warning(
-          `Status updated for some applicants. Failed for: ${failedUpdates.join(
-            ", "
-          )}. Applicant records may not exist or the endpoint may be incorrect.`
-        );
+        toast.warning(`Status updated for some applicants. Failed for: ${failedUpdates.join(", ")}. Applicant records may not exist or the endpoint may be incorrect.`);
       } else {
         toast.success("Applicant status updated successfully.");
       }
@@ -620,15 +579,10 @@ const handleStatusChangeRequest = () => {
       console.error("Status update error:", err);
       let errorMessage = "Failed to update applicant statuses.";
       if (err.response?.status === 401 || err.response?.status === 403) {
-        errorMessage =
-          "Session expired or insufficient permissions. Please try again.";
+        errorMessage = "Session expired or insufficient permissions. Please try again.";
         router.push("/login");
-      } else if (
-        err.response?.status === 404 ||
-        err?.exc_type === "DoesNotExistError"
-      ) {
-        errorMessage =
-          "Job Applicant resource not found. Please verify the API endpoint or contact support.";
+      } else if (err.response?.status === 404 || err?.exc_type === "DoesNotExistError") {
+        errorMessage = "Job Applicant resource not found. Please verify the API endpoint or contact support.";
       } else if (err.response?.data?.message) {
         errorMessage = err.response.data.message;
       }
@@ -657,7 +611,7 @@ const handleStatusChangeRequest = () => {
           <AlertCircle className="h-5 w-5 text-red-600" />
           <p className="text-red-800 font-semibold text-lg">Error</p>
         </div>
-        <p className="text-red-600 text-sm mt-2">{error}</p>
+        <p className="text-red-600 text-md mt-2">{error}</p>
       </div>
     );
   }
@@ -668,7 +622,6 @@ const handleStatusChangeRequest = () => {
         <p className="text-yellow-800 font-semibold text-lg">
           No applicants found for this job.
         </p>
-        
       </div>
     );
   }
@@ -681,10 +634,9 @@ const handleStatusChangeRequest = () => {
           <h2 className="text-2xl font-bold text-gray-900">
             All Applicants
           </h2>
-          <p className="text-gray-500 text-sm absolute right-0">
+          <p className="text-gray-500 text-md absolute right-0">
             Total: {applicants.length} applicants
-            {selectedApplicants.length > 0 &&
-              ` | Selected: ${selectedApplicants.length}`}
+            {selectedApplicants.length > 0 && ` | Selected: ${selectedApplicants.length}`}
           </p>
         </div>
         <div className="flex items-center gap-80 w-full justsm:w-auto mb-4">
@@ -695,42 +647,41 @@ const handleStatusChangeRequest = () => {
               placeholder="Search by name, email, or job title..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm text-sm bg-gray-50 hover:bg-white"
+              className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm text-md bg-gray-50 hover:bg-white"
             />
           </div>
           {selectedApplicants.length > 0 && (
             <div className="flex justify-between gap-3 items-center flex-nowrap">
               <button
                 onClick={() => setShowEmailPopup(true)}
-                className="px-3 py-3 text-white bg-green-600 rounded-lg text-sm font-medium transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 whitespace-nowrap w-[120px]"
+                className="px-3 py-3 text-white bg-green-600 rounded-lg text-md font-medium transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 whitespace-nowrap w-[120px]"
               >
                 📧 Send ({selectedApplicants.length})
               </button>
               <button
                 onClick={handleOpenStatusModal}
-                className="px-3 py-3 text-white bg-blue-700 rounded-lg text-sm font-medium transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 whitespace-nowrap w-[140px]"
+                className="px-2 py-3 text-white bg-blue-700 rounded-lg text-md font-medium transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 whitespace-nowrap w-[160px]"
               >
                 Update Status ({selectedApplicants.length})
               </button>
 
               <button
                 onClick={handleOpenAssessmentModal}
-                className="px-3 py-3 text-white bg-blue-700 rounded-lg text-sm font-medium transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 whitespace-nowrap w-[180px]"
+                className="px-3 py-3 text-white bg-blue-700 rounded-lg text-md font-medium transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 whitespace-nowrap w-[200px]"
               >
                 Create Assessment ({selectedApplicants.length})
               </button>
-
             </div>
           )}
         </div>
       </div>
 
-      {/* Error and Success Messages */}
+      {/* Error and Success Messages - Auto-dismissing */}
       {error && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg shadow-sm flex items-center gap-2">
           <AlertCircle className="h-5 w-5 text-red-600" />
           <div>
-            <p className="text-red-800 font-semibold text-sm">Error</p>
+            <p className="text-red-800 font-semibold text-md">Error</p>
             <p className="text-red-600 text-xs mt-1">{error}</p>
           </div>
         </div>
@@ -739,10 +690,8 @@ const handleStatusChangeRequest = () => {
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg shadow-sm flex items-center gap-2">
           <AlertCircle className="h-5 w-5 text-red-600" />
           <div>
-            <p className="text-red-800 font-semibold text-sm">
-              Assessment Error
-            </p>
-            <p className="text-red-600 text-xs mt-1">{assessmentError}</p>
+            <p className="text-red-800 font-semibold text-lg">Assessment Error</p>
+            <p className="text-red-600 text-md mt-1">{assessmentError}</p>
           </div>
         </div>
       )}
@@ -750,8 +699,8 @@ const handleStatusChangeRequest = () => {
         <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg shadow-sm flex items-center gap-2">
           <CheckCircle className="h-5 w-5 text-green-600" />
           <div>
-            <p className="text-green-800 font-semibold text-sm">Success</p>
-            <p className="text-green-600 text-xs mt-1">{assessmentSuccess}</p>
+            <p className="text-green-800 font-semibold text-lg">Success</p>
+            <p className="text-green-600 text-md mt-1">{assessmentSuccess}</p>
           </div>
         </div>
       )}
@@ -775,7 +724,7 @@ const handleStatusChangeRequest = () => {
           selectedApplicants={selectedApplicants}
           currentUserEmail={ownerEmail}
           jobId={jobId}
-          jobTitle = {job_title || ""}
+          jobTitle={job_title || ""}
           onEmailSent={() => {
             setSelectedApplicants([]);
             setShowEmailPopup(false);
@@ -812,41 +761,33 @@ const handleStatusChangeRequest = () => {
             {modalError && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
                 <AlertCircle className="h-4 w-4" />
-                <p className="text-sm">{modalError}</p>
+                <p className="text-md">{modalError}</p>
               </div>
             )}
-            <div className="mb-4">
-              <label className="block text-gray-700 font-semibold mb-2 text-sm">
+            <div className="mb-4 text-md">
+              <label className="block text-gray-700 font-semibold mb-2 text-md">
                 Select New Status
               </label>
               <select
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition-all bg-gray-50 text-gray-900 text-sm"
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition-all bg-gray-50 text-gray-900 text-md"
                 value={selectedStatus}
                 onChange={(e) => setSelectedStatus(e.target.value)}
                 aria-label="Select status"
               >
-                <option value="" disabled>
+                <option value="" disabled className="text-gray-500 text-md">
                   Select a status...
                 </option>
-                {/* <option value="Open">Open</option>
-                <option value="tagged">Tagged</option>
-                <option value="Shortlisted">Shortlisted</option>
-                <option value="Assessment Stage">Assessment Stage</option>
-                <option value="Interview Stage">Interview Stage</option>
-                <option value="offered">Offered</option>
-                <option value="offer rejected">Offer Rejected</option>
-                <option value="Rejected">Rejected</option>
-                <option value="joined">Joined</option> */}
-                <option value="Tagged">Tagged</option>
-                <option value="Shortlisted">Shortlisted</option>
-                <option value="Assessment">Assessment</option>
-                <option value="Interview">Interview</option>
-                 <option value="Interview Reject">Interview reject</option>
-                  <option value="Offered">Offered</option>
-                <option value="Offer Drop">Offer Drop</option>
-                <option value="Joined">Joined</option>
+                <option value="Tagged" className="text-md">Tagged</option>
+                <option value="Shortlisted" className="text-md">Shortlisted</option>
+                <option value="Assessment" className="text-md">Assessment</option>
+                <option value="Interview" className="text-md">Interview</option>
+                <option value="Interview Reject" className="text-md">Interview Reject</option>
+                <option value="Offered" className="text-md">Offered</option>
+                <option value="Offer Drop" className="text-md">Offer Drop</option>
+                <option value="Joined" className="text-md">Joined</option>
               </select>
             </div>
+
             <div className="mb-6">
               <p className="text-gray-600 font-medium mb-2 text-md">
                 Selected Applicants ({selectedApplicants.length})
@@ -862,7 +803,7 @@ const handleStatusChangeRequest = () => {
                         <User className="h-4 w-4 text-blue-600" />
                       </div>
                       <div>
-                        <p className="font-semibold text-gray-900 text-sm">
+                        <p className="font-semibold text-gray-900 text-md">
                           {applicant.applicant_name || applicant.name}
                         </p>
                         <p className="text-xs text-gray-500">
@@ -872,9 +813,7 @@ const handleStatusChangeRequest = () => {
                     </div>
                     {selectedStatus && (
                       <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                          selectedStatus
-                        )}`}
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedStatus)}`}
                       >
                         {selectedStatus}
                       </span>
@@ -886,7 +825,7 @@ const handleStatusChangeRequest = () => {
             <div className="flex justify-end space-x-3 pt-3 border-t border-gray-100">
               <button
                 onClick={handleCloseStatusModal}
-                className="px-5 py-2.5 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-all font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-400 text-sm"
+                className="px-5 py-2.5 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-all font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-400 text-md"
                 aria-label="Cancel"
               >
                 Cancel
@@ -894,7 +833,7 @@ const handleStatusChangeRequest = () => {
               <button
                 onClick={handleStatusChangeRequest}
                 disabled={!selectedStatus}
-                className="px-5 py-2.5 text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-lg transition-all font-medium shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed text-sm"
+                className="px-5 py-2.5 text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-lg transition-all font-medium shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed text-md"
                 aria-label="Confirm status change"
               >
                 Confirm Change
@@ -931,43 +870,43 @@ const handleStatusChangeRequest = () => {
             {modalError && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
                 <AlertCircle className="h-4 w-4" />
-                <p className="text-sm">{modalError}</p>
+                <p className="text-md">{modalError}</p>
               </div>
             )}
             <div className="grid grid-cols-1 gap-4">
               <div>
-                <label className="block text-gray-700 font-semibold mb-2 text-sm">
+                <label className="block text-gray-700 font-semibold mb-2 text-md">
                   Date of Assessment
                 </label>
                 <input
                   type="date"
                   value={scheduledOn}
                   onChange={(e) => setScheduledOn(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition-all bg-gray-50 text-gray-900 text-sm"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition-all bg-gray-50 text-gray-900 text-md"
                   required
                 />
               </div>
               <div>
-                <label className="block text-gray-700 font-semibold mb-2 text-sm">
+                <label className="block text-gray-700 font-semibold mb-2 text-md">
                   Start Time
                 </label>
                 <input
                   type="time"
                   value={fromTime}
                   onChange={(e) => setFromTime(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition-all bg-gray-50 text-gray-900 text-sm"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition-all bg-gray-50 text-gray-900 text-md"
                   required
                 />
               </div>
               <div>
-                <label className="block text-gray-700 font-semibold mb-2 text-sm">
+                <label className="block text-gray-700 font-semibold mb-2 text-md">
                   End Time
                 </label>
                 <input
                   type="time"
                   value={toTime}
                   onChange={(e) => setToTime(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition-all bg-gray-50 text-gray-900 text-sm"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition-all bg-gray-50 text-gray-900 text-md"
                   required
                 />
               </div>
@@ -976,7 +915,7 @@ const handleStatusChangeRequest = () => {
                   type="url"
                   value={assessmentLink}
                   onChange={(e) => setAssessmentLink(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition-all bg-gray-50 text-gray-900 text-sm"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition-all bg-gray-50 text-gray-900 text-md"
                   placeholder="Assessment Link"
                   required
                 />
@@ -986,7 +925,7 @@ const handleStatusChangeRequest = () => {
                   type="text"
                   value={assessmentRound}
                   onChange={(e) => setAssessmentRound(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition-all bg-gray-50 text-gray-900 text-sm"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition-all bg-gray-50 text-gray-900 text-md"
                   placeholder="Assessment Round"
                   required
                 />
@@ -995,14 +934,14 @@ const handleStatusChangeRequest = () => {
             <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100 mt-4">
               <button
                 onClick={handleCloseAssessmentModal}
-                className="px-5 py-2.5 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-all font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-400 text-sm"
+                className="px-5 py-2.5 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-all font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-400 text-md"
                 aria-label="Cancel"
               >
                 Cancel
               </button>
               <button
                 onClick={handleStartAssessment}
-                className="px-5 py-2.5 text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-lg transition-all font-medium shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                className="px-5 py-2.5 text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-lg transition-all font-medium shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-md"
                 aria-label="Confirm assessment creation"
               >
                 Create Assessment
@@ -1011,77 +950,79 @@ const handleStatusChangeRequest = () => {
           </div>
         </div>
       )}
+
+      {/* Downgrade Warning Modal */}
       {showDowngradeWarning && downgradeInfo && (
-  <div
-    className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]"
-    role="dialog"
-    aria-modal="true"
-  >
-    <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
-      <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-3">
-        <h2 className="text-xl font-bold text-red-600 flex items-center gap-2">
-          <AlertCircle className="h-6 w-6" />
-          Warning: Status Downgrade
-        </h2>
-        <button
-          onClick={() => {
-            setShowDowngradeWarning(false);
-            setDowngradeInfo(null);
-          }}
-          className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors rounded-full hover:bg-gray-100"
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]"
+          role="dialog"
+          aria-modal="true"
         >
-          <X className="h-5 w-5" />
-        </button>
-      </div>
-      
-      <div className="mb-6">
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-          <p className="text-gray-800 font-semibold mb-2">
-            You are moving applicant(s) from a higher stage to a lower stage:
-          </p>
-          <div className="flex items-center justify-center gap-3 my-3">
-            <span className="px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full font-medium">
-              {downgradeInfo.from}
-            </span>
-            <span className="text-gray-500">→</span>
-            <span className="px-3 py-1.5 bg-orange-100 text-orange-800 rounded-full font-medium">
-              {downgradeInfo.to}
-            </span>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-3">
+              <h2 className="text-xl font-bold text-red-600 flex items-center gap-2">
+                <AlertCircle className="h-6 w-6" />
+                Warning: Status Downgrade
+              </h2>
+              <button
+                onClick={() => {
+                  setShowDowngradeWarning(false);
+                  setDowngradeInfo(null);
+                }}
+                className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors rounded-full hover:bg-gray-100"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="mb-6">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                <p className="text-gray-800 font-semibold mb-2">
+                  You are moving applicant(s) from a higher stage to a lower stage:
+                </p>
+                <div className="flex items-center justify-center gap-3 my-3">
+                  <span className="px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full font-medium">
+                    {downgradeInfo.from}
+                  </span>
+                  <span className="text-gray-500">→</span>
+                  <span className="px-3 py-1.5 bg-orange-100 text-orange-800 rounded-full font-medium">
+                    {downgradeInfo.to}
+                  </span>
+                </div>
+                <p className="text-gray-700 text-md mt-3">
+                  This action will move {selectedApplicants.length} applicant(s) backwards in the hiring process.
+                </p>
+              </div>
+              
+              <p className="text-gray-600 font-medium text-md">
+                Are you sure you want to proceed?
+              </p>
+            </div>
+            
+            <div className="flex justify-end space-x-3 pt-3 border-t border-gray-100">
+              <button
+                onClick={() => {
+                  setShowDowngradeWarning(false);
+                  setDowngradeInfo(null);
+                }}
+                className="px-5 py-2.5 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-all font-medium shadow-sm text-md"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setShowDowngradeWarning(false);
+                  setDowngradeInfo(null);
+                  handleConfirmStatusChange();
+                }}
+                className="px-5 py-2.5 text-white bg-red-600 hover:bg-red-700 rounded-lg transition-all font-medium shadow-md text-md"
+              >
+                Yes, Proceed
+              </button>
+            </div>
           </div>
-          <p className="text-gray-700 text-sm mt-3">
-            This action will move {selectedApplicants.length} applicant(s) backwards in the hiring process.
-          </p>
         </div>
-        
-        <p className="text-gray-600 font-medium text-sm">
-          Are you sure you want to proceed?
-        </p>
-      </div>
-      
-      <div className="flex justify-end space-x-3 pt-3 border-t border-gray-100">
-        <button
-          onClick={() => {
-            setShowDowngradeWarning(false);
-            setDowngradeInfo(null);
-          }}
-          className="px-5 py-2.5 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-all font-medium shadow-sm text-sm"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={() => {
-            setShowDowngradeWarning(false);
-            setDowngradeInfo(null);
-            handleConfirmStatusChange();
-          }}
-          className="px-5 py-2.5 text-white bg-red-600 hover:bg-red-700 rounded-lg transition-all font-medium shadow-md text-sm"
-        >
-          Yes, Proceed
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+      )}
     </div>
   );
 }

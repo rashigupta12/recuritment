@@ -570,14 +570,109 @@
 //   );
 // }
 
+/*eslint-disable @typescript-eslint/no-explicit-any */
+'use client';
 
+import {
+  ArrowUpRight,
+  Calendar,
+  Construction,
+  Mail,
+  Phone,
+  Target,
+  TrendingUp,
+  Users
+} from 'lucide-react';
+import React from 'react';
 
-import React from 'react'
-
-const page = () => {
+export default function SalesManagerDashboard() {
   return (
-    <div>Under Construction</div>
-  )
+    <div className="min-h-screen flex  justify-center ">
+      <div className="max-w-4xl w-full">
+        {/* Header */}
+        <div className="text-center ">
+        
+          
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            Sales Manager Dashboard
+          </h1>
+          <p className="text-xl text-gray-600 mb-2">
+            We &apos;re building something amazing for you
+          </p>
+          <div className="w-24 h-1 bg-blue-600 mx-auto rounded-full"></div>
+        </div>
+
+        {/* Main Content */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-8 md:p-8 ">
+          <div className="text-center mb-4">
+            <div className="inline-flex items-center px-4 py-2 rounded-full bg-blue-100 text-blue-700 text-sm font-medium mb-6">
+              <Construction className="h-4 w-4 mr-2" />
+              Under Construction
+            </div>
+            
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
+              Powerful Sales Insights Coming Soon
+            </h2>
+            {/* <p className="text-gray-600 text-lg mb-8 max-w-2xl mx-auto">
+              We're crafting a comprehensive dashboard to help you track leads, manage onboarding, 
+              and monitor requirements with beautiful visualizations and real-time analytics.
+            </p> */}
+          </div>
+
+          {/* Features Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="text-center p-6 bg-white rounded-2xl shadow-sm border border-gray-100">
+              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <Target className="h-6 w-6 text-blue-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-2">Lead Management</h3>
+              <p className="text-gray-600 text-sm">
+                Track and convert leads with advanced pipeline management
+              </p>
+            </div>
+
+            <div className="text-center p-6 bg-white rounded-2xl shadow-sm border border-gray-100">
+              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <Users className="h-6 w-6 text-green-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-2">Client Onboarding</h3>
+              <p className="text-gray-600 text-sm">
+                Streamline client onboarding with automated workflows
+              </p>
+            </div>
+
+            <div className="text-center p-6 bg-white rounded-2xl shadow-sm border border-gray-100">
+              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <TrendingUp className="h-6 w-6 text-purple-600" />
+              </div>
+              <h3 className="font-semibold text-gray-900 mb-2">Performance Analytics</h3>
+              <p className="text-gray-600 text-sm">
+                Get deep insights with interactive charts and reports
+              </p>
+            </div>
+          </div>
+
+          {/* Progress Section */}
+          <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-6 text-white">
+            <div className="flex items-center justify-between mb-4">
+              <span className="font-semibold">Development Progress</span>
+              <span className="font-bold">65%</span>
+            </div>
+            <div className="w-full bg-white/20 rounded-full h-3 mb-2">
+              <div 
+                className="bg-white h-3 rounded-full transition-all duration-1000 ease-out"
+                style={{ width: '65%' }}
+              ></div>
+            </div>
+            {/* <p className="text-blue-100 text-sm">
+              Estimated completion: 2 weeks
+            </p> */}
+          </div>
+        </div>
+
+       
+      </div>
+    </div>
+  );
 }
 
-export default page
