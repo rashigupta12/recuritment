@@ -295,7 +295,7 @@ export default function BulkApplicantForm({ initialJobId, onFormSubmitSuccess }:
     setApplicantRows(updatedRows);
 
     if (hasErrors) {
-      alert('Please fix all validation errors before submitting');
+      // alert('Please fix all validation errors before submitting');
       return;
     }
 

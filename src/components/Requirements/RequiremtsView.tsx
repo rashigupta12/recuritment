@@ -171,6 +171,21 @@ const handleJobSuccess = (planIndex: number,
 };
 
 
+const formatCompanyName = (name: string) => {
+  if (!name) return "-";
+  const trimmed = name.trim();
+
+  // if short, return as is
+  if (trimmed.length <= 30) return trimmed;
+
+  // find nearest space before 30th character
+  const splitIndex = trimmed.lastIndexOf(" ", 30);
+  if (splitIndex === -1) return trimmed; // no space found, skip splitting
+
+  return `${trimmed.slice(0, splitIndex)}\n${trimmed.slice(splitIndex + 1)}`;
+};
+
+
 
   return (
     <div className="min-h-screen bg-gray-50 ">
@@ -220,22 +235,22 @@ const handleJobSuccess = (planIndex: number,
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-md font-medium text-gray-500 uppercase tracking-wider">
                       Company &<br/> Contact
                     </th>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-md font-medium text-gray-500 uppercase tracking-wider">
                       Position Details
                     </th>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-md font-medium text-gray-500 uppercase tracking-wider">
                       Location &<br/> Experience
                     </th>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-md font-medium text-gray-500 uppercase tracking-wider">
                       Vacancies &<br/> Budget
                     </th>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-md font-medium text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-md font-medium text-gray-500 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -246,36 +261,41 @@ const handleJobSuccess = (planIndex: number,
                       {plan.staffing_details.map((detail, detailIndex) => (
                         <tr key={`${plan.name}-${detailIndex}`} className="hover:bg-gray-50 transition-colors">
                           {detailIndex === 0 && (
-                            <td className="px-6 py-4 align-top capitalize" rowSpan={plan.staffing_details.length}>
-                              <div className="flex flex-col space-y-2">
-                                <div className="flex items-center">
-                                  <Building className="h-5 w-5 text-gray-400 mr-2" />
-                                  <span className="font-semibold text-gray-900">{plan.company}</span>
-                                </div>
-                                <div className="text-sm text-gray-600 space-y-1">
-                                  <div className="flex items-center">
-                                    <User className="h-4 w-4 text-gray-400 mr-1" />
-                                    <span>{plan.custom_contact_name}</span>
-                                  </div>
-                                  <div className="flex items-center">
-                                    <Phone className="h-4 w-4 text-gray-400 mr-1" />
-                                    <span>{plan.custom_contact_phone}</span>
-                                  </div>
-                                  <div className="flex items-center">
-                                    <Mail className="h-4 w-4 text-gray-400 mr-1" />
-                                    <span className="text-blue-600 hover:underline cursor-pointer normal-case">
-                                      {plan.custom_contact_email}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            </td>
+                            <td className="px-4 py-3 align-top" rowSpan={plan.staffing_details.length}>
+  <div className="flex flex-col space-y-1 max-w-[180px]"> {/* Fixed max width */}
+    {/* Company with tooltip */}
+    <div className="group relative">
+      <div className="flex items-center">
+        <Building className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0" />
+        <span className="font-semibold text-gray-900 text-md leading-tight line-clamp-2">
+          {plan.company}
+        </span>
+      </div>
+      {/* Tooltip on hover */}
+      <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-gray-900 text-white text-md rounded py-1 px-2 z-10 whitespace-nowrap">
+        {plan.company}
+      </div>
+    </div>
+    
+    {/* Contact info - more compact */}
+    <div className="text-md text-gray-600 space-y-0.5">
+      <div className="flex items-center truncate" title={plan.custom_contact_name}>
+        <User className="h-3 w-3 text-gray-400 mr-1 flex-shrink-0" />
+        <span className="truncate">{plan.custom_contact_name}</span>
+      </div>
+      <div className="flex items-center truncate">
+        <Phone className="h-3 w-3 text-gray-400 mr-1 flex-shrink-0" />
+        <span className="truncate">{plan.custom_contact_phone}</span>
+      </div>
+    </div>
+  </div>
+</td>
                           )}
 
                           <td className="px-6 py-4 capitalize">
                             <div className="flex flex-col">
-                              <span className="font-medium text-gray-900 text-sm">{detail.designation}</span>
-                              <div className="text-sm text-gray-500 mt-1">
+                              <span className="font-medium text-gray-900 text-md">{detail.designation}</span>
+                              <div className="text-md text-gray-500 mt-1">
                                 <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-800">
                                   {detail.number_of_positions} {detail.number_of_positions === 1 ? 'Position' : 'Positions'}
                                 </span>
@@ -285,11 +305,11 @@ const handleJobSuccess = (planIndex: number,
 
                           <td className="px-6 py-4">
                             <div className="flex flex-col space-y-2">
-                              <div className="flex items-center text-sm text-gray-600">
+                              <div className="flex items-center text-md text-gray-600">
                                 <MapPin className="h-4 w-4 text-gray-400 mr-1" />
                                 <span>{detail.location}</span>
                               </div>
-                              <div className="flex items-center text-sm text-gray-600">
+                              <div className="flex items-center text-md text-gray-600">
                                 <Clock className="h-4 w-4 text-gray-400 mr-1" />
                                 <span>{detail.min_experience_reqyrs}+ years exp</span>
                               </div>
@@ -330,17 +350,17 @@ const handleJobSuccess = (planIndex: number,
                             <div className="flex flex-col space-y-1">
                               {detail.job_id ? (
                                 <>
-                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-sm bg-green-100 text-green-800">
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-md bg-green-100 text-green-800">
                                     Job Created
                                   </span>
                                   {detail.assign_to && (
-                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
+                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-md bg-blue-100 text-blue-800">
                                       Allocated
                                     </span>
                                   )}
                                 </>
                               ) : (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-sm bg-gray-100 text-gray-800">
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-md bg-gray-100 text-gray-800">
                                   Pending
                                 </span>
                               )}
@@ -351,7 +371,7 @@ const handleJobSuccess = (planIndex: number,
                             <div className="flex items-center space-x-2">
                               <button
                                 onClick={() => handleCreateOpening(plan, detail, planIndex, detailIndex)}
-                                className={`flex items-center px-3 py-1.5 text-white rounded text-sm transition-colors ${
+                                className={`flex items-center px-3 py-1.5 text-white rounded text-md transition-colors ${
                                   detail.job_id 
                                     ? 'bg-green-600 hover:bg-green-700' 
                                     : 'bg-blue-600 hover:bg-blue-700'
