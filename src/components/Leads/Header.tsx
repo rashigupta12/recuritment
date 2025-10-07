@@ -34,7 +34,7 @@ export const LeadsHeader = ({
       ) : (
         <div className="w-full mx-auto pb-2">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
-            <div className="relative w-full md:w-[70%]">
+            <div className="relative w-full md:w-[40%]">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
@@ -47,7 +47,7 @@ export const LeadsHeader = ({
 
             <button
               onClick={onAddLead}
-              className="w-full md:w-[20%] flex items-center justify-center space-x-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
+              className="w-full md:w-[10%] flex items-center justify-center space-x-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors shadow-sm"
             >
               <Plus className="h-5 w-5" />
               <span>Add</span>
