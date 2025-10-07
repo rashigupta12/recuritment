@@ -27,7 +27,7 @@ import {
   Users,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Bar, Doughnut, Line } from "react-chartjs-2";
 import ChartDataLabels from "chartjs-plugin-datalabels";
 
@@ -93,6 +93,7 @@ export default function RecruiterDashboard() {
   const { user } = useAuth();
   const [apiData, setApiData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const selectRef = useRef<HTMLSelectElement>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -207,6 +208,20 @@ export default function RecruiterDashboard() {
     if (!apiData?.companies) return ["All"];
     return ["All", ...apiData.companies];
   }, [apiData]);
+
+  // Calculate max width based on the longest company name
+  const selectWidth = useMemo(() => {
+    if (!clients.length) return "200px";
+    
+    const maxLength = Math.max(...clients.map(client => client.length));
+    // Base width + additional width based on character count
+    const baseWidth = 120;
+    const charWidth = 8;
+    const calculatedWidth = baseWidth + (maxLength * charWidth);
+    
+    // Set reasonable min and max bounds
+    return `${Math.min(Math.max(calculatedWidth, 150), 400)}px`;
+  }, [clients]);
 
   const filteredApplicants = useMemo(
     () =>
@@ -678,9 +693,11 @@ export default function RecruiterDashboard() {
             </div>
 
             <select
+              ref={selectRef}
               value={selectedClient}
               onChange={(e) => setSelectedClient(e.target.value)}
-              className="px-3 py-1.5 border border-slate-200 rounded-lg text-md focus:outline-none focus:ring-1 focus:ring-indigo-400 text-slate-700 bg-white"
+              style={{ width: selectWidth }}
+              className="px-3 py-1.5 border border-slate-200 rounded-lg text-md focus:outline-none focus:ring-1 focus:ring-indigo-400 text-slate-700 bg-white min-w-[150px] max-w-[150px] transition-all duration-200"
             >
               {clients.map((client) => (
                 <option key={client} value={client}>

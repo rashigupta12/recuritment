@@ -511,7 +511,7 @@ export default function ManagerDashboard() {
             <select
               value={selectedClient}
               onChange={(e) => setSelectedClient(e.target.value)}
-              className="px-3 py-1.5 border border-slate-200 rounded-lg text-md focus:outline-none focus:ring-1 focus:ring-indigo-400 text-slate-700 bg-white"
+             className="px-3 py-1.5 border border-slate-200 rounded-lg text-md focus:outline-none focus:ring-1 focus:ring-indigo-400 text-slate-700 bg-white min-w-[150px] max-w-[150px] transition-all duration-200"
             >
               {clients.map((client) => (
                 <option key={client} value={client}>
@@ -820,47 +820,58 @@ export default function ManagerDashboard() {
             subtitle="Key metrics comparison across recruiters"
           />
           <div className="h-64 mt-4">
-            <Bar
-              data={recruiterPerformanceData}
-              options={{
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: {
-                    position: "top",
-                    labels: {
-                      padding: 8,
-                      font: { size: 14 },
-                      usePointStyle: true,
-                      pointStyle: "circle",
-                      color: "#475569",
-                    },
-                  },
-                  datalabels: {
-                    display: false,
-                  },
-                },
-                scales: {
-                  x: {
-                    grid: { display: false },
-                    border: { display: false },
-                    ticks: {
-                      font: { size: 14 },
-                      color: "#64748b",
-                    },
-                  },
-                  y: {
-                    beginAtZero: true,
-                    grid: { color: "#f1f5f9" },
-                    border: { display: false },
-                    ticks: {
-                      font: { size: 14 },
-                      color: "#64748b",
-                    },
-                  },
-                },
-              }}
-            />
+<Bar
+  data={recruiterPerformanceData}
+  options={{
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: "top",
+        labels: {
+          padding: 8,
+          font: { size: 14 },
+          usePointStyle: true,
+          pointStyle: "circle",
+          color: "#475569",
+        },
+      },
+      datalabels: {
+        display: true,
+        anchor: "end",
+        align: "top",
+        color: "#1e293b",
+        font: {
+          weight: "bold",
+          size: 12,
+        },
+        formatter: (value) => (value > 0 ? value : ""),
+      },
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        border: { display: false },
+        ticks: {
+          font: { size: 14 },
+          color: "#64748b",
+        },
+      },
+      y: {
+        beginAtZero: true,
+        grid: { color: "#f1f5f9" },
+        border: { display: false },
+        min: 0,
+        max: 30, // Force the scale to show 0-30 range
+        ticks: {
+          stepSize: 10, // This will create 0, 10, 20, 30
+          font: { size: 14 },
+          color: "#64748b",
+        },
+      },
+    },
+  }}
+/>
           </div>
         </section>
       </div>
