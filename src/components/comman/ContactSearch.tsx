@@ -4,7 +4,8 @@ import { frappeAPI } from "@/lib/api/frappeClient";
 import { Building, Edit, Loader2, Mail, Phone, Plus, User, X } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import SuccessDialog from "../comman/SuccessDialog";
+import ConfirmationDialog from "./ConfirmationDialogcontact";
+
 
 // -------- Type Definitions --------
 type Email = { email_id: string; is_primary: number };
@@ -253,8 +254,9 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
   const [showDropdown, setShowDropdown] = useState(false);
   const [showContactDialog, setShowContactDialog] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [confirmMessage, setConfirmMessage] = useState("");
+  const [pendingContactData, setPendingContactData] = useState<any>(null);
   const [dropdownPosition, setDropdownPosition] = useState({
     top: 0,
     left: 0,
@@ -482,51 +484,58 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
   const handleSaveContact = async () => {
     if (!contactForm.first_name.trim()) return;
 
+    const contactData: any = {
+      first_name: contactForm.first_name.trim(),
+      last_name: contactForm.last_name.trim(),
+      designation: contactForm.designation.trim() || null,
+      gender: contactForm.gender || null,
+      organization: contactForm.organization.trim() || null,
+      email_ids: contactForm.email
+        ? [
+            {
+              email_id: contactForm.email.trim(),
+              is_primary: 1,
+              parenttype: "Contact",
+              parentfield: "email_ids",
+            },
+          ]
+        : [],
+      phone_nos: contactForm.phone
+        ? [
+            {
+              phone: contactForm.phone.trim(),
+              is_primary_phone: 1,
+              parenttype: "Contact",
+              parentfield: "phone_nos",
+            },
+          ]
+        : [],
+    };
+
+    // Show confirmation dialog only for UPDATE
+    if (selectedContact?.contactId) {
+      setPendingContactData(contactData);
+      setConfirmMessage("Are you sure you want to update this contact?");
+      setShowConfirmDialog(true);
+    } else {
+      // For CREATE, directly call the save function
+      await handleDirectSave(contactData);
+    }
+  };
+
+  const handleConfirmUpdate = async () => {
+    if (!pendingContactData) return;
+
     try {
       setIsSaving(true);
-
-      const contactData: any = {
-        first_name: contactForm.first_name.trim(),
-        last_name: contactForm.last_name.trim(),
-        designation: contactForm.designation.trim() || null,
-        gender: contactForm.gender || null,
-        organization: contactForm.organization.trim() || null,
-        email_ids: contactForm.email
-          ? [
-              {
-                email_id: contactForm.email.trim(),
-                is_primary: 1,
-                parenttype: "Contact",
-                parentfield: "email_ids",
-              },
-            ]
-          : [],
-        phone_nos: contactForm.phone
-          ? [
-              {
-                phone: contactForm.phone.trim(),
-                is_primary_phone: 1,
-                parenttype: "Contact",
-                parentfield: "phone_nos",
-              },
-            ]
-          : [],
-      };
 
       let contactId: string;
       let contactName: string;
 
-      if (selectedContact?.contactId) {
-        await frappeAPI.updateContact(selectedContact.contactId, contactData);
-        contactId = selectedContact.contactId;
-        contactName = `${contactForm.first_name} ${contactForm.last_name}`.trim();
-        setSuccessMessage("Contact updated successfully!");
-      } else {
-        const response = await frappeAPI.createContact(contactData);
-        contactId = response.data.name;
-        contactName = `${contactForm.first_name} ${contactForm.last_name}`.trim();
-        setSuccessMessage("Are you sure want to update this contact?");
-      }
+      // This function is only called for UPDATE now
+      await frappeAPI.updateContact(selectedContact!.contactId!, pendingContactData);
+      contactId = selectedContact!.contactId!;
+      contactName = `${contactForm.first_name} ${contactForm.last_name}`.trim();
 
       const simplifiedContact: SimplifiedContact = {
         name: contactName,
@@ -547,14 +556,63 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
         onOrganizationAutoFetch(contactForm.organization.trim());
       }
 
-      // Ensure contact dialog is closed before showing success dialog
+      // Close dialogs and reset
+      setShowConfirmDialog(false);
       setShowContactDialog(false);
-      // Force a re-render to ensure the dialog is gone before showing SuccessDialog
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      setShowSuccessDialog(true);
+      setContactForm(initialContactFormState);
+      setPendingContactData(null);
+      
+
+      
     } catch (error) {
       console.error(error);
-      alert("Failed to save contact. Please try again.");
+      alert("Failed to update contact. Please try again.");
+      setShowConfirmDialog(false);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDirectSave = async (contactData: any) => {
+    try {
+      setIsSaving(true);
+
+      let contactId: string;
+      let contactName: string;
+
+      // This function is only for CREATE
+      const response = await frappeAPI.createContact(contactData);
+      contactId = response.data.name;
+      contactName = `${contactForm.first_name} ${contactForm.last_name}`.trim();
+
+      const simplifiedContact: SimplifiedContact = {
+        name: contactName,
+        email: contactForm.email,
+        phone: contactForm.phone,
+        contactId,
+        designation: contactForm.designation,
+        gender: contactForm.gender,
+        organization: contactForm.organization,
+        first_name: contactForm.first_name,
+        last_name: contactForm.last_name,
+      };
+
+      onContactSelect(simplifiedContact);
+      setSearchQuery(contactName);
+
+      if (contactForm.organization.trim() && onOrganizationAutoFetch) {
+        onOrganizationAutoFetch(contactForm.organization.trim());
+      }
+
+      // Close dialog and reset
+      setShowContactDialog(false);
+      setContactForm(initialContactFormState);
+      
+     
+      
+    } catch (error) {
+      console.error(error);
+      alert("Failed to create contact. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -565,137 +623,134 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
     setContactForm(initialContactFormState);
   };
 
-  const handleSuccessConfirm = () => {
-    setShowSuccessDialog(false);
-    setContactForm(initialContactFormState); // Reset form after confirmation
-  };
-
-  const handleSuccessCancel = () => {
-    setShowSuccessDialog(false);
-    // Optionally reopen the dialog if needed, but typically not required after success
-  };
-
   const hasValidContact = Boolean(selectedContact);
 
- const DropdownContent = () => (
-  <div
-    ref={dropdownRef}
-    className={`fixed bg-white shadow-lg rounded-md max-h-60 overflow-y-auto ${
-      selectedContact ? '' : 'border border-gray-200'
-    }`}
-    style={{
-      top: dropdownPosition.top,
-      left: dropdownPosition.left,
-      width: dropdownPosition.width,
-      zIndex: 9999,
-    }}
-  >
-    {isSearching ? (
-      <div className="px-4 py-2 text-md text-gray-500 flex items-center">
-        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-        Searching contacts...
-      </div>
-    ) : searchResults.length > 0 ? (
-      <div className="overflow-y-auto max-h-[calc(60vh-100px)]">
-        {searchResults.map((contact, index) => (
-          <div
-            key={contact.name || index}
-            className="px-4 py-3 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
-            onClick={() => handleContactSelect(contact)}
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex-1 min-w-0">
-                <p className="font-medium text-gray-900 truncate">
-                  {getFullName(contact)}
-                </p>
-                <div className="text-xs text-gray-500 mt-1 space-y-1">
-                  {contact.designation && (
-                    <div className="text-md text-gray-600">
-                      {contact.designation}
-                    </div>
-                  )}
-                  {contact.organization && (
-                    <div className="text-md text-gray-600 font-medium">
-                      📍 {contact.organization}
-                    </div>
-                  )}
-                  {contact.gender && (
-                    <div className="flex items-center">
-                      <span className="mr-2">{contact.gender}</span>
-                    </div>
-                  )}
-                  {getPrimaryEmail(contact) && (
-                    <div className="flex items-center">
-                      <Mail className="h-3 w-3 mr-1 flex-shrink-0" />
-                      <span className="truncate">
-                        {getPrimaryEmail(contact)}
-                      </span>
-                    </div>
-                  )}
-                  {getPrimaryPhone(contact) && (
-                    <div className="flex items-center">
-                      <Phone className="h-3 w-3 mr-1 flex-shrink-0" />
-                      <span>{getPrimaryPhone(contact)}</span>
-                    </div>
-                  )}
+  const DropdownContent = () => (
+    <div
+      ref={dropdownRef}
+      className={`fixed bg-white shadow-lg rounded-md max-h-60 overflow-y-auto ${
+        selectedContact ? '' : 'border border-gray-200'
+      }`}
+      style={{
+        top: dropdownPosition.top,
+        left: dropdownPosition.left,
+        width: dropdownPosition.width,
+        zIndex: 9999,
+      }}
+    >
+      {isSearching ? (
+        <div className="px-4 py-2 text-md text-gray-500 flex items-center">
+          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          Searching contacts...
+        </div>
+      ) : searchResults.length > 0 ? (
+        <div className="overflow-y-auto max-h-[calc(60vh-100px)]">
+          {searchResults.map((contact, index) => (
+            <div
+              key={contact.name || index}
+              className="px-4 py-3 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+              onClick={() => handleContactSelect(contact)}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-gray-900 truncate">
+                    {getFullName(contact)}
+                  </p>
+                  <div className="text-sm text-gray-500 mt-1 space-y-1">
+                    {contact.designation && (
+                      <div className="text-md text-gray-600">
+                        {contact.designation}
+                      </div>
+                    )}
+                    {contact.organization && (
+                      <div className="text-md text-gray-600 font-medium">
+                        📍 {contact.organization}
+                      </div>
+                    )}
+                    {contact.gender && (
+                      <div className="flex items-center">
+                        <span className="mr-2">{contact.gender}</span>
+                      </div>
+                    )}
+                    {getPrimaryEmail(contact) && (
+                      <div className="flex items-center">
+                        <Mail className="h-3 w-3 mr-1 flex-shrink-0" />
+                        <span className="truncate">
+                          {getPrimaryEmail(contact)}
+                        </span>
+                      </div>
+                    )}
+                    {getPrimaryPhone(contact) && (
+                      <div className="flex items-center">
+                        <Phone className="h-3 w-3 mr-1 flex-shrink-0" />
+                        <span>{getPrimaryPhone(contact)}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
+          ))}
+          {!selectedContact && (
+            <div
+              className="px-4 py-3 hover:bg-primary/5 cursor-pointer border-t bg-gray-50 text-primary font-medium"
+              onClick={handleCreateContact}
+            >
+              <Plus className="h-4 w-4 inline mr-2" />
+              Add New Contact
+            </div>
+          )}
+        </div>
+      ) : searchQuery && !selectedContact ? (
+        <div
+          className="px-4 py-3 hover:bg-primary/5 cursor-pointer text-primary font-medium"
+          onClick={handleCreateContact}
+        >
+          <Plus className="h-4 w-4 inline mr-2" />
+          Create contact for &quot;{searchQuery}&quot;
+        </div>
+      ) : !selectedContact ? (
+        <div className="px-4 py-2 text-md text-gray-500">
+          Start typing to search contacts...
+        </div>
+      ) : null}
+      {/* {(contactMeta.uniqueDesignations.length > 0 ||
+        contactMeta.uniqueGenders.length > 0 ||
+        contactMeta.uniqueOrganizations.length > 0) && (
+        <div className="px-4 py-2 border-t text-sm text-gray-400 bg-gray-50">
+          <div>
+            <span className="font-medium">Designations:</span>{" "}
+            {contactMeta.uniqueDesignations.join(", ")}
           </div>
-        ))}
-        {!selectedContact && (
-          <div
-            className="px-4 py-3 hover:bg-primary/5 cursor-pointer border-t bg-gray-50 text-primary font-medium"
-            onClick={handleCreateContact}
-          >
-            <Plus className="h-4 w-4 inline mr-2" />
-            Add New Contact
+          <div>
+            <span className="font-medium">Genders:</span>{" "}
+            {contactMeta.uniqueGenders.join(", ")}
           </div>
-        )}
-      </div>
-    ) : searchQuery && !selectedContact ? (
-      <div
-        className="px-4 py-3 hover:bg-primary/5 cursor-pointer text-primary font-medium"
-        onClick={handleCreateContact}
-      >
-        <Plus className="h-4 w-4 inline mr-2" />
-        Create contact for &quot;{searchQuery}&quot;
-      </div>
-    ) : !selectedContact ? (
-      <div className="px-4 py-2 text-md text-gray-500">
-        Start typing to search contacts...
-      </div>
-    ) : null}
-    {(contactMeta.uniqueDesignations.length > 0 ||
-      contactMeta.uniqueGenders.length > 0 ||
-      contactMeta.uniqueOrganizations.length > 0) && (
-      <div className="px-4 py-2 border-t text-xs text-gray-400 bg-gray-50">
-        <div>
-          <span className="font-medium">Designations:</span>{" "}
-          {contactMeta.uniqueDesignations.join(", ")}
+          <div>
+            <span className="font-medium">Organizations:</span>{" "}
+            {contactMeta.uniqueOrganizations.join(", ")}
+          </div>
         </div>
-        <div>
-          <span className="font-medium">Genders:</span>{" "}
-          {contactMeta.uniqueGenders.join(", ")}
-        </div>
-        <div>
-          <span className="font-medium">Organizations:</span>{" "}
-          {contactMeta.uniqueOrganizations.join(", ")}
-        </div>
-      </div>
-    )}
-  </div>
-);
+      )} */}
+    </div>
+  );
 
-  // Ensure SuccessDialog has a higher z-index
-  const renderSuccessDialog = () => {
-    if (showSuccessDialog && typeof document !== "undefined") {
+  const renderConfirmDialog = () => {
+    if (showConfirmDialog && typeof document !== "undefined") {
       return createPortal(
-        <SuccessDialog
-          isOpen={showSuccessDialog}
-          onConfirm={handleSuccessConfirm}
-          onCancel={handleSuccessCancel}
-          message={successMessage}
+        <ConfirmationDialog
+          isOpen={showConfirmDialog}
+          onConfirm={handleConfirmUpdate}
+          onCancel={() => {
+            setShowConfirmDialog(false);
+            setPendingContactData(null);
+          }}
+          title={selectedContact ? "Update Contact" : "Create Contact"}
+          message={confirmMessage}
+          confirmText={selectedContact ? "Update" : "Create"}
+          cancelText="Cancel"
+          type="warning"
+          isLoading={isSaving}
         />,
         document.body
       );
@@ -703,7 +758,6 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
     return null;
   };
 
-  // Ensure Contact Dialog has a controlled z-index
   const renderContactDialog = () => {
     if (showContactDialog) {
       return (
@@ -838,6 +892,24 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                 />
               </div>
+              
+              {/* <div>
+                <label className="block text-md font-medium text-gray-700 mb-1">
+                  Organization
+                </label>
+                <input
+                  type="text"
+                  value={contactForm.organization}
+                  onChange={(e) => {
+                    setContactForm((prev) => ({
+                      ...prev,
+                      organization: e.target.value,
+                    }));
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
+                  placeholder="e.g., ABC Company"
+                />
+              </div> */}
             </div>
             <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end space-x-3 sticky bottom-0 bg-white">
               <button
@@ -854,11 +926,7 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
               >
                 {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
                 <span>
-                  {isSaving
-                    ? "Saving..."
-                    : selectedContact
-                    ? "Update Contact"
-                    : "Create Contact"}
+                  {selectedContact ? "Update Contact" : "Create Contact"}
                 </span>
               </button>
             </div>
@@ -871,7 +939,7 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
 
   return (
     <div className="space-y-4">
-      {renderSuccessDialog()}
+      {renderConfirmDialog()}
       <div className="w-full">
         <div className="relative">
           <div className="flex items-center">
