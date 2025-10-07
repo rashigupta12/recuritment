@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { MultiUserAssignment } from "./MultiUserAssignment";
+import LocationDropdown from "../requirement-form/LocationDropdown";
 
 // Types
 type StaffingPlanItem = {
@@ -253,7 +254,7 @@ const handleAllocation = async () => {
                   className="w-full px-2 py-1 border rounded"
                 />
               </div>
-              <div>
+              {/* <div>
                 <label className="block text-gray-600 mb-1">Location</label>
                 <input
                   type="text"
@@ -264,7 +265,15 @@ const handleAllocation = async () => {
                   disabled={confirmInfo}
                   className="w-full px-2 py-1 border rounded"
                 />
-              </div>
+              </div> */}
+             <div>
+  <label className="block text-gray-600 mb-1">Location</label>
+  <LocationDropdown
+    value={editData.location || ""}
+    onChange={(value) => handleInputChange("location", value)}
+    
+  />
+</div>
               <div>
                 <label className="block text-gray-600 mb-1">Vacancies</label>
                 <input
