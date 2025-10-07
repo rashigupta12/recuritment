@@ -1,4 +1,6 @@
-'use client'
+/*eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
+import { frappeAPI } from "@/lib/api/frappeClient";
 import {
   ArcElement,
   BarElement,
@@ -9,7 +11,7 @@ import {
   LinearScale,
   LineElement,
   PointElement,
-  Tooltip
+  Tooltip,
 } from "chart.js";
 import ChartDataLabels from "chartjs-plugin-datalabels";
 import {
@@ -19,10 +21,10 @@ import {
   Download,
   Filter,
   UserCheck,
-  Users
+  Users,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Bar, Doughnut, Line } from "react-chartjs-2";
 
 ChartJS.register(
@@ -42,18 +44,10 @@ interface JobApplicant {
   id: string;
   name: string;
   email: string;
+  phone: string;
   job_title: string;
   client: string;
-  status:
-    | "Applied"
-    | "Tagged"
-    | "Shortlisted"
-    | "AssessmentStage"
-    | "InterviewStage"
-    | "Offered"
-    | "OfferRejected"
-    | "Rejected"
-    | "Joined";
+  status: string;
   appliedDate: string;
   lastUpdated: string;
   recruiter: string;
@@ -64,7 +58,7 @@ interface JobOpening {
   title: string;
   client: string;
   location: string;
-  status: "Open" | "Offered" | "Joined" | "Cancelled";
+  status: string;
   positions: number;
   createdDate: string;
   recruiter: string;
@@ -73,11 +67,12 @@ interface JobOpening {
 interface MetricData {
   month: string;
   totalCVUploaded: number;
+  open: number;
   tagged: number;
   shortlisted: number;
-  assessmentStage: number;
-  interviews: number;
-  offers: number;
+  assessment: number;
+  interview: number;
+  offered: number;
   joined: number;
 }
 
@@ -85,203 +80,159 @@ interface Recruiter {
   id: string;
   name: string;
   email: string;
-  team: string;
 }
 
-// Dummy data for demonstration
-const recruiters: Recruiter[] = [
-  { id: "1", name: "John Recruiter", email: "john@company.com", team: "Tech" },
-  { id: "2", name: "Sarah Manager", email: "sarah@company.com", team: "Non-Tech" },
-  { id: "3", name: "Mike Coordinator", email: "mike@company.com", team: "Tech" },
-  { id: "4", name: "All Recruiters", email: "all@company.com", team: "All" },
-];
+interface RecruiterPerformance {
+  recruiter_name: string;
+  recruiter_id: string;
+  open: number;
+  tagged: number;
+  shortlisted: number;
+  assessment: number;
+  interview: number;
+  offered: number;
+  joined: number;
+  total_applicants: number;
+}
 
-const dummyApplicants: JobApplicant[] = [
-  {
-    id: "1",
-    name: "John Doe",
-    email: "john@example.com",
-    job_title: "Software Engineer",
-    client: "TechCorp",
-    status: "Applied",
-    appliedDate: "2025-09-15",
-    lastUpdated: "2025-09-15",
-    recruiter: "1",
-  },
-  {
-    id: "2",
-    name: "Jane Smith",
-    email: "jane@example.com",
-    job_title: "Product Manager",
-    client: "InnovateLtd",
-    status: "Joined",
-    appliedDate: "2025-08-10",
-    lastUpdated: "2025-10-01",
-    recruiter: "1",
-  },
-  {
-    id: "3",
-    name: "Alice Johnson",
-    email: "alice@example.com",
-    job_title: "Data Analyst",
-    client: "DataVision",
-    status: "InterviewStage",
-    appliedDate: "2025-09-20",
-    lastUpdated: "2025-09-28",
-    recruiter: "2",
-  },
-  {
-    id: "4",
-    name: "Bob Wilson",
-    email: "bob@example.com",
-    job_title: "UX Designer",
-    client: "DesignHub",
-    status: "Shortlisted",
-    appliedDate: "2025-09-25",
-    lastUpdated: "2025-09-27",
-    recruiter: "2",
-  },
-  {
-    id: "5",
-    name: "Emma Brown",
-    email: "emma@example.com",
-    job_title: "DevOps Engineer",
-    client: "CloudSys",
-    status: "Offered",
-    appliedDate: "2025-08-15",
-    lastUpdated: "2025-09-30",
-    recruiter: "3",
-  },
-];
+interface DashboardData {
+  success: boolean;
+  clients: string[];
+  recruiters: Recruiter[];
+  team_metrics: {
+    totalRecruiters: number;
+    totalApplicants: number;
+    totalJobs: number;
+    openPositions: number;
+    joined: number;
+  };
+  funnel_data: {
+    labels: string[];
+    data: number[];
+  };
+  job_status_data: {
+    labels: string[];
+    data: number[];
+  };
+  monthly_trends: MetricData[];
+  recruiter_performance: RecruiterPerformance[];
+  applicants: JobApplicant[];
+  jobs: JobOpening[];
+}
 
-const dummyJobs: JobOpening[] = [
-  {
-    id: "1",
-    title: "Software Engineer",
-    client: "TechCorp",
-    location: "Bangalore",
-    status: "Open",
-    positions: 3,
-    createdDate: "2025-08-01",
-    recruiter: "1",
-  },
-  {
-    id: "2",
-    title: "Product Manager",
-    client: "InnovateLtd",
-    location: "Mumbai",
-    status: "Open",
-    positions: 2,
-    createdDate: "2025-08-05",
-    recruiter: "1",
-  },
-  {
-    id: "3",
-    title: "Data Analyst",
-    client: "DataVision",
-    location: "Delhi",
-    status: "Open",
-    positions: 1,
-    createdDate: "2025-08-10",
-    recruiter: "2",
-  },
-];
+const API_BASE_URL =
+  "/method/recruitment_app.project_manager.get_manager_dashboard_data";
 
 export default function ManagerDashboard() {
   const router = useRouter();
   const [selectedClient, setSelectedClient] = useState<string>("All");
-  const [selectedRecruiter, setSelectedRecruiter] = useState<string>("4");
-  const [timePeriod, setTimePeriod] = useState<"week" | "month" | "quarter">("month");
-  const [loading, setLoading] = useState(false);
-
-  const clients = useMemo(
-    () => ["All", ...Array.from(new Set(dummyJobs.map((j) => j.client)))],
-    []
+  const [selectedRecruiter, setSelectedRecruiter] = useState<string>("All");
+  const [timePeriod, setTimePeriod] = useState<"week" | "month" | "quarter">(
+    "month"
   );
+  const [loading, setLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(
+    null
+  );
+  const [error, setError] = useState<string | null>(null);
 
-  // Helper function to filter data by time period
-  const filterByTimePeriod = (dateString: string) => {
-    const now = new Date();
-    const date = new Date(dateString);
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  // Fetch dashboard data from API
+ const fetchDashboardData = async () => {
+  setLoading(true);
+  setError(null);
 
-    switch (timePeriod) {
-      case "week":
-        return diffDays <= 7;
-      case "month":
-        return diffDays <= 30;
-      case "quarter":
-        return diffDays <= 90;
-      default:
-        return true;
-    }
-  };
+  try {
+    const params = new URLSearchParams();
 
-  const filteredApplicants = useMemo(() => {
-    let filtered = dummyApplicants.filter((a) => filterByTimePeriod(a.appliedDate));
-    
     if (selectedClient !== "All") {
-      filtered = filtered.filter((a) => a.client === selectedClient);
+      params.append("client", selectedClient);
     }
-    
-    if (selectedRecruiter !== "4") {
-      filtered = filtered.filter((a) => a.recruiter === selectedRecruiter);
+
+    if (selectedRecruiter !== "All") {
+      params.append("recruiter", selectedRecruiter);
     }
+
+    params.append("time_period", timePeriod);
+
+    const url = `${API_BASE_URL}?${params.toString()}`;
     
-    return filtered;
+    console.log("Fetching from URL:", url);
+    
+    // Assuming frappeAPI returns data directly
+    const result = await frappeAPI.makeAuthenticatedRequest("GET", url);
+
+    console.log("API Result:", result);
+
+    if (result && result.message && result.message.success) {
+      setDashboardData(result.message);
+    } else {
+      throw new Error(result?.message?.error || "Invalid API response");
+    }
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : "Failed to fetch data";
+    setError(errorMessage);
+    console.error("Error fetching dashboard data:", err);
+  } finally {
+    setLoading(false);
+  }
+};
+  // Fetch data when filters change
+  useEffect(() => {
+    fetchDashboardData();
   }, [selectedClient, selectedRecruiter, timePeriod]);
 
-  const filteredJobs = useMemo(() => {
-    let filtered = dummyJobs.filter((j) => filterByTimePeriod(j.createdDate));
-    
-    if (selectedClient !== "All") {
-      filtered = filtered.filter((j) => j.client === selectedClient);
-    }
-    
-    if (selectedRecruiter !== "4") {
-      filtered = filtered.filter((j) => j.recruiter === selectedRecruiter);
-    }
-    
-    return filtered;
-  }, [selectedClient, selectedRecruiter, timePeriod]);
+  const clients = useMemo(() => {
+    return dashboardData?.clients || ["All Clients"];
+  }, [dashboardData]);
+
+  const recruiters = useMemo(() => {
+    if (!dashboardData?.recruiters) return [];
+    return [
+      { id: "All", name: "All Recruiters", email: "all@company.com" },
+      ...dashboardData.recruiters,
+    ];
+  }, [dashboardData]);
 
   const currentRecruiterName = useMemo(() => {
-    if (selectedRecruiter === "4") return "All Recruiters";
-    return recruiters.find(r => r.id === selectedRecruiter)?.name || "Recruiter";
-  }, [selectedRecruiter]);
+    if (selectedRecruiter === "All") return "All Recruiters";
+    return (
+      recruiters.find((r) => r.id === selectedRecruiter)?.name || "Recruiter"
+    );
+  }, [selectedRecruiter, recruiters]);
 
   const activeClients = useMemo(() => {
-    return clients.filter(c => c !== "All").length;
+    return clients.filter((c) => c !== "All").length;
   }, [clients]);
 
   const teamMetrics = useMemo(() => {
-    const totalRecruiters = selectedRecruiter === "4" ? recruiters.length - 1 : 1;
-    const totalApplicants = filteredApplicants.length;
-    const totalJobs = filteredJobs.length;
-    const openPositions = filteredJobs.filter(j => j.status === "Open").length;
-    const joined = filteredApplicants.filter(a => a.status === "Joined").length;
-    
-    return {
-      totalRecruiters,
-      totalApplicants,
-      totalJobs,
-      openPositions,
-      joined,
-    };
-  }, [filteredApplicants, filteredJobs, selectedRecruiter]);
+    if (!dashboardData) {
+      return {
+        totalRecruiters: 0,
+        totalApplicants: 0,
+        totalJobs: 0,
+        openPositions: 0,
+        joined: 0,
+      };
+    }
+    return dashboardData.team_metrics;
+  }, [dashboardData]);
 
   const exportCSV = () => {
+    if (!dashboardData?.applicants) return;
+
     const csvRows = [];
     csvRows.push(
-      "Name,Email,Job Title,Client,Status,Applied Date,Last Updated,Recruiter"
+      "Name,Email,Phone,Job Title,Client,Status,Applied Date,Last Updated,Recruiter"
     );
-    filteredApplicants.forEach((a) => {
-      const recruiterName = recruiters.find(r => r.id === a.recruiter)?.name || "Unknown";
+
+    dashboardData.applicants.forEach((a) => {
+      const recruiterName =
+        recruiters.find((r) => r.id === a.recruiter)?.name || "Unknown";
       csvRows.push(
-        `${a.name},${a.email},${a.job_title},${a.client},${a.status},${a.appliedDate},${a.lastUpdated},${recruiterName}`
+        `${a.name},${a.email},${a.phone},${a.job_title},${a.client},${a.status},${a.appliedDate},${a.lastUpdated},${recruiterName}`
       );
     });
+
     const csvContent = csvRows.join("\n");
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
@@ -296,46 +247,30 @@ export default function ManagerDashboard() {
     URL.revokeObjectURL(url);
   };
 
-  const funnelStages = [
-    "Tagged",
-    "Shortlisted",
-    "AssessmentStage",
-    "InterviewStage",
-    "Offered",
-    "OfferRejected",
-    "Rejected",
-    "Joined",
-  ];
-
   const funnelData = useMemo(() => {
-    const totalApplicants = filteredApplicants.length;
-    const stageData = funnelStages.map(
-      (stage) => filteredApplicants.filter((a) => a.status === stage).length
-    );
+    if (!dashboardData?.funnel_data) {
+      return {
+        labels: [],
+        datasets: [],
+      };
+    }
 
     return {
-      labels: [
-        "Total CV's Uploaded",
-        ...funnelStages.map((s) =>
-          s
-            .replace(/([A-Z])/g, " $1")
-            .replace(/^./, (str) => str.toUpperCase())
-            .replace("Stage", " Stage")
-        ),
-      ],
+      labels: dashboardData.funnel_data.labels,
       datasets: [
         {
           label: "Candidates",
-          data: [totalApplicants, ...stageData],
+          data: dashboardData.funnel_data.data,
           backgroundColor: [
             "#6366F1",
+            "#94A3B8",
             "#E0E7FF",
             "#C7D2FE",
             "#A5B4FC",
             "#FBBF24",
             "#818CF8",
+            "#8B5CF6",
             "#F59E0B",
-            "#EF4444",
             "#10B981",
           ],
           borderColor: "#FFFFFF",
@@ -344,44 +279,45 @@ export default function ManagerDashboard() {
         },
       ],
     };
-  }, [filteredApplicants]);
+  }, [dashboardData]);
 
   const jobStatusData = useMemo(() => {
-    const statusCounts = filteredJobs.reduce((acc, job) => {
-      acc[job.status] = (acc[job.status] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    if (!dashboardData?.job_status_data) {
+      return {
+        labels: [],
+        datasets: [],
+      };
+    }
+
     return {
-      labels: ["Open", "Offered", "Joined", "Cancelled"],
+      labels: dashboardData.job_status_data.labels,
       datasets: [
         {
-          data: [
-            statusCounts["Open"] || 0,
-            statusCounts["Offered"] || 0,
-            statusCounts["Joined"] || 0,
-            statusCounts["Cancelled"] || 0,
-          ],
+          data: dashboardData.job_status_data.data,
           backgroundColor: ["#6366F1", "#F59E0B", "#10B981", "#EF4444"],
           borderColor: "#FFFFFF",
           borderWidth: 2,
         },
       ],
     };
-  }, [filteredJobs]);
+  }, [dashboardData]);
 
   const recruiterPerformanceData = useMemo(() => {
-    const recruiterList = selectedRecruiter === "4" 
-      ? recruiters.filter(r => r.id !== "4")
-      : recruiters.filter(r => r.id === selectedRecruiter);
+    if (!dashboardData?.recruiter_performance) {
+      return {
+        labels: [],
+        datasets: [],
+      };
+    }
+
+    const performanceData = dashboardData.recruiter_performance;
 
     return {
-      labels: recruiterList.map(r => r.name),
+      labels: performanceData.map((r) => r.recruiter_name),
       datasets: [
         {
           label: "Candidates Joined",
-          data: recruiterList.map(recruiter => 
-            filteredApplicants.filter(a => a.recruiter === recruiter.id && a.status === "Joined").length
-          ),
+          data: performanceData.map((r) => r.joined),
           backgroundColor: "#10B981",
           borderColor: "#10B981",
           borderWidth: 1,
@@ -389,22 +325,15 @@ export default function ManagerDashboard() {
         },
         {
           label: "Offers Made",
-          data: recruiterList.map(recruiter => 
-            filteredApplicants.filter(a => a.recruiter === recruiter.id && a.status === "Offered").length
-          ),
+          data: performanceData.map((r) => r.offered),
           backgroundColor: "#F59E0B",
           borderColor: "#F59E0B",
           borderWidth: 1,
           borderRadius: 4,
         },
         {
-          label: "Active Candidates",
-          data: recruiterList.map(recruiter => 
-            filteredApplicants.filter(a => 
-              a.recruiter === recruiter.id && 
-              !["Rejected", "OfferRejected", "Joined"].includes(a.status)
-            ).length
-          ),
+          label: "In Interview",
+          data: performanceData.map((r) => r.interview),
           backgroundColor: "#6366F1",
           borderColor: "#6366F1",
           borderWidth: 1,
@@ -412,45 +341,19 @@ export default function ManagerDashboard() {
         },
       ],
     };
-  }, [filteredApplicants, selectedRecruiter]);
+  }, [dashboardData]);
 
-  const monthlyMetrics: MetricData[] = useMemo(() => {
-    const monthLabels =
-      timePeriod === "week"
-        ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-        : timePeriod === "month"
-        ? ["Week 1", "Week 2", "Week 3", "Week 4"]
-        : ["Month 1", "Month 2", "Month 3"];
-
-    const getStatusCount = (status: string) => {
-      return filteredApplicants.filter((a) => a.status === status).length;
-    };
-
-    const totalCVCount = filteredApplicants.length;
-    const taggedCount = getStatusCount("Tagged");
-    const shortlistedCount = getStatusCount("Shortlisted");
-    const assessmentCount = getStatusCount("AssessmentStage");
-    const interviewCount = getStatusCount("InterviewStage");
-    const offeredCount = getStatusCount("Offered");
-    const joinedCount = getStatusCount("Joined");
-
-    return monthLabels.map((label, index) => {
-      const factor = (index + 1) / monthLabels.length;
+  const trendData = useMemo(() => {
+    if (!dashboardData?.monthly_trends) {
       return {
-        month: label,
-        totalCVUploaded: Math.floor(totalCVCount * factor),
-        tagged: Math.floor(taggedCount * factor),
-        shortlisted: Math.floor(shortlistedCount * factor),
-        assessmentStage: Math.floor(assessmentCount * factor),
-        interviews: Math.floor(interviewCount * factor),
-        offers: Math.floor(offeredCount * factor),
-        joined: Math.floor(joinedCount * factor),
+        labels: [],
+        datasets: [],
       };
-    });
-  }, [filteredApplicants, timePeriod]);
+    }
 
-  const trendData = useMemo(
-    () => ({
+    const monthlyMetrics = dashboardData.monthly_trends;
+
+    return {
       labels: monthlyMetrics.map((m) => m.month),
       datasets: [
         {
@@ -463,6 +366,17 @@ export default function ManagerDashboard() {
           borderWidth: 2,
           pointRadius: 3,
           pointBackgroundColor: "#ec4899",
+        },
+        {
+          label: "Open",
+          data: monthlyMetrics.map((m) => m.open),
+          borderColor: "#94A3B8",
+          backgroundColor: "rgba(148,163,184,0.08)",
+          fill: true,
+          tension: 0.4,
+          borderWidth: 2,
+          pointRadius: 3,
+          pointBackgroundColor: "#94A3B8",
         },
         {
           label: "Tagged",
@@ -488,7 +402,7 @@ export default function ManagerDashboard() {
         },
         {
           label: "Assessment",
-          data: monthlyMetrics.map((m) => m.assessmentStage),
+          data: monthlyMetrics.map((m) => m.assessment),
           borderColor: "#FBBF24",
           backgroundColor: "rgba(251,191,36,0.08)",
           fill: true,
@@ -498,8 +412,8 @@ export default function ManagerDashboard() {
           pointBackgroundColor: "#FBBF24",
         },
         {
-          label: "Interviews",
-          data: monthlyMetrics.map((m) => m.interviews),
+          label: "Interview",
+          data: monthlyMetrics.map((m) => m.interview),
           borderColor: "#F59E0B",
           backgroundColor: "rgba(245,158,11,0.08)",
           fill: true,
@@ -509,8 +423,8 @@ export default function ManagerDashboard() {
           pointBackgroundColor: "#F59E0B",
         },
         {
-          label: "Offers",
-          data: monthlyMetrics.map((m) => m.offers),
+          label: "Offered",
+          data: monthlyMetrics.map((m) => m.offered),
           borderColor: "#8B5CF6",
           backgroundColor: "rgba(139,92,246,0.08)",
           fill: true,
@@ -531,9 +445,35 @@ export default function ManagerDashboard() {
           pointBackgroundColor: "#10B981",
         },
       ],
-    }),
-    [monthlyMetrics]
-  );
+    };
+  }, [dashboardData]);
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-slate-600">Loading dashboard data...</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (error) {
+    return (
+      <main className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 font-medium">Error: {error}</p>
+          <button
+            onClick={fetchDashboardData}
+            className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+          >
+            Retry
+          </button>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-slate-50">
@@ -628,12 +568,6 @@ export default function ManagerDashboard() {
             label="Active Recruiters"
             color="indigo"
           />
-          {/* <KpiCard
-            icon={<Briefcase className="h-4 w-4" />}
-            value={teamMetrics.openPositions}
-            label="Open Positions"
-            color="amber"
-          /> */}
           <KpiCard
             icon={<Briefcase className="h-4 w-4" />}
             value={teamMetrics.totalApplicants}
@@ -644,7 +578,6 @@ export default function ManagerDashboard() {
             icon={<UserCheck className="h-4 w-4" />}
             value={teamMetrics.joined}
             label="Successfully Joined"
-            trend="+3.2%"
             color="emerald"
           />
         </section>
@@ -657,13 +590,16 @@ export default function ManagerDashboard() {
               title="Recruitment Funnel"
               subtitle={`Stage-wise breakdown for ${currentRecruiterName}`}
             />
-            <div className="h-64 mt-4">
-              <Bar
+            <div className="h-80 mt-4 overflow-hidden">
+              {/* <Bar
                 data={funnelData}
                 options={{
                   responsive: true,
                   maintainAspectRatio: false,
                   indexAxis: "y",
+                  layout: {
+                    padding: { left: 10, right: 10, top: 0, bottom: 0 },
+                  },
                   plugins: {
                     legend: { display: false },
                     datalabels: {
@@ -672,9 +608,13 @@ export default function ManagerDashboard() {
                       color: "#1e293b",
                       font: {
                         weight: "bold",
-                        size: 14,
+                        size: 12,
                       },
                       formatter: (value) => (value > 0 ? value : ""),
+                    },
+                    tooltip: {
+                      titleFont: { size: 12 },
+                      bodyFont: { size: 12 },
                     },
                   },
                   scales: {
@@ -683,8 +623,7 @@ export default function ManagerDashboard() {
                       grid: { color: "#f1f5f9" },
                       border: { display: false },
                       ticks: {
-                        stepSize: 10,
-                        font: { size: 14 },
+                        font: { size: 12 },
                         color: "#64748b",
                       },
                     },
@@ -692,8 +631,72 @@ export default function ManagerDashboard() {
                       grid: { display: false },
                       border: { display: false },
                       ticks: {
-                        font: { size: 14 },
+                        font: { size: 11 },
                         color: "#475569",
+                      },
+                    },
+                  },
+                }}
+              /> */}
+
+              <Bar
+                data={funnelData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  indexAxis: "y",
+                  layout: {
+                    padding: { left: 10, right: 10, top: 0, bottom: 0 },
+                  },
+                  plugins: {
+                    legend: { display: false },
+                    datalabels: {
+                      anchor: "end",
+                      align: "end",
+                      color: "#1e293b",
+                      font: {
+                        weight: "bold",
+                        size: 12,
+                      },
+                      formatter: (value) => (value > 0 ? value : ""),
+                    },
+                    tooltip: {
+                      titleFont: { size: 12 },
+                      bodyFont: { size: 12 },
+                    },
+                  },
+                  scales: {
+                    x: {
+                      beginAtZero: true,
+                      max: 30,
+                      grid: { color: "#f1f5f9" },
+                      border: { display: false },
+                      ticks: {
+                        stepSize: 10,
+                        font: { size: 12 },
+                        color: "#64748b",
+                      },
+                    },
+                    y: {
+                      grid: { display: false },
+                      border: { display: false },
+                      ticks: {
+                        font: { size: 11 },
+                        color: "#475569",
+                        callback: function (
+                          value: number | string,
+                          index: number,
+                          ticks: any
+                        ) {
+                          // Convert value to number to use as array index
+                          const labelIndex = Number(value);
+                          const label =
+                            funnelData.labels?.[labelIndex]?.toString() || "";
+                          if (label.length > 20) {
+                            return label.substring(0, 17) + "...";
+                          }
+                          return label;
+                        },
                       },
                     },
                   },
@@ -791,7 +794,6 @@ export default function ManagerDashboard() {
                       grid: { color: "#f1f5f9" },
                       border: { display: false },
                       ticks: {
-                        stepSize: 10,
                         font: { size: 14 },
                         color: "#64748b",
                       },
@@ -852,7 +854,6 @@ export default function ManagerDashboard() {
                     grid: { color: "#f1f5f9" },
                     border: { display: false },
                     ticks: {
-                      stepSize: 1,
                       font: { size: 14 },
                       color: "#64748b",
                     },
@@ -903,12 +904,11 @@ function KpiCard({ icon, value, label, trend, color }: CardProps) {
         >
           {icon}
         </div>
-
-        <div className="flex items-center gap-1  text-5xl font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">
+        <div className="flex items-center gap-1 text-5xl font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">
           <span>{value}</span>
         </div>
       </div>
-      <div className="">
+      <div>
         <p className="text-md text-slate-500 font-medium">{label}</p>
       </div>
     </div>

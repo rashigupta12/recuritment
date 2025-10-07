@@ -51,7 +51,6 @@ interface JobApplicant {
   job_title: string;
   client: string;
   status:
-    | "Open"
     | "Tagged"
     | "Shortlisted"
     | "Assessment"
@@ -59,7 +58,6 @@ interface JobApplicant {
     | "InterviewRejected"
     | "Offered"
     | "OfferDrop"
-    | "Rejected"
     | "Joined";
   appliedDate: string;
   lastUpdated: string;
@@ -78,7 +76,6 @@ interface JobOpening {
 interface MetricData {
   month: string;
   totalCVUploaded: number;
-  open: number;
   tagged: number;
   shortlisted: number;
   assessment: number;
@@ -107,6 +104,7 @@ export default function RecruiterDashboard() {
             `/method/recruitment_app.rec_dashboard.get_recruiter_dashboard_data_by_company?email=${user.email}`
           );
           console.log(response);
+
           setApiData(response.message);
         } catch (error) {
           console.error("Error fetching dashboard data:", error);
@@ -143,17 +141,15 @@ export default function RecruiterDashboard() {
 
     const allApplicants: JobApplicant[] = [];
     
-    // Updated status mapping to match API keys and correct status values
+    // Updated status mapping without "Open" status
     const statusMapping: Record<string, JobApplicant["status"]> = {
-      open_applicants_by_company: "Open",
       tagged_applicants_by_company: "Tagged",
       shortlisted_applicants_by_company: "Shortlisted",
       assessment_stage_applicants_by_company: "Assessment",
       interview_stage_applicants_by_company: "Interview",
-      interview_rejected_applicants_by_company: "InterviewRejected",
+      interview_reject_applicants_by_company: "InterviewRejected",
       offered_applicants_by_company: "Offered",
       offer_drop_applicants_by_company: "OfferDrop",
-      rejected_applicants_by_company: "Rejected",
       joined_applicants_by_company: "Joined",
     };
 
@@ -256,7 +252,7 @@ export default function RecruiterDashboard() {
 
     // Header row
     csvRows.push(
-      "Company Name,Job Title,Open Positions,CV's Uploaded,Open,Tagged,Shortlisted,Assessment,Interview,Interview Rejected,Offered,Offer Drop,Rejected,Joined"
+      "Company Name,Job Title,Open Positions,CV's Uploaded,Tagged,Shortlisted,Assessment,Interview,Interview Rejected,Offered,Offer Drop,Rejected,Joined"
     );
 
     // Group data by company and job title
@@ -269,7 +265,6 @@ export default function RecruiterDashboard() {
       if (!companyData[a.client][a.job_title]) {
         companyData[a.client][a.job_title] = {
           cvUploaded: 0,
-          open: 0,
           tagged: 0,
           shortlisted: 0,
           assessment: 0,
@@ -300,7 +295,7 @@ export default function RecruiterDashboard() {
         ).length;
 
         csvRows.push(
-          `${company},${jobTitle},${openPositions},${stats.cvUploaded},${stats.open},${stats.tagged},${stats.shortlisted},${stats.assessment},${stats.interview},${stats.interviewRejected},${stats.offered},${stats.offerDrop},${stats.rejected},${stats.joined}`
+          `${company},${jobTitle},${openPositions},${stats.cvUploaded},${stats.tagged},${stats.shortlisted},${stats.assessment},${stats.interview},${stats.interviewRejected},${stats.offered},${stats.offerDrop},${stats.rejected},${stats.joined}`
         );
       });
     });
@@ -319,9 +314,8 @@ export default function RecruiterDashboard() {
     URL.revokeObjectURL(url);
   };
 
-  // Updated candidate status order
+  // Updated candidate status order without "Open"
   const candidateStatusOrder: JobApplicant["status"][] = [
-    "Open",
     "Tagged",
     "Shortlisted",
     "Assessment",
@@ -338,7 +332,6 @@ export default function RecruiterDashboard() {
         ? clients.filter((c) => c !== "All")
         : [selectedClient];
     const colors = [
-      "#94A3B8", // Open - slate
       "#E0E7FF", // Tagged - indigo light
       "#C7D2FE", // Shortlisted - indigo lighter
       "#A5B4FC", // Assessment - indigo
@@ -368,9 +361,8 @@ export default function RecruiterDashboard() {
     };
   }, [selectedClient, clients, filteredApplicants]);
 
-  // Updated funnel stages
+  // Updated funnel stages without "Open"
   const funnelStages: JobApplicant["status"][] = [
-    "Open",
     "Tagged",
     "Shortlisted",
     "Assessment",
@@ -403,7 +395,6 @@ export default function RecruiterDashboard() {
           data: [totalApplicants, ...stageData],
           backgroundColor: [
             "#6366F1", // Total
-            "#94A3B8", // Open
             "#E0E7FF", // Tagged
             "#C7D2FE", // Shortlisted
             "#A5B4FC", // Assessment
@@ -459,7 +450,6 @@ export default function RecruiterDashboard() {
     };
 
     const totalCVCount = filteredApplicants.length;
-    const openCount = getStatusCount("Open");
     const taggedCount = getStatusCount("Tagged");
     const shortlistedCount = getStatusCount("Shortlisted");
     const assessmentCount = getStatusCount("Assessment");
@@ -474,7 +464,6 @@ export default function RecruiterDashboard() {
       return {
         month: label,
         totalCVUploaded: Math.floor(totalCVCount * factor),
-        open: Math.floor(openCount * factor),
         tagged: Math.floor(taggedCount * factor),
         shortlisted: Math.floor(shortlistedCount * factor),
         assessment: Math.floor(assessmentCount * factor),
@@ -501,17 +490,6 @@ export default function RecruiterDashboard() {
           borderWidth: 2,
           pointRadius: 3,
           pointBackgroundColor: "#ec4899",
-        },
-        {
-          label: "Open",
-          data: monthlyMetrics.map((m) => m.open),
-          borderColor: "#94A3B8",
-          backgroundColor: "rgba(148,163,184,0.08)",
-          fill: true,
-          tension: 0.4,
-          borderWidth: 2,
-          pointRadius: 3,
-          pointBackgroundColor: "#94A3B8",
         },
         {
           label: "Tagged",
@@ -633,9 +611,8 @@ export default function RecruiterDashboard() {
     const clickedIndex = elements[0].index;
     const labels = funnelData.labels;
     
-    // Updated status mapping with correct values
+    // Updated status mapping without "Open"
     const statusMap: Record<string, string> = {
-      "Open": "open",
       "Tagged": "tagged",
       "Shortlisted": "shortlisted",
       "Assessment": "assessment",
@@ -774,13 +751,16 @@ export default function RecruiterDashboard() {
               <SectionHeader title="Applicant Funnel" subtitle="Stage-wise breakdown" />
             </div>
 
-            <div className="h-64 mt-4">
+            <div className="h-80 mt-4 overflow-hidden">
               <Bar
                 data={funnelData}
                 options={{
                   responsive: true,
                   maintainAspectRatio: false,
                   indexAxis: "y",
+                  layout: {
+                    padding: { left: 10, right: 10, top: 0, bottom: 0 },
+                  },
                   plugins: {
                     legend: { display: false },
                     datalabels: {
@@ -789,25 +769,28 @@ export default function RecruiterDashboard() {
                       color: "#1e293b",
                       font: {
                         weight: "bold",
-                        size: 14,
+                        size: 12,
                       },
                       formatter: (value) => (value > 0 ? value : ""),
+                    },
+                    tooltip: {
+                      titleFont: { size: 12 },
+                      bodyFont: { size: 12 },
                     },
                   },
                   scales: {
                     x: {
                       beginAtZero: true,
+                      max: 30,
                       grid: { color: "#f1f5f9" },
                       border: { display: false },
                       ticks: {
                         stepSize: 10,
-                        font: { size: 14 },
+                        font: { size: 12 },
                         color: "#64748b",
-                        callback: function (value) {
-                          return value;
-                        },
                       },
                     },
+                    
                     y: {
                       grid: { display: false },
                       border: { display: false },
