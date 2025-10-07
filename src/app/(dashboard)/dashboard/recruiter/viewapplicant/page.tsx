@@ -472,7 +472,7 @@ export default function ViewApplicantPage() {
                 id="status-modal-title"
                 className="text-xl font-bold text-gray-900 flex items-center gap-2"
               >
-                <Award className="h-5 w-5 text-blue-600" />
+                <Award className="h-6 w-6 text-blue-600" />
                 Confirm Status Change
               </h2>
               <button
@@ -533,7 +533,7 @@ export default function ViewApplicantPage() {
                           <p className="font-semibold text-gray-900 text-md">
                             {applicant.applicant_name || applicant.name}
                           </p>
-                          <p className="text-xs text-gray-500">
+                          <p className="text-sm text-gray-500">
                             {applicant.email_id}
                           </p>
                         </div>
