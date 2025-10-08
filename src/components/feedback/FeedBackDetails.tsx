@@ -15,7 +15,6 @@ import { Button } from "../ui/button";
 import { createPortal } from "react-dom";
 import { FeedbackItem, ImageAttachment } from "@/types/feedback";
 
-
 // Helper function to strip HTML tags
 const stripHtml = (html: string): string => {
   const tmp = document.createElement("div");
@@ -56,8 +55,6 @@ const FeedbackDetails: React.FC<{
   const [showAttachmentPreview, setShowAttachmentPreview] = useState(false);
   const [currentAttachmentIndex, setCurrentAttachmentIndex] = useState(0);
 
-  console.log(feedback);
-
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
       onClose();
@@ -85,7 +82,10 @@ const FeedbackDetails: React.FC<{
     }
   };
 
-  const getPriorityColor = (priority: string) => {
+  const getPriorityColor = (priority?: string) => {
+    if (!priority) {
+      return "bg-gray-100 text-gray-800";
+    }
     switch (priority) {
       case "High":
         return "bg-orange-500 text-white";
@@ -94,7 +94,7 @@ const FeedbackDetails: React.FC<{
       case "Low":
         return "bg-emerald-500 text-white";
       default:
-        return "bg-gray-500 text-white";
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -160,104 +160,87 @@ const FeedbackDetails: React.FC<{
 
   return createPortal(
     <div 
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[10001] flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[10001] flex items-center justify-center p-4 sm:p-6"
       onClick={handleBackdropClick}
     >
       <div
-        className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
+        className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
         onClick={stopPropagation}
       >
         {/* Header */}
-        <div className="bg-primary text-white p-4 flex-shrink-0">
+        <div className="sticky top-0 bg-gradient-to-r from-blue-600 to-blue-500 text-white p-5 flex-shrink-0 z-10 shadow-md">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               {getIssueTypeIcon(feedback.issue_type)}
-              <h2 className="text-xl font-bold">Issue Details</h2>
+              <h2 className="text-2xl font-bold tracking-tight">Issue Details</h2>
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+              className="p-2 hover:bg-white/20 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-white"
+              aria-label="Close issue details"
             >
-              <X className="h-5 w-5" />
+              <X className="h-6 w-6" />
             </button>
           </div>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-8">
           <div className="space-y-6">
-            {/* Status and Priority */}
-            <div className="flex flex-wrap gap-4">
-              <div className="flex items-center gap-2">
-                <span
-                  className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
-                    feedback.status
-                  )}`}
-                >
-                  {feedback.status}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span
-                  className={`px-3 py-1 rounded-full text-sm font-medium ${getPriorityColor(
-                    feedback.priority
-                  )}`}
-                >
-                  {feedback.priority}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="px-3 py-1 rounded-full text-sm font-medium bg-gray-300 text-gray-800">
-                  {feedback.issue_type}
-                </span>
-              </div>
+            {/* Status, Priority, and Issue Type */}
+            <div className="flex flex-wrap gap-3">
+              <span
+                className={`px-4 py-1.5 rounded-full text-sm font-medium ${getStatusColor(
+                  feedback.status
+                )} shadow-sm`}
+              >
+                {feedback.status}
+              </span>
+              <span
+                className={`px-4 py-1.5 rounded-full text-sm font-medium ${getPriorityColor(
+                  feedback.priority
+                )} shadow-sm`}
+              >
+                {feedback.priority || "N/A"}
+              </span>
+              <span className="px-4 py-1.5 rounded-full text-sm font-medium bg-gray-200 text-gray-800 shadow-sm">
+                {feedback.issue_type}
+              </span>
             </div>
 
             {/* Subject */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                Subject
-              </h3>
-              <p className="text-gray-700 bg-gray-50 p-2 rounded-lg">
-                {feedback.subject}
-              </p>
+            <div className="bg-gray-50 rounded-lg p-4 shadow-sm">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Module</h3>
+              <p className="text-gray-700 text-base">{feedback.subject}</p>
             </div>
 
             {/* Description */}
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                Description
-              </h3>
-              <div className="bg-gray-50 p-2 rounded-lg">
-                <p className="text-gray-700 whitespace-pre-wrap">
-                  {renderHtmlContent(feedback.description)}
-                </p>
+            <div className="bg-gray-50 rounded-lg p-4 shadow-sm">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Description</h3>
+              <div className="text-gray-700 text-base whitespace-pre-wrap">
+                {renderHtmlContent(feedback.description)}
               </div>
             </div>
 
-            {/* Resolution Details if available */}
+            {/* Resolution Details */}
             {feedback.resolution_details && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-5 shadow-sm">
                 <div className="flex items-center gap-2 mb-3">
-                  <CheckCircle className="h-5 w-5 text-green-600" />
-                  <h3 className="font-semibold text-green-800 text-lg">
-                    Response from Support Team
-                  </h3>
+                  <CheckCircle className="h-6 w-6 text-green-600" />
+                  <h3 className="text-lg font-semibold text-green-800">Response from Support Team</h3>
                 </div>
-                <div className="text-green-700 bg-white p-4 rounded border">
+                <div className="bg-white p-4 rounded-lg border border-gray-100 text-gray-700 text-base">
                   {renderHtmlContent(feedback.resolution_details)}
                 </div>
               </div>
             )}
 
-            {/* Dates */}
-            {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Dates and Raised By */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-1">
-                  Created
-                </h4>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Created</h4>
                 <div className="flex items-center gap-2 text-gray-600">
-                  <Calendar className="h-4 w-4" />
+                  <Calendar className="h-5 w-5" />
                   <span>
                     {fmt(feedback.opening_date)}
                     {feedback.opening_time && ` at ${feedback.opening_time}`}
@@ -265,33 +248,19 @@ const FeedbackDetails: React.FC<{
                 </div>
               </div>
               <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-1">
-                  Last Updated
-                </h4>
-                <div className="flex items-center gap-2 text-gray-600">
-                  <Calendar className="h-4 w-4" />
-                  <span>{fmt(feedback.modified)}</span>
-                </div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Raised By</h4>
+                <p className="text-gray-600 text-base">{feedback.raised_by}</p>
               </div>
-            </div> */}
-
-            {/* Raised By */}
-            {/* <div>
-              <h4 className="text-sm font-medium text-gray-700 mb-1">
-                Raised By
-              </h4>
-              <p className="text-gray-600">{feedback.raised_by}</p>
-            </div> */}
+            </div>
 
             {/* Attachments */}
             {feedback.custom_image_attachements && feedback.custom_image_attachements.length > 0 && (
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
                   <Paperclip className="h-5 w-5" />
                   Attachments ({feedback.custom_image_attachements.length})
                 </h3>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {feedback.custom_image_attachements.map((attachment, index) => {
                     const isImage = isImageFile(attachment);
                     const fileName =
@@ -301,24 +270,36 @@ const FeedbackDetails: React.FC<{
                     return (
                       <div
                         key={attachment.name || index}
-                        className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                        className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
                       >
                         <div className="flex items-center gap-3">
                           {isImage ? (
-                            <div className="w-10 h-10 rounded bg-blue-50 flex items-center justify-center">
-                              <Eye className="h-5 w-5 text-blue-500" />
+                            <div className="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center overflow-hidden">
+                              <img
+                                src={getImageUrl(attachment)}
+                                alt={fileName}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = "none";
+                                  e.currentTarget.nextElementSibling.style.display = "flex";
+                                }}
+                              />
+                              <Eye
+                                className="h-5 w-5 text-blue-500"
+                                style={{ display: "none" }}
+                              />
                             </div>
                           ) : (
-                            <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center">
+                            <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center">
                               <Paperclip className="h-5 w-5 text-gray-500" />
                             </div>
                           )}
-                          <div>
-                            <p className="text-sm font-medium text-gray-900 truncate max-w-[150px]">
+                          <div className="max-w-[150px]">
+                            <p className="text-sm font-medium text-gray-900 truncate">
                               {fileName}
                             </p>
                             {attachment.remarks && (
-                              <p className="text-xs text-gray-500 truncate max-w-[150px]">
+                              <p className="text-xs text-gray-500 truncate">
                                 {attachment.remarks}
                               </p>
                             )}
@@ -327,12 +308,11 @@ const FeedbackDetails: React.FC<{
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() =>
-                            handleAttachmentView(attachment, index)
-                          }
-                          className="h-8"
+                          onClick={() => handleAttachmentView(attachment, index)}
+                          className="h-8 hover:bg-blue-50 hover:border-blue-300 transition-colors"
                         >
-                          <Eye className="h-4 w-4" />
+                          <Eye className="h-4 w-4 mr-1" />
+                          View
                         </Button>
                       </div>
                     );
@@ -344,9 +324,14 @@ const FeedbackDetails: React.FC<{
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-200 p-4 bg-white flex-shrink-0">
+        <div className="border-t border-gray-200 p-4 bg-gray-50 flex-shrink-0">
           <div className="flex justify-end">
-            <Button onClick={onClose}>Close</Button>
+            <Button
+              onClick={onClose}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
+            >
+              Close
+            </Button>
           </div>
         </div>
 
