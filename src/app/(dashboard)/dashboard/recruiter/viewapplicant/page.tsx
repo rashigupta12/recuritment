@@ -19,6 +19,7 @@ import {
   AlertCircle,
   Award,
   Building2,
+  Download,
 } from "lucide-react";
 import { TodosHeader } from "@/components/recruiter/Header";
 
@@ -91,7 +92,7 @@ export default function ViewApplicantPage() {
   });
 
   const searchParams = useSearchParams();
-  const statusParam = searchParams.get("status") || "all"; // Default to 'all' if null
+  const statusParam = searchParams.get("status") || "all";
   const router = useRouter();
 
   const fetchApplicantsData = async (email: string): Promise<JobApplicant[]> => {
@@ -104,6 +105,66 @@ export default function ViewApplicantPage() {
       console.error("Error fetching applicants:", error);
       throw error;
     }
+  };
+
+  // Export applicants to CSV
+  const handleExport = () => {
+    const headers = [
+      "Name",
+      "Email",
+      "Phone",
+      "Country",
+      "Job Title",
+      "Designation",
+      "Status",
+      "Company",
+      "Resume",
+      "Experience",
+    ];
+    const rows = filteredApplicants.map((applicant) => [
+      applicant.applicant_name || applicant.name || "N/A",
+      applicant.email_id || "N/A",
+      applicant.phone_number || "N/A",
+      applicant.country || "N/A",
+      applicant.job_title || "N/A",
+      applicant.designation || "N/A",
+      applicant.status || "N/A",
+      applicant.custom_company_name || "N/A",
+      applicant.resume_attachment
+        ? `https://recruiter.gennextit.com${applicant.resume_attachment}`
+        : "N/A",
+      applicant.custom_experience
+        ? applicant.custom_experience
+            .map(
+              (exp) =>
+                `${exp.company_name} (${exp.designation}, ${exp.start_date} - ${
+                  exp.current_company ? "Present" : exp.end_date
+                })`
+            )
+            .join("; ")
+        : "N/A",
+    ]);
+
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row) =>
+        row
+          .map((cell) => `"${cell.replace(/"/g, '""')}"`)
+          .join(",")
+      ),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "applicants.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success("Applicants exported successfully.");
+    return Promise.resolve();
   };
 
   useEffect(() => {
@@ -127,7 +188,6 @@ export default function ViewApplicantPage() {
         const detailedApplicants = await fetchApplicantsData(email);
         setApplicants(detailedApplicants);
 
-        // Apply initial status filter from query parameter
         let filtered = detailedApplicants;
         if (statusParam && statusParam.toLowerCase() !== "all") {
           filtered = detailedApplicants.filter((applicant) =>
@@ -157,13 +217,11 @@ export default function ViewApplicantPage() {
     checkAuthAndFetchApplicants();
   }, [router, statusParam]);
 
-  // Handle filtering based on TodosHeader filters
   const handleFilterChange = (newFilters: FilterState) => {
     setFilters(newFilters);
 
     let filtered = applicants;
 
-    // Apply search query filter
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
       filtered = filtered.filter(
@@ -175,21 +233,18 @@ export default function ViewApplicantPage() {
       );
     }
 
-    // Apply job designation filter
     if (newFilters.jobTitles.length > 0) {
       filtered = filtered.filter((applicant) =>
         applicant.designation && newFilters.jobTitles.includes(applicant.designation)
       );
     }
 
-    // Apply client filter
     if (newFilters.clients.length > 0) {
       filtered = filtered.filter((applicant) =>
         applicant.custom_company_name && newFilters.clients.includes(applicant.custom_company_name)
       );
     }
 
-    // Apply status filter
     if (newFilters.status.length > 0) {
       filtered = filtered.filter((applicant) =>
         applicant.status && newFilters.status.includes(applicant.status)
@@ -199,7 +254,6 @@ export default function ViewApplicantPage() {
     setFilteredApplicants(filtered);
   };
 
-  // Handle refresh
   const handleRefresh = async () => {
     if (!userEmail) return;
     try {
@@ -212,7 +266,6 @@ export default function ViewApplicantPage() {
     }
   };
 
-  // Extract unique values for filters
   const uniqueJobTitles = Array.from(new Set(applicants.map((applicant) => applicant.designation).filter(Boolean) as string[]));
   const uniqueClients = Array.from(new Set(applicants.map((applicant) => applicant.custom_company_name).filter(Boolean) as string[]));
   const uniqueStatus = [
@@ -254,14 +307,12 @@ export default function ViewApplicantPage() {
     },
   ];
 
-  // Handle checkbox selection
   const handleSelectApplicant = (name: string) => {
     setSelectedApplicants((prev) =>
       prev.includes(name) ? prev.filter((id) => id !== name) : [...prev, name]
     );
   };
 
-  // Handle opening the confirmation modal
   const handleChangeStatus = () => {
     if (selectedApplicants.length === 0) {
       toast.error("Please select at least one applicant.");
@@ -272,7 +323,6 @@ export default function ViewApplicantPage() {
     setModalError(null);
   };
 
-  // Helper function to get status hierarchy level
   const getStatusLevel = (status: string): number => {
     const statusLevels: { [key: string]: number } = {
       "open": 0,
@@ -288,18 +338,15 @@ export default function ViewApplicantPage() {
     return statusLevels[status.toLowerCase()] ?? 0;
   };
 
-  // Helper function to check if it's a downgrade
   const isStatusDowngrade = (currentStatus: string, newStatus: string): boolean => {
     const currentLevel = getStatusLevel(currentStatus);
     const newLevel = getStatusLevel(newStatus);
     
-    // Ignore negative levels (reject/drop states)
     if (currentLevel === -1 || newLevel === -1) return false;
     
     return newLevel < currentLevel;
   };
 
-  // Handle confirming the status change
   const handleConfirmStatusChange = async () => {
     if (!selectedStatus) {
       setModalError("Please select a status.");
@@ -317,7 +364,6 @@ export default function ViewApplicantPage() {
       setLoading(true);
       const failedUpdates: string[] = [];
 
-      // Update status for all selected applicants
       for (const name of selectedApplicants) {
         if (!name) {
           failedUpdates.push("Unknown (missing name)");
@@ -335,7 +381,6 @@ export default function ViewApplicantPage() {
         }
       }
 
-      // Refresh applicants data
       const detailedApplicants = await fetchApplicantsData(userEmail);
       setApplicants(detailedApplicants);
       setFilteredApplicants(detailedApplicants);
@@ -367,21 +412,18 @@ export default function ViewApplicantPage() {
     }
   };
 
-  // Handle status change request with downgrade check
   const handleStatusChangeRequest = () => {
     if (!selectedStatus) {
       setModalError("Please select a status.");
       return;
     }
     
-    // Check if any selected applicant is being downgraded
     const applicantDetails = applicants.filter((applicant) => selectedApplicants.includes(applicant.name));
     const downgrades = applicantDetails.filter((applicant) =>
       applicant.status && isStatusDowngrade(applicant.status, selectedStatus)
     );
     
     if (downgrades.length > 0) {
-      // Show warning popup
       const firstDowngrade = downgrades[0];
       setDowngradeInfo({
         from: firstDowngrade.status || "",
@@ -389,24 +431,20 @@ export default function ViewApplicantPage() {
       });
       setShowDowngradeWarning(true);
     } else {
-      // No downgrades, proceed directly
       handleConfirmStatusChange();
     }
   };
 
-  // Handle closing the modal
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedStatus("");
     setModalError(null);
   };
 
-  // Handle opening applicant details
   const handleOpenDetailsModal = (applicant: JobApplicant) => {
     setSelectedApplicant(applicant);
   };
 
-  // Handle closing applicant details
   const handleCloseDetailsModal = () => {
     setSelectedApplicant(null);
   };
@@ -462,28 +500,27 @@ export default function ViewApplicantPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <TodosHeader
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          onRefresh={handleRefresh}
-          totalJobs={applicants.length}
-          filteredJobs={filteredApplicants.length}
-          uniqueJobTitles={uniqueJobTitles}
-          uniqueClients={uniqueClients}
-          uniqueStatus={uniqueStatus}
-          onFilterChange={handleFilterChange}
-          filterConfig={filterConfig}
-          title="Applicants"
-        />
-        {/* <div className="flex justify-end my-4">
-          <button
-            onClick={handleChangeStatus}
-            disabled={selectedApplicants.length === 0}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-medium whitespace-nowrap"
-          >
-            Update Status
-          </button>
-        </div> */}
+        <div className="flex justify-between items-center gap-3 mb-4">
+         
+         
+          <TodosHeader
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            onRefresh={handleRefresh}
+            totalJobs={applicants.length}
+            filteredJobs={filteredApplicants.length}  
+            uniqueJobTitles={uniqueJobTitles}
+            uniqueClients={uniqueClients}
+            uniqueStatus={uniqueStatus}
+            onFilterChange={handleFilterChange}
+            onexpotcsv ={handleExport}
+            filterConfig={filterConfig}
+            title="Applicants"
+          />
+         
+          
+        </div>
+         
         {error && (
           <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-6">
             <div className="flex items-start gap-3">
@@ -521,15 +558,15 @@ export default function ViewApplicantPage() {
         ) : (
           <ApplicantsTable
             applicants={filteredApplicants}
-            selectedApplicants={selectedApplicants}
-            onSelectApplicant={handleSelectApplicant}
+            // selectedApplicants={selectedApplicants}
+            // onSelectApplicant={handleSelectApplicant}
             onViewDetails={handleOpenDetailsModal}
-            showCheckboxes={true}
+            // showCheckboxes={true}
             showStatus={true}
           />
+          
         )}
-        {/* Status Update Confirmation Modal */}
-        {isModalOpen && (
+        {/* {isModalOpen && (
           <div
             className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
             role="dialog"
@@ -637,8 +674,7 @@ export default function ViewApplicantPage() {
               </div>
             </div>
           </div>
-        )}
-        {/* Applicant Details Modal */}
+        )} */}
         {selectedApplicant && (
           <div
             className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
@@ -659,7 +695,6 @@ export default function ViewApplicantPage() {
                   <X className="h-5 w-5" />
                 </button>
               </div>
-              {/* Profile Header */}
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 mb-6 border border-blue-100">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                   <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
@@ -682,7 +717,6 @@ export default function ViewApplicantPage() {
                   </span>
                 </div>
               </div>
-              {/* Contact Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
                   <Mail className="h-5 w-5 text-gray-500 flex-shrink-0" />
@@ -724,7 +758,6 @@ export default function ViewApplicantPage() {
                   </div>
                 </div>
               </div>
-              {/* Experience Section */}
               <div className="mb-6">
                 <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
                   <Briefcase className="h-5 w-5 text-gray-600" />
@@ -734,7 +767,7 @@ export default function ViewApplicantPage() {
                   <div className="space-y-3">
                     {selectedApplicant.custom_experience.map((exp, index) => (
                       <div key={index} className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
-                        <div className="flex flex-col sm:flex-row sm:items-start sm:justif y-between mb-2 gap-2">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-2 gap-2">
                           <h5 className="text-md font-semibold text-gray-900">{exp.company_name}</h5>
                           <span
                             className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -773,8 +806,7 @@ export default function ViewApplicantPage() {
             </div>
           </div>
         )}
-        {/* Downgrade Warning Modal */}
-        {showDowngradeWarning && downgradeInfo && (
+        {/* {showDowngradeWarning && downgradeInfo && (
           <div
             className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]"
             role="dialog"
@@ -841,7 +873,7 @@ export default function ViewApplicantPage() {
               </div>
             </div>
           </div>
-        )}
+        )} */}
       </div>
     </div>
   );
