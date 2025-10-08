@@ -1,8 +1,9 @@
-import React from 'react'
+// app/dashboard/sales-manager/requirements/page.tsx
+import StaffingPlansList from '@/components/Requirements/RequiremtsView'
 
 const Requirements = () => {
   return (
-    <div>Requirements</div>
+    <StaffingPlansList />
   )
 }
 

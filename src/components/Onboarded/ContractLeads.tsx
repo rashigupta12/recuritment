@@ -36,7 +36,7 @@ const ContractLeads = () => {
       setLoading(true);
 
       // Single API call to get customers with contract-ready leads
-      const response = await frappeAPI.getContractReadyLeads(email);
+      const response = await frappeAPI.getContractReadyLeadsRecuiter(email);
       
       if (response.data && Array.isArray(response.data)) {
         setLeads(response.data);
@@ -93,7 +93,7 @@ const handleEditLead = useCallback((lead: any) => {
 }, []);
 
 const handleCreateContract = useCallback(async (lead: any) => {
-  await router.push(`/dashboard/sales-manager/requirements/create?leadId=${lead.name}`);
+  await router.push(`/dashboard/recruiter/requirements/create?leadId=${lead.name}`);
 }, [router]);
 
   const handleConfirmBack = useCallback(() => {
@@ -118,7 +118,7 @@ const handleCreateContract = useCallback(async (lead: any) => {
   <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
 
   {/* Search Bar */}
-  <div className="relative w-1/2">
+  <div className="relative ">
     <input
       type="text"
       placeholder="Search leads by name, company, email, industry, or city..."

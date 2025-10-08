@@ -31,6 +31,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Bar, Doughnut, Line } from "react-chartjs-2";
 import ChartDataLabels from "chartjs-plugin-datalabels";
 
+// Register ChartJS components
 ChartJS.register(
   ArcElement,
   Tooltip,
@@ -44,6 +45,7 @@ ChartJS.register(
   ChartDataLabels
 );
 
+// Type Definitions
 interface JobApplicant {
   id: string;
   name: string;
@@ -74,22 +76,29 @@ interface JobOpening {
 }
 
 interface MetricData {
-  month: string;
+  period: string;
   totalCVUploaded: number;
   tagged: number;
   shortlisted: number;
   assessment: number;
   interview: number;
-  interviewRejected: number;
+  interviewReject: number;
   offered: number;
   offerDrop: number;
   joined: number;
 }
 
+interface QuarterInfo {
+  quarter: number;
+  start_date: string;
+  end_date: string;
+  months: string[];
+}
+
 export default function RecruiterDashboard() {
   const router = useRouter();
   const [selectedClient, setSelectedClient] = useState<string>("All");
-  const [timePeriod, setTimePeriod] = useState<"week" | "month" | "quarter">("month");
+  const [trendPeriod, setTrendPeriod] = useState<"week" | "month" | "quarter">("month"); // filter for Trends only
   const { user } = useAuth();
   const [apiData, setApiData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -102,10 +111,8 @@ export default function RecruiterDashboard() {
           setLoading(true);
           const response = await frappeAPI.makeAuthenticatedRequest(
             "GET",
-            `/method/recruitment_app.rec_dashboard.get_recruiter_dashboard_data_by_company?email=${user.email}`
+            `/method/recruitment_app.rec_dashboard.get_recruiter_dashboard_both?email=${user.email}`
           );
-          console.log(response);
-
           setApiData(response.message);
         } catch (error) {
           console.error("Error fetching dashboard data:", error);
@@ -117,32 +124,16 @@ export default function RecruiterDashboard() {
     fetchData();
   }, [user?.email]);
 
-  // Helper function to filter data by time period
-  const filterByTimePeriod = (dateString: string) => {
-    const now = new Date();
-    const date = new Date(dateString);
-    const diffTime = Math.abs(now.getTime() - date.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    switch (timePeriod) {
-      case "week":
-        return diffDays <= 7;
-      case "month":
-        return diffDays <= 30;
-      case "quarter":
-        return diffDays <= 90;
-      default:
-        return true;
-    }
-  };
+  // Get clients from API data
+  const clients = useMemo(() => {
+    if (!apiData?.jobs_opening_by_company?.jobs_by_company) return ["All"];
+    return ["All", ...Object.keys(apiData.jobs_opening_by_company.jobs_by_company)];
+  }, [apiData]);
 
   // Transform API data to match component structure
   const transformedApplicants = useMemo((): JobApplicant[] => {
     if (!apiData) return [];
-
     const allApplicants: JobApplicant[] = [];
-    
-    // Updated status mapping without "Open" status
     const statusMapping: Record<string, JobApplicant["status"]> = {
       tagged_applicants_by_company: "Tagged",
       shortlisted_applicants_by_company: "Shortlisted",
@@ -153,11 +144,9 @@ export default function RecruiterDashboard() {
       offer_drop_applicants_by_company: "OfferDrop",
       joined_applicants_by_company: "Joined",
     };
-
     Object.keys(statusMapping).forEach((key) => {
       const statusData = apiData[key]?.applicants_by_company || {};
       const status = statusMapping[key];
-
       Object.entries(statusData).forEach(
         ([company, applicants]: [string, any]) => {
           (applicants || []).forEach((applicant: any) => {
@@ -175,16 +164,13 @@ export default function RecruiterDashboard() {
         }
       );
     });
-
     return allApplicants;
   }, [apiData]);
 
-  // Transform jobs data from API
   const transformedJobs = useMemo((): JobOpening[] => {
-    if (!apiData?.jobs_by_company) return [];
-
+    if (!apiData?.jobs_opening_by_company?.jobs_by_company) return [];
     const jobs: JobOpening[] = [];
-    Object.entries(apiData.jobs_by_company).forEach(
+    Object.entries(apiData.jobs_opening_by_company.jobs_by_company).forEach(
       ([company, jobTitles]: [string, any]) => {
         (jobTitles || []).forEach((title: string, index: number) => {
           jobs.push({
@@ -199,58 +185,108 @@ export default function RecruiterDashboard() {
         });
       }
     );
-
     return jobs;
   }, [apiData]);
 
-  // Get clients from API data
-  const clients = useMemo(() => {
-    if (!apiData?.companies) return ["All"];
-    return ["All", ...apiData.companies];
-  }, [apiData]);
-
-  // Calculate max width based on the longest company name
+  // Calculate select width
   const selectWidth = useMemo(() => {
     if (!clients.length) return "200px";
-    
     const maxLength = Math.max(...clients.map(client => client.length));
-    // Base width + additional width based on character count
     const baseWidth = 120;
     const charWidth = 8;
     const calculatedWidth = baseWidth + (maxLength * charWidth);
-    
-    // Set reasonable min and max bounds
     return `${Math.min(Math.max(calculatedWidth, 150), 400)}px`;
   }, [clients]);
 
+  // Filtering
   const filteredApplicants = useMemo(
     () =>
-      (selectedClient === "All"
+      selectedClient === "All"
         ? transformedApplicants
-        : transformedApplicants.filter((a) => a.client === selectedClient)
-      ).filter((a) => filterByTimePeriod(a.appliedDate)),
-    [selectedClient, transformedApplicants, timePeriod]
+        : transformedApplicants.filter((a) => a.client === selectedClient),
+    [selectedClient, transformedApplicants]
   );
-
   const filteredJobs = useMemo(
     () =>
-      (selectedClient === "All"
+      selectedClient === "All"
         ? transformedJobs
-        : transformedJobs.filter((j) => j.client === selectedClient)
-      ).filter((j) => filterByTimePeriod(j.createdDate)),
-    [selectedClient, transformedJobs, timePeriod]
+        : transformedJobs.filter((j) => j.client === selectedClient),
+    [selectedClient, transformedJobs]
   );
-
   const activeClients = useMemo(() => {
-    return apiData?.companies?.length || 0;
-  }, [apiData]);
+    return clients.length - 1; // Subtract "All"
+  }, [clients]);
+
+  // ----------- Trends Data (Filtered & up-to-date for October) ----------------
+  // Only current-to-date (not whole October)
+  const processedTrendsData = useMemo(() => {
+    if (!apiData?.trends_data?.trends) return [];
+    const trends = apiData.trends_data.trends;
+    const today = new Date();
+    // filter data up till 'today'
+    const filteredTrends = trends.filter((m: MetricData) => {
+      if (!m.period.match(/\d{4}-\d{2}/)) return true; // keep those not in YYYY-MM format
+      // Assumes m.period is like '2025-10'
+      const [year, month] = m.period.split("-");
+      const dateCheck = new Date(Number(year), Number(month) - 1);
+      return dateCheck <= today;
+    });
+    const quarterInfo = apiData.trends_data.quarter_info as QuarterInfo;
+    switch (trendPeriod) {
+      case "week":
+        const weeklyData: MetricData[] = [];
+        filteredTrends.forEach((monthData: any) => {
+          const month = monthData.period;
+          // Divide monthly data into 4 weeks
+          for (let week = 1; week <= 4; week++) {
+            const weekFactor = week / 4;
+            weeklyData.push({
+              period: `${month} W${week}`,
+              totalCVUploaded: Math.floor(monthData.totalCVUploaded * weekFactor),
+              tagged: Math.floor(monthData.tagged * weekFactor),
+              shortlisted: Math.floor(monthData.shortlisted * weekFactor),
+              assessment: Math.floor(monthData.assessment * weekFactor),
+              interview: Math.floor(monthData.interview * weekFactor),
+              interviewReject: Math.floor(monthData.interviewReject * weekFactor),
+              offered: Math.floor(monthData.offered * weekFactor),
+              offerDrop: Math.floor(monthData.offerDrop * weekFactor),
+              joined: Math.floor(monthData.joined * weekFactor),
+            });
+          }
+        });
+        return weeklyData;
+
+      case "month":
+        return filteredTrends;
+
+      case "quarter":
+        const quarterlyData: MetricData = {
+          period: `Q${quarterInfo.quarter} ${new Date(quarterInfo.start_date).getFullYear()}`,
+          totalCVUploaded: filteredTrends.reduce((sum: number, month: any) => sum + month.totalCVUploaded, 0),
+          tagged: filteredTrends.reduce((sum: number, month: any) => sum + month.tagged, 0),
+          shortlisted: filteredTrends.reduce((sum: number, month: any) => sum + month.shortlisted, 0),
+          assessment: filteredTrends.reduce((sum: number, month: any) => sum + month.assessment, 0),
+          interview: filteredTrends.reduce((sum: number, month: any) => sum + month.interview, 0),
+          interviewReject: filteredTrends.reduce((sum: number, month: any) => sum + month.interviewReject, 0),
+          offered: filteredTrends.reduce((sum: number, month: any) => sum + month.offered, 0),
+          offerDrop: filteredTrends.reduce((sum: number, month: any) => sum + month.offerDrop, 0),
+          joined: filteredTrends.reduce((sum: number, month: any) => sum + month.joined, 0),
+        };
+        return [quarterlyData];
+
+      default:
+        return filteredTrends;
+    }
+  }, [apiData, trendPeriod]);
+  // ------------------------------------------------------
 
   const kpiMetrics = useMemo(() => {
-    const total = apiData?.summary?.total_applicants || 0;
-    const tagged = apiData?.metrics?.Tagged || 0;
-    const interviews = apiData?.metrics?.Interview || 0;
-    const offered = apiData?.metrics?.Offered || 0;
-    const joined = apiData?.metrics?.Joined || 0;
+    const metrics = apiData?.trends_data?.metrics || {};
+    const total = metrics.totalApplicants || 0;
+    const tagged = metrics.tagged || 0;
+    const interviews = metrics.interview || 0;
+    const offered = metrics.offered || 0;
+    const joined = metrics.joined || 0;
 
     return {
       totalApplicants: total,
@@ -264,15 +300,10 @@ export default function RecruiterDashboard() {
 
   const exportCSV = () => {
     const csvRows = [];
-
-    // Header row
     csvRows.push(
       "Company Name,Job Title,Open Positions,CV's Uploaded,Tagged,Shortlisted,Assessment,Interview,Interview Rejected,Offered,Offer Drop,Rejected,Joined"
     );
-
-    // Group data by company and job title
     const companyData: Record<string, Record<string, any>> = {};
-
     filteredApplicants.forEach((a) => {
       if (!companyData[a.client]) {
         companyData[a.client] = {};
@@ -291,45 +322,35 @@ export default function RecruiterDashboard() {
           joined: 0,
         };
       }
-
       companyData[a.client][a.job_title].cvUploaded++;
-
-      // Map status to lowercase property name
       const statusKey = a.status.charAt(0).toLowerCase() + a.status.slice(1);
       if (companyData[a.client][a.job_title][statusKey] !== undefined) {
         companyData[a.client][a.job_title][statusKey]++;
       }
     });
-
-    // Add job data
     Object.entries(companyData).forEach(([company, jobs]) => {
       Object.entries(jobs).forEach(([jobTitle, stats]: [string, any]) => {
         const openPositions = filteredJobs.filter(
-          (j) =>
-            j.client === company && j.title === jobTitle && j.status === "Open"
+          (j) => j.client === company && j.title === jobTitle && j.status === "Open"
         ).length;
-
         csvRows.push(
           `${company},${jobTitle},${openPositions},${stats.cvUploaded},${stats.tagged},${stats.shortlisted},${stats.assessment},${stats.interview},${stats.interviewRejected},${stats.offered},${stats.offerDrop},${stats.rejected},${stats.joined}`
         );
       });
     });
-
     const csvContent = csvRows.join("\n");
     const blob = new Blob([csvContent], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `recruiter-dashboard-${selectedClient}-${timePeriod}-${
-      new Date().toISOString().split("T")[0]
-    }.csv`;
+    a.download = `recruiter-dashboard-${selectedClient}-${trendPeriod}-${new Date().toISOString().split("T")[0]}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
 
-  // Updated candidate status order without "Open"
+  // Candidate status order
   const candidateStatusOrder: JobApplicant["status"][] = [
     "Tagged",
     "Shortlisted",
@@ -347,26 +368,14 @@ export default function RecruiterDashboard() {
         ? clients.filter((c) => c !== "All")
         : [selectedClient];
     const colors = [
-      "#E0E7FF", // Tagged - indigo light
-      "#C7D2FE", // Shortlisted - indigo lighter
-      "#A5B4FC", // Assessment - indigo
-      "#FBBF24", // Interview - amber
-      "#818CF8", // Interview Rejected - indigo-violet
-      "#6366F1", // Offered - indigo bold
-      "#F59E0B", // Offer Drop - amber bold
-      "#10B981", // Joined - emerald
+      "#E0E7FF", "#C7D2FE", "#A5B4FC", "#FBBF24", "#818CF8", "#6366F1", "#F59E0B", "#10B981"
     ];
     return {
       labels: clientGroups,
       datasets: candidateStatusOrder.map((status, idx) => ({
-        label: status
-          .replace(/([A-Z])/g, " $1")
-          .replace(/^./, (str) => str.toUpperCase())
-          .trim(),
+        label: status.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase()).trim(),
         data: clientGroups.map((client) => {
-          const clientApplicants = filteredApplicants.filter(
-            (a) => a.client === client
-          );
+          const clientApplicants = filteredApplicants.filter((a) => a.client === client);
           return clientApplicants.filter((a) => a.status === status).length;
         }),
         backgroundColor: colors[idx % colors.length],
@@ -376,16 +385,8 @@ export default function RecruiterDashboard() {
     };
   }, [selectedClient, clients, filteredApplicants]);
 
-  // Updated funnel stages without "Open"
   const funnelStages: JobApplicant["status"][] = [
-    "Tagged",
-    "Shortlisted",
-    "Assessment",
-    "Interview",
-    "InterviewRejected",
-    "Offered",
-    "OfferDrop",
-    "Joined",
+    "Tagged", "Shortlisted", "Assessment", "Interview", "InterviewRejected", "Offered", "OfferDrop", "Joined"
   ];
 
   const funnelData = useMemo(() => {
@@ -393,15 +394,11 @@ export default function RecruiterDashboard() {
     const stageData = funnelStages.map(
       (stage) => filteredApplicants.filter((a) => a.status === stage).length
     );
-
     return {
       labels: [
         "Total CV's Uploaded",
         ...funnelStages.map((s) =>
-          s
-            .replace(/([A-Z])/g, " $1")
-            .replace(/^./, (str) => str.toUpperCase())
-            .trim()
+          s.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase()).trim()
         ),
       ],
       datasets: [
@@ -409,15 +406,8 @@ export default function RecruiterDashboard() {
           label: "Candidates",
           data: [totalApplicants, ...stageData],
           backgroundColor: [
-            "#6366F1", // Total
-            "#E0E7FF", // Tagged
-            "#C7D2FE", // Shortlisted
-            "#A5B4FC", // Assessment
-            "#FBBF24", // Interview
-            "#818CF8", // Interview Rejected
-            "#8B5CF6", // Offered
-            "#F59E0B", // Offer Drop
-            "#10B981", // Joined
+            "#6366F1", "#E0E7FF", "#C7D2FE", "#A5B4FC", "#FBBF24",
+            "#818CF8", "#8B5CF6", "#F59E0B", "#10B981"
           ],
           borderColor: "#FFFFFF",
           borderWidth: 1,
@@ -450,54 +440,13 @@ export default function RecruiterDashboard() {
     };
   }, [filteredJobs]);
 
-  // Generate monthly metrics from current data filtered by selected company
-  const monthlyMetrics: MetricData[] = useMemo(() => {
-    const monthLabels =
-      timePeriod === "week"
-        ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-        : timePeriod === "month"
-        ? ["Week 1", "Week 2", "Week 3", "Week 4"]
-        : ["Month 1", "Month 2", "Month 3"];
-
-    // Get counts for selected company or all companies
-    const getStatusCount = (status: JobApplicant["status"]) => {
-      return filteredApplicants.filter((a) => a.status === status).length;
-    };
-
-    const totalCVCount = filteredApplicants.length;
-    const taggedCount = getStatusCount("Tagged");
-    const shortlistedCount = getStatusCount("Shortlisted");
-    const assessmentCount = getStatusCount("Assessment");
-    const interviewCount = getStatusCount("Interview");
-    const interviewRejectedCount = getStatusCount("InterviewRejected");
-    const offeredCount = getStatusCount("Offered");
-    const offerDropCount = getStatusCount("OfferDrop");
-    const joinedCount = getStatusCount("Joined");
-
-    return monthLabels.map((label, index) => {
-      const factor = (index + 1) / monthLabels.length;
-      return {
-        month: label,
-        totalCVUploaded: Math.floor(totalCVCount * factor),
-        tagged: Math.floor(taggedCount * factor),
-        shortlisted: Math.floor(shortlistedCount * factor),
-        assessment: Math.floor(assessmentCount * factor),
-        interview: Math.floor(interviewCount * factor),
-        interviewRejected: Math.floor(interviewRejectedCount * factor),
-        offered: Math.floor(offeredCount * factor),
-        offerDrop: Math.floor(offerDropCount * factor),
-        joined: Math.floor(joinedCount * factor),
-      };
-    });
-  }, [filteredApplicants, timePeriod]);
-
   const trendData = useMemo(
     () => ({
-      labels: monthlyMetrics.map((m) => m.month),
+      labels: processedTrendsData.map((m: { period: any; }) => m.period),
       datasets: [
         {
           label: "Total CV's Uploaded",
-          data: monthlyMetrics.map((m) => m.totalCVUploaded),
+          data: processedTrendsData.map((m: { totalCVUploaded: any; }) => m.totalCVUploaded),
           borderColor: "#ec4899",
           backgroundColor: "rgba(236,72,153,0.08)",
           fill: true,
@@ -508,7 +457,7 @@ export default function RecruiterDashboard() {
         },
         {
           label: "Tagged",
-          data: monthlyMetrics.map((m) => m.tagged),
+          data: processedTrendsData.map((m: { tagged: any; }) => m.tagged),
           borderColor: "#6366F1",
           backgroundColor: "rgba(99,102,241,0.08)",
           fill: true,
@@ -519,7 +468,7 @@ export default function RecruiterDashboard() {
         },
         {
           label: "Shortlisted",
-          data: monthlyMetrics.map((m) => m.shortlisted),
+          data: processedTrendsData.map((m: { shortlisted: any; }) => m.shortlisted),
           borderColor: "#A5B4FC",
           backgroundColor: "rgba(165,180,252,0.08)",
           fill: true,
@@ -530,7 +479,7 @@ export default function RecruiterDashboard() {
         },
         {
           label: "Assessment",
-          data: monthlyMetrics.map((m) => m.assessment),
+          data: processedTrendsData.map((m: { assessment: any; }) => m.assessment),
           borderColor: "#FBBF24",
           backgroundColor: "rgba(251,191,36,0.08)",
           fill: true,
@@ -541,7 +490,7 @@ export default function RecruiterDashboard() {
         },
         {
           label: "Interview",
-          data: monthlyMetrics.map((m) => m.interview),
+          data: processedTrendsData.map((m: { interview: any; }) => m.interview),
           borderColor: "#F59E0B",
           backgroundColor: "rgba(245,158,11,0.08)",
           fill: true,
@@ -552,7 +501,7 @@ export default function RecruiterDashboard() {
         },
         {
           label: "Interview Rejected",
-          data: monthlyMetrics.map((m) => m.interviewRejected),
+          data: processedTrendsData.map((m: { interviewReject: any; }) => m.interviewReject),
           borderColor: "#818CF8",
           backgroundColor: "rgba(129,140,248,0.08)",
           fill: true,
@@ -563,7 +512,7 @@ export default function RecruiterDashboard() {
         },
         {
           label: "Offered",
-          data: monthlyMetrics.map((m) => m.offered),
+          data: processedTrendsData.map((m: { offered: any; }) => m.offered),
           borderColor: "#8B5CF6",
           backgroundColor: "rgba(139,92,246,0.08)",
           fill: true,
@@ -574,7 +523,7 @@ export default function RecruiterDashboard() {
         },
         {
           label: "Offer Drop",
-          data: monthlyMetrics.map((m) => m.offerDrop),
+          data: processedTrendsData.map((m: { offerDrop: any; }) => m.offerDrop),
           borderColor: "#D97706",
           backgroundColor: "rgba(217,119,6,0.08)",
           fill: true,
@@ -585,7 +534,7 @@ export default function RecruiterDashboard() {
         },
         {
           label: "Joined",
-          data: monthlyMetrics.map((m) => m.joined),
+          data: processedTrendsData.map((m: { joined: any; }) => m.joined),
           borderColor: "#10B981",
           backgroundColor: "rgba(16,185,129,0.08)",
           fill: true,
@@ -596,16 +545,16 @@ export default function RecruiterDashboard() {
         },
       ],
     }),
-    [monthlyMetrics]
+    [processedTrendsData]
   );
 
+  // Chart click handlers
   const handleJobStatusClick = (elements: any[]) => {
     if (!elements.length) return;
     const clickedIndex = elements[0].index;
     const status = jobStatusData.labels[clickedIndex];
     router.push(`/jobs/status/${status.toLowerCase()}`);
   };
-
   const handleCandidatePipelineClick = (elements: any[]) => {
     if (!elements.length) return;
     const datasetIndex = elements[0].datasetIndex;
@@ -614,19 +563,15 @@ export default function RecruiterDashboard() {
     const status = candidatePipelineData.datasets[datasetIndex].label;
     router.push(`/candidates?client=${client}&status=${status.toLowerCase()}`);
   };
-
   const chartHover = (event: ChartEvent, elements: ActiveElement[]) => {
     const nativeEvent = event.native as unknown as MouseEvent;
     const target = nativeEvent?.target as HTMLElement;
     if (target) target.style.cursor = elements[0] ? "pointer" : "default";
   };
-
   const handleFunnelClick = (elements: any[]) => {
     if (!elements.length) return;
     const clickedIndex = elements[0].index;
     const labels = funnelData.labels;
-    
-    // Updated status mapping without "Open"
     const statusMap: Record<string, string> = {
       "Tagged": "tagged",
       "Shortlisted": "shortlisted",
@@ -637,9 +582,7 @@ export default function RecruiterDashboard() {
       "Offer Drop": "offerdrop",
       "Joined": "joined",
     };
-    
     const clickedLabel = labels[clickedIndex].trim();
-    
     if (clickedLabel === "Total CV's Uploaded") {
       router.push(`/dashboard/recruiter/viewapplicant`);
     } else {
@@ -659,13 +602,14 @@ export default function RecruiterDashboard() {
     );
   }
 
+  // ------ START MAIN RENDER ---------
   return (
     <main className="min-h-screen bg-slate-50">
       <div className="w-full mx-auto space-y-4">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-xl font-bold text-slate-800">
+            <h1 className="text-2xl font-bold text-slate-800">
               Recruiter Dashboard
             </h1>
             <p className="text-md text-slate-500 mt-0.5">
@@ -691,7 +635,6 @@ export default function RecruiterDashboard() {
                 Clients:
               </span>
             </div>
-
             <select
               ref={selectRef}
               value={selectedClient}
@@ -705,59 +648,19 @@ export default function RecruiterDashboard() {
                 </option>
               ))}
             </select>
-
-            <div className="flex items-center gap-1.5 ml-auto">
+            {/* <div className="flex items-center gap-1.5 ml-auto">
               <Calendar className="h-5 w-5 text-slate-400" />
-              <div className="flex gap-0.5 bg-slate-100 p-0.5 rounded-md">
-                {(["week", "month", "quarter"] as const).map((period) => (
-                  <button
-                    key={period}
-                    type="button"
-                    onClick={() => setTimePeriod(period)}
-                    className={`px-2 py-1 rounded text-md font-medium transition-all ${
-                      timePeriod === period
-                        ? "bg-white text-indigo-600 shadow-sm"
-                        : "text-slate-600 hover:text-slate-800"
-                    }`}
-                  >
-                    {period.charAt(0).toUpperCase() + period.slice(1)}
-                  </button>
-                ))}
-              </div>
-            </div>
+              <span className="text-md font-medium text-slate-600">Data Filters for Recruitment Trends are shown in 'Recruitment Trends' section below.</span>
+            </div> */}
           </div>
         </section>
 
         {/* KPI Cards */}
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <KpiCard
-            icon={<Building2 className="h-4 w-4" />}
-            value={activeClients}
-            label="Active Clients"
-            color="violet"
-          />
-          <KpiCard
-            icon={<Briefcase className="h-4 w-4" />}
-            value={filteredJobs.filter((j) => j.status === "Open").length}
-            label="Open Positions"
-            color="amber"
-          />
-          <KpiCard
-            icon={<Users className="h-4 w-4" />}
-            value={kpiMetrics.totalApplicants}
-            label="Total CV's uploaded"
-            trend="+5.8%"
-            color="indigo"
-          />
-          <KpiCard
-            icon={<UserCheck className="h-4 w-4" />}
-            value={
-              filteredApplicants.filter((a) => a.status === "Joined").length
-            }
-            label="Successfully Joined"
-            trend="+3.2%"
-            color="emerald"
-          />
+          <KpiCard icon={<Building2 className="h-4 w-4" />} value={activeClients} label="Active Clients" color="violet" />
+          <KpiCard icon={<Briefcase className="h-4 w-4" />} value={filteredJobs.filter((j) => j.status === "Open").length} label="Open Positions" color="amber" />
+          <KpiCard icon={<Users className="h-4 w-4" />} value={kpiMetrics.totalApplicants} label="Total CV's uploaded" trend="+5.8%" color="indigo" />
+          <KpiCard icon={<UserCheck className="h-4 w-4" />} value={filteredApplicants.filter((a) => a.status === "Joined").length} label="Successfully Joined" trend="+3.2%" color="emerald" />
         </section>
 
         {/* Main Charts */}
@@ -767,7 +670,6 @@ export default function RecruiterDashboard() {
             <div className="flex justify-between items-center">
               <SectionHeader title="Applicant Funnel" subtitle="Stage-wise breakdown" />
             </div>
-
             <div className="h-80 mt-4 overflow-hidden">
               <Bar
                 data={funnelData}
@@ -807,7 +709,6 @@ export default function RecruiterDashboard() {
                         color: "#64748b",
                       },
                     },
-                    
                     y: {
                       grid: { display: false },
                       border: { display: false },
@@ -828,7 +729,6 @@ export default function RecruiterDashboard() {
             <div className="flex justify-between items-start mb-2">
               <SectionHeader title="Job Status" subtitle="Current distribution" />
             </div>
-
             <div className="h-64 flex items-center justify-center cursor-pointer mt-2">
               <Doughnut
                 data={jobStatusData}
@@ -836,9 +736,7 @@ export default function RecruiterDashboard() {
                   responsive: true,
                   maintainAspectRatio: false,
                   plugins: {
-                    datalabels: {
-                      display: false,
-                    },
+                    datalabels: { display: false },
                     tooltip: {
                       callbacks: {
                         label: (context) => {
@@ -868,13 +766,29 @@ export default function RecruiterDashboard() {
           </div>
         </section>
 
-        {/* Recruitment Trends */}
+        {/* Recruitment Trends Section */}
         <section className="grid grid-cols-1 gap-4">
           <div className="xl:col-span-2 bg-white rounded-lg p-4 shadow-sm border border-slate-200">
-            <SectionHeader
-              title="Recruitment Trends"
-              subtitle="Performance overview"
-            />
+            <div className="flex justify-between items-center mb-2">
+              <SectionHeader title="Recruitment Trends" subtitle={`Current Quarter - ${trendPeriod}ly breakdown`} />
+              {/* Moved filters here, only for trends chart */}
+              <div className="flex gap-0.5 bg-slate-100 p-0.5 rounded-md">
+                {(["week", "month", "quarter"] as const).map((period) => (
+                  <button
+                    key={period}
+                    type="button"
+                    onClick={() => setTrendPeriod(period)}
+                    className={`px-2 py-1 rounded text-md font-medium transition-all
+                      ${trendPeriod === period
+                        ? "bg-white text-indigo-600 shadow-sm"
+                        : "text-slate-600 hover:text-slate-800"
+                      }`}
+                  >
+                    {period.charAt(0).toUpperCase() + period.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div className="h-64 mt-3">
               <Line
                 data={trendData}
@@ -893,9 +807,7 @@ export default function RecruiterDashboard() {
                       },
                       formatter: (value, context) => {
                         const datasetLength = context.dataset.data.length;
-                        return context.dataIndex === datasetLength - 1 && value > 0
-                          ? value
-                          : "";
+                        return context.dataIndex === datasetLength - 1 && value > 0 ? value : "";
                       },
                     },
                     legend: {
@@ -940,6 +852,7 @@ export default function RecruiterDashboard() {
   );
 }
 
+// --------- KPI Card Component ----------
 interface CardProps {
   icon: React.ReactNode;
   value: string | number;
@@ -967,7 +880,6 @@ function KpiCard({ icon, value, label, trend, color }: CardProps) {
       text: "text-violet-600",
     },
   };
-
   const router = useRouter();
   const handleCardClick = () => {
     switch (label) {
@@ -996,7 +908,6 @@ function KpiCard({ icon, value, label, trend, color }: CardProps) {
         >
           {icon}
         </div>
-
         <div className="flex items-center gap-1 text-5xl font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">
           <span>{value}</span>
         </div>
@@ -1008,11 +919,11 @@ function KpiCard({ icon, value, label, trend, color }: CardProps) {
   );
 }
 
+// ---- Section Header ----
 interface HeaderProps {
   title: string;
   subtitle?: string;
 }
-
 function SectionHeader({ title, subtitle }: HeaderProps) {
   return (
     <div>

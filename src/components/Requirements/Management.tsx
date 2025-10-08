@@ -16,7 +16,7 @@ import {
   Users,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   capitalizeWords,
   cleanJobDescription,
@@ -31,6 +31,7 @@ import CurrencyDropdown from "./requirement-form/CurrencyDropDown";
 import DesignationDropdown from "./requirement-form/DesignationDropdown";
 import LocationDropdown from "./requirement-form/LocationDropdown";
 import toast from "react-hot-toast";
+import { SortableTableHeader } from "../recruiter/SortableTableHeader";
 
 const TOAST_ID = "global-toast";
 
@@ -40,6 +41,14 @@ export const showToast = {
   loading: (message: string) => toast.loading(message, { id: TOAST_ID }),
   dismiss: () => toast.dismiss(TOAST_ID),
 };
+
+interface Column<T extends string> {
+  field: T;
+  label: string;
+  sortable: boolean;
+  align: "left" | "center" | "right";
+  width: string;
+}
 
 // Confirmation Dialog Component
 const ConfirmationDialog: React.FC<{
@@ -99,6 +108,7 @@ const validateStaffingItem = (
     estimated_cost_per_position,
     min_experience_reqyrs,
     location,
+    employment_type,
   } = item;
 
   if (!designation?.trim()) {
@@ -131,6 +141,11 @@ const validateStaffingItem = (
     return false;
   }
 
+  if (!employment_type?.trim()) {
+    showToast.error(`Row ${index + 1}: Employment type is required`);
+    return false;
+  }
+
   return true;
 };
 
@@ -150,6 +165,217 @@ const hasFormChanges = (
   if (JSON.stringify(formData) !== JSON.stringify(initialForm)) return true;
   if (Object.keys(pendingFiles).length > 0) return true;
   return false;
+};
+
+// Define table column types
+type StaffingTableColumn =
+  | "designation"
+  | "vacancies"
+  | "currency"
+  | "salary"
+  | "experience"
+  | "location"
+  | "employment_type"
+  | "publish"
+  | "upload"
+  | "action";
+
+// Employment Type Dropdown Component with Search
+const EmploymentTypeDropdown: React.FC<{
+  value: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+}> = ({ value, onChange, disabled = false }) => {
+  const [employmentTypes, setEmploymentTypes] = useState<string[]>([]);
+  const [filteredTypes, setFilteredTypes] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch employment types on component mount
+  useEffect(() => {
+    const fetchEmploymentTypes = async () => {
+      setIsLoading(true);
+      try {
+        const response = await frappeAPI.makeAuthenticatedRequest(
+          "GET",
+          '/resource/Employment Type?fields=["name"]&limit_page_length=0'
+        );
+
+        if (response.data) {
+          const types = response.data.map((item: any) => item.name);
+          setEmploymentTypes(types);
+          setFilteredTypes(types);
+        }
+      } catch (error) {
+        console.error("Error fetching employment types:", error);
+        // Fallback to common employment types
+        const fallbackTypes = [
+          "Full-time",
+          "Part-time",
+          "Probation",
+          "Contract",
+          "Commission",
+          "Piecework",
+          "Intern",
+          "Apprentice",
+        ];
+        setEmploymentTypes(fallbackTypes);
+        setFilteredTypes(fallbackTypes);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchEmploymentTypes();
+  }, []);
+
+  // Filter types based on search query
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredTypes(employmentTypes);
+    } else {
+      const filtered = employmentTypes.filter(type =>
+        type.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredTypes(filtered);
+    }
+  }, [searchQuery, employmentTypes]);
+
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+        setSearchQuery("");
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      // Focus input when dropdown opens
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen]);
+
+  // Handle selection
+  const handleSelect = (type: string) => {
+    onChange(type);
+    setIsOpen(false);
+    setSearchQuery("");
+  };
+
+  // Handle input change for search
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+  };
+
+  // Handle dropdown toggle
+  const handleToggle = () => {
+    if (disabled) return;
+    
+    const newIsOpen = !isOpen;
+    setIsOpen(newIsOpen);
+    
+    if (newIsOpen) {
+      setSearchQuery("");
+      // Focus input after dropdown opens
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 100);
+    }
+  };
+
+  // Handle key down for better accessibility
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape") {
+      setIsOpen(false);
+      setSearchQuery("");
+    } else if (e.key === "Enter" && !isOpen) {
+      setIsOpen(true);
+    }
+  };
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      {/* Display selected value when closed */}
+      {!isOpen ? (
+        <button
+          type="button"
+          onClick={handleToggle}
+          disabled={disabled}
+          onKeyDown={handleKeyDown}
+          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+        >
+          <span className="truncate text-left">
+            {value || " Employment Type"}
+          </span>
+          <ChevronDown
+            className={`h-3 w-3 text-gray-400 transition-transform ${
+              isOpen ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+      ) : (
+        /* Search input when open */
+        <div className="w-full border border-blue-500 rounded shadow-sm bg-white">
+          <input
+            ref={inputRef}
+            type="text"
+            value={searchQuery}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            placeholder="Search employment types..."
+            className="w-full px-2 py-1.5 text-sm focus:outline-none focus:ring-0 border-0 rounded"
+          />
+        </div>
+      )}
+
+      {/* Dropdown menu */}
+      {isOpen && (
+  <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto mt-1 min-w-[80px] ">
+          {isLoading ? (
+            <div className="p-3 text-center text-gray-500">
+              <Loader2 className="h-4 w-4 animate-spin mx-auto mb-1" />
+              <span className="text-xs">Loading employment types...</span>
+            </div>
+          ) : filteredTypes.length === 0 ? (
+            <div className="p-3 text-center text-gray-500 text-xs">
+              No employment types found
+              {searchQuery && (
+                <div className="mt-1">
+                  No results for &qout;{searchQuery}&quot;
+                </div>
+              )}
+            </div>
+          ) : (
+            filteredTypes.map((type) => (
+              <button
+                key={type}
+                onClick={() => handleSelect(type)}
+                className={`w-full px-3 py-2 text-sm text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0 ${
+                  value === type ? "bg-blue-50 text-blue-600 font-medium" : "text-gray-700"
+                }`}
+              >
+                {type}
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
 };
 
 // Main Component
@@ -183,6 +409,91 @@ const StaffingPlanCreator: React.FC = () => {
   const [initialFormData, setInitialFormData] = useState<StaffingPlanForm>(
     initialStaffingPlanForm
   );
+
+  // Table sorting state
+  const [sortField, setSortField] = useState<StaffingTableColumn | null>(null);
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc" | null>(
+    null
+  );
+
+  // Table columns configuration
+  const tableColumns: Column<StaffingTableColumn>[] = [
+    {
+      field: "designation",
+      label: "Designation",
+      sortable: false,
+      align: "left",
+      width: "150px",
+    },
+    {
+      field: "vacancies",
+      label: "Vacancy",
+      sortable: false,
+      align: "center",
+      width: "70px",
+    },
+    {
+      field: "salary",
+      label: "AVG.SAL(LPA)",
+      sortable: false,
+      align: "center",
+      width: "100px",
+    },
+    {
+      field: "experience",
+      label: "Exp (Yrs)",
+      sortable: false,
+      align: "center",
+      width: "70px",
+    },
+    {
+      field: "location",
+      label: "Location",
+      sortable: false,
+      align: "left",
+      width: "120px",
+    },
+    {
+      field: "employment_type",
+      label: "Employment Type",
+      sortable: false,
+      align: "left",
+      width: "80px",
+    },
+    {
+      field: "publish",
+      label: "Publish",
+      sortable: false,
+      align: "center",
+      width: "80px",
+    },
+    {
+      field: "upload",
+      label: "Upload JD",
+      sortable: false,
+      align: "left",
+      width: "80px",
+    },
+    {
+      field: "action",
+      label: "Action",
+      sortable: false,
+      align: "center",
+      width: "80px",
+    },
+  ];
+
+  // Handle table sorting
+  const handleSort = (field: StaffingTableColumn) => {
+    // Since sortable is false for all columns, this won't be triggered
+    // But keeping the function for future use if needed
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
 
   useEffect(() => {
     const handleInitialLoad = async () => {
@@ -230,6 +541,8 @@ const StaffingPlanCreator: React.FC = () => {
                 attachmentsoptional: item.attachmentsoptional || "",
                 assign_to: item.assign_to || "",
                 location: item.location || "",
+                employment_type: item.employment_type || "",
+                publish: item.publish || false,
               })) || [initialStaffingPlanItem],
             };
 
@@ -453,120 +766,122 @@ const StaffingPlanCreator: React.FC = () => {
   };
 
   // Form Submission - Upload all pending JD files first
-const handleSubmit = async () => {
-  if (!selectedLead) {
-    setError("Please select a lead first");
-    return;
-  }
-
-  if (!formData.staffing_details.length) {
-    setError("Please add at least one staffing requirement");
-    return;
-  }
-
-  // Validate all rows before submission
-  let allValid = true;
-  formData.staffing_details.forEach((item, index) => {
-    if (!validateStaffingItem(item, index)) {
-      allValid = false;
+  const handleSubmit = async () => {
+    if (!selectedLead) {
+      setError("Please select a lead first");
+      return;
     }
-  });
 
-  if (!allValid) {
-    return;
-  }
+    if (!formData.staffing_details.length) {
+      setError("Please add at least one staffing requirement");
+      return;
+    }
 
-  setIsSaving(true);
-  setError("");
+    // Validate all rows before submission
+    let allValid = true;
+    formData.staffing_details.forEach((item, index) => {
+      if (!validateStaffingItem(item, index)) {
+        allValid = false;
+      }
+    });
 
-  try {
-    // Step 1: Upload all pending JD files to Frappe
-    const uploadedFileUrls: { [key: number]: string } = {};
+    if (!allValid) {
+      return;
+    }
 
-    for (const [indexStr, file] of Object.entries(pendingJDFiles)) {
-      const index = parseInt(indexStr);
-      console.log(`Uploading JD file for requirement ${index}...`);
+    setIsSaving(true);
+    setError("");
 
-      try {
-        const uploadResult = await frappeAPI.upload(file, {
-          is_private: false,
-          folder: "Home",
-        });
+    try {
+      // Step 1: Upload all pending JD files to Frappe
+      const uploadedFileUrls: { [key: number]: string } = {};
 
-        if (uploadResult.success && uploadResult.file_url) {
-          uploadedFileUrls[index] = uploadResult.file_url;
-          console.log(
-            `JD file uploaded successfully: ${uploadResult.file_url}`
+      for (const [indexStr, file] of Object.entries(pendingJDFiles)) {
+        const index = parseInt(indexStr);
+        console.log(`Uploading JD file for requirement ${index}...`);
+
+        try {
+          const uploadResult = await frappeAPI.upload(file, {
+            is_private: false,
+            folder: "Home",
+          });
+
+          if (uploadResult.success && uploadResult.file_url) {
+            uploadedFileUrls[index] = uploadResult.file_url;
+            console.log(
+              `JD file uploaded successfully: ${uploadResult.file_url}`
+            );
+          }
+        } catch (uploadError) {
+          console.error(
+            `Failed to upload JD file for requirement ${index}:`,
+            uploadError
           );
         }
-      } catch (uploadError) {
-        console.error(
-          `Failed to upload JD file for requirement ${index}:`,
-          uploadError
+      }
+
+      // Step 2: Prepare submission data with uploaded file URLs
+      const submissionData = {
+        custom_lead: formData.custom_lead,
+        from_date: formData.from_date,
+        to_date: formData.to_date,
+        custom_assign_to: formData.custom_assign_to || "",
+        staffing_details: formData.staffing_details.map((item, index) => ({
+          currency: item.currency,
+          designation: capitalizeWords(item.designation),
+          vacancies: item.vacancies,
+          estimated_cost_per_position: item.estimated_cost_per_position,
+          number_of_positions: item.number_of_positions,
+          min_experience_reqyrs: item.min_experience_reqyrs,
+          job_description: item.job_description.startsWith("<")
+            ? item.job_description
+            : `<div class="ql-editor read-mode"><p>${capitalizeWords(
+                item.job_description
+              )}</p></div>`,
+          attachmentsoptional:
+            uploadedFileUrls[index] || item.attachmentsoptional || "",
+          assign_to: item.assign_to || "",
+          location: item.location || "",
+          employment_type: item.employment_type || "",
+          publish: item.publish || false,
+        })),
+      };
+
+      // Step 3: Create or update the staffing plan
+      let response;
+      if (isEditMode && originalPlanId) {
+        response = await frappeAPI.makeAuthenticatedRequest(
+          "PUT",
+          `/resource/Staffing Plan/${originalPlanId}`,
+          submissionData
         );
-      }
-    }
+        setSuccessMessage(`Plan updated: ${originalPlanId}`);
 
-    // Step 2: Prepare submission data with uploaded file URLs
-    const submissionData = {
-      custom_lead: formData.custom_lead,
-      from_date: formData.from_date,
-      to_date: formData.to_date,
-      custom_assign_to: formData.custom_assign_to || "",
-      staffing_details: formData.staffing_details.map((item, index) => ({
-        currency: item.currency,
-        designation: capitalizeWords(item.designation),
-        vacancies: item.vacancies,
-        estimated_cost_per_position: item.estimated_cost_per_position,
-        number_of_positions: item.number_of_positions,
-        min_experience_reqyrs: item.min_experience_reqyrs,
-        job_description: item.job_description.startsWith("<")
-          ? item.job_description
-          : `<div class="ql-editor read-mode"><p>${capitalizeWords(
-              item.job_description
-            )}</p></div>`,
-        attachmentsoptional:
-          uploadedFileUrls[index] || item.attachmentsoptional || "",
-        assign_to: item.assign_to || "",
-        location: item.location || "",
-      })),
-    };
-
-    // Step 3: Create or update the staffing plan
-    let response;
-    if (isEditMode && originalPlanId) {
-      response = await frappeAPI.makeAuthenticatedRequest(
-        "PUT",
-        `/resource/Staffing Plan/${originalPlanId}`,
-        submissionData
-      );
-      setSuccessMessage(`Plan updated: ${originalPlanId}`);
-
-      // Update initial form data after successful save
-      setInitialFormData(formData);
-      setPendingJDFiles({});
-    } else {
-      response = await frappeAPI.createStaffingPlan(submissionData);
-      setSuccessMessage(`Plan created: ${response.data.name}`);
-
-      if (!isEditMode) {
-        setFormData(initialStaffingPlanForm);
-        setInitialFormData(initialStaffingPlanForm);
-        setSelectedLead(null);
+        // Update initial form data after successful save
+        setInitialFormData(formData);
         setPendingJDFiles({});
-      }
-    }
+      } else {
+        response = await frappeAPI.createStaffingPlan(submissionData);
+        setSuccessMessage(`Plan created: ${response.data.name}`);
 
-    // Immediate redirect after successful submission
-    setSuccessMessage("");
-    router.push("/dashboard/sales-manager/requirements");
-  } catch (error) {
-    console.error("Error:", error);
-    setError(isEditMode ? "Failed to update plan" : "Failed to create plan");
-  } finally {
-    setIsSaving(false);
-  }
-};
+        if (!isEditMode) {
+          setFormData(initialStaffingPlanForm);
+          setInitialFormData(initialStaffingPlanForm);
+          setSelectedLead(null);
+          setPendingJDFiles({});
+        }
+      }
+
+      // Immediate redirect after successful submission
+      setSuccessMessage("");
+      router.push("/dashboard/reruiter/requirements");
+    } catch (error) {
+      console.error("Error:", error);
+      setError(isEditMode ? "Failed to update plan" : "Failed to create plan");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleBack = () => {
     if (hasFormChanges(formData, initialFormData, pendingJDFiles)) {
@@ -675,104 +990,28 @@ const handleSubmit = async () => {
                 <div className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
                   <div className="overflow-x-auto">
                     <table
-                      className="w-full text-md"
-                      style={{ tableLayout: "fixed", minWidth: "1200px" }}
+                      className="w-full"
+                      style={{ tableLayout: "fixed", minWidth: "800px" }}
                     >
-                      <thead className="bg-primary">
-                        <tr className="text-left text-white border-b border-gray-200">
-                          <th
-                            className="p-3 font-medium"
-                            style={{
-                              width: "200px",
-                              minWidth: "200px",
-                              maxWidth: "200px",
-                            }}
-                          >
-                            Designation
-                          </th>
-                          <th
-                            className="p-3 font-medium text-center"
-                            style={{
-                              width: "80px",
-                              minWidth: "80px",
-                              maxWidth: "80px",
-                            }}
-                          >
-                            Vacancy
-                          </th>
-                          <th
-                            className="p-3 font-medium text-center"
-                            style={{
-                              width: "100px",
-                              minWidth: "100px",
-                              maxWidth: "100px",
-                            }}
-                          >
-                            Currency
-                          </th>
-                          <th
-                            className="p-3 font-medium text-center"
-                            style={{
-                              width: "100px",
-                              minWidth: "100px",
-                              maxWidth: "100px",
-                            }}
-                          >
-                            AVG.SAL(LPA)
-                          </th>
-                          <th
-                            className="p-3 font-medium text-center"
-                            style={{
-                              width: "80px",
-                              minWidth: "80px",
-                              maxWidth: "80px",
-                            }}
-                          >
-                            Exp (Yrs)
-                          </th>
-                          <th
-                            className="p-3 font-medium "
-                            style={{
-                              width: "150px",
-                              minWidth: "150px",
-                              maxWidth: "150px",
-                            }}
-                          >
-                            Location
-                          </th>
-                          <th
-                            className="p-3 font-medium"
-                            style={{
-                              width: "120px",
-                              minWidth: "120px",
-                              maxWidth: "120px",
-                            }}
-                          >
-                            Upload JD
-                          </th>
-                          <th
-                            className="p-3 font-medium text-center"
-                            style={{
-                              width: "80px",
-                              minWidth: "80px",
-                              maxWidth: "80px",
-                            }}
-                          >
-                            Action
-                          </th>
-                        </tr>
-                      </thead>
+                      <SortableTableHeader
+                        columns={tableColumns}
+                        sortField={sortField}
+                        sortDirection={sortDirection}
+                        onSort={handleSort}
+                      />
+
                       <tbody className="divide-y divide-gray-200">
                         {formData.staffing_details.map((item, index) => (
                           <React.Fragment key={index}>
+                            {/* Main Row */}
                             <tr className="bg-white hover:bg-gray-50 transition-colors">
                               {/* Designation */}
                               <td
                                 className="p-3"
                                 style={{
-                                  width: "200px",
-                                  minWidth: "200px",
-                                  maxWidth: "200px",
+                                  width: "150px",
+                                  minWidth: "150px",
+                                  maxWidth: "150px",
                                 }}
                               >
                                 <DesignationDropdown
@@ -813,57 +1052,51 @@ const handleSubmit = async () => {
                               </td>
 
                               {/* Currency */}
+                              {/* Currency & Salary - Merged Column */}
                               <td
-                                className="p-3 text-end"
+                                className="p-2 text-center"
                                 style={{
                                   width: "100px",
                                   minWidth: "100px",
                                   maxWidth: "100px",
                                 }}
                               >
-                                <CurrencyDropdown
-                                  value={item.currency}
-                                  onChange={(currency) =>
-                                    updateStaffingItem(
-                                      index,
-                                      "currency",
-                                      currency
-                                    )
-                                  }
-                                />
-                              </td>
-
-                              {/* Salary in LPA */}
-                              <td
-                                className="p-3 text-center"
-                                style={{
-                                  width: "200px",
-                                  minWidth: "200px",
-                                  maxWidth: "200px",
-                                }}
-                              >
                                 <div className="flex items-center border border-gray-300 rounded overflow-hidden">
-                                  {/* Left fixed section (20%) */}
-                                  <div className="w-[30%] bg-gray-100 text-gray-700 font-medium text-sm py-1">
-                                    {item.currency}
+                                  {/* Currency - 30% width */}
+                                  <div className="w-[30%] border-r border-gray-300">
+                                    <CurrencyDropdown
+                                      value={item.currency}
+                                      onChange={(val) =>
+                                        updateStaffingItem(
+                                          index,
+                                          "currency",
+                                          val
+                                        )
+                                      }
+                                    />
                                   </div>
 
-                                  {/* Right input section (80%) */}
-                                  <input
-                                    type="text"
-                                    value={item.estimated_cost_per_position}
-                                    onChange={(e) =>
-                                      updateStaffingItem(
-                                        index,
-                                        "estimated_cost_per_position",
-                                        parseFloat(
-                                          e.target.value.replace(/[^\d.]/g, "")
-                                        ) || 0
-                                      )
-                                    }
-                                    className="w-[70%] text-center px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                    placeholder="Enter salary"
-                                  />
+                                  {/* Salary Input - 70% width */}
+                                  <div className="w-[70%]">
+                                    <input
+                                      type="text"
+                                      value={item.estimated_cost_per_position}
+                                      onChange={(e) =>
+                                        updateStaffingItem(
+                                          index,
+                                          "estimated_cost_per_position",
+                                          parseFloat(
+                                            e.target.value.replace(
+                                              /[^\d.]/g,
+                                              ""
+                                            )
+                                          ) || 0
+                                        )
+                                      }
+                                      className="w-full text-center px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm border-0"
+                                      placeholder="Enter salary"
+                                    />
+                                  </div>
                                 </div>
                               </td>
 
@@ -910,6 +1143,49 @@ const handleSubmit = async () => {
                                 />
                               </td>
 
+                              <td
+                                className="p-2"
+                                style={{
+                                  width: "80px",
+                                  minWidth: "80px",
+                                  maxWidth: "80px",
+                                }}
+                              >
+                                <EmploymentTypeDropdown
+                                  value={item.employment_type || ""}
+                                  onChange={(val) =>
+                                    updateStaffingItem(
+                                      index,
+                                      "employment_type",
+                                      val
+                                    )
+                                  }
+                                />
+                              </td>
+
+                              {/* Publish Checkbox */}
+                              <td
+                                className="p-2 text-center"
+                                style={{
+                                  width: "50px",
+                                  minWidth: "50px",
+                                  maxWidth: "50px",
+                                }}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={item.publish || false}
+                                  onChange={(e) =>
+                                    updateStaffingItem(
+                                      index,
+                                      "publish",
+                                      e.target.checked
+                                    )
+                                  }
+                                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                />
+                              </td>
+
                               {/* Upload JD */}
                               <td className="p-3" style={{ width: "120px" }}>
                                 <div className="flex items-center gap-1">
@@ -953,9 +1229,9 @@ const handleSubmit = async () => {
                               <td
                                 className="p-3 text-center"
                                 style={{
-                                  width: "80px",
-                                  minWidth: "80px",
-                                  maxWidth: "80px",
+                                  width: "50px",
+                                  minWidth: "50px",
+                                  maxWidth: "50px",
                                 }}
                               >
                                 <button
@@ -975,7 +1251,7 @@ const handleSubmit = async () => {
                               </td>
                             </tr>
 
-                            {/* Description Row - Accordion View */}
+                            {/* Description Row - Always shown as accordion header, content expands below */}
                             {item.job_description && (
                               <tr className="bg-gray-50 border-t border-gray-200">
                                 <td colSpan={8} className="p-0">
@@ -994,14 +1270,14 @@ const handleSubmit = async () => {
                                         <FileText className="h-4 w-4" />
                                         <span>Job Description Summary</span>
                                         <span className="text-xs text-gray-500">
-                                          (Click to edit )
+                                          (Click to edit)
                                         </span>
                                       </div>
                                     </button>
 
                                     {/* Accordion Content */}
                                     {expandedDescriptions[index] && (
-                                      <div className="px-3 pb-3">
+                                      <div className="border-t border-gray-200 px-3 py-3 bg-white">
                                         <textarea
                                           value={item.job_description
                                             .replace(/<[^>]*>/g, "")

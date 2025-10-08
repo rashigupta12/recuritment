@@ -67,11 +67,7 @@ const getNavigationItems = (role: AllowedRole): NavigationItem[] => {
       { icon: Home, label: "Dashboard", href: roleBasePath },
       { icon: Target, label: "Leads", href: `${roleBasePath}/leads` },
       { icon: Users, label: "Customers", href: `${roleBasePath}/contract` },
-      {
-        icon: TrendingUp,
-        label: "Requirements",
-        href: `${roleBasePath}/requirements`,
-      },
+      
     ],
     "Projects Manager": [
       { icon: Home, label: "Dashboard", href: roleBasePath },
@@ -88,12 +84,18 @@ const getNavigationItems = (role: AllowedRole): NavigationItem[] => {
     ],
     Recruiter: [
       { icon: Home, label: "Dashboard", href: roleBasePath },
+
+       { icon: Users, label: "Customers", href: `${roleBasePath}/contract` },
       //  {
       //   icon: FolderOpen,
       //   label: "Requirements",
       //   href: `${roleBasePath}/requirements`,
       // },
-
+{
+        icon: TrendingUp,
+        label: "Requirements",
+        href: `${roleBasePath}/requirements`,
+      },
       {
         icon: FolderOpen,
         label: "Jobs Assigned",

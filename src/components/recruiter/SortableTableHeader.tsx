@@ -9,6 +9,7 @@ interface Column<T extends string> {
   label: string;
   sortable?: boolean;
   align?: 'left' | 'center' | 'right';
+  width?: string; // Add width property
 }
 
 interface SortableTableHeaderProps<T extends string> {
@@ -55,10 +56,15 @@ export function SortableTableHeader<T extends string>({
           <th
             key={column.field}
             scope="col"
-            className={`px-2 sm:px-4 py-4 text-base sm:text-base uppercase text-white font-bold ${
+            className={`px-2 sm:px-3 py-3 text-sm sm:text-base uppercase text-white font-bold ${
               getAlignmentClass(column.align)
             } ${column.sortable !== false ? 'cursor-pointer select-none transition-colors' : ''}`}
             onClick={() => column.sortable !== false && onSort(column.field)}
+            style={column.width ? {
+              width: column.width,
+              minWidth: column.width,
+              maxWidth: column.width
+            } : undefined}
           >
             <div className={`inline-flex items-center gap-1 ${getJustifyClass(column.align)}`}>
               <span>{column.label}</span>

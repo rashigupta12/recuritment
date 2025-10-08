@@ -65,20 +65,36 @@ export const LeadsTable = ({
     }
   };
 
-  const columns = useMemo(() => {
-    const cols: Array<{ field: AllFields; label: string; sortable?: boolean }> = [
-      { field: 'company', label: 'Company' , sortable: false },
-      { field: 'contact', label: 'Contact' },
-      { field: 'offering', label: 'Offering' },
-      { field: 'salary', label: 'Salary (LPA)' },
-      { field: 'vacancies', label: 'No. Of Vac' },
-      { field: 'fee', label: 'Fee (%/K)' },
-      { field: 'dealValue', label: 'Deal Value(L)' },
-      { field: 'createdOn', label: 'Created On'  },
-      { field: 'actions', label: 'Actions', sortable: false },
-    ];
-    return cols;
-  }, []);
+  // const columns = useMemo(() => {
+  //   const cols: Array<{ field: AllFields; label: string; sortable?: boolean }> = [
+  //     { field: 'company', label: 'Company' , sortable: false },
+  //     { field: 'contact', label: 'Contact' },
+  //     { field: 'offering', label: 'Offering' },
+  //     { field: 'salary', label: 'Salary (LPA)' },
+  //     { field: 'vacancies', label: 'No. Of Vac' },
+  //     { field: 'fee', label: 'Fee (%/K)' },
+  //     { field: 'dealValue', label: 'Deal Value(L)' },
+  //     { field: 'createdOn', label: 'Created On'  },
+  //     { field: 'actions', label: 'Actions', sortable: false },
+  //   ];
+  //   return cols;
+  // }, []);
+
+    const columns = useMemo(() => {
+      const cols: Array<{ field: AllFields; label: string; sortable?: boolean }> = [
+        { field: 'company', label: 'Company',sortable: false },
+        { field: 'contact', label: 'Contact',sortable: false },
+        // { field: 'stage', label: 'Stage',sortable: false },
+        { field: 'offering', label: 'Offering',sortable: false },
+        { field: 'salary', label: 'AVG.SAL (LPA)',sortable: false },
+        { field: 'vacancies', label: 'No. Of Vac',sortable: false },
+        { field: 'fee', label: 'Fee (%/K)',sortable: false },
+        { field: 'dealValue', label: 'Deal Value(L)',sortable: false },
+        { field: 'createdOn', label: 'Created On',sortable: false },
+        { field: 'actions', label: 'Actions', sortable: false },
+      ];
+      return cols;
+    }, []);
 
   const sortedLeads = useMemo(() => {
     if (!sortField || !sortDirection) return leads;

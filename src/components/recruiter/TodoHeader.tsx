@@ -167,7 +167,7 @@ export const TodosHeader = ({
       <div className="">
         {/* Header Row: My Jobs + Search + Filter + Refresh */}
         <div className="flex flex-wrap items-center justify-between gap-[34rem]">
-  <h1 className="text-2xl font-semibold text-gray-900 whitespace-nowrap">{title}</h1>
+  <h1 className="text-2xl font-bold text-gray-900 whitespace-nowrap">{title}</h1>
   <div className="flex items-center gap-3 flex-wrap justify-end">
     <div className="flex-1 min-w-[250px] max-w-md items-end justify-end relative">
       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -203,7 +203,7 @@ export const TodosHeader = ({
             <div className="flex items-center justify-between">
               <SheetTitle className="flex items-center gap-2 text-lg">
                 <Filter className="w-5 h-5" />
-                Filters
+                {/* Filters */}
               </SheetTitle>
             </div>
           </SheetHeader>

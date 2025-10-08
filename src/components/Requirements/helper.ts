@@ -1,3 +1,5 @@
+import { boolean } from "zod";
+
 // Type Definitions
 export type UserInfo = {
   name: string;
@@ -29,6 +31,8 @@ export type Assignment = {
 };
 
 export type StaffingPlanItem = {
+  employment_type: string;
+  publish: boolean;
   location: string;
   currency: string;
   designation: string;
@@ -70,7 +74,9 @@ export const initialStaffingPlanItem: StaffingPlanItem = {
   job_description: "",
   attachmentsoptional: "",
   assign_to: "",
-  location: ""
+  location: "",
+   employment_type:"",
+   publish:false
 };
 
 export const initialStaffingPlanForm: StaffingPlanForm = {

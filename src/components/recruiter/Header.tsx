@@ -215,7 +215,7 @@ export const TodosHeader = ({
                   }`}
                 >
                   <Filter className="w-4 h-4" />
-                  Filters
+                  {/* Filters */}
                   {activeFilterCount > 0 && (
                     <Badge
                       variant="secondary"

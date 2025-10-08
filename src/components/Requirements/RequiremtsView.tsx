@@ -274,7 +274,7 @@ const StaffingPlansTable: React.FC = () => {
         <div className="mb-2">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Job Board</h1>
+              <h1 className="text-2xl font-bold text-gray-900">Job Board</h1>
               <p className="text-gray-600 mt-2">
                 Manage and track all staffing requirements
               </p>
