@@ -60,9 +60,6 @@ export function ApplicantsTable({
   const columns = useMemo(() => {
     const cols: Array<{ field: AllFields; label: string; sortable?: boolean }> = [];
     
-    if (showCheckboxes) {
-      cols.push({ field: 'select', label: 'Select', sortable: false });
-    }
     
     cols.push(
       { field: 'name', label: 'Name' },
@@ -81,7 +78,7 @@ export function ApplicantsTable({
     }
     
     return cols;
-  }, [showCheckboxes, showStatus, showDeleteButton, onViewDetails]);
+  }, [ showStatus, showDeleteButton, onViewDetails]);
 
   const sortedApplicants = [...applicants].sort((a, b) => {
     if (!sortField || !sortDirection) return 0;

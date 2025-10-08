@@ -161,7 +161,7 @@ export const TodosHeader = ({
   }, 0);
 
   return (
-    <div className="">
+
       <div className="">
         {/* Header Row: My Jobs + Search + Filter + Refresh */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
@@ -522,6 +522,6 @@ export const TodosHeader = ({
           </div>
         )}
       </div>
-    </div>
+
   );
 };

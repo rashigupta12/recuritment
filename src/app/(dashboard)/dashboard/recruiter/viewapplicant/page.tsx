@@ -461,7 +461,7 @@ export default function ViewApplicantPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="w-full ">
         <TodosHeader
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
@@ -521,10 +521,10 @@ export default function ViewApplicantPage() {
         ) : (
           <ApplicantsTable
             applicants={filteredApplicants}
-            selectedApplicants={selectedApplicants}
-            onSelectApplicant={handleSelectApplicant}
+            // selectedApplicants={selectedApplicants}
+            // onSelectApplicant={handleSelectApplicant}
             onViewDetails={handleOpenDetailsModal}
-            showCheckboxes={true}
+            // showCheckboxes={true}
             showStatus={true}
           />
         )}
