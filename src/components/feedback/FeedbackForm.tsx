@@ -21,7 +21,7 @@ interface ImageItem {
 
 // Define Zod schema for validation
 const feedbackSchema = z.object({
-  module: z.enum(["Dashboard", "Jobs Assigned", "Candidate Tracker", "Requirements"]),
+  module: z.enum(["Dashboard", "Customers","Requirements","Jobs Assigned", "Candidate Tracker",]),
   description: z.string().min(1, "Description is required"),
   issue_type: z.enum(["General Feedback", "Bug Report", "Feature Request"]),
   type: z.enum(["Incident", "Feedback"]),

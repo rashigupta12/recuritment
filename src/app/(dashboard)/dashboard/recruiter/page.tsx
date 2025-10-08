@@ -20,7 +20,6 @@ import {
 import {
   Briefcase,
   Building2,
-  Calendar,
   Download,
   Filter,
   UserCheck,
@@ -75,9 +74,10 @@ interface JobOpening {
   createdDate: string;
 }
 
-interface MetricData {
+interface TrendData {
   period: string;
   totalCVUploaded: number;
+  open: number;
   tagged: number;
   shortlisted: number;
   assessment: number;
@@ -88,17 +88,10 @@ interface MetricData {
   joined: number;
 }
 
-interface QuarterInfo {
-  quarter: number;
-  start_date: string;
-  end_date: string;
-  months: string[];
-}
-
 export default function RecruiterDashboard() {
   const router = useRouter();
   const [selectedClient, setSelectedClient] = useState<string>("All");
-  const [trendPeriod, setTrendPeriod] = useState<"week" | "month" | "quarter">("month"); // filter for Trends only
+  const [trendPeriod, setTrendPeriod] = useState<"week" | "month" | "quarter">("month");
   const { user } = useAuth();
   const [apiData, setApiData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -109,11 +102,20 @@ export default function RecruiterDashboard() {
       if (user?.email) {
         try {
           setLoading(true);
-          const response = await frappeAPI.makeAuthenticatedRequest(
-            "GET",
-            `/method/recruitment_app.rec_dashboard.get_recruiter_dashboard_both?email=${user.email}`
-          );
-          setApiData(response.message);
+          const [dashboardResponse, trendsResponse] = await Promise.all([
+            frappeAPI.makeAuthenticatedRequest(
+              "GET",
+              `/method/recruitment_app.rec_dashboard.get_recruiter_dashboard_both?email=${user.email}`
+            ),
+            frappeAPI.makeAuthenticatedRequest(
+              "GET",
+              `/method/recruitment_app.recruiter_trends.get_recruiter_trends_granular?email=${user.email}&time_period=${trendPeriod}`
+            )
+          ]);
+          setApiData({
+            ...dashboardResponse.message,
+            trends_data: trendsResponse.message
+          });
         } catch (error) {
           console.error("Error fetching dashboard data:", error);
         } finally {
@@ -122,9 +124,9 @@ export default function RecruiterDashboard() {
       }
     };
     fetchData();
-  }, [user?.email]);
+  }, [user?.email, trendPeriod]);
 
-  console.log(apiData)
+  console.log(apiData);
 
   // Get clients from API data
   const clients = useMemo(() => {
@@ -219,69 +221,100 @@ export default function RecruiterDashboard() {
     return clients.length - 1; // Subtract "All"
   }, [clients]);
 
-  // ----------- Trends Data (Filtered & up-to-date for October) ----------------
-  // Only current-to-date (not whole October)
-  const processedTrendsData = useMemo(() => {
+// ----------- Trends Data (using new API structure) ----------------
+  const processedTrendsData = useMemo((): TrendData[] => {
     if (!apiData?.trends_data?.trends) return [];
-    const trends = apiData.trends_data.trends;
-    const today = new Date();
-    // filter data up till 'today'
-    const filteredTrends = trends.filter((m: MetricData) => {
-      if (!m.period.match(/\d{4}-\d{2}/)) return true; // keep those not in YYYY-MM format
-      // Assumes m.period is like '2025-10'
-      const [year, month] = m.period.split("-");
-      const dateCheck = new Date(Number(year), Number(month) - 1);
-      return dateCheck <= today;
-    });
-    const quarterInfo = apiData.trends_data.quarter_info as QuarterInfo;
-    switch (trendPeriod) {
-      case "week":
-        const weeklyData: MetricData[] = [];
-        filteredTrends.forEach((monthData: any) => {
-          const month = monthData.period;
-          // Divide monthly data into 4 weeks
-          for (let week = 1; week <= 4; week++) {
-            const weekFactor = week / 4;
-            weeklyData.push({
-              period: `${month} W${week}`,
-              totalCVUploaded: Math.floor(monthData.totalCVUploaded * weekFactor),
-              tagged: Math.floor(monthData.tagged * weekFactor),
-              shortlisted: Math.floor(monthData.shortlisted * weekFactor),
-              assessment: Math.floor(monthData.assessment * weekFactor),
-              interview: Math.floor(monthData.interview * weekFactor),
-              interviewReject: Math.floor(monthData.interviewReject * weekFactor),
-              offered: Math.floor(monthData.offered * weekFactor),
-              offerDrop: Math.floor(monthData.offerDrop * weekFactor),
-              joined: Math.floor(monthData.joined * weekFactor),
-            });
-          }
-        });
-        return weeklyData;
-
-      case "month":
-        return filteredTrends;
-
-      case "quarter":
-        const quarterlyData: MetricData = {
-          period: `Q${quarterInfo.quarter} ${new Date(quarterInfo.start_date).getFullYear()}`,
-          totalCVUploaded: filteredTrends.reduce((sum: number, month: any) => sum + month.totalCVUploaded, 0),
-          tagged: filteredTrends.reduce((sum: number, month: any) => sum + month.tagged, 0),
-          shortlisted: filteredTrends.reduce((sum: number, month: any) => sum + month.shortlisted, 0),
-          assessment: filteredTrends.reduce((sum: number, month: any) => sum + month.assessment, 0),
-          interview: filteredTrends.reduce((sum: number, month: any) => sum + month.interview, 0),
-          interviewReject: filteredTrends.reduce((sum: number, month: any) => sum + month.interviewReject, 0),
-          offered: filteredTrends.reduce((sum: number, month: any) => sum + month.offered, 0),
-          offerDrop: filteredTrends.reduce((sum: number, month: any) => sum + month.offerDrop, 0),
-          joined: filteredTrends.reduce((sum: number, month: any) => sum + month.joined, 0),
-        };
-        return [quarterlyData];
-
-      default:
-        return filteredTrends;
+    
+    const periodInfo = apiData.trends_data.period_info;
+    const existingTrends = apiData.trends_data.trends;
+    
+    // Create a map of existing data for quick lookup
+    const trendsMap = new Map<string, TrendData>(
+      existingTrends.map((trend: TrendData) => [trend.period, trend])
+    );
+    
+    // Generate all expected periods based on time period type
+    const allPeriods: string[] = [];
+    
+    if (periodInfo?.type === 'week') {
+      // Show all 7 days of the week
+      const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      const currentDate = new Date(periodInfo.current_date);
+      const startDate = new Date(periodInfo.start_date);
+      
+      // Get day of week for start date (0 = Sunday, 1 = Monday, etc.)
+      const startDay = startDate.getDay();
+      const mondayOffset = startDay === 0 ? -6 : 1 - startDay;
+      const weekStart = new Date(startDate);
+      weekStart.setDate(weekStart.getDate() + mondayOffset);
+      
+      for (let i = 0; i < 7; i++) {
+        const date = new Date(weekStart);
+        date.setDate(date.getDate() + i);
+        allPeriods.push(`${days[i]} ${date.getDate()}`);
+      }
+    } else if (periodInfo?.type === 'month') {
+      // Show all weeks in the month (Week 1, Week 2, Week 3, Week 4, Week 5 if exists)
+      const currentDate = new Date(periodInfo.current_date);
+      const currentMonth = currentDate.getMonth();
+      const currentYear = currentDate.getFullYear();
+      
+      // Calculate number of weeks in current month
+      const firstDay = new Date(currentYear, currentMonth, 1);
+      const lastDay = new Date(currentYear, currentMonth + 1, 0);
+      const totalDays = lastDay.getDate();
+      
+      let weekNum = 1;
+      let startDay = 1;
+      
+      while (startDay <= totalDays) {
+        const endDay = Math.min(startDay + 6, totalDays);
+        allPeriods.push(`Week ${weekNum} (${startDay}-${endDay})`);
+        startDay = endDay + 1;
+        weekNum++;
+      }
+    } else if (periodInfo?.type === 'quarter') {
+      // Show all 3 months of the quarter
+      const currentDate = new Date(periodInfo.current_date);
+      const currentMonth = currentDate.getMonth();
+      
+      // Determine quarter start month
+      const quarterStartMonth = Math.floor(currentMonth / 3) * 3;
+      
+      const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ];
+      
+      for (let i = 0; i < 3; i++) {
+        allPeriods.push(monthNames[quarterStartMonth + i]);
+      }
     }
+    
+    // Create normalized data with all periods
+    const normalizedTrends: TrendData[] = allPeriods.map(period => {
+      const existingData = trendsMap.get(period);
+      if (existingData) {
+        return existingData;
+      }
+      // Return zero data for missing periods
+      return {
+        period,
+        totalCVUploaded: 0,
+        open: 0,
+        tagged: 0,
+        shortlisted: 0,
+        assessment: 0,
+        interview: 0,
+        interviewReject: 0,
+        offered: 0,
+        offerDrop: 0,
+        joined: 0
+      };
+    });
+    
+    return normalizedTrends;
   }, [apiData, trendPeriod]);
-  // ------------------------------------------------------
-
   const kpiMetrics = useMemo(() => {
     const metrics = apiData?.trends_data?.metrics || {};
     const total = metrics.totalApplicants || 0;
@@ -444,11 +477,11 @@ export default function RecruiterDashboard() {
 
   const trendData = useMemo(
     () => ({
-      labels: processedTrendsData.map((m: { period: any; }) => m.period),
+      labels: processedTrendsData.map((m: TrendData) => m.period),
       datasets: [
         {
           label: "Total CV's Uploaded",
-          data: processedTrendsData.map((m: { totalCVUploaded: any; }) => m.totalCVUploaded),
+          data: processedTrendsData.map((m: TrendData) => m.totalCVUploaded),
           borderColor: "#ec4899",
           backgroundColor: "rgba(236,72,153,0.08)",
           fill: true,
@@ -459,7 +492,7 @@ export default function RecruiterDashboard() {
         },
         {
           label: "Tagged",
-          data: processedTrendsData.map((m: { tagged: any; }) => m.tagged),
+          data: processedTrendsData.map((m: TrendData) => m.tagged),
           borderColor: "#6366F1",
           backgroundColor: "rgba(99,102,241,0.08)",
           fill: true,
@@ -470,7 +503,7 @@ export default function RecruiterDashboard() {
         },
         {
           label: "Shortlisted",
-          data: processedTrendsData.map((m: { shortlisted: any; }) => m.shortlisted),
+          data: processedTrendsData.map((m: TrendData) => m.shortlisted),
           borderColor: "#A5B4FC",
           backgroundColor: "rgba(165,180,252,0.08)",
           fill: true,
@@ -481,7 +514,7 @@ export default function RecruiterDashboard() {
         },
         {
           label: "Assessment",
-          data: processedTrendsData.map((m: { assessment: any; }) => m.assessment),
+          data: processedTrendsData.map((m: TrendData) => m.assessment),
           borderColor: "#FBBF24",
           backgroundColor: "rgba(251,191,36,0.08)",
           fill: true,
@@ -492,7 +525,7 @@ export default function RecruiterDashboard() {
         },
         {
           label: "Interview",
-          data: processedTrendsData.map((m: { interview: any; }) => m.interview),
+          data: processedTrendsData.map((m: TrendData) => m.interview),
           borderColor: "#F59E0B",
           backgroundColor: "rgba(245,158,11,0.08)",
           fill: true,
@@ -503,7 +536,7 @@ export default function RecruiterDashboard() {
         },
         {
           label: "Interview Rejected",
-          data: processedTrendsData.map((m: { interviewReject: any; }) => m.interviewReject),
+          data: processedTrendsData.map((m: TrendData) => m.interviewReject),
           borderColor: "#818CF8",
           backgroundColor: "rgba(129,140,248,0.08)",
           fill: true,
@@ -514,7 +547,7 @@ export default function RecruiterDashboard() {
         },
         {
           label: "Offered",
-          data: processedTrendsData.map((m: { offered: any; }) => m.offered),
+          data: processedTrendsData.map((m: TrendData) => m.offered),
           borderColor: "#8B5CF6",
           backgroundColor: "rgba(139,92,246,0.08)",
           fill: true,
@@ -525,7 +558,7 @@ export default function RecruiterDashboard() {
         },
         {
           label: "Offer Drop",
-          data: processedTrendsData.map((m: { offerDrop: any; }) => m.offerDrop),
+          data: processedTrendsData.map((m: TrendData) => m.offerDrop),
           borderColor: "#D97706",
           backgroundColor: "rgba(217,119,6,0.08)",
           fill: true,
@@ -536,7 +569,7 @@ export default function RecruiterDashboard() {
         },
         {
           label: "Joined",
-          data: processedTrendsData.map((m: { joined: any; }) => m.joined),
+          data: processedTrendsData.map((m: TrendData) => m.joined),
           borderColor: "#10B981",
           backgroundColor: "rgba(16,185,129,0.08)",
           fill: true,
@@ -551,25 +584,25 @@ export default function RecruiterDashboard() {
   );
 
   // Chart click handlers
-  const handleJobStatusClick = (elements: any[]) => {
-    if (!elements.length) return;
-    const clickedIndex = elements[0].index;
-    const status = jobStatusData.labels[clickedIndex];
-    router.push(`/jobs/status/${status.toLowerCase()}`);
-  };
-  const handleCandidatePipelineClick = (elements: any[]) => {
-    if (!elements.length) return;
-    const datasetIndex = elements[0].datasetIndex;
-    const clientIndex = elements[0].index;
-    const client = candidatePipelineData.labels[clientIndex];
-    const status = candidatePipelineData.datasets[datasetIndex].label;
-    router.push(`/candidates?client=${client}&status=${status.toLowerCase()}`);
-  };
-  const chartHover = (event: ChartEvent, elements: ActiveElement[]) => {
-    const nativeEvent = event.native as unknown as MouseEvent;
-    const target = nativeEvent?.target as HTMLElement;
-    if (target) target.style.cursor = elements[0] ? "pointer" : "default";
-  };
+  // const handleJobStatusClick = (elements: any[]) => {
+  //   if (!elements.length) return;
+  //   const clickedIndex = elements[0].index;
+  //   const status = jobStatusData.labels[clickedIndex];
+  //   router.push(`/jobs/status/${status.toLowerCase()}`);
+  // };
+  // const handleCandidatePipelineClick = (elements: any[]) => {
+  //   if (!elements.length) return;
+  //   const datasetIndex = elements[0].datasetIndex;
+  //   const clientIndex = elements[0].index;
+  //   const client = candidatePipelineData.labels[clientIndex];
+  //   const status = candidatePipelineData.datasets[datasetIndex].label;
+  //   router.push(`/candidates?client=${client}&status=${status.toLowerCase()}`);
+  // };
+  // const chartHover = (event: ChartEvent, elements: ActiveElement[]) => {
+  //   const nativeEvent = event.native as unknown as MouseEvent;
+  //   const target = nativeEvent?.target as HTMLElement;
+  //   if (target) target.style.cursor = elements[0] ? "pointer" : "default";
+  // };
   const handleFunnelClick = (elements: any[]) => {
     if (!elements.length) return;
     const clickedIndex = elements[0].index;
@@ -609,27 +642,54 @@ export default function RecruiterDashboard() {
     <main className="min-h-screen bg-slate-50">
       <div className="w-full mx-auto space-y-4">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800">
-              Recruiter Dashboard
-            </h1>
-            <p className="text-md text-slate-500 mt-0.5">
-              Monitor performance and track hiring progress
-            </p>
-          </div>
-          <button
-            type="button"
-            className="flex items-center justify-center gap-2 px-3 py-2 bg-white text-slate-700 rounded-lg shadow-sm border border-slate-200 hover:border-slate-300 transition-all text-md font-medium"
-            onClick={exportCSV}
-          >
-            <Download className="h-3.5 w-3.5" />
-            Export Data
-          </button>
-        </div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+  <div>
+    <h1 className="text-2xl font-bold text-slate-800">
+      Recruiter Dashboard
+    </h1>
+    <p className="text-md text-slate-500 mt-0.5">
+      Monitor performance and track hiring progress
+    </p>
+  </div>
+  
+  <div className="flex flex-wrap items-center gap-3">
+    {/* Filters Section */}
+    <div className="flex items-center gap-3">
+      <div className="flex items-center gap-1.5">
+        <Filter className="h-4 w-4 text-slate-400" />
+        <span className="text-md font-medium text-slate-600">
+          Clients:
+        </span>
+      </div>
+      <select
+        ref={selectRef}
+        value={selectedClient}
+        onChange={(e) => setSelectedClient(e.target.value)}
+        style={{ width: selectWidth }}
+        className="px-3 py-1.5 border border-slate-200 rounded-lg text-md focus:outline-none focus:ring-1 focus:ring-indigo-400 text-slate-700 bg-white min-w-[150px] max-w-[150px] transition-all duration-200"
+      >
+        {clients.map((client) => (
+          <option key={client} value={client}>
+            {client}
+          </option>
+        ))}
+      </select>
+    </div>
+    
+    {/* Export Button */}
+    <button
+      type="button"
+      className="flex items-center justify-center gap-2 px-3 py-2 bg-white text-slate-700 rounded-lg shadow-sm border border-slate-200 hover:border-slate-300 transition-all text-md font-medium"
+      onClick={exportCSV}
+    >
+      <Download className="h-3.5 w-3.5" />
+      Export Data
+    </button>
+  </div>
+</div>
 
         {/* Filters */}
-        <section className="bg-white p-3 rounded-lg shadow-sm border border-slate-200">
+        {/* <section className="bg-white p-3 rounded-lg shadow-sm border border-slate-200">
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-1.5">
               <Filter className="h-4 w-4 text-slate-400" />
@@ -650,12 +710,8 @@ export default function RecruiterDashboard() {
                 </option>
               ))}
             </select>
-            {/* <div className="flex items-center gap-1.5 ml-auto">
-              <Calendar className="h-5 w-5 text-slate-400" />
-              <span className="text-md font-medium text-slate-600">Data Filters for Recruitment Trends are shown in 'Recruitment Trends' section below.</span>
-            </div> */}
           </div>
-        </section>
+        </section> */}
 
         {/* KPI Cards */}
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -707,11 +763,11 @@ export default function RecruiterDashboard() {
                       border: { display: false },
                       ticks: {
                         stepSize: 10,
-                        font: { size: 12 },
+                        font: { size: 14 },
                         color: "#64748b",
                       },
                     },
-                    y: {
+                     y: {
                       grid: { display: false },
                       border: { display: false },
                       ticks: {
@@ -759,9 +815,6 @@ export default function RecruiterDashboard() {
                       },
                     },
                   },
-                  // onClick: (event, elements) => {
-                  //   handleJobStatusClick(elements);
-                  // },
                 }}
               />
             </div>
@@ -769,11 +822,10 @@ export default function RecruiterDashboard() {
         </section>
 
         {/* Recruitment Trends Section */}
-        {/* <section className="grid grid-cols-1 gap-4">
+        <section className="grid grid-cols-1 gap-4">
           <div className="xl:col-span-2 bg-white rounded-lg p-4 shadow-sm border border-slate-200">
             <div className="flex justify-between items-center mb-2">
-              <SectionHeader title="Recruitment Trends" subtitle={`Current Quarter - ${trendPeriod}ly breakdown`} />
-              Moved filters here, only for trends chart
+              <SectionHeader title="Recruitment Trends" subtitle={`${trendPeriod.charAt(0).toUpperCase() + trendPeriod.slice(1)}ly breakdown`} />
               <div className="flex gap-0.5 bg-slate-100 p-0.5 rounded-md">
                 {(["week", "month", "quarter"] as const).map((period) => (
                   <button
@@ -829,7 +881,7 @@ export default function RecruiterDashboard() {
                       beginAtZero: true,
                       grid: { color: "#f1f5f9" },
                       border: { display: false },
-                      ticks: {
+                     ticks: {
                         stepSize: 10,
                         font: { size: 14 },
                         color: "#64748b",
@@ -848,7 +900,7 @@ export default function RecruiterDashboard() {
               />
             </div>
           </div>
-        </section> */}
+        </section>
       </div>
     </main>
   );
@@ -883,26 +935,9 @@ function KpiCard({ icon, value, label, trend, color }: CardProps) {
     },
   };
   const router = useRouter();
-  // const handleCardClick = () => {
-  //   switch (label) {
-  //     case "Active Clients":
-  //       router.push("/dashboard/recruiter/todos");
-  //       break;
-  //     case "Open Positions":
-  //       router.push("/dashboard/recruiter/todos");
-  //       break;
-  //     case "Total CV's uploaded":
-  //       router.push("/dashboard/recruiter/viewapplicant");
-  //       break;
-  //     case "Successfully Joined":
-  //       router.push("/dashboard/recruiter/viewapplicant?status=joined");
-  //       break;
-  //   }
-  // };
   return (
     <div
       className={`group bg-white rounded-lg p-3 shadow-sm border border-slate-200 hover:shadow-md transition-all ${label === "Active Clients" ? "cursor-pointer" : ""}`}
-      // onClick={handleCardClick}
     >
       <div className="flex items-start justify-between mb-2">
         <div
@@ -934,3 +969,5 @@ function SectionHeader({ title, subtitle }: HeaderProps) {
     </div>
   );
 }
+                     
+                   
