@@ -88,6 +88,12 @@ const getNavigationItems = (role: AllowedRole): NavigationItem[] => {
     ],
     Recruiter: [
       { icon: Home, label: "Dashboard", href: roleBasePath },
+       {
+        icon: FolderOpen,
+        label: "Requirements",
+        href: `${roleBasePath}/requirements`,
+      },
+
       {
         icon: FolderOpen,
         label: "Jobs Assigned",
@@ -97,6 +103,13 @@ const getNavigationItems = (role: AllowedRole): NavigationItem[] => {
         icon: Users,
         label: "Candidate Tracker",
         href: `${roleBasePath}/viewapplicant`,
+      },
+
+
+      {
+        icon: Users,
+        label: "Helpdesk",
+        href: `${roleBasePath}/helpdesk`,
       },
     ],
   };

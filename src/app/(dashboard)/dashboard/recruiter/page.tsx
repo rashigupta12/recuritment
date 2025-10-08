@@ -666,7 +666,7 @@ export default function RecruiterDashboard() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h1 className="text-xl font-bold text-slate-800">
-              Recruiter Analytics
+              Recruiter Dashboard
             </h1>
             <p className="text-md text-slate-500 mt-0.5">
               Monitor performance and track hiring progress
