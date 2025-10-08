@@ -1,5 +1,5 @@
 /*eslint-disable @typescript-eslint/no-explicit-any */
-import { Search, RefreshCw, Filter, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Search, RefreshCw, Filter, X, ChevronDown, ChevronUp, Download } from "lucide-react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,7 @@ interface TodosHeaderProps {
   onFilterChange?: (filters: FilterState) => void;
   filterConfig?: FilterConfig[];
   title?: string;
+  onexpotcsv:()=>Promise<void>;
 }
 
 interface FilterState {
@@ -62,6 +63,7 @@ export const TodosHeader = ({
   onFilterChange,
   filterConfig = [],
   title = 'My Jobs',
+  onexpotcsv
 }: TodosHeaderProps) => {
   const [filters, setFilters] = useState<FilterState>({
     departments: [],
@@ -164,262 +166,223 @@ export const TodosHeader = ({
 
       <div className="">
         {/* Header Row: My Jobs + Search + Filter + Refresh */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <h1 className="text-2xl font-semibold text-gray-900 whitespace-nowrap">{title}</h1>
-          <div className="flex items-center gap-3 flex-wrap justify-end">
-            <div className="flex-1 min-w-[250px] max-w-md items-end justify-end relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search jobs..."
-                value={searchQuery}
-                onChange={(e) => onSearchChange(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
+        <div className="flex flex-wrap items-center justify-between gap-[34rem]">
+  <h1 className="text-2xl font-semibold text-gray-900 whitespace-nowrap">{title}</h1>
+  <div className="flex items-center gap-3 flex-wrap justify-end">
+    <div className="flex-1 min-w-[250px] max-w-md items-end justify-end relative">
+      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+      <input
+        type="text"
+        placeholder="Search jobs..."
+        value={searchQuery}
+        onChange={(e) => onSearchChange(e.target.value)}
+        className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+      />
+    </div>
+    <div className="flex items-center gap-2">
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button
+            variant="outline"
+            className={`flex items-center gap-2 ${activeFilterCount > 0
+              ? 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'
+              : ''
+              }`}
+          >
+            <Filter className="w-4 h-4" />
+            Filters
+            {activeFilterCount > 0 && (
+              <Badge variant="secondary" className="ml-1 bg-blue-600 text-white px-1.5 min-w-[20px] h-5 flex items-center justify-center">
+                {activeFilterCount}
+              </Badge>
+            )}
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="right" className="w-full sm:max-w-md flex flex-col p-0">
+          <SheetHeader className="px-6 py-4 border-b">
+            <div className="flex items-center justify-between">
+              <SheetTitle className="flex items-center gap-2 text-lg">
+                <Filter className="w-5 h-5" />
+                Filters
+              </SheetTitle>
             </div>
-            <div className="flex items-center gap-2">
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={`flex items-center gap-2 ${activeFilterCount > 0
-                      ? 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'
-                      : ''
-                      }`}
-                  >
-                    <Filter className="w-4 h-4" />
-                    Filters
-                    {activeFilterCount > 0 && (
-                      <Badge variant="secondary" className="ml-1 bg-blue-600 text-white px-1.5 min-w-[20px] h-5 flex items-center justify-center">
-                        {activeFilterCount}
+          </SheetHeader>
+          <ScrollArea className="flex-1">
+            <div className="p-6 py-2 space-y-4">
+              {activeFilterCount > 0 && (
+                <div className="space-y-3">
+                  <h4 className="text-sm font-medium text-gray-700">Active Filters</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {filters.clients.map((client) => (
+                      <Badge key={client} variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
+                        Client: {client}
+                        <button
+                          onClick={() => toggleFilter('clients', client)}
+                          className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                    {filters.jobTitles.map((jobTitle) => (
+                      <Badge key={jobTitle} variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
+                        Job Title: {jobTitle}
+                        <button
+                          onClick={() => toggleFilter('jobTitles', jobTitle)}
+                          className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                    {filters.status.map((status) => (
+                      <Badge key={status} variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
+                        Status: {status}
+                        <button
+                          onClick={() => toggleFilter('status', status)}
+                          className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                    {filters.dateRange !== 'all' && (
+                      <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
+                        {filters.dateRange === 'today' ? 'Today' : filters.dateRange === 'week' ? 'This Week' : 'This Month'}
+                        <button 
+                          onClick={() => updateRadioFilter('dateRange', 'all')} 
+                          className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
                       </Badge>
                     )}
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="right" className="w-full sm:max-w-md flex flex-col p-0">
-                  <SheetHeader className="px-6 py-4 border-b">
-                    <div className="flex items-center justify-between">
-                      <SheetTitle className="flex items-center gap-2 text-lg">
-                        <Filter className="w-5 h-5" />
-                        Filters
-                      </SheetTitle>
+                  </div>
+                  <Separator />
+                </div>
+              )}
+              {filterConfig.map((section) => {
+                const options = section.options;
+                const filteredOptions = getFilteredOptions(section, options);
+                const isOpen = openSection === section.id;
+                const sectionType = section.type || 'checkbox';
+
+                let content;
+
+                if (sectionType === 'radio') {
+                  content = (
+                    <div className="space-y-2 pl-6">
+                      {section.options.map((option) => (
+                        <label key={option} className="flex items-center gap-3 cursor-pointer px-3 pt-1 rounded-lg hover:bg-gray-50 transition-colors">
+                          <input
+                            type="radio"
+                            name={section.id}
+                            checked={filters[section.id as keyof FilterState] === option}
+                            onChange={() => updateRadioFilter(section.id as keyof FilterState, option)}
+                            className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                          />
+                          <span className="text-sm font-medium text-gray-700">{section.optionLabels?.[option] || option}</span>
+                        </label>
+                      ))}
                     </div>
-                  </SheetHeader>
-                  <ScrollArea className="flex-1">
-                    <div className="p-6 py-2 space-y-4">
-                      {activeFilterCount > 0 && (
-                        <div className="space-y-3">
-                          <h4 className="text-sm font-medium text-gray-700">Active Filters</h4>
-                          <div className="flex flex-wrap gap-2">
-                            {/* {filters.departments.map((dept) => (
-                              <Badge key={dept} variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
-                                {dept}
-                                <button
-                                  onClick={() => toggleFilter('departments', dept)}
-                                  className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
-                              </Badge>
-                            ))} */}
-                            {/* {filters.assignedBy.map((assigner) => (
-                              <Badge key={assigner} variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
-                                {assigner}
-                                <button
-                                  onClick={() => toggleFilter('assignedBy', assigner)}
-                                  className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
-                              </Badge>
-                            ))} */}
-                            {filters.clients.map((client) => (
-                              <Badge key={client} variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
-                                Client: {client}
-                                <button
-                                  onClick={() => toggleFilter('clients', client)}
-                                  className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
-                              </Badge>
-                            ))}
-                            {filters.locations.map((location) => (
-                              <Badge key={location} variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
-                                {location}
-                                <button
-                                  onClick={() => toggleFilter('locations', location)}
-                                  className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
-                              </Badge>
-                            ))}
-                            {filters.jobTitles.map((jobTitle) => (
-                              <Badge key={jobTitle} variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
-                                Job Title: {jobTitle}
-                                <button
-                                  onClick={() => toggleFilter('jobTitles', jobTitle)}
-                                  className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
-                              </Badge>
-                            ))}
-                            {filters.status.map((status) => (
-                              <Badge key={status} variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
-                                Status: {status}
-                                <button
-                                  onClick={() => toggleFilter('status', status)}
-                                  className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
-                              </Badge>
-                            ))}
-                            {filters.dateRange !== 'all' && (
-                              <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
-                                {filters.dateRange === 'today' ? 'Today' : filters.dateRange === 'week' ? 'This Week' : 'This Month'}
-                                <button 
-                                  onClick={() => updateRadioFilter('dateRange', 'all')} 
-                                  className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
-                              </Badge>
-                            )}
-                            {/* {filters.vacancies !== 'all' && (
-                              <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
-                                {filters.vacancies === 'single' ? 'Single' : 'Multiple'}
-                                <button 
-                                  onClick={() => updateRadioFilter('vacancies', 'all')} 
-                                  className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
-                              </Badge>
-                            )} */}
-                          </div>
-                          <Separator />
+                  );
+                } else {
+                  content = (
+                    <div className="space-y-3 pl-6">
+                      {section.searchKey && (
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <input
+                            type="text"
+                            placeholder={`Search ${section.title.toLowerCase()}...`}
+                            value={searchStates[section.id]}
+                            onChange={(e) => setSearchStates({ ...searchStates, [section.id]: e.target.value })}
+                            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          />
                         </div>
                       )}
-                      {filterConfig.map((section) => {
-                        const options = section.options;
-                        const filteredOptions = getFilteredOptions(section, options);
-                        const isOpen = openSection === section.id;
-                        const sectionType = section.type || 'checkbox';
-
-                        let content;
-
-                        if (sectionType === 'radio') {
-                          content = (
-                            <div className="space-y-2 pl-6">
-                              {section.options.map((option) => (
-                                <label key={option} className="flex items-center gap-3 cursor-pointer px-3 pt-1 rounded-lg hover:bg-gray-50 transition-colors">
-                                  <input
-                                    type="radio"
-                                    name={section.id}
-                                    checked={filters[section.id as keyof FilterState] === option}
-                                    onChange={() => updateRadioFilter(section.id as keyof FilterState, option)}
-                                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                                  />
-                                  <span className="text-sm font-medium text-gray-700">{section.optionLabels?.[option] || option}</span>
-                                </label>
-                              ))}
-                            </div>
-                          );
-                        } else {
-                          content = (
-                            <div className="space-y-3 pl-6">
-                              {section.searchKey && (
-                                <div className="relative">
-                                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                  <input
-                                    type="text"
-                                    placeholder={`Search ${section.title.toLowerCase()}...`}
-                                    value={searchStates[section.id]}
-                                    onChange={(e) => setSearchStates({ ...searchStates, [section.id]: e.target.value })}
-                                    className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                  />
-                                </div>
-                              )}
-                            {filteredOptions.length > 0 ? (
-  <div className="space-y-2 max-h-48 overflow-y-auto">
-    {filteredOptions.map((option) => (
-      <label
-        key={option}
-        className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
-      >
-        <input
-          type="checkbox"
-          checked={filters[section.id as keyof FilterState].includes(option)}
-          onChange={() => toggleFilter(section.id as keyof FilterState, option)}
-          className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-        />
-        <span className="text-sm font-medium text-gray-700">{option}</span>
-      </label>
-    ))}
-  </div>
-) : (
-  searchStates[section.id].length > 0 && (
-    <div className="text-center py-3 text-sm text-gray-500">
-      {`No ${section.title.toLowerCase()} found`}
-    </div>
-  )
-)}
-
-                            </div>
-                          );
-                        }
-
-                        return (
-                          <div key={section.id} className="space-y-3">
-                            <button
-                              onClick={() => toggleSection(section.id)}
-                              className="flex items-center justify-between w-full text-sm font-semibold text-gray-900 hover:bg-gray-50 p-2 rounded-lg transition-colors"
+                      {filteredOptions.length > 0 ? (
+                        <div className="space-y-2 max-h-48 overflow-y-auto">
+                          {filteredOptions.map((option) => (
+                            <label
+                              key={option}
+                              className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
                             >
-                              <span className="flex items-center gap-2">
-                                <section.icon className="w-4 h-4 text-gray-600" />
-                                {section.title}
-                              </span>
-                              {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                            </button>
-                            {isOpen && content}
-                            {section.id !== filterConfig[filterConfig.length - 1]?.id && <Separator />}
-                          </div>
-                        );
-                      })}
+                              <input
+                                type="checkbox"
+                                checked={filters[section.id as keyof FilterState].includes(option)}
+                                onChange={() => toggleFilter(section.id as keyof FilterState, option)}
+                                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                              />
+                              <span className="text-sm font-medium text-gray-700">{option}</span>
+                            </label>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-3 text-sm text-gray-500">
+                          {searchStates[section.id].length > 0 ? `No ${section.title.toLowerCase()} found` : `Start typing to search ${section.title.toLowerCase()}`}
+                        </div>
+                      )}
                     </div>
-                  </ScrollArea>
-                  <div className="border-t p-4 bg-gray-50">
-                    <div className="flex gap-3">
-                      <Button
-                        variant="outline"
-                        onClick={clearAllFilters}
-                        className="flex-1 border-gray-300 hover:bg-gray-200"
-                      >
-                        Clear All
-                      </Button>
-                      <SheetTrigger asChild>
-                        <Button className="flex-1 bg-blue-600 hover:bg-blue-700">
-                          Show Results
-                        </Button>
-                      </SheetTrigger>
-                    </div>
+                  );
+                }
+
+                return (
+                  <div key={section.id} className="space-y-3">
+                    <button
+                      onClick={() => toggleSection(section.id)}
+                      className="flex items-center justify-between w-full text-sm font-semibold text-gray-900 hover:bg-gray-50 p-2 rounded-lg transition-colors"
+                    >
+                      <span className="flex items-center gap-2">
+                        <section.icon className="w-4 h-4 text-gray-600" />
+                        {section.title}
+                      </span>
+                      {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </button>
+                    {isOpen && content}
+                    {section.id !== filterConfig[filterConfig.length - 1]?.id && <Separator />}
                   </div>
-                </SheetContent>
-              </Sheet>
+                );
+              })}
+            </div>
+          </ScrollArea>
+          <div className="border-t p-4 bg-gray-50">
+            <div className="flex gap-3">
               <Button
                 variant="outline"
-                size="icon"
-                onClick={onRefresh}
-                className="h-10 w-10"
+                onClick={clearAllFilters}
+                className="flex-1 border-gray-300 hover:bg-gray-200"
               >
-                <RefreshCw className="w-4 h-4" />
+                Clear All
               </Button>
+              <SheetTrigger asChild>
+                <Button className="flex-1 bg-blue-600 hover:bg-blue-700">
+                  Show Results
+                </Button>
+              </SheetTrigger>
             </div>
           </div>
-        </div>
+        </SheetContent>
+      </Sheet>
+      <Button
+        variant="outline"
+        size="icon"
+        onClick={onRefresh}
+        className="h-10 w-10"
+      >
+        <RefreshCw className="w-4 h-4" />
+      </Button>
+      <button
+        onClick={onexpotcsv}
+        className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-md flex gap-2"
+        aria-label="Export applicants to CSV"
+      >
+        <Download className="h-5 w-5" />
+        Export
+      </button>
+    </div>
+  </div>
+</div>
         {activeFilterCount > 0 && (
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <span className="text-sm text-gray-600 font-medium">Active filters:</span>
