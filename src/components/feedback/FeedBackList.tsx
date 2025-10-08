@@ -103,19 +103,19 @@ const FeedbackList: React.FC<{
 
   return createPortal(
     <div
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9000] flex items-center justify-center p-4 capitalize"
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9000] flex items-center justify-center capitalize"
       onClick={handleBackdropClick}
       role="dialog"
       aria-modal="true"
     >
       <div
-        className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
+        className="bg-white rounded-xl shadow-2xl w-full  overflow-hidden flex flex-col"
         onClick={stopPropagation}
         tabIndex={-1} // focusable container
         style={{ outline: "none" }}
       >
         {/* Header */}
-        <div className="bg-primary text-white p-6 flex-shrink-0">
+        <div className="bg-primary text-white flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <MessageCircle className="h-6 w-6" />
@@ -155,7 +155,7 @@ const FeedbackList: React.FC<{
               {feedbacks.map((feedback) => (
                 <div
                   key={feedback.name}
-                  className="p-4 hover:bg-emerald-50 transition-colors cursor-pointer"
+                  className=" hover:bg-emerald-50 transition-colors cursor-pointer"
                   onClick={() => onViewFeedback(feedback)}
                   tabIndex={0}
                   onKeyDown={(e) => {

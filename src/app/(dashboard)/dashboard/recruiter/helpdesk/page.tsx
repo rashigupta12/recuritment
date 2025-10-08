@@ -112,7 +112,7 @@ export default function HelpdeskPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 relative">
+    <div className=" relative">
       <div className="w-full h-full">
         <div className={`absolute inset-0 ${activeView === "form" ? "dimmed-background" : ""}`}>
           {activeView === "list" && (
