@@ -9,6 +9,9 @@ import { FeedbackItem } from "@/types/feedback";
 import FeedbackList from "@/components/feedback/FeedBackList";
 import FeedbackForm from "@/components/feedback/FeedbackForm";
 import FeedbackDetails from "@/components/feedback/FeedBackDetails";
+import { SortableTableHeader } from "@/components/recruiter/SortableTableHeader";
+import { format } from "date-fns";
+import { Plus } from "lucide-react";
 
 type ViewType = "list" | "form" | "details";
 
@@ -110,30 +113,30 @@ export default function HelpdeskPage() {
   };
 
   return (
-    <div className="h-full">
-      {activeView === "list" && (
-        <FeedbackListPage
-          feedbacks={feedbacks}
-          loading={loading}
-          onViewFeedback={handleViewFeedback}
-          onNewFeedback={handleNewFeedback}
-        />
-      )}
-      
-      {activeView === "form" && (
-        <FeedbackForm
-          isOpen={true}
-          onClose={handleCloseForm}
-          onSubmit={handleSubmitFeedback}
-        />
-      )}
-      
-      {activeView === "details" && selectedFeedback && (
-        <FeedbackDetails
-          feedback={selectedFeedback}
-          onClose={handleCloseDetails}
-        />
-      )}
+    <div className="relative">
+      <div className="w-full h-full">
+        {activeView === "list" && (
+          <FeedbackListPage
+            feedbacks={feedbacks}
+            loading={loading}
+            onViewFeedback={handleViewFeedback}
+            onNewFeedback={handleNewFeedback}
+          />
+        )}
+        {activeView === "details" && selectedFeedback && (
+          <FeedbackDetails
+            feedback={selectedFeedback}
+            onClose={handleCloseDetails}
+          />
+        )}
+        {activeView === "form" && (
+          <FeedbackForm
+            isOpen={true}
+            onClose={handleCloseForm}
+            onSubmit={handleSubmitFeedback}
+          />
+        )}
+      </div>
     </div>
   );
 }
@@ -151,109 +154,122 @@ function FeedbackListPage({
   onViewFeedback,
   onNewFeedback,
 }: FeedbackListPageProps) {
+  const [sortField, setSortField] = useState<keyof FeedbackItem | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(null);
+  const [sortedFeedbacks, setSortedFeedbacks] = useState<FeedbackItem[]>(feedbacks);
+
+  useEffect(() => {
+    setSortedFeedbacks(feedbacks);
+  }, [feedbacks]);
+
+  const columns: Array<Column<keyof FeedbackItem>> = [
+    { field: 'opening_date', label: 'Date', sortable: false, align: 'left' },
+    { field: 'subject', label: 'Module', sortable: false, align: 'left' },
+    { field: 'description', label: 'Description', sortable: false, align: 'left' },
+    { field: 'status', label: 'Status', sortable: false, align: 'left' },
+  ];
+
+  const handleSort = (field: keyof FeedbackItem) => {
+    const newDirection = sortField === field && sortDirection === 'asc' ? 'desc' : 'asc';
+    
+    const sorted = [...feedbacks].sort((a, b) => {
+      const aValue = a[field];
+      const bValue = b[field];
+      
+      if (field === 'opening_date') {
+        const aDate = aValue && typeof aValue === 'string' ? new Date(aValue).getTime() : 0;
+        const bDate = bValue && typeof bValue === 'string' ? new Date(bValue).getTime() : 0;
+        return newDirection === 'asc' ? aDate - bDate : bDate - aDate;
+      }
+      
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return newDirection === 'asc'
+          ? aValue.localeCompare(bValue)
+          : bValue.localeCompare(aValue);
+      }
+      
+      return 0;
+    });
+
+    setSortedFeedbacks(sorted);
+    setSortField(field);
+    setSortDirection(newDirection);
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 h-full flex flex-col">
-      {/* Header */}
-      <div className="bg-primary text-white p-6 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold">Helpdesk</h1>
-          </div>
-          <button
-            onClick={onNewFeedback}
-            className="px-4 py-2 bg-white text-primary font-medium rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            + New Issue
-          </button>
-        </div>
-      </div>
+    <div>
+      <div className="p-2 flex-shrink-0">
+      <div className="flex items-center justify-between">
+  <div className="flex items-center gap-3">
+    <h1 className="text-2xl font-bold">Helpdesk</h1>
+  </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto">
-        {loading ? (
-          <div className="flex items-center justify-center h-96">
-            <div className="flex items-center gap-3 text-gray-500">
-              <div className="w-6 h-6 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-              <span>Loading issues...</span>
+  <button
+    onClick={onNewFeedback}
+    className="bg-primary text-white rounded-full h-10 w-10 flex items-center justify-center hover:bg-primary/90 transition-colors shadow-md"
+  >
+    <Plus className="h-4 w-4 stroke-[3]" /> {/* precise balanced size */}
+  </button>
+</div>
+
+      </div>
+      <div className="bg-white shadow-md rounded-lg border border-blue-100 overflow-hidden w-full">
+        <div className="overflow-x-auto">
+          {loading ? (
+            <div className="flex items-center justify-center h-96">
+              <div className="flex items-center gap-3 text-gray-500">
+                <div className="w-6 h-6 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
+                <span>Loading issues...</span>
+              </div>
             </div>
-          </div>
-        ) : feedbacks.length === 0 ? (
-          <div className="text-center py-16">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              No Issues Found
-            </h3>
-            <p className="text-gray-500 mb-6">
-              You haven &apos;t submitted any issues yet.
-            </p>
-            <button
-              onClick={onNewFeedback}
-              className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-opacity-90 transition-colors"
-            >
-              Create Your First Issue
-            </button>
-          </div>
-        ) : (
-          <div className="divide-y divide-gray-200">
-            {feedbacks.map((feedback) => (
-              <FeedbackRow
-                key={feedback.name}
-                feedback={feedback}
-                onView={onViewFeedback}
+          ) : feedbacks.length === 0 ? (
+            <div className="text-center py-10 text-blue-600 text-sm bg-blue-50">
+              <p>No Issues Found</p>
+              <p className="text-blue-400 text-xs mt-1">
+                You haven&apos;t submitted any issues yet.
+              </p>
+            </div>
+          ) : (
+            <table className="min-w-full divide-y divide-gray-200 text-md sm:text-md font-medium">
+              <SortableTableHeader
+                columns={columns}
+                sortField={sortField}
+                sortDirection={sortDirection}
+                onSort={handleSort}
+                className="bg-blue-500 text-white"
               />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Footer */}
-      {feedbacks.length > 0 && (
-        <div className="border-t border-gray-200 p-4 bg-gray-50 flex-shrink-0">
-          <div className="text-sm text-gray-600">
-            {feedbacks.length} issue{feedbacks.length !== 1 ? "s" : ""} • Last updated:{" "}
-            {new Date().toLocaleTimeString()}
-          </div>
+              <tbody className="divide-y divide-gray-100">
+                {sortedFeedbacks.map((feedback, index) => (
+                  <FeedbackRow
+                    key={feedback.name}
+                    feedback={feedback}
+                    onView={onViewFeedback}
+                    index={index}
+                  />
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
+}
+
+interface Column<T> {
+  field: T;
+  label: string;
+  sortable: boolean;
+  align: 'left' | 'center' | 'right';
 }
 
 interface FeedbackRowProps {
   feedback: FeedbackItem;
   onView: (feedback: FeedbackItem) => void;
+  index: number;
 }
 
-function FeedbackRow({ feedback, onView }: FeedbackRowProps) {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Open":
-        return "bg-red-100 text-red-800";
-      case "Replied":
-        return "bg-blue-100 text-blue-800";
-      case "On Hold":
-        return "bg-yellow-100 text-yellow-800";
-      case "Resolved":
-        return "bg-green-100 text-green-800";
-      case "Closed":
-        return "bg-gray-100 text-gray-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "High":
-        return "bg-orange-500 text-white";
-      case "Medium":
-        return "bg-yellow-500 text-white";
-      case "Low":
-        return "bg-emerald-500 text-white";
-      default:
-        return "bg-gray-500 text-white";
-    }
-  };
-
+function FeedbackRow({ feedback, onView, index }: FeedbackRowProps) {
   const stripHtml = (html: string): string => {
     const tmp = document.createElement("div");
     tmp.innerHTML = html;
@@ -261,8 +277,10 @@ function FeedbackRow({ feedback, onView }: FeedbackRowProps) {
   };
 
   return (
-    <div
-      className="p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+    <tr
+      className={`${
+        index % 2 === 0 ? "bg-white" : "bg-blue-50"
+      } hover:bg-blue-100 transition duration-100 cursor-pointer`}
       onClick={() => onView(feedback)}
       role="button"
       tabIndex={0}
@@ -272,49 +290,28 @@ function FeedbackRow({ feedback, onView }: FeedbackRowProps) {
           onView(feedback);
         }
       }}
+      aria-label={`View feedback titled ${feedback.subject}`}
     >
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-lg text-gray-900 truncate mb-2">
-            {feedback.subject}
-          </h3>
-
-          <p className="text-gray-700 mb-3 line-clamp-2 text-sm">
-            {stripHtml(feedback.description)}
-          </p>
-
-          {feedback.resolution_details && feedback.status === "Replied" && (
-            <div className="bg-blue-50 border-l-4 border-blue-400 p-3 mb-3 text-sm">
-              <p className="text-blue-800 font-medium mb-1">Response:</p>
-              <p className="text-blue-700 line-clamp-2">
-                {stripHtml(feedback.resolution_details)}
-              </p>
-            </div>
-          )}
-
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span
-              className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-                feedback.status
-              )}`}
-            >
-              {feedback.status}
-            </span>
-            <span
-              className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(
-                feedback.priority
-              )}`}
-            >
-              {feedback.priority}
-            </span>
-            <span className="text-xs text-gray-500">
-              {feedback.opening_date
-                ? new Date(feedback.opening_date).toLocaleDateString()
-                : "No date"}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
+      <td className="px-2 sm:px-4 py-4 text-md text-gray-500">
+        {feedback.opening_date
+          ? format(new Date(feedback.opening_date), "dd/MM/yyyy")
+          : "No date"}
+      </td>
+      <td className="px-2 sm:px-4 py-4">
+        <h3 className="font-semibold text-md text-blue-900 truncate max-w-xs">
+          {feedback.subject}
+        </h3>
+      </td>
+      <td className="px-2 sm:px-4 py-4">
+        <p className="text-gray-700 mt-1 line-clamp-2 text-md">
+          {stripHtml(feedback.description)}
+        </p>
+      </td>
+      <td className="px-2 sm:px-4 py-4">
+        <span className="px-2 py-1 rounded-full text-md font-medium">
+          {feedback.status}
+        </span>
+      </td>
+    </tr>
   );
 }
