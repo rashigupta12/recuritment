@@ -162,7 +162,7 @@ export const TodosTable = ({ todos, onViewTodo }: TodosTableProps) => {
                     : <span className="text-gray-400">Not set</span>}
                 </td>
                 {/* Aging */}
-                <td className="px-2 sm:px-4 py-4 whitespace-nowrap">{calculateAging(todo.custom_date_assigned)}</td>
+                <td className="px-2 sm:px-4 py-4 whitespace-nowrap text-center">{calculateAging(todo.custom_date_assigned)}</td>
                 {/* Company */}
                 <td className="px-2 sm:px-4 py-4">{extractCompany(todo.description)}</td>
                 {/* Job Title */}
@@ -170,7 +170,7 @@ export const TodosTable = ({ todos, onViewTodo }: TodosTableProps) => {
                 {/* Location */}
                 <td className="px-2 sm:px-4 py-4">{extractLocation(todo.description)}</td>
                 {/* Vacancies */}
-                <td className="px-2 sm:px-4 py-4">{extractVacancies(todo.description) || 'N/A'}</td>
+                <td className="sm:px-4 py-4 text-center">{extractVacancies(todo.description) || 'N/A'}</td>
                 {/* Status */}
                 <td className="px-2 sm:px-4 py-4">{todo.status || 'N/A'}</td>
               </tr>
