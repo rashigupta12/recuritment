@@ -1,6 +1,7 @@
 // ============================================
 // StaffingPlansTable.tsx (Updated)
 // ============================================
+/*eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { frappeAPI } from "@/lib/api/frappeClient";
 import {

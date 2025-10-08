@@ -1,6 +1,7 @@
 // ============================================
 // LeadsTable.tsx (Updated)
 // ============================================
+/*eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 import React, { useState, useCallback, memo, useMemo } from "react";
 import { EditIcon, UsersIcon } from "lucide-react";

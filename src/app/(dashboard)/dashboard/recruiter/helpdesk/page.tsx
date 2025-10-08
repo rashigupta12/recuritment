@@ -183,7 +183,7 @@ function FeedbackListPage({
               No Issues Found
             </h3>
             <p className="text-gray-500 mb-6">
-              You haven't submitted any issues yet.
+              You haven &apos;t submitted any issues yet.
             </p>
             <button
               onClick={onNewFeedback}

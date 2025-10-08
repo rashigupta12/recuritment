@@ -1,6 +1,7 @@
 // ============================================
 // LeadsTable (Second Version - with Stage column)
 // ============================================
+/*eslint-disable @typescript-eslint/no-explicit-any */
 import { Lead } from "@/stores/leadStore";
 import { EditIcon, Eye, UsersIcon } from "lucide-react";
 import { useState, useMemo } from "react";

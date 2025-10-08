@@ -10,6 +10,7 @@ import { LeadsMobileView } from "../Leads/MobileView";
 import { useRouter } from "next/navigation";
 import { LeadsTable } from "./Table";
 
+
 interface CustomerDetails {
   name: string;
   customer_name: string;
@@ -73,27 +74,27 @@ const ContractLeads = () => {
     });
   }, [leads, searchQuery]);
 
-  // Event handlers with useCallback
-  const handleViewLead = useCallback((lead: Lead) => {
-    setSelectedLead(lead);
-    setShowModal(true);
-  }, []);
+ 
 
   const handleCloseModal = useCallback(() => {
     setShowModal(false);
     setSelectedLead(null);
   }, []);
 
-  const handleEditLead = useCallback((lead: Lead) => {
-    setSelectedLead(lead);
-    // If you need edit functionality, you can implement it here
-    console.log("Edit lead:", lead);
-  }, []);
 
-const handleCreateContract = useCallback(async (lead: Lead) => {
+const handleViewLead = useCallback((lead: any) => {
+  setSelectedLead(lead as Lead);
+  setShowModal(true);
+}, []);
+
+const handleEditLead = useCallback((lead: any) => {
+  setSelectedLead(lead as Lead);
+  console.log("Edit lead:", lead);
+}, []);
+
+const handleCreateContract = useCallback(async (lead: any) => {
   await router.push(`/dashboard/sales-manager/requirements/create?leadId=${lead.name}`);
 }, [router]);
-
 
   const handleConfirmBack = useCallback(() => {
     setShowConfirmation(false);
