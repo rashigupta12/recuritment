@@ -55,7 +55,7 @@ export const TodosTable = ({ todos, onViewTodo }: TodosTableProps) => {
   const columns = [
     { field: 'date' as const, label: 'Date Assigned' },
     { field: 'aging' as const, label: 'Aging (Days)', align: 'center' as const },
-    { field: 'company' as const, label: 'Company' },
+    { field: 'company' as const, label: 'Company Name' },
     { field: 'title' as const, label: 'Job Title' },
     { field: 'location' as const, label: 'Location' },
     { field: 'vacancies' as const, label: 'Vacancies', align: 'center' as const },

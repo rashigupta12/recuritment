@@ -8,11 +8,15 @@ import {
   AlertCircle,
   Building,
   Clock,
+  Edit,
+  Eye,
+  Filter,
   IndianRupee,
   Loader2,
   MapPin,
+  PaintBucket,
   Phone,
-  Plus,
+  RefreshCw,
   Search,
   User,
   Users,
@@ -21,6 +25,8 @@ import React, { useEffect, useState, useMemo } from "react";
 import { JobOpeningModal } from "./requirement-view/JobopeningModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { SortableTableHeader } from "../recruiter/SortableTableHeader";
+import { useRouter } from "next/navigation";
+import { Button } from "../ui/button";
 
 // Type definitions
 type StaffingPlanItem = {
@@ -35,6 +41,7 @@ type StaffingPlanItem = {
   attachmentsoptional?: string;
   assign_to?: string;
   job_id?: string;
+  employment_type?: string;
 };
 
 type StaffingPlan = {
@@ -60,14 +67,16 @@ type SelectedJob = {
   staffingDetail: StaffingPlanItem;
   planIndex: number;
   detailIndex: number;
+  mode: 'view' | 'allocation';
 };
 
-type SortField = "company" | "designation" | "location" | "experience" | "vacancies" | "budget";
+type SortField = "company" | "designation" | "location" | "experience" | "vacancies" | "budget" | "datetime";
 type AllFields = SortField | "contact" | "status" | "actions";
 type SortDirection = "asc" | "desc" | null;
 
 // Main Staffing Plans Table Component
 const StaffingPlansTable: React.FC = () => {
+  const router = useRouter();
   const [plans, setPlans] = useState<StaffingPlan[]>([]);
   const [filteredPlans, setFilteredPlans] = useState<StaffingPlan[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -77,10 +86,13 @@ const StaffingPlansTable: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
+  const [publishingJobs, setPublishingJobs] = useState<Set<string>>(new Set());
   const { user } = useAuth();
 
+  // Check if user is project manager
+  const isProjectManager = user?.roles?.includes("Project Manager") || false;
+
   const handleSort = (field: AllFields) => {
-    // Only handle sorting for sortable fields
     if (field === 'contact' || field === 'status' || field === 'actions') return;
     
     if (sortField === field) {
@@ -96,13 +108,15 @@ const StaffingPlansTable: React.FC = () => {
   };
 
   const columns = useMemo(() => {
-    const cols: Array<{ field: AllFields; label: string; sortable?: boolean }> = [
-      { field: 'company', label: 'Company & Contact' },
-      { field: 'designation', label: 'Position Details' },
-      { field: 'location', label: 'Location & Experience' },
-      { field: 'vacancies', label: 'Vacancies & Budget' },
-      { field: 'status', label: 'Status', sortable: false },
-      { field: 'actions', label: 'Actions', sortable: false },
+    const cols: Array<{ field: AllFields; label: string; sortable?: boolean ; align?: "left" | "center" | "right";  width?: string;}> = [
+
+      { field: 'datetime', label: 'Date',  align:"center" },
+      { field: 'company', label: 'Company & Contact', width:"200px", align:"center" },
+      { field: 'designation', label: 'Position Details', align:"center" },
+      { field: 'location', label: 'Location & Experience',align:"center" },
+      { field: 'vacancies', label: 'Vacancies & Budget', align:"center" },
+      // { field: 'status', label: 'Status', sortable: false , align:"center"},
+      { field: 'actions', label: 'Action', sortable: false , align: "center"},
     ];
     return cols;
   }, []);
@@ -217,7 +231,6 @@ const StaffingPlansTable: React.FC = () => {
         });
       });
       
-      // Sort plans by company if that's the sort field
       if (sortField === 'company') {
         sortedFiltered.sort((a, b) => {
           const aValue = a.company.toLowerCase();
@@ -234,7 +247,7 @@ const StaffingPlansTable: React.FC = () => {
     setFilteredPlans(filtered);
   }, [searchTerm, plans, sortField, sortDirection]);
 
-  const handleCreateOpening = (
+  const handleViewDetails = (
     plan: StaffingPlan,
     detail: StaffingPlanItem,
     planIndex: number,
@@ -245,8 +258,60 @@ const StaffingPlansTable: React.FC = () => {
       staffingDetail: detail,
       planIndex,
       detailIndex,
+      mode: 'view',
     });
     setIsModalOpen(true);
+  };
+
+  const handleAllocation = (
+    plan: StaffingPlan,
+    detail: StaffingPlanItem,
+    planIndex: number,
+    detailIndex: number
+  ) => {
+    setSelectedJob({
+      staffingPlan: plan,
+      staffingDetail: detail,
+      planIndex,
+      detailIndex,
+      mode: 'allocation',
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleEdit = (planName: string) => {
+    router.push(`/dashboard/recruiter/requirements/create?planId=${planName}&mode=edit`);
+  };
+
+  const handlePublish = async (jobId: string, planIndex: number, detailIndex: number) => {
+    setPublishingJobs(prev => new Set(prev).add(jobId));
+    
+    try {
+      await frappeAPI.makeAuthenticatedRequest(
+        "PUT",
+        `/resource/Job Opening/${jobId}`,
+        { publish: 1 }
+      );
+
+      // Update local state
+      setPlans((prevPlans) => {
+        const newPlans = [...prevPlans];
+        // Note: The publish status is in Job Opening, not Staffing Plan
+        // So we just refresh or show success
+        return newPlans;
+      });
+
+      alert("Job opening published successfully!");
+    } catch (error) {
+      console.error("Error publishing job:", error);
+      alert("Failed to publish job opening. Please try again.");
+    } finally {
+      setPublishingJobs(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(jobId);
+        return newSet;
+      });
+    }
   };
 
   const handleJobSuccess = (
@@ -268,29 +333,73 @@ const StaffingPlansTable: React.FC = () => {
     setIsModalOpen(false);
   };
 
+  const formatDateAndTimeV2 = (dateString?: string) => {
+  if (!dateString) return { date: "-", time: "-" };
+  const date = new Date(dateString);
+
+  const formattedDate = date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+
+  const formattedTime = date.toLocaleTimeString("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+
+  return { date: formattedDate, time: formattedTime };
+};
+  console.log(plans)
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="w-full mx-auto">
         <div className="mb-2">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Job Board</h1>
-              <p className="text-gray-600 mt-2">
-                Manage and track all staffing requirements
-              </p>
-            </div>
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+  {/* Left Section: Heading */}
+  <div>
+    <h1 className="text-2xl font-bold text-gray-900">Customers Requirements</h1>
+    <p className="text-gray-600 mt-1">
+      Manage and track all staffing requirements
+    </p>
+  </div>
 
-            <div className="relative max-w-4xl">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search by company, contact, position..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-md"
-              />
-            </div>
-          </div>
+  {/* Right Section: Search, Filter, and Refresh */}
+  <div className="flex items-center gap-3 flex-wrap justify-end">
+    {/* Search Bar */}
+    <div className="relative min-w-[250px] max-w-md">
+      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+      <input
+        type="text"
+        placeholder="Search by company, contact, position..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+      />
+    </div>
+
+    {/* Filter Button */}
+    <Button
+      variant="outline"
+      size="icon"
+      className="flex items-center justify-center h-10 w-10 hover:bg-blue-50"
+    >
+      <Filter className="w-5 h-5 text-gray-700" />
+    </Button>
+
+    {/* Refresh Button */}
+    <Button
+      variant="outline"
+      size="icon"
+      className="h-10 w-10 flex items-center justify-center hover:bg-blue-50"
+    >
+      <RefreshCw className="w-4 h-4 text-gray-700" />
+    </Button>
+  </div>
+</div>
+
         </div>
 
         {/* Main Table */}
@@ -331,18 +440,35 @@ const StaffingPlansTable: React.FC = () => {
                 />
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredPlans.map((plan, planIndex) => (
+
                     <React.Fragment key={plan.name}>
                       {plan.staffing_details.map((detail, detailIndex) => (
                         <tr
                           key={`${plan.name}-${detailIndex}`}
                           className="hover:bg-gray-50 transition-colors"
                         >
+                        {plan.creation && (
+                          <td className="px-4 py-2 whitespace-nowrap text-md text-gray-900">
+        {(() => {
+          const { date, time } = formatDateAndTimeV2(plan.creation);
+          return (
+            <div className="flex flex-col leading-tight">
+              <span>{date}</span>
+              <span className="text-md text-gray-500">{time}</span>
+            </div>
+          );
+        })()}
+      </td>
+                        )
+                        }
+
                           {detailIndex === 0 && (
                             <td
                               className="px-4 py-3 align-top"
                               rowSpan={plan.staffing_details.length}
+                              width={"300px"}
                             >
-                              <div className="flex flex-col space-y-1 max-w-[180px]">
+                              <div className="flex flex-col space-y-1 max-w-[250px]">
                                 <div className="group relative">
                                   <div className="flex items-center">
                                     <Building className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0" />
@@ -458,7 +584,7 @@ const StaffingPlansTable: React.FC = () => {
                             </div>
                           </td>
 
-                          <td className="px-4 py-4">
+                          {/* <td className="px-4 py-4">
                             <div className="flex flex-col space-y-1">
                               {detail.job_id ? (
                                 <>
@@ -477,37 +603,79 @@ const StaffingPlansTable: React.FC = () => {
                                 </span>
                               )}
                             </div>
-                          </td>
+                          </td> */}
 
                           <td className="px-4 py-4">
-                            <div className="flex items-center space-x-2">
+                            <div className="flex items-center space-x-1 flex-wrap gap-2">
+                              {/* View Details Button */}
                               <button
                                 onClick={() =>
-                                  handleCreateOpening(
+                                  handleViewDetails(
                                     plan,
                                     detail,
                                     planIndex,
                                     detailIndex
                                   )
                                 }
-                                className={`flex items-center px-3 py-1.5 text-white rounded text-md transition-colors ${
-                                  detail.job_id
-                                    ? "bg-green-600 hover:bg-green-700"
-                                    : "bg-blue-600 hover:bg-blue-700"
-                                }`}
+                                className="flex items-center px-1 py-1.5 text-blue-500  rounded text-md transition-colors"
+                                title="View Details"
                               >
-                                {detail.job_id ? (
-                                  <>
-                                    <Users className="h-4 w-4 mr-1" />
-                                    Allocation
-                                  </>
-                                ) : (
-                                  <>
-                                    <Plus className="h-4 w-4 mr-1" />
-                                    Create
-                                  </>
-                                )}
+                                <Eye className="h-4 w-4 " />
+                                
                               </button>
+
+                              {/* Edit Button - Only show once per plan */}
+                              {detailIndex === 0 && (
+                                <button
+                                  onClick={() => handleEdit(plan.name)}
+                                  className="flex items-center px-1 py-1.5 text-blue-500   rounded text-md transition-colors"
+                                  title="Edit Staffing Plan"
+                                >
+                                  <Edit className="h-4 w-4 " />
+                                  
+                                </button>
+                              )}
+
+                              {/* Publish Button - Only if job_id exists */}
+                              {detail.job_id && (
+                                <button
+                                  onClick={() => handlePublish(detail.job_id!, planIndex, detailIndex)}
+                                  disabled={publishingJobs.has(detail.job_id)}
+                                  className="flex items-center px-1 py-1.5 text-blue-500 rounded text-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title="Publish Job Opening"
+                                >
+                                  {publishingJobs.has(detail.job_id) ? (
+                                    <>
+                                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                      {/* Publishing... */}
+                                    </>
+                                  ) : (
+                                    <>
+                                      <PaintBucket className="h-4 w-4 mr-1 " />
+                                      {/* Publish */}
+                                    </>
+                                  )}
+                                </button>
+                              )}
+
+                              {/* Allocation Button - Only for project managers and if job_id exists */}
+                              {isProjectManager && detail.job_id && (
+                                <button
+                                  onClick={() =>
+                                    handleAllocation(
+                                      plan,
+                                      detail,
+                                      planIndex,
+                                      detailIndex
+                                    )
+                                  }
+                                  className="flex items-center px-3 py-1.5 text-white bg-green-600 hover:bg-green-700 rounded text-md transition-colors"
+                                  title="Manage Allocation"
+                                >
+                                  <Users className="h-4 w-4 mr-1" />
+                                  Allocation
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -533,15 +701,19 @@ const StaffingPlansTable: React.FC = () => {
             </p>
           </div>
         )}
-        <JobOpeningModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          staffingPlan={selectedJob?.staffingPlan || null}
-          staffingDetail={selectedJob?.staffingDetail || null}
-          planIndex={selectedJob?.planIndex || 0}
-          detailIndex={selectedJob?.detailIndex || 0}
-          onSuccess={handleJobSuccess}
-        />
+        
+        {selectedJob && (
+          <JobOpeningModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            staffingPlan={selectedJob.staffingPlan}
+            staffingDetail={selectedJob.staffingDetail}
+            planIndex={selectedJob.planIndex}
+            detailIndex={selectedJob.detailIndex}
+            onSuccess={handleJobSuccess}
+            // mode={selectedJob.mode}
+          />
+        )}
       </div>
     </div>
   );

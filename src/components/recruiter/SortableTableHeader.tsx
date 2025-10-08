@@ -56,7 +56,7 @@ export function SortableTableHeader<T extends string>({
           <th
             key={column.field}
             scope="col"
-            className={`px-2 sm:px-3 py-3 text-sm sm:text-base uppercase text-white font-bold ${
+            className={`px-2 sm:px-3 py-3 text-sm sm:text-base capitalize text-white font-semibold ${
               getAlignmentClass(column.align)
             } ${column.sortable !== false ? 'cursor-pointer select-none transition-colors' : ''}`}
             onClick={() => column.sortable !== false && onSort(column.field)}

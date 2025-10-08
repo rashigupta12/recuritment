@@ -124,6 +124,8 @@ export default function RecruiterDashboard() {
     fetchData();
   }, [user?.email]);
 
+  console.log(apiData)
+
   // Get clients from API data
   const clients = useMemo(() => {
     if (!apiData?.jobs_opening_by_company?.jobs_by_company) return ["All"];
@@ -757,9 +759,9 @@ export default function RecruiterDashboard() {
                       },
                     },
                   },
-                  onClick: (event, elements) => {
-                    handleJobStatusClick(elements);
-                  },
+                  // onClick: (event, elements) => {
+                  //   handleJobStatusClick(elements);
+                  // },
                 }}
               />
             </div>
@@ -767,11 +769,11 @@ export default function RecruiterDashboard() {
         </section>
 
         {/* Recruitment Trends Section */}
-        <section className="grid grid-cols-1 gap-4">
+        {/* <section className="grid grid-cols-1 gap-4">
           <div className="xl:col-span-2 bg-white rounded-lg p-4 shadow-sm border border-slate-200">
             <div className="flex justify-between items-center mb-2">
               <SectionHeader title="Recruitment Trends" subtitle={`Current Quarter - ${trendPeriod}ly breakdown`} />
-              {/* Moved filters here, only for trends chart */}
+              Moved filters here, only for trends chart
               <div className="flex gap-0.5 bg-slate-100 p-0.5 rounded-md">
                 {(["week", "month", "quarter"] as const).map((period) => (
                   <button
@@ -846,7 +848,7 @@ export default function RecruiterDashboard() {
               />
             </div>
           </div>
-        </section>
+        </section> */}
       </div>
     </main>
   );
@@ -881,26 +883,26 @@ function KpiCard({ icon, value, label, trend, color }: CardProps) {
     },
   };
   const router = useRouter();
-  const handleCardClick = () => {
-    switch (label) {
-      case "Active Clients":
-        router.push("/dashboard/recruiter/todos");
-        break;
-      case "Open Positions":
-        router.push("/dashboard/recruiter/todos");
-        break;
-      case "Total CV's uploaded":
-        router.push("/dashboard/recruiter/viewapplicant");
-        break;
-      case "Successfully Joined":
-        router.push("/dashboard/recruiter/viewapplicant?status=joined");
-        break;
-    }
-  };
+  // const handleCardClick = () => {
+  //   switch (label) {
+  //     case "Active Clients":
+  //       router.push("/dashboard/recruiter/todos");
+  //       break;
+  //     case "Open Positions":
+  //       router.push("/dashboard/recruiter/todos");
+  //       break;
+  //     case "Total CV's uploaded":
+  //       router.push("/dashboard/recruiter/viewapplicant");
+  //       break;
+  //     case "Successfully Joined":
+  //       router.push("/dashboard/recruiter/viewapplicant?status=joined");
+  //       break;
+  //   }
+  // };
   return (
     <div
       className={`group bg-white rounded-lg p-3 shadow-sm border border-slate-200 hover:shadow-md transition-all ${label === "Active Clients" ? "cursor-pointer" : ""}`}
-      onClick={handleCardClick}
+      // onClick={handleCardClick}
     >
       <div className="flex items-start justify-between mb-2">
         <div

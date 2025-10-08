@@ -60,26 +60,30 @@ const CurrencyDropdown: React.FC<CurrencyDropdownProps> = ({
     const fetchCurrencies = async () => {
       setIsLoading(true);
       try {
-        const response = await frappeAPI.makeAuthenticatedRequest(
-          "GET",
-          "/resource/Currency?fields=[\"name\"]&limit_page_length=0"
-        );
+        // const response = await frappeAPI.makeAuthenticatedRequest(
+        //   "GET",
+        //   "/resource/Currency?fields=[\"name\"]&limit_page_length=0&order_by=name"
+        // );
+
+        const combinedCurrencies = [
+            ...commonCurrencies,
+            // ...fetchedCurrencies.filter((curr: Currency) => !commonCurrencyNames.has(curr.name))
+          ];
+
+          setCurrencies(combinedCurrencies);
         
-        if (response.data) {
+        // if (response.data) {
           // Combine common currencies with fetched currencies, removing duplicates
           const commonCurrencyNames = new Set(commonCurrencies.map(c => c.name));
-          const fetchedCurrencies = response.data.map((curr: Currency) => ({
-            name: curr.name,
-            symbol: commonCurrencies.find(c => c.name === curr.name)?.symbol
-          }));
+          // const fetchedCurrencies = response.data.map((curr: Currency) => ({
+          //   name: curr.name,
+          //   symbol: commonCurrencies.find(c => c.name === curr.name)?.symbol
+          // }));
           
-          const combinedCurrencies = [
-            ...commonCurrencies,
-            ...fetchedCurrencies.filter((curr: Currency) => !commonCurrencyNames.has(curr.name))
-          ];
           
-          setCurrencies(combinedCurrencies);
-        }
+          
+          
+        // }
       } catch (error) {
         console.error('Error fetching currencies:', error);
         // Fallback to common currencies if API fails
@@ -161,7 +165,7 @@ const CurrencyDropdown: React.FC<CurrencyDropdownProps> = ({
   type="button"
   onClick={() => !disabled && setIsOpen(!isOpen)}
   disabled={disabled}
-  className="px-2 py-1 text-md border border-gray-300 rounded  bg-gray-50 flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed w-14"
+  className="px-2 py-1 text-md border border-gray-300 rounded  bg-gray-100 flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed w-14"
 >
   <span className="flex">
     <span className='text-md'>{value || 'Select Currency'}</span>
@@ -185,7 +189,7 @@ const CurrencyDropdown: React.FC<CurrencyDropdownProps> = ({
           }}
         >
           {/* Search Header */}
-          <div className="p-3 border-b">
+          {/* <div className="p-3 border-b">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
@@ -197,7 +201,7 @@ const CurrencyDropdown: React.FC<CurrencyDropdownProps> = ({
                 autoFocus
               />
             </div>
-          </div>
+          </div> */}
 
           {/* Currency List */}
           <div className="max-h-48 overflow-y-auto">

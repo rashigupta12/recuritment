@@ -7,6 +7,7 @@ import {
   CheckCircle,
   ChevronDown,
   ChevronRight,
+  Edit,
   FileText,
   Loader2,
   Plus,
@@ -32,6 +33,7 @@ import DesignationDropdown from "./requirement-form/DesignationDropdown";
 import LocationDropdown from "./requirement-form/LocationDropdown";
 import toast from "react-hot-toast";
 import { SortableTableHeader } from "../recruiter/SortableTableHeader";
+import { TooltipProvider } from "../ui/tooltip";
 
 const TOAST_ID = "global-toast";
 
@@ -176,11 +178,12 @@ type StaffingTableColumn =
   | "experience"
   | "location"
   | "employment_type"
-  | "publish"
+  // | "publish"
   | "upload"
   | "action";
 
 // Employment Type Dropdown Component with Search
+// Employment Type Dropdown Component with Search - FIXED VERSION
 const EmploymentTypeDropdown: React.FC<{
   value: string;
   onChange: (value: string) => void;
@@ -308,7 +311,7 @@ const EmploymentTypeDropdown: React.FC<{
   };
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative w-full" ref={dropdownRef}>
       {/* Display selected value when closed */}
       {!isOpen ? (
         <button
@@ -319,10 +322,10 @@ const EmploymentTypeDropdown: React.FC<{
           className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
         >
           <span className="truncate text-left">
-            {value || " Employment Type"}
+            {value || "Employment Type"}
           </span>
           <ChevronDown
-            className={`h-3 w-3 text-gray-400 transition-transform ${
+            className={`h-3 w-3 text-gray-400 transition-transform flex-shrink-0 ml-1 ${
               isOpen ? "rotate-180" : ""
             }`}
           />
@@ -342,9 +345,19 @@ const EmploymentTypeDropdown: React.FC<{
         </div>
       )}
 
-      {/* Dropdown menu */}
+      {/* Dropdown menu - FIXED: Changed positioning and z-index */}
       {isOpen && (
-  <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg z-50 max-h-60 overflow-y-auto mt-1 min-w-[80px] ">
+        <div className="fixed bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto mt-1 min-w-[200px]"
+          style={{
+            top: dropdownRef.current ? 
+              dropdownRef.current.getBoundingClientRect().bottom + window.scrollY + 4 : 0,
+            left: dropdownRef.current ? 
+              dropdownRef.current.getBoundingClientRect().left + window.scrollX : 0,
+            width: dropdownRef.current ? 
+              dropdownRef.current.getBoundingClientRect().width : 'auto',
+            zIndex: 9999,
+          }}
+        >
           {isLoading ? (
             <div className="p-3 text-center text-gray-500">
               <Loader2 className="h-4 w-4 animate-spin mx-auto mb-1" />
@@ -355,7 +368,7 @@ const EmploymentTypeDropdown: React.FC<{
               No employment types found
               {searchQuery && (
                 <div className="mt-1">
-                  No results for &qout;{searchQuery}&quot;
+                  No results for &quot;{searchQuery}&quot;
                 </div>
               )}
             </div>
@@ -377,7 +390,6 @@ const EmploymentTypeDropdown: React.FC<{
     </div>
   );
 };
-
 // Main Component
 const StaffingPlanCreator: React.FC = () => {
   const router = useRouter();
@@ -386,6 +398,7 @@ const StaffingPlanCreator: React.FC = () => {
     initialStaffingPlanForm
   );
   const [selectedLead, setSelectedLead] = useState<LeadType | null>(null);
+  console.log(selectedLead)
   const [isSaving, setIsSaving] = useState(false);
   const [uploadingJDs, setUploadingJDs] = useState<{
     [key: number]: boolean;
@@ -422,22 +435,22 @@ const StaffingPlanCreator: React.FC = () => {
       field: "designation",
       label: "Designation",
       sortable: false,
-      align: "left",
-      width: "150px",
+      align: "center",
+      width: "180px",
     },
     {
       field: "vacancies",
-      label: "Vacancy",
+      label: "No. of Vacancies",
       sortable: false,
       align: "center",
       width: "70px",
     },
     {
       field: "salary",
-      label: "AVG.SAL(LPA)",
+      label: "Average Salary",
       sortable: false,
       align: "center",
-      width: "100px",
+      width: "150px",
     },
     {
       field: "experience",
@@ -450,28 +463,28 @@ const StaffingPlanCreator: React.FC = () => {
       field: "location",
       label: "Location",
       sortable: false,
-      align: "left",
+      align: "center",
       width: "120px",
     },
     {
       field: "employment_type",
       label: "Employment Type",
       sortable: false,
-      align: "left",
-      width: "80px",
-    },
-    {
-      field: "publish",
-      label: "Publish",
-      sortable: false,
       align: "center",
       width: "80px",
     },
+    // {
+    //   field: "publish",
+    //   label: "Publish",
+    //   sortable: false,
+    //   align: "center",
+    //   width: "80px",
+    // },
     {
       field: "upload",
-      label: "Upload JD",
+      label: "Job Description",
       sortable: false,
-      align: "left",
+      align: "center",
       width: "80px",
     },
     {
@@ -542,7 +555,7 @@ const StaffingPlanCreator: React.FC = () => {
                 assign_to: item.assign_to || "",
                 location: item.location || "",
                 employment_type: item.employment_type || "",
-                publish: item.publish || false,
+                // publish: item.publish || false,
               })) || [initialStaffingPlanItem],
             };
 
@@ -843,7 +856,7 @@ const StaffingPlanCreator: React.FC = () => {
           assign_to: item.assign_to || "",
           location: item.location || "",
           employment_type: item.employment_type || "",
-          publish: item.publish || false,
+          // publish: item.publish || false,
         })),
       };
 
@@ -874,7 +887,7 @@ const StaffingPlanCreator: React.FC = () => {
 
       // Immediate redirect after successful submission
       setSuccessMessage("");
-      router.push("/dashboard/reruiter/requirements");
+      router.push("/dashboard/recruiter/requirements");
     } catch (error) {
       console.error("Error:", error);
       setError(isEditMode ? "Failed to update plan" : "Failed to create plan");
@@ -887,13 +900,13 @@ const StaffingPlanCreator: React.FC = () => {
     if (hasFormChanges(formData, initialFormData, pendingJDFiles)) {
       setShowBackConfirm(true);
     } else {
-      router.push("/dashboard/sales-manager/requirements");
+      router.push("/dashboard/recruiter/requirements");
     }
   };
 
   const confirmBack = () => {
     setShowBackConfirm(false);
-    router.push("/dashboard/sales-manager/requirements");
+    router.push("/dashboard/recruiterr/requirements");
   };
 
   const cancelBack = () => {
@@ -930,14 +943,14 @@ const StaffingPlanCreator: React.FC = () => {
                   className="p-1 hover:bg-gray-100 rounded transition-colors"
                   title="Go back"
                 >
-                  <ArrowLeft className="h-4 w-4 text-gray-600" />
+                  <ArrowLeft className="h-5 w-5 text-gray-600" />
                 </button>
-                <h1 className="text-lg font-semibold text-gray-900">
-                  {isEditMode ? "Edit Job Board" : "Create Job Board"}
+                <h1 className="text-2xl font-bold text-gray-900">
+                  {isEditMode ? "Edit Requirements" : "Create Requirements"}
                 </h1>
-                {isEditMode && (
+                {selectedLead?.company_name && (
                   <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-md">
-                    Edit Mode
+                    {selectedLead.company_name}
                   </span>
                 )}
                 {isLoadingLead && (
@@ -946,7 +959,30 @@ const StaffingPlanCreator: React.FC = () => {
                     Loading lead...
                   </div>
                 )}
+
+                
+
+                <div className="flex items-center justify-between mb-3">
+                  
+                
+                </div>
               </div>
+
+                <button
+                    onClick={addStaffingItem}
+                    disabled={
+                      !allRowsHaveDesignation(formData.staffing_details)
+                    }
+                    className="flex items-center space-x-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title={
+                      !allRowsHaveDesignation(formData.staffing_details)
+                        ? "Please fill designation for all existing rows"
+                        : "Add new requirement"
+                    }
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>Add Requirement</span>
+                  </button>
             </div>
 
             {error && (
@@ -962,29 +998,7 @@ const StaffingPlanCreator: React.FC = () => {
             <div className="p-3">
               {/* Staffing Requirements Table */}
               <div>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center space-x-2">
-                    <Users className="h-4 w-4 text-purple-500" />
-                    <h3 className="text-md font-medium text-gray-900">
-                      Requirements
-                    </h3>
-                  </div>
-                  <button
-                    onClick={addStaffingItem}
-                    disabled={
-                      !allRowsHaveDesignation(formData.staffing_details)
-                    }
-                    className="flex items-center space-x-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    title={
-                      !allRowsHaveDesignation(formData.staffing_details)
-                        ? "Please fill designation for all existing rows"
-                        : "Add new requirement"
-                    }
-                  >
-                    <Plus className="h-4 w-4" />
-                    <span>Add Requirement</span>
-                  </button>
-                </div>
+                
 
                 {/* Table */}
                 <div className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
@@ -1009,9 +1023,9 @@ const StaffingPlanCreator: React.FC = () => {
                               <td
                                 className="p-3"
                                 style={{
-                                  width: "150px",
-                                  minWidth: "150px",
-                                  maxWidth: "150px",
+                                  width: "180px",
+                                  minWidth: "180px",
+                                  maxWidth: "180px",
                                 }}
                               >
                                 <DesignationDropdown
@@ -1045,7 +1059,7 @@ const StaffingPlanCreator: React.FC = () => {
                                       parseInt(e.target.value) || 0
                                     )
                                   }
-                                  className="w-full text-center px-1 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                                  className="w-full text-end px-1 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
                                   min="0"
                                   placeholder="0"
                                 />
@@ -1056,14 +1070,14 @@ const StaffingPlanCreator: React.FC = () => {
                               <td
                                 className="p-2 text-center"
                                 style={{
-                                  width: "100px",
-                                  minWidth: "100px",
-                                  maxWidth: "100px",
+                                  width: "300px",
+                                  minWidth: "300px",
+                                  maxWidth: "300px",
                                 }}
                               >
                                 <div className="flex items-center border border-gray-300 rounded overflow-hidden">
                                   {/* Currency - 30% width */}
-                                  <div className="w-[30%] border-r border-gray-300">
+                                  <div className="w-[25%] border-r border-gray-300">
                                     <CurrencyDropdown
                                       value={item.currency}
                                       onChange={(val) =>
@@ -1077,7 +1091,7 @@ const StaffingPlanCreator: React.FC = () => {
                                   </div>
 
                                   {/* Salary Input - 70% width */}
-                                  <div className="w-[70%]">
+                                  <div className="w-[45%]">
                                     <input
                                       type="text"
                                       value={item.estimated_cost_per_position}
@@ -1093,9 +1107,12 @@ const StaffingPlanCreator: React.FC = () => {
                                           ) || 0
                                         )
                                       }
-                                      className="w-full text-center px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm border-0"
+                                      className="w-full text-end px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm border-0"
                                       placeholder="Enter salary"
                                     />
+                                  </div>
+                                  <div className="w-[25%] ">
+                                    LPA
                                   </div>
                                 </div>
                               </td>
@@ -1119,7 +1136,7 @@ const StaffingPlanCreator: React.FC = () => {
                                       parseFloat(e.target.value) || 0
                                     )
                                   }
-                                  className="w-full text-center px-1 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                                  className="w-full text-end px-1 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
                                   step="0.5"
                                   placeholder="0"
                                   min="0"
@@ -1164,7 +1181,7 @@ const StaffingPlanCreator: React.FC = () => {
                               </td>
 
                               {/* Publish Checkbox */}
-                              <td
+                              {/* <td
                                 className="p-2 text-center"
                                 style={{
                                   width: "50px",
@@ -1184,46 +1201,44 @@ const StaffingPlanCreator: React.FC = () => {
                                   }
                                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                                 />
-                              </td>
+                              </td> */}
 
                               {/* Upload JD */}
-                              <td className="p-3" style={{ width: "120px" }}>
-                                <div className="flex items-center gap-1">
-                                  <label className="flex items-center space-x-1 cursor-pointer text-blue-600 hover:text-blue-800 transition-colors">
-                                    {uploadingJDs[index] ? (
-                                      <>
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                        <span className="text-md">
-                                          Parsing...
-                                        </span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Upload className="h-4 w-4" />
-                                        <span className="text-md">Upload</span>
-                                      </>
-                                    )}
-                                    <input
-                                      type="file"
-                                      className="hidden"
-                                      accept=".pdf,.docx,.txt"
-                                      onChange={(e) =>
-                                        e.target.files?.[0] &&
-                                        handleJDUpload(e.target.files[0], index)
-                                      }
-                                      disabled={uploadingJDs[index]}
-                                    />
-                                  </label>
-                                  {pendingJDFiles[index] &&
-                                    !uploadingJDs[index] && (
-                                      <FileText className="h-4 w-4 text-orange-600" />
-                                    )}
-                                  {item.attachmentsoptional &&
-                                    !pendingJDFiles[index] && (
-                                      <CheckCircle className="h-4 w-4 text-green-600" />
-                                    )}
-                                </div>
-                              </td>
+<td className="p-3 text-center" style={{ width: "120px" }}>
+  <div className="flex justify-center items-center gap-2">
+    <label className="flex items-center space-x-1 cursor-pointer text-blue-600 hover:text-blue-800 transition-colors">
+      {uploadingJDs[index] ? (
+        <>
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span className="text-md">Parsing...</span>
+        </>
+      ) : (
+        <>
+          <Upload className="h-4 w-4" />
+        </>
+      )}
+      <input
+        type="file"
+        className="hidden"
+        accept=".pdf,.docx,.txt"
+        onChange={(e) =>
+          e.target.files?.[0] && handleJDUpload(e.target.files[0], index)
+        }
+        disabled={uploadingJDs[index]}
+      />
+    </label>
+
+    {pendingJDFiles[index] && !uploadingJDs[index] && (
+      <FileText className="h-4 w-4 text-orange-600" />
+    )}
+
+    {item.attachmentsoptional && !pendingJDFiles[index] && (
+      <CheckCircle className="h-4 w-4 text-green-600" />
+    )}
+  </div>
+</td>
+
+
 
                               {/* Action */}
                               <td
@@ -1268,9 +1283,9 @@ const StaffingPlanCreator: React.FC = () => {
                                           <ChevronRight className="h-4 w-4" />
                                         )}
                                         <FileText className="h-4 w-4" />
-                                        <span>Job Description Summary</span>
+                                        <span>Job Description </span>
                                         <span className="text-xs text-gray-500">
-                                          (Click to edit)
+                                          <Edit className="h-4 w-4"/>
                                         </span>
                                       </div>
                                     </button>
@@ -1327,8 +1342,8 @@ const StaffingPlanCreator: React.FC = () => {
                             ? "Updating..."
                             : "Creating..."
                           : isEditMode
-                          ? "Update Job Board"
-                          : "Create Job Board"}
+                          ? "Update Requirement(s)"
+                          : "Create Requirement(s)"}
                       </span>
                     </button>
                   </div>
