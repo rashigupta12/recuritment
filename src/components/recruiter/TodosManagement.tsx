@@ -5,9 +5,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { frappeAPI } from "@/lib/api/frappeClient";
 import { useEffect, useState, useMemo } from "react";
 import { LoadingState } from "./LoadingState";
-// import { TodosHeader } from "./TodosHeader";
 import { TodosTable } from "./TodosTable";
-import { Calendar, Briefcase, MapPin, Users } from "lucide-react";
+import { Calendar, Briefcase, MapPin } from "lucide-react";
 import { TodosHeader } from "./Header";
 
 interface ToDo {
@@ -56,7 +55,7 @@ const TodosManagement = () => {
     vacancies: 'all'
   });
   
-  const { user } = useAuth(); // Corrected syntax
+  const { user } = useAuth();
   const router = useRouter();
 
   const fetchTodos = async (email: string) => {
@@ -207,9 +206,10 @@ const TodosManagement = () => {
     console.log('Edit todo:', todo);
   };
 
-  const handleRefresh = () => {
+  // Fix: Make handleRefresh async to match the expected type
+  const handleRefresh = async () => {
     if (user) {
-      fetchTodos(user.email);
+      await fetchTodos(user.email);
     }
   };
 
@@ -217,27 +217,16 @@ const TodosManagement = () => {
     setFilters(newFilters);
   };
 
+  // Fix: Explicitly type the filterConfig with proper type literals
   const filterConfig = [
     {
       id: 'dateRange',
       title: 'Date Range',
       icon: Calendar,
-      type: 'radio',
+      type: 'radio' as const,
       options: ['all', 'today', 'week', 'month'],
       optionLabels: {all: 'All Time', today: 'Today', week: 'This Week', month: 'This Month'},
     },
-    // {
-    //   id: 'departments',
-    //   title: 'Department',
-    //   icon: Briefcase,
-    //   options: uniqueDepartments,
-    // },
-    // {
-    //   id: 'assignedBy',
-    //   title: 'Assigned By',
-    //   icon: Users,
-    //   options: uniqueAssigners,
-    // },
     {
       id: 'locations',
       title: 'Location',
@@ -254,14 +243,6 @@ const TodosManagement = () => {
       searchKey: 'jobTitles',
       showInitialOptions: false,
     },
-    // {
-    //   id: 'vacancies',
-    //   title: 'Vacancies',
-    //   icon: Users,
-    //   type: 'radio',
-    //   options: ['all', 'single', 'multiple'],
-    //   optionLabels: {all: 'All Vacancies', single: 'Single (1 Position)', multiple: 'Multiple'},
-    // },
   ];
 
   // Render loading state

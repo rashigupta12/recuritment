@@ -54,11 +54,11 @@ export const TodosTable = ({ todos, onViewTodo }: TodosTableProps) => {
 
   const columns = [
     { field: 'date' as const, label: 'Date Assigned' },
-    { field: 'aging' as const, label: 'Aging (Days)' },
+    { field: 'aging' as const, label: 'Aging (Days)', align: 'center' as const },
     { field: 'company' as const, label: 'Company' },
     { field: 'title' as const, label: 'Job Title' },
     { field: 'location' as const, label: 'Location' },
-    { field: 'vacancies' as const, label: 'Vacancies' },
+    { field: 'vacancies' as const, label: 'Vacancies', align: 'center' as const },
     { field: 'status' as const, label: 'Status' },
   ];
 
@@ -137,7 +137,7 @@ export const TodosTable = ({ todos, onViewTodo }: TodosTableProps) => {
           sortDirection={sortDirection}
           onSort={handleSort}
         />
-        <tbody className="divide-y divide-blue-50 text-xs sm:text-sm">
+        <tbody className="divide-y divide-blue-50 text-md sm:text-md">
           {sortedTodos.length > 0 ? (
             sortedTodos.map((todo, index) => (
               <tr
@@ -151,16 +151,16 @@ export const TodosTable = ({ todos, onViewTodo }: TodosTableProps) => {
                     ? new Date(todo.custom_date_assigned).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
                     : <span className="text-gray-400">Not set</span>}
                 </td>
-                {/* Aging */}
-                <td className="px-2 sm:px-4 py-4 whitespace-nowrap text-center">{calculateAging(todo.custom_date_assigned)}</td>
+                {/* Aging - Centered */}
+                <td className="px-2 sm:px-4 py-4 text-center">{calculateAging(todo.custom_date_assigned)}</td>
                 {/* Company */}
-                <td className="px-2 sm:px-4 py-4">{extractCompany(todo.description)}</td>
+                <td className="px-2 sm:px-4 py-4 capitalize">{extractCompany(todo.description)}</td>
                 {/* Job Title */}
-                <td className="px-2 sm:px-4 py-4">{todo.custom_job_title || 'N/A'}</td>
+                <td className="px-2 sm:px-4 py-4 capitalize">{todo.custom_job_title || 'N/A'}</td>
                 {/* Location */}
-                <td className="px-2 sm:px-4 py-4">{extractLocation(todo.description)}</td>
-                {/* Vacancies */}
-                <td className="sm:px-4 py-4 text-center">{extractVacancies(todo.description) || 'N/A'}</td>
+                <td className="px-2 sm:px-4 py-4 capitalize">{extractLocation(todo.description)}</td>
+                {/* Vacancies - Centered */}
+                <td className="px-2 sm:px-4 py-4 text-center">{extractVacancies(todo.description) || 'N/A'}</td>
                 {/* Status */}
                 <td className="px-2 sm:px-4 py-4">{todo.status || 'N/A'}</td>
               </tr>
