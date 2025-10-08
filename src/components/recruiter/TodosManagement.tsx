@@ -1,11 +1,14 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { frappeAPI } from "@/lib/api/frappeClient";
 import { useEffect, useState, useMemo } from "react";
 import { LoadingState } from "./LoadingState";
-import { TodosHeader } from "./Header";
+// import { TodosHeader } from "./TodosHeader";
 import { TodosTable } from "./TodosTable";
+import { Calendar, Briefcase, MapPin, Users } from "lucide-react";
+import { TodosHeader } from "./Header";
 
 interface ToDo {
   name: string;
@@ -30,8 +33,10 @@ interface ToDo {
 interface FilterState {
   departments: string[];
   assignedBy: string[];
+  clients: string[];
   locations: string[];
   jobTitles: string[];
+  status: string[];
   dateRange: 'all' | 'today' | 'week' | 'month';
   vacancies: 'all' | 'single' | 'multiple';
 }
@@ -43,13 +48,15 @@ const TodosManagement = () => {
   const [filters, setFilters] = useState<FilterState>({
     departments: [],
     assignedBy: [],
+    clients: [],
     locations: [],
     jobTitles: [],
+    status: [],
     dateRange: 'all',
     vacancies: 'all'
   });
   
-  const { user } = useAuth();
+  const { user } = useAuth(); // Corrected syntax
   const router = useRouter();
 
   const fetchTodos = async (email: string) => {
@@ -210,6 +217,53 @@ const TodosManagement = () => {
     setFilters(newFilters);
   };
 
+  const filterConfig = [
+    {
+      id: 'dateRange',
+      title: 'Date Range',
+      icon: Calendar,
+      type: 'radio',
+      options: ['all', 'today', 'week', 'month'],
+      optionLabels: {all: 'All Time', today: 'Today', week: 'This Week', month: 'This Month'},
+    },
+    // {
+    //   id: 'departments',
+    //   title: 'Department',
+    //   icon: Briefcase,
+    //   options: uniqueDepartments,
+    // },
+    // {
+    //   id: 'assignedBy',
+    //   title: 'Assigned By',
+    //   icon: Users,
+    //   options: uniqueAssigners,
+    // },
+    {
+      id: 'locations',
+      title: 'Location',
+      icon: MapPin,
+      options: uniqueLocations,
+      searchKey: 'locations',
+      showInitialOptions: false,
+    },
+    {
+      id: 'jobTitles',
+      title: 'Job Title',
+      icon: Briefcase,
+      options: uniqueJobTitles,
+      searchKey: 'jobTitles',
+      showInitialOptions: false,
+    },
+    // {
+    //   id: 'vacancies',
+    //   title: 'Vacancies',
+    //   icon: Users,
+    //   type: 'radio',
+    //   options: ['all', 'single', 'multiple'],
+    //   optionLabels: {all: 'All Vacancies', single: 'Single (1 Position)', multiple: 'Multiple'},
+    // },
+  ];
+
   // Render loading state
   if (loading) {
     return <LoadingState />;
@@ -228,6 +282,8 @@ const TodosManagement = () => {
         uniqueLocations={uniqueLocations}
         uniqueJobTitles={uniqueJobTitles}
         onFilterChange={handleFilterChange}
+        filterConfig={filterConfig}
+        title="My Jobs"
       />
 
       <div className="w-full mx-auto">

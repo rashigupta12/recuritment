@@ -22,9 +22,6 @@ interface JobApplicant {
 interface ApplicantsTableProps {
   applicants: JobApplicant[];
   showStatus?: boolean;
-  showCheckboxes?: boolean;
-  selectedApplicants?: string[];
-  onSelectApplicant?: (name: string) => void;
   onDeleteApplicant?: (applicant: JobApplicant) => void;
   showDeleteButton?: boolean;
   onViewDetails?: (applicant: JobApplicant) => void;
@@ -36,10 +33,7 @@ type SortDirection = "asc" | "desc" | null;
 
 export function ApplicantsTable({
   applicants,
-  showCheckboxes = false,
   showStatus = false,
-  selectedApplicants = [],
-  onSelectApplicant,
   onDeleteApplicant,
   showDeleteButton = false,
   onViewDetails,
@@ -144,18 +138,6 @@ export function ApplicantsTable({
                     index % 2 === 0 ? "bg-white" : "bg-blue-50"
                   } hover:bg-blue-100 transition duration-100`}
                 >
-                  {showCheckboxes && (
-                    <td className="px-2 sm:px-4 py-4">
-                      <input
-                        type="checkbox"
-                        checked={selectedApplicants.includes(applicant.name)}
-                        onChange={() => onSelectApplicant?.(applicant.name)}
-                        className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600 border-gray-300 rounded"
-                        disabled={!applicant.name}
-                      />
-                    </td>
-                  )}
-                 
                   <td className="px-2 sm:px-4 py-4 font-semibold text-md text-blue-900 truncate">
                     {applicant.applicant_name
                       ? applicant.applicant_name
