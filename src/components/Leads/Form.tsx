@@ -576,7 +576,7 @@ const LeadForm: React.FC<LeadFormProps> = ({
             <div className="bg-blue-50 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-4">
                 <Briefcase className="h-4 w-4 text-blue-600" />
-                <h3 className="font-medium text-gray-900 text-md">Deal / Sales Details</h3>
+                <h3 className="font-bold text-gray-900 text-lg">Deal / Sales Details</h3>
               </div>
 
               <div className="space-y-3">
@@ -618,10 +618,10 @@ const LeadForm: React.FC<LeadFormProps> = ({
               </div>
             </div>
 
-            <div className="bg-green-50 rounded-lg p-4">
+            <div className="bg-blue-50 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-4">
-                <IndianRupee className="h-4 w-4 text-green-600" />
-                <h3 className="font-medium text-gray-900 text-md">Hiring & Financial Details</h3>
+                <IndianRupee className="h-4 w-4 text-blue-600" />
+                <h3 className="font-bold text-gray-900 text-lg">Hiring & Financial Details</h3>
               </div>
 
               <div className="space-y-3">

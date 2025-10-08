@@ -31,7 +31,7 @@ export const LeadsTable = ({
               Offering
             </th>
             <th className="px-4 py-3 text-left text-md font-medium text-white uppercase tracking-wider">
-              Salary
+              AVG.SAL
               <br />
               (LPA)
             </th>

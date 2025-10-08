@@ -40,7 +40,7 @@ const AccordionSection: React.FC<AccordionSectionProps> = ({
             <Icon className={compact ? "h-5 w-5" : "h-7 w-7"} />
           </div>
           <span
-            className={`${compact ? 'text-md' : 'text-lg'} font-medium ${
+            className={`${compact ? 'text-lg' : 'text-lg'} font-bold ${
               completed ? "text-primary" : "text-gray-900"
             }`}
           >
