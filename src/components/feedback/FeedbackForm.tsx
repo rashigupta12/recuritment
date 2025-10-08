@@ -122,22 +122,22 @@ const FeedbackForm: React.FC<{
       onClick={handleBackdropClick}
     >
       <div
-        className="bg-white rounded-lg shadow-lg w-full max-w-2xl max-h-[80vh] flex flex-col"
+        className="bg-white rounded-lg shadow-lg w-full max-w-2xl  flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-gray-50 px-6 py-4 border-b rounded-t-lg">
+        <div className="bg-primary px-6 py-4 border-b rounded-t-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <MessageCircle className="w-5 h-5 text-gray-600" />
-              <h2 className="text-lg font-semibold text-gray-800">Submit Issue</h2>
+              <MessageCircle className="w-5 h-5 text-white" />
+              <h2 className="text-xl font-semibold text-white">Submit Issue</h2>
             </div>
             <button
               onClick={onClose}
               className="p-1 hover:bg-gray-200 rounded transition-colors"
               aria-label="Close feedback form"
             >
-              <X className="h-4 w-4 text-gray-600" />
+              <X className="h-4 w-4 text-white" />
             </button>
           </div>
         </div>
@@ -147,7 +147,7 @@ const FeedbackForm: React.FC<{
           <form id="feedback-form" onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
             {/* Module */}
             <div className="space-y-2">
-              <label htmlFor="module" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="module" className="block text-md font-medium text-gray-700">
                 Module
               </label>
               <select
@@ -168,7 +168,7 @@ const FeedbackForm: React.FC<{
 
             {/* Type */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-md font-medium text-gray-700">
                 Type
               </label>
               <div className="flex gap-4">
@@ -180,7 +180,7 @@ const FeedbackForm: React.FC<{
                     className="text-blue-600 focus:ring-blue-500"
                     disabled={isSubmitting}
                   />
-                  <span className="text-sm text-gray-700">Incident</span>
+                  <span className="text-md text-gray-700">Incident</span>
                 </label>
                 <label className="flex items-center gap-2">
                   <input
@@ -190,7 +190,7 @@ const FeedbackForm: React.FC<{
                     className="text-blue-600 focus:ring-blue-500"
                     disabled={isSubmitting}
                   />
-                  <span className="text-sm text-gray-700">Feedback</span>
+                  <span className="text-md text-gray-700">Feedback</span>
                 </label>
               </div>
               {errors.type && (
@@ -200,7 +200,7 @@ const FeedbackForm: React.FC<{
 
             {/* Description */}
             <div className="space-y-2">
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+              <label htmlFor="description" className="block text-md font-medium text-gray-700">
                 Description
               </label>
               <textarea
@@ -218,11 +218,11 @@ const FeedbackForm: React.FC<{
 
             {/* Image Upload */}
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-md font-medium text-gray-700">
                 Attachments
               </label>
               <div className="p-4 bg-gray-50 border border-gray-200 rounded-md">
-                <p className="text-xs text-gray-600 mb-3">
+                <p className="text-sm text-gray-600 mb-3">
                   Add screenshots or files (Max 5 files, 10MB each)
                 </p>
                 <PaymentImageUpload
@@ -233,7 +233,7 @@ const FeedbackForm: React.FC<{
                   maxSizeMB={10}
                 />
                 {isUploading && (
-                  <div className="flex items-center gap-2 mt-2 text-sm text-blue-600">
+                  <div className="flex items-center gap-2 mt-2 text-md text-blue-600">
                     <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
                     Uploading...
                   </div>

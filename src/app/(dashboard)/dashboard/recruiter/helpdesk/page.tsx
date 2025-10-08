@@ -11,6 +11,7 @@ import FeedbackForm from "@/components/feedback/FeedbackForm";
 import FeedbackDetails from "@/components/feedback/FeedBackDetails";
 import { SortableTableHeader } from "@/components/recruiter/SortableTableHeader";
 import { format } from "date-fns";
+import { Plus } from "lucide-react";
 
 type ViewType = "list" | "form" | "details";
 
@@ -112,24 +113,22 @@ export default function HelpdeskPage() {
   };
 
   return (
-    <div className=" relative">
+    <div className="relative">
       <div className="w-full h-full">
-        <div className={`absolute inset-0 ${activeView === "form" ? "dimmed-background" : ""}`}>
-          {activeView === "list" && (
-            <FeedbackListPage
-              feedbacks={feedbacks}
-              loading={loading}
-              onViewFeedback={handleViewFeedback}
-              onNewFeedback={handleNewFeedback}
-            />
-          )}
-          {activeView === "details" && selectedFeedback && (
-            <FeedbackDetails
-              feedback={selectedFeedback}
-              onClose={handleCloseDetails}
-            />
-          )}
-        </div>
+        {activeView === "list" && (
+          <FeedbackListPage
+            feedbacks={feedbacks}
+            loading={loading}
+            onViewFeedback={handleViewFeedback}
+            onNewFeedback={handleNewFeedback}
+          />
+        )}
+        {activeView === "details" && selectedFeedback && (
+          <FeedbackDetails
+            feedback={selectedFeedback}
+            onClose={handleCloseDetails}
+          />
+        )}
         {activeView === "form" && (
           <FeedbackForm
             isOpen={true}
@@ -163,32 +162,30 @@ function FeedbackListPage({
     setSortedFeedbacks(feedbacks);
   }, [feedbacks]);
 
-const columns: Array<Column<keyof FeedbackItem>> = [
-  { field: 'opening_date', label: 'Date', sortable: false, align: 'left' },
-  { field: 'subject', label: 'Module', sortable: false, align: 'left' },
-  { field: 'status', label: 'Status', sortable: false, align: 'left' },
-  { field: 'priority', label: 'Priority', sortable: false, align: 'left' },
-  { field: 'resolution_details', label: 'Response', sortable: false, align: 'left' },
-  { field: 'custom_image_attachements', label: 'Attachment', sortable: false, align: 'left' },
-];
+  const columns: Array<Column<keyof FeedbackItem>> = [
+    { field: 'opening_date', label: 'Date', sortable: false, align: 'left' },
+    { field: 'subject', label: 'Module', sortable: false, align: 'left' },
+    { field: 'description', label: 'Description', sortable: false, align: 'left' },
+    { field: 'status', label: 'Status', sortable: false, align: 'left' },
+  ];
 
   const handleSort = (field: keyof FeedbackItem) => {
     const newDirection = sortField === field && sortDirection === 'asc' ? 'desc' : 'asc';
     
     const sorted = [...feedbacks].sort((a, b) => {
-      const aValue = a[field] || '';
-      const bValue = b[field] || '';
+      const aValue = a[field];
+      const bValue = b[field];
       
       if (field === 'opening_date') {
-        const aDate = aValue ? new Date(aValue).getTime() : 0;
-        const bDate = bValue ? new Date(bValue).getTime() : 0;
+        const aDate = aValue && typeof aValue === 'string' ? new Date(aValue).getTime() : 0;
+        const bDate = bValue && typeof bValue === 'string' ? new Date(bValue).getTime() : 0;
         return newDirection === 'asc' ? aDate - bDate : bDate - aDate;
       }
       
       if (typeof aValue === 'string' && typeof bValue === 'string') {
         return newDirection === 'asc'
           ? aValue.localeCompare(bValue)
-          : bValue.localeCompare(bValue);
+          : bValue.localeCompare(aValue);
       }
       
       return 0;
@@ -202,17 +199,19 @@ const columns: Array<Column<keyof FeedbackItem>> = [
   return (
     <div>
       <div className="p-2 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold">Helpdesk</h1>
-          </div>
-          <button
-            onClick={onNewFeedback}
-            className="px-4 py-2 bg-primary text-white font-medium rounded-lg"
-          >
-            + New Issue
-          </button>
-        </div>
+      <div className="flex items-center justify-between">
+  <div className="flex items-center gap-3">
+    <h1 className="text-2xl font-bold">Helpdesk</h1>
+  </div>
+
+  <button
+    onClick={onNewFeedback}
+    className="bg-primary text-white rounded-full h-10 w-10 flex items-center justify-center hover:bg-primary/90 transition-colors shadow-md"
+  >
+    <Plus className="h-4 w-4 stroke-[3]" /> {/* precise balanced size */}
+  </button>
+</div>
+
       </div>
       <div className="bg-white shadow-md rounded-lg border border-blue-100 overflow-hidden w-full">
         <div className="overflow-x-auto">
@@ -271,39 +270,6 @@ interface FeedbackRowProps {
 }
 
 function FeedbackRow({ feedback, onView, index }: FeedbackRowProps) {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Open":
-        return "bg-red-100 text-red-800";
-      case "Replied":
-        return "bg-blue-100 text-blue-800";
-      case "On Hold":
-        return "bg-yellow-100 text-yellow-800";
-      case "Resolved":
-        return "bg-green-100 text-green-800";
-      case "Closed":
-        return "bg-gray-100 text-gray-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getPriorityColor = (priority?: string) => {
-    if (!priority) {
-      return ""; // No background color for missing priority
-    }
-    switch (priority) {
-      case "High":
-        return "bg-orange-500 text-white";
-      case "Medium":
-        return "bg-yellow-500 text-white";
-      case "Low":
-        return "bg-emerald-500 text-white";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
   const stripHtml = (html: string): string => {
     const tmp = document.createElement("div");
     tmp.innerHTML = html;
@@ -335,39 +301,16 @@ function FeedbackRow({ feedback, onView, index }: FeedbackRowProps) {
         <h3 className="font-semibold text-md text-blue-900 truncate max-w-xs">
           {feedback.subject}
         </h3>
+      </td>
+      <td className="px-2 sm:px-4 py-4">
         <p className="text-gray-700 mt-1 line-clamp-2 text-md">
           {stripHtml(feedback.description)}
         </p>
       </td>
       <td className="px-2 sm:px-4 py-4">
-        <span
-          className={`px-2 py-1 rounded-full text-md font-medium ${getStatusColor(
-            feedback.status
-          )}`}
-        >
+        <span className="px-2 py-1 rounded-full text-md font-medium">
           {feedback.status}
         </span>
-      </td>
-      <td className="px-2 sm:px-4 py-4">
-        <span
-          className={`px-2 py-1 rounded-full text-md font-medium ${getPriorityColor(
-            feedback.priority
-          )}`}
-        >
-          {feedback.priority || "-"}
-        </span>
-      </td>
-      <td className="px-2 sm:px-4 py-4 text-md text-gray-700 truncate">
-        {feedback.resolution_details ? (
-          stripHtml(feedback.resolution_details)
-        ) : (
-          "-"
-        )}
-      </td>
-      <td className="px-2 sm:px-4 py-4 text-md text-gray-700">
-        {feedback.custom_image_attachements?.length > 0
-          ? `${feedback.custom_image_attachements.length} file(s)`
-          : "-"}
       </td>
     </tr>
   );

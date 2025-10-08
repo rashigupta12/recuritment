@@ -160,7 +160,7 @@ const FeedbackDetails: React.FC<{
 
   return createPortal(
     <div 
-      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[10001] flex items-center justify-center p-4 sm:p-6"
+      className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 sm:p-6"
       onClick={handleBackdropClick}
     >
       <div
@@ -185,7 +185,7 @@ const FeedbackDetails: React.FC<{
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 sm:p-8 space-y-8">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-4 space-y-8">
           <div className="space-y-6">
             {/* Status, Priority, and Issue Type */}
             <div className="flex flex-wrap gap-3">
@@ -280,8 +280,12 @@ const FeedbackDetails: React.FC<{
                                 alt={fileName}
                                 className="w-full h-full object-cover"
                                 onError={(e) => {
-                                  e.currentTarget.style.display = "none";
-                                  e.currentTarget.nextElementSibling.style.display = "flex";
+                                  const target = e.currentTarget;
+                                  const nextSibling = target.nextElementSibling;
+                                  target.style.display = "none";
+                                  if (nextSibling && nextSibling instanceof HTMLElement) {
+                                    nextSibling.style.display = "flex";
+                                  }
                                 }}
                               />
                               <Eye
