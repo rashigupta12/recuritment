@@ -499,27 +499,23 @@ export default function ViewApplicantPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex justify-between items-center gap-3 mb-4">
-         
-         
-          <TodosHeader
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            onRefresh={handleRefresh}
-            totalJobs={applicants.length}
-            filteredJobs={filteredApplicants.length}  
-            uniqueJobTitles={uniqueJobTitles}
-            uniqueClients={uniqueClients}
-            uniqueStatus={uniqueStatus}
-            onFilterChange={handleFilterChange}
-            onexpotcsv ={handleExport}
-            filterConfig={filterConfig}
-            title="Applicants"
-          />
-         
-          
-        </div>
+     <div className="w-full">
+  <div className="flex justify-between items-center gap-3 mb-4">
+    <TodosHeader
+      searchQuery={searchQuery}
+      onSearchChange={setSearchQuery}
+      onRefresh={handleRefresh}
+      totalJobs={applicants.length}
+      filteredJobs={filteredApplicants.length}  
+      uniqueJobTitles={uniqueJobTitles}
+      uniqueClients={uniqueClients}
+      uniqueStatus={uniqueStatus}
+      onFilterChange={handleFilterChange}
+      onexpotcsv={handleExport}
+      filterConfig={filterConfig}
+      title="Applicants"
+    />
+  </div>
          
         {error && (
           <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-6">

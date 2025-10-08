@@ -7,7 +7,8 @@ import { useEffect, useState, useMemo } from "react";
 import { LoadingState } from "./LoadingState";
 import { TodosTable } from "./TodosTable";
 import { Calendar, Briefcase, MapPin } from "lucide-react";
-import { TodosHeader } from "./Header";
+import { TodosHeader } from "./TodoHeader";
+
 
 interface ToDo {
   name: string;
@@ -263,11 +264,12 @@ const TodosManagement = () => {
         uniqueLocations={uniqueLocations}
         uniqueJobTitles={uniqueJobTitles}
         onFilterChange={handleFilterChange}
+        
         filterConfig={filterConfig}
         title="My Jobs"
       />
 
-      <div className="w-full mx-auto">
+      <div className="w-full mx-auto mt-4">
         {filteredTodos.length > 0 ? (
           <TodosTable
             todos={filteredTodos}

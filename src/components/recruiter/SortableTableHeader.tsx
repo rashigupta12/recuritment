@@ -57,7 +57,7 @@ export function SortableTableHeader<T extends string>({
             scope="col"
             className={`px-2 sm:px-4 py-4 text-base sm:text-base uppercase text-white font-bold ${
               getAlignmentClass(column.align)
-            } ${column.sortable !== false ? 'cursor-pointer select-none hover:bg-blue-600 transition-colors' : ''}`}
+            } ${column.sortable !== false ? 'cursor-pointer select-none transition-colors' : ''}`}
             onClick={() => column.sortable !== false && onSort(column.field)}
           >
             <div className={`inline-flex items-center gap-1 ${getJustifyClass(column.align)}`}>
