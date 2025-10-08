@@ -1,9 +1,12 @@
+// ============================================
+// TodosTable.tsx (Updated)
+// ============================================
 /*eslint-disable @typescript-eslint/no-explicit-any*/
 
 'use client';
 
 import { useState } from "react";
-import { ArrowUpDown } from "lucide-react";
+import { SortableTableHeader } from "./SortableTableHeader";
 
 interface ToDo {
   custom_department?: string;
@@ -48,6 +51,16 @@ export const TodosTable = ({ todos, onViewTodo }: TodosTableProps) => {
       setSortDirection('asc');
     }
   };
+
+  const columns = [
+    { field: 'date' as const, label: 'Date Assigned' },
+    { field: 'aging' as const, label: 'Aging (Days)' },
+    { field: 'company' as const, label: 'Company' },
+    { field: 'title' as const, label: 'Job Title' },
+    { field: 'location' as const, label: 'Location' },
+    { field: 'vacancies' as const, label: 'Vacancies' },
+    { field: 'status' as const, label: 'Status' },
+  ];
 
   // Sorting logic based on selected column
   const sortedTodos = [...todos].sort((a, b) => {
@@ -107,7 +120,7 @@ export const TodosTable = ({ todos, onViewTodo }: TodosTableProps) => {
     const assigned = new Date(dateAssigned);
     const now = new Date();
     const diffDays = Math.floor((now.getTime() - assigned.getTime()) / (1000 * 60 * 60 * 24));
-    return  diffDays
+    return diffDays;
   };
 
   const handleRowClick = (todo: ToDo, event: React.MouseEvent) => {
@@ -115,38 +128,15 @@ export const TodosTable = ({ todos, onViewTodo }: TodosTableProps) => {
     onViewTodo(todo);
   };
 
-  const SortableHeader = ({ field, children }: { field: SortField; children: React.ReactNode }) => (
-    <th
-      scope="col"
-      className="cursor-pointer select-none px-2 sm:px-4 py-4 text-lg  sm:text-lg uppercase text-white"
-      onClick={() => handleSort(field)}
-    >
-      <div className="flex items-center gap-2">
-        {children}
-        <ArrowUpDown
-          className={`w-3 h-3 sm:w-4 sm:h-4 transition-all ${sortField === field ? 'text-white opacity-100 scale-110' : 'text-white opacity-60 group-hover:opacity-100'}`}
-          style={{
-            transform: sortField === field && sortDirection === 'desc' ? 'rotate(180deg) scale(1.1)' : 'rotate(0deg)',
-          }}
-        />
-      </div>
-    </th>
-  );
-
   return (
-    <div className="overflow-x-auto bg-white rounded-lg shadow-lg border-2 border-blue-100 max-w-full ">
+    <div className="overflow-x-auto bg-white rounded-lg shadow-lg border-2 border-blue-100 max-w-full">
       <table className="min-w-full divide-y divide-blue-100">
-        <thead className="bg-blue-500 text-white text-lg sm:text-sm">
-          <tr>
-            <SortableHeader field="date">Date Assigned</SortableHeader>
-            <SortableHeader field="aging">Aging (Days)</SortableHeader>
-            <SortableHeader field="company">Company</SortableHeader>
-            <SortableHeader field="title">Job Title</SortableHeader>
-            <SortableHeader field="location">Location</SortableHeader>
-            <SortableHeader field="vacancies">Vacancies</SortableHeader>
-            <SortableHeader field="status">Status</SortableHeader>
-          </tr>
-        </thead>
+        <SortableTableHeader
+          columns={columns}
+          sortField={sortField}
+          sortDirection={sortDirection}
+          onSort={handleSort}
+        />
         <tbody className="divide-y divide-blue-50 text-xs sm:text-sm">
           {sortedTodos.length > 0 ? (
             sortedTodos.map((todo, index) => (

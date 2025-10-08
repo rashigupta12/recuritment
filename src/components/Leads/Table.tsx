@@ -1,88 +1,157 @@
+// ============================================
+// LeadsTable (Second Version - with Stage column)
+// ============================================
 import { Lead } from "@/stores/leadStore";
-import { EditIcon, Eye, Factory, IndianRupee, UsersIcon } from "lucide-react";
+import { EditIcon, Eye, UsersIcon } from "lucide-react";
+import { useState, useMemo } from "react";
+import { SortableTableHeader } from "../recruiter/SortableTableHeader";
 import { formatToIndianCurrency } from "./helper";
 
-interface LeadsTableProps {
+
+interface LeadsTableV2Props {
   leads: Lead[];
   onViewLead: (lead: Lead) => void;
   onEditLead: (lead: Lead) => void;
 }
 
+type LeadsV2SortField = "company" | "contact" | "stage" | "offering" | "salary" | "vacancies" | "fee" | "dealValue" | "createdOn";
+type LeadsV2AllFields = LeadsV2SortField | "actions";
+type LeadsV2SortDirection = "asc" | "desc" | null;
+
+
 export const LeadsTable = ({
   leads,
   onViewLead,
   onEditLead,
-}: LeadsTableProps) => {
+}: LeadsTableV2Props) => {
+  const [sortField, setSortField] = useState<LeadsV2SortField | null>(null);
+  const [sortDirection, setSortDirection] = useState<LeadsV2SortDirection>(null);
+
+  const handleSort = (field: LeadsV2AllFields) => {
+    if (field === 'actions') return;
+    
+    if (sortField === field) {
+      if (sortDirection === "asc") setSortDirection("desc");
+      else if (sortDirection === "desc") {
+        setSortDirection(null);
+        setSortField(null);
+      } else setSortDirection("asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
+  const columns = useMemo(() => {
+    const cols: Array<{ field: LeadsV2AllFields; label: string; sortable?: boolean }> = [
+      { field: 'company', label: 'Company' },
+      { field: 'contact', label: 'Contact' },
+      { field: 'stage', label: 'Stage' },
+      { field: 'offering', label: 'Offering' },
+      { field: 'salary', label: 'AVG.SAL (LPA)' },
+      { field: 'vacancies', label: 'No. Of Vac' },
+      { field: 'fee', label: 'Fee (%/K)' },
+      { field: 'dealValue', label: 'Deal Value(L)' },
+      { field: 'createdOn', label: 'Created On' },
+      { field: 'actions', label: 'Actions', sortable: false },
+    ];
+    return cols;
+  }, []);
+
+  const sortedLeads = useMemo(() => {
+    const filteredLeads = leads.filter(
+      (lead) => lead.custom_stage?.toLowerCase() !== "onboarded"
+    );
+
+    if (!sortField || !sortDirection) return filteredLeads;
+
+    return [...filteredLeads].sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortField) {
+        case 'company':
+          aValue = (a.company_name || '').toLowerCase();
+          bValue = (b.company_name || '').toLowerCase();
+          break;
+        case 'contact':
+          aValue = (a.custom_full_name || a.lead_name || '').toLowerCase();
+          bValue = (b.custom_full_name || b.lead_name || '').toLowerCase();
+          break;
+        case 'stage':
+          aValue = (a.custom_stage || '').toLowerCase();
+          bValue = (b.custom_stage || '').toLowerCase();
+          break;
+        case 'offering':
+          aValue = (a.custom_offerings || '').toLowerCase();
+          bValue = (b.custom_offerings || '').toLowerCase();
+          break;
+        case 'salary':
+          aValue = Number(a.custom_average_salary) || 0;
+          bValue = Number(b.custom_average_salary) || 0;
+          break;
+        case 'vacancies':
+          aValue = Number(a.custom_estimated_hiring_) || 0;
+          bValue = Number(b.custom_estimated_hiring_) || 0;
+          break;
+        case 'fee':
+          aValue = Number(a.custom_fee || a.custom_fixed_charges) || 0;
+          bValue = Number(b.custom_fee || b.custom_fixed_charges) || 0;
+          break;
+        case 'dealValue':
+          aValue = Number(a.custom_deal_value) || 0;
+          bValue = Number(b.custom_deal_value) || 0;
+          break;
+        case 'createdOn':
+          aValue = a.creation ? new Date(a.creation).getTime() : 0;
+          bValue = b.creation ? new Date(b.creation).getTime() : 0;
+          break;
+        default:
+          return 0;
+      }
+
+      if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
+      if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
+      return 0;
+    });
+  }, [leads, sortField, sortDirection]);
+
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-      <table className="w-full">
-        <thead className="bg-blue-500 font-bold">
-          <tr>
-            <th className="px-4 py-3 text-left text-md text-white uppercase tracking-wider">
-              Company 
-            </th>
-            <th className="px-4 py-3 text-left text-md font-medium text-white uppercase tracking-wider">
-              Contact
-            </th>
-            <th className="px-4 py-3 text-left text-md font-medium text-white uppercase tracking-wider">
-              Stage
-            </th>
-            <th className="px-4 py-3 text-left text-md font-medium text-white uppercase tracking-wider">
-              Offering
-            </th>
-            <th className="px-4 py-3 text-left text-md font-medium text-white uppercase tracking-wider">
-              AVG.SAL
-              <br />
-              (LPA)
-            </th>
-            <th className="px-4 py-3 text-left text-md font-medium text-white uppercase tracking-wider">
-              No. Of<br/>vac
-            </th>
-            <th className="px-4 py-3 text-left text-md font-medium text-white uppercase tracking-wider">
-              Fee
-              <br />
-              (%/K)
-            </th>
-            <th className="px-4 py-3 text-left text-md font-medium text-white uppercase tracking-wider">
-              Deal<br/>Value(L)
-            </th>
-            <th className="px-4 py-3 text-left text-sm font-medium text-white uppercase tracking-wider">
-              Created On
-            </th>
-            <th className="px-6 py-3 text-left text-sm font-medium text-white uppercase tracking-wider">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {leads
-            .filter((lead) => lead.custom_stage?.toLowerCase() !== "onboarded")
-            .map((lead, index) => (
-              <LeadsTableRow
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <SortableTableHeader
+            columns={columns}
+            sortField={sortField}
+            sortDirection={sortDirection}
+            onSort={handleSort}
+            className="bg-blue-500 text-white"
+          />
+          <tbody className="bg-white divide-y divide-gray-200">
+            {sortedLeads.map((lead, index) => (
+              <LeadsTableRowV2
                 key={lead.name || lead.id || index}
                 lead={lead}
                 onView={() => onViewLead(lead)}
                 onEdit={() => onEditLead(lead)}
               />
             ))}
-        </tbody>
-      </table>
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };
 
-// components/Leads/LeadsTableRow.tsx
-interface LeadsTableRowProps {
+interface LeadsTableRowV2Props {
   lead: Lead;
   onView: () => void;
   onEdit: () => void;
 }
 
-// Helper function to split and format text with line breaks
 const formatTextWithLines = (text: string | null | undefined) => {
   if (!text) return <span>-</span>;
 
-  // Split by spaces, hyphens, and slashes
   const words = text
     .split(/[\-/]+/)
     .filter((word) => word.length > 0)
@@ -98,21 +167,20 @@ const formatTextWithLines = (text: string | null | undefined) => {
     </div>
   );
 };
-// helper function
-const formatCompanyName = (name: string) => {
+
+const formatCompanyNameV2 = (name: string) => {
   if (!name) return "-";
   const trimmed = name.trim();
 
-  // if short, return as is
   if (trimmed.length <= 30) return trimmed;
 
-  // find nearest space before 30th character
   const splitIndex = trimmed.lastIndexOf(" ", 30);
-  if (splitIndex === -1) return trimmed; // no space found, skip splitting
+  if (splitIndex === -1) return trimmed;
 
   return `${trimmed.slice(0, splitIndex)}\n${trimmed.slice(splitIndex + 1)}`;
 };
-const formatDateAndTime = (dateString?: string) => {
+
+const formatDateAndTimeV2 = (dateString?: string) => {
   if (!dateString) return { date: "-", time: "-" };
   const date = new Date(dateString);
 
@@ -120,40 +188,42 @@ const formatDateAndTime = (dateString?: string) => {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
-  }); // dd/mm/yyyy
+  });
 
   const formattedTime = date.toLocaleTimeString("en-IN", {
     hour: "2-digit",
     minute: "2-digit",
-    hour12: false, // 24h format
-  }); // hh:mm
+    hour12: false,
+  });
 
   return { date: formattedDate, time: formattedTime };
 };
 
-const LeadsTableRow = ({ lead, onView, onEdit }: LeadsTableRowProps) => {
+const LeadsTableRowV2 = ({ lead, onView, onEdit }: LeadsTableRowV2Props) => {
   return (
     <tr className="hover:bg-gray-50">
       <td className="px-4 py-2 max-w-[230px]">
         <div className="text-md text-gray-900 break-all whitespace-normal">
-          {formatCompanyName(lead.company_name) || "-"}
+          {formatCompanyNameV2(lead.company_name || '') || "-"}
         </div>
-        <a
-          href={
-            lead.website?.startsWith("http")
-              ? lead.website
-              : `https://${lead.website}`
-          }
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-md text-blue-500 hover:underline normal-case p-0 m-0 pt-10"
-        >
-          {lead.website}
-        </a>
+        {lead.website && (
+          <a
+            href={
+              lead.website?.startsWith("http")
+                ? lead.website
+                : `https://${lead.website}`
+            }
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-md text-blue-500 hover:underline normal-case p-0 m-0 pt-10"
+          >
+            {lead.website}
+          </a>
+        )}
       </td>
       <td className="px-4 py-2 whitespace-nowrap">
         <div className="flex items-center">
-          <div className="">
+          <div>
             <div className="text-md font-medium text-gray-900 capitalize">
               {lead.custom_full_name || lead.lead_name || "-"}
             </div>
@@ -164,17 +234,14 @@ const LeadsTableRow = ({ lead, onView, onEdit }: LeadsTableRowProps) => {
         </div>
       </td>
       <td className="px-4 py-2">
-        <div className="text-md text-gray-900 uppercase ">
+        <div className="text-md text-gray-900 uppercase">
           {lead.custom_stage
             ? (() => {
-                // remove special characters like /, -, etc.
                 const clean = lead.custom_stage.replace(/[^a-zA-Z\s]/g, "").trim();
                 const words = clean.split(/\s+/);
                 if (words.length === 1) {
-                  // single word → take first two letters
                   return words[0].slice(0, 2);
                 }
-                // multiple words → take first letter of each
                 return words.map((w) => w.charAt(0)).join("");
               })()
             : "-"}
@@ -186,26 +253,20 @@ const LeadsTableRow = ({ lead, onView, onEdit }: LeadsTableRowProps) => {
         </div>
       </td>
       <td className="px-4 py-2 whitespace-nowrap">
-        {lead.custom_average_salary  ? (
-          <>
-            <div className="text-md text-gray-900 flex items-center">
-              {lead.custom_average_salary
-                ? formatToIndianCurrency(Number(lead.custom_average_salary))
-                : "-"}
-            </div>
-          </>
+        {lead.custom_average_salary ? (
+          <div className="text-md text-gray-900 flex items-center">
+            {formatToIndianCurrency(Number(lead.custom_average_salary))}
+          </div>
         ) : (
           "-"
         )}
       </td>
       <td className="px-4 py-2 whitespace-nowrap">
         {lead.custom_estimated_hiring_ ? (
-          <>
-            <div className="text-md text-gray-900 flex items-center">
-              <UsersIcon className="h-3 w-3 mr-1 text-gray-900" />
-              {lead.custom_estimated_hiring_ || "-"}
-            </div>
-          </>
+          <div className="text-md text-gray-900 flex items-center">
+            <UsersIcon className="h-3 w-3 mr-1 text-gray-900" />
+            {lead.custom_estimated_hiring_}
+          </div>
         ) : (
           "-"
         )}
@@ -234,7 +295,7 @@ const LeadsTableRow = ({ lead, onView, onEdit }: LeadsTableRowProps) => {
       </td>
       <td className="px-4 py-2 whitespace-nowrap text-md text-gray-900">
         {(() => {
-          const { date, time } = formatDateAndTime(lead.creation);
+          const { date, time } = formatDateAndTimeV2(lead.creation);
           return (
             <div className="flex flex-col leading-tight">
               <span>{date}</span>
@@ -252,7 +313,7 @@ const LeadsTableRow = ({ lead, onView, onEdit }: LeadsTableRowProps) => {
               onClick={onEdit}
             />
           ) : (
-            <div className="h-5 w-5"></div> // optional placeholder to keep spacing
+            <div className="h-5 w-5"></div>
           )}
           <Eye
             className="h-5 w-5 text-blue-400 cursor-pointer hover:text-blue-600 transition-colors"
