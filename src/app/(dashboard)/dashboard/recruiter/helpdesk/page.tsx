@@ -230,13 +230,13 @@ function FeedbackListPage({
               </p>
             </div>
           ) : (
-            <table className="min-w-full divide-y divide-gray-200 text-md sm:text-md font-medium">
+            <table className="min-w-full divide-y divide-blue-100">
               <SortableTableHeader
                 columns={columns}
                 sortField={sortField}
                 sortDirection={sortDirection}
                 onSort={handleSort}
-                className="bg-blue-500 text-white"
+                
               />
               <tbody className="divide-y divide-gray-100">
                 {sortedFeedbacks.map((feedback, index) => (

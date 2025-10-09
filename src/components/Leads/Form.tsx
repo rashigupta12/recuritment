@@ -457,6 +457,7 @@ const LeadForm: React.FC<LeadFormProps> = ({
         onConfirm={handleConfirmLeave}
         onCancel={handleCancelLeave}
         message="You have unsaved changes. Are you sure you want to leave? Your changes will be lost."
+        
       />
 
       <SuccessDialog
@@ -469,14 +470,14 @@ const LeadForm: React.FC<LeadFormProps> = ({
       <div className="pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <button
+            {/* <button
               onClick={handleBackClick}
               className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors"
             >
               <span className="w-8 h-8 flex items-center justify-center rounded-full border border-primary">
                 <ArrowLeft className="h-4 w-4" />
               </span>
-            </button>
+            </button> */}
 
             <h2 className="text-xl font-semibold text-gray-900">
               {editLead ? "Edit Lead" : "Create New Lead"}

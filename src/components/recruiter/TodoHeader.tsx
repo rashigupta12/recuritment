@@ -190,7 +190,7 @@ export const TodosHeader = ({
               }`}
           >
             <Filter className="w-4 h-4" />
-            Filters
+            {/* Filters */}
             {activeFilterCount > 0 && (
               <Badge variant="secondary" className="ml-1 bg-blue-600 text-white px-1.5 min-w-[20px] h-5 flex items-center justify-center">
                 {activeFilterCount}
@@ -203,7 +203,7 @@ export const TodosHeader = ({
             <div className="flex items-center justify-between">
               <SheetTitle className="flex items-center gap-2 text-lg">
                 <Filter className="w-5 h-5" />
-                {/* Filters */}
+                Filters
               </SheetTitle>
             </div>
           </SheetHeader>

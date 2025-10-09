@@ -78,11 +78,8 @@ export default function TaggedApplicants({
   const [modalError, setModalError] = useState<string | null>(null);
   const [assessmentError, setAssessmentError] = useState<string | null>(null);
   const [assessmentSuccess, setAssessmentSuccess] = useState<string | null>(null);
-  const [scheduledOn, setScheduledOn] = useState<string>("");
-  const [fromTime, setFromTime] = useState<string>("");
-  const [toTime, setToTime] = useState<string>("");
-  const [assessmentLink, setAssessmentLink] = useState<string>("");
-  const [assessmentRound, setAssessmentRound] = useState<string>("");
+  const [expiryDate, setExpiryDate] = useState<string>("");
+  const [testLink, setTestLink] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [refreshKey, setRefreshKey] = useState<number>(0);
   const [showDowngradeWarning, setShowDowngradeWarning] = useState<boolean>(false);
@@ -312,39 +309,30 @@ export default function TaggedApplicants({
     setModalError(null);
   };
 
-  // Handler to open the assessment modal
-  const handleOpenAssessmentModal = () => {
-    if (selectedApplicants.length === 0) {
-      setAssessmentError("Please select at least one applicant to start the assessment.");
-      setAssessmentSuccess(null);
-      return;
-    }
-    const allShortlisted = selectedApplicants.every(
-      (applicant) => applicant.status?.toLowerCase() === "shortlisted"
-    );
-    if (!allShortlisted) {
-      setAssessmentError('Assessment can only be created for applicants with "Shortlisted" status.');
-      setAssessmentSuccess(null);
-      return;
-    }
-    setIsAssessmentModalOpen(true);
-    setModalError(null);
-  };
-
   // Handler to close the assessment modal
   const handleCloseAssessmentModal = () => {
     setIsAssessmentModalOpen(false);
-    setScheduledOn("");
-    setFromTime("");
-    setToTime("");
-    setAssessmentLink("");
-    setAssessmentRound("");
+    setExpiryDate("");
+    setTestLink("");
     setModalError(null);
   };
 
   const handleStatusChangeRequest = () => {
     if (!selectedStatus) {
       setModalError("Please select a status.");
+      return;
+    }
+    
+    if (selectedStatus === "Assessment") {
+      const allShortlisted = selectedApplicants.every(
+        (applicant) => applicant.status?.toLowerCase() === "shortlisted"
+      );
+      if (!allShortlisted) {
+        setModalError('Assessment can only be created for applicants with "Shortlisted" status.');
+        return;
+      }
+      setIsStatusModalOpen(false);
+      setIsAssessmentModalOpen(true);
       return;
     }
     
@@ -369,15 +357,8 @@ export default function TaggedApplicants({
 
   // Handler for starting assessment
   const handleStartAssessment = async () => {
-    if (!scheduledOn || !fromTime || !toTime || !assessmentLink || !assessmentRound) {
+    if (!expiryDate || !testLink) {
       setModalError("Please fill in all assessment details.");
-      return;
-    }
-
-    const fromDateTime = new Date(`${scheduledOn}T${fromTime}`);
-    const toDateTime = new Date(`${scheduledOn}T${toTime}`);
-    if (fromDateTime >= toDateTime) {
-      setModalError("Start time must be earlier than end time.");
       return;
     }
 
@@ -387,11 +368,8 @@ export default function TaggedApplicants({
 
       const payload = {
         applicants: selectedApplicants.map((app) => app.name),
-        scheduled_on: scheduledOn,
-        from_time: fromTime,
-        to_time: toTime,
-        assessment_link: assessmentLink,
-        assessment_round: assessmentRound,
+        expiry_date: expiryDate,
+        test_link: testLink,
       };
 
       const response = await frappeAPI.createbulkAssessment(payload);
@@ -455,11 +433,8 @@ export default function TaggedApplicants({
 
       setIsAssessmentModalOpen(false);
       setSelectedApplicants([]);
-      setScheduledOn("");
-      setFromTime("");
-      setToTime("");
-      setAssessmentLink("");
-      setAssessmentRound("");
+      setExpiryDate("");
+      setTestLink("");
       setRefreshKey((prev) => prev + 1);
     } catch (err: any) {
       console.error("Assessment creation error:", {
@@ -663,13 +638,6 @@ export default function TaggedApplicants({
                 className="px-2 py-3 text-white bg-blue-700 rounded-lg text-md font-medium transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 whitespace-nowrap w-[160px]"
               >
                 Update Status ({selectedApplicants.length})
-              </button>
-
-              <button
-                onClick={handleOpenAssessmentModal}
-                className="px-3 py-3 text-white bg-blue-700 rounded-lg text-md font-medium transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 whitespace-nowrap w-[200px]"
-              >
-                Create Assessment ({selectedApplicants.length})
               </button>
             </div>
           )}
@@ -876,57 +844,26 @@ export default function TaggedApplicants({
             <div className="grid grid-cols-1 gap-4">
               <div>
                 <label className="block text-gray-700 font-semibold mb-2 text-md">
-                  Date of Assessment
+                  Expiry Date
                 </label>
                 <input
                   type="date"
-                  value={scheduledOn}
-                  onChange={(e) => setScheduledOn(e.target.value)}
+                  value={expiryDate}
+                  onChange={(e) => setExpiryDate(e.target.value)}
                   className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition-all bg-gray-50 text-gray-900 text-md"
                   required
                 />
               </div>
               <div>
                 <label className="block text-gray-700 font-semibold mb-2 text-md">
-                  Start Time
+                  Test Link
                 </label>
-                <input
-                  type="time"
-                  value={fromTime}
-                  onChange={(e) => setFromTime(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition-all bg-gray-50 text-gray-900 text-md"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-gray-700 font-semibold mb-2 text-md">
-                  End Time
-                </label>
-                <input
-                  type="time"
-                  value={toTime}
-                  onChange={(e) => setToTime(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition-all bg-gray-50 text-gray-900 text-md"
-                  required
-                />
-              </div>
-              <div>
                 <input
                   type="url"
-                  value={assessmentLink}
-                  onChange={(e) => setAssessmentLink(e.target.value)}
+                  value={testLink}
+                  onChange={(e) => setTestLink(e.target.value)}
                   className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition-all bg-gray-50 text-gray-900 text-md"
-                  placeholder="Assessment Link"
-                  required
-                />
-              </div>
-              <div>
-                <input
-                  type="text"
-                  value={assessmentRound}
-                  onChange={(e) => setAssessmentRound(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition-all bg-gray-50 text-gray-900 text-md"
-                  placeholder="Assessment Round"
+                  placeholder="Test Link"
                   required
                 />
               </div>

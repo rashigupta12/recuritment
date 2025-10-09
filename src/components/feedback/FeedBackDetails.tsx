@@ -270,11 +270,11 @@ const FeedbackDetails: React.FC<{
                     return (
                       <div
                         key={attachment.name || index}
-                        className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+                        className="flex items-center justify-between gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
                           {isImage ? (
-                            <div className="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center overflow-hidden">
+                            <div className="w-12 h-12 flex-shrink-0 rounded-lg bg-blue-50 flex items-center justify-center overflow-hidden">
                               <img
                                 src={getImageUrl(attachment)}
                                 alt={fileName}
@@ -294,11 +294,11 @@ const FeedbackDetails: React.FC<{
                               />
                             </div>
                           ) : (
-                            <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center">
+                            <div className="w-12 h-12 flex-shrink-0 rounded-lg bg-gray-100 flex items-center justify-center">
                               <Paperclip className="h-5 w-5 text-gray-500" />
                             </div>
                           )}
-                          <div className="max-w-[150px]">
+                          <div className="min-w-0 flex-1">
                             <p className="text-sm font-medium text-gray-900 truncate">
                               {fileName}
                             </p>
@@ -313,13 +313,14 @@ const FeedbackDetails: React.FC<{
                           variant="outline"
                           size="sm"
                           onClick={() => handleAttachmentView(attachment, index)}
-                          className="h-8 hover:bg-blue-50 hover:border-blue-300 transition-colors"
+                          className="h-8 flex-shrink-0 hover:bg-blue-50 hover:border-blue-300 transition-colors"
                         >
                           <Eye className="h-4 w-4 mr-1" />
                           View
                         </Button>
                       </div>
                     );
+                  
                   })}
                 </div>
               </div>
