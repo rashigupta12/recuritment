@@ -547,7 +547,7 @@ useEffect(() => {
 
       {/* Selected Company Display */}
       {selectedCompany && (
-        <div className="border border-primary/20 rounded-lg p-4 bg-primary/5 animate-in fade-in-50">
+        <div className="border rounded-lg p-4  animate-in fade-in-50">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div>

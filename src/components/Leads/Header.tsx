@@ -21,7 +21,7 @@ export const LeadsHeader = ({
 }: LeadsHeaderProps) => {
   return (
     <div className="bg-white border-gray-200">
-      {showBackButton ? (
+      {/* {showBackButton ? (
         <div className="border-b border-gray-200 px-6 py-4">
           <button
             onClick={onBack}
@@ -31,7 +31,7 @@ export const LeadsHeader = ({
             <span>Back to Leads</span>
           </button>
         </div>
-      ) : (
+      ) : ( */}
         <div className="w-full mx-auto pb-2">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
             <div className="relative w-full md:w-[40%]">
@@ -54,7 +54,7 @@ export const LeadsHeader = ({
             </button>
           </div>
         </div>
-      )}
+      {/* )} */}
     </div>
   );
 };

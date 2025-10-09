@@ -301,10 +301,6 @@ export function ApplicantsTable({
         aValue = a.email_id?.toLowerCase() || "";
         bValue = b.email_id?.toLowerCase() || "";
         break;
-      case "job_title":
-        aValue = a.job_title?.toLowerCase() || "";
-        bValue = b.job_title?.toLowerCase() || "";
-        break;
       case "status":
         aValue = a.status?.toLowerCase() || "";
         bValue = b.status?.toLowerCase() || "";
@@ -312,6 +308,14 @@ export function ApplicantsTable({
       case "designation":
         aValue = a.designation?.toLowerCase() || "";
         bValue = b.designation?.toLowerCase() || "";
+        break;
+      case "phone":
+        aValue = a.phone_number?.toLowerCase() || "";
+        bValue = b.phone_number?.toLowerCase() || "";
+        break;
+      case "client":
+        aValue = a.custom_company_name?.toLowerCase() || "";
+        bValue = b.custom_company_name?.toLowerCase() || "";
         break;
       default:
         return 0;
@@ -325,6 +329,14 @@ export function ApplicantsTable({
   return (
     <div className="bg-white shadow-md rounded-lg border border-blue-100 overflow-hidden w-full">
       <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200 text-md sm:text-md font-medium">
+          <SortableTableHeader
+            columns={columns}
+            sortField={sortField}
+            sortDirection={sortDirection}
+            onSort={handleSort}
+            className="bg-blue-500 text-white"
+          />
         <table className="min-w-full divide-y divide-gray-200 text-md sm:text-md font-medium">
           <SortableTableHeader
             columns={columns}
@@ -369,8 +381,10 @@ export function ApplicantsTable({
                     {applicant.phone_number || "N/A"}
                   </td>
                   <td className="px-2 sm:px-4 py-4 truncate">
+                  <td className="px-2 sm:px-4 py-4 truncate">
                     {applicant.designation || 'N/A'}
                   </td>
+                  <td className="px-2 sm:px-4 py-4 truncate">
                   <td className="px-2 sm:px-4 py-4 truncate">
                     {applicant.custom_company_name || 'N/A'}
                   </td>
