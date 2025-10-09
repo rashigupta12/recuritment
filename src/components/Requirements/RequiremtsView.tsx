@@ -67,10 +67,17 @@ type SelectedJob = {
   staffingDetail: StaffingPlanItem;
   planIndex: number;
   detailIndex: number;
-  mode: 'view' | 'allocation';
+  mode: "view" | "allocation";
 };
 
-type SortField = "company" | "designation" | "location" | "experience" | "vacancies" | "budget" | "datetime";
+type SortField =
+  | "company"
+  | "designation"
+  | "location"
+  | "experience"
+  | "vacancies"
+  | "budget"
+  | "datetime";
 type AllFields = SortField | "contact" | "status" | "actions";
 type SortDirection = "asc" | "desc" | null;
 
@@ -93,8 +100,9 @@ const StaffingPlansTable: React.FC = () => {
   const isProjectManager = user?.roles?.includes("Project Manager") || false;
 
   const handleSort = (field: AllFields) => {
-    if (field === 'contact' || field === 'status' || field === 'actions') return;
-    
+    if (field === "contact" || field === "status" || field === "actions")
+      return;
+
     if (sortField === field) {
       if (sortDirection === "asc") setSortDirection("desc");
       else if (sortDirection === "desc") {
@@ -108,15 +116,25 @@ const StaffingPlansTable: React.FC = () => {
   };
 
   const columns = useMemo(() => {
-    const cols: Array<{ field: AllFields; label: string; sortable?: boolean ; align?: "left" | "center" | "right";  width?: string;}> = [
-
-      { field: 'datetime', label: 'Date',  align:"center" },
-      { field: 'company', label: 'Company & Contact', width:"200px", align:"center" },
-      { field: 'designation', label: 'Position Details', align:"center" },
-      { field: 'location', label: 'Location & Experience',align:"center" },
-      { field: 'vacancies', label: 'Vacancies & Budget', align:"center" },
+    const cols: Array<{
+      field: AllFields;
+      label: string;
+      sortable?: boolean;
+      align?: "left" | "center" | "right";
+      width?: string;
+    }> = [
+      { field: "datetime", label: "Date", align: "center" },
+      {
+        field: "company",
+        label: "Company & Contact",
+        width: "200px",
+        align: "center",
+      },
+      { field: "designation", label: "Position Details", align: "center" },
+      { field: "location", label: "Location & Experience", align: "center" },
+      { field: "vacancies", label: "Vacancies & Budget", align: "center" },
       // { field: 'status', label: 'Status', sortable: false , align:"center"},
-      { field: 'actions', label: 'Action', sortable: false , align: "center"},
+      { field: "actions", label: "Action", sortable: false, align: "center" },
     ];
     return cols;
   }, []);
@@ -186,33 +204,33 @@ const StaffingPlansTable: React.FC = () => {
     // Apply sorting
     if (sortField && sortDirection) {
       const sortedFiltered: StaffingPlan[] = [];
-      filtered.forEach(plan => {
+      filtered.forEach((plan) => {
         const sortedDetails = [...plan.staffing_details].sort((a, b) => {
           let aValue: any;
           let bValue: any;
 
           switch (sortField) {
-            case 'designation':
+            case "designation":
               aValue = a.designation.toLowerCase();
               bValue = b.designation.toLowerCase();
               break;
-            case 'location':
+            case "location":
               aValue = a.location.toLowerCase();
               bValue = b.location.toLowerCase();
               break;
-            case 'experience':
+            case "experience":
               aValue = a.min_experience_reqyrs;
               bValue = b.min_experience_reqyrs;
               break;
-            case 'vacancies':
+            case "vacancies":
               aValue = a.vacancies;
               bValue = b.vacancies;
               break;
-            case 'budget':
+            case "budget":
               aValue = a.estimated_cost_per_position;
               bValue = b.estimated_cost_per_position;
               break;
-            case 'company':
+            case "company":
               aValue = plan.company.toLowerCase();
               bValue = plan.company.toLowerCase();
               break;
@@ -227,11 +245,11 @@ const StaffingPlansTable: React.FC = () => {
 
         sortedFiltered.push({
           ...plan,
-          staffing_details: sortedDetails
+          staffing_details: sortedDetails,
         });
       });
-      
-      if (sortField === 'company') {
+
+      if (sortField === "company") {
         sortedFiltered.sort((a, b) => {
           const aValue = a.company.toLowerCase();
           const bValue = b.company.toLowerCase();
@@ -240,7 +258,7 @@ const StaffingPlansTable: React.FC = () => {
           return 0;
         });
       }
-      
+
       filtered = sortedFiltered;
     }
 
@@ -258,7 +276,7 @@ const StaffingPlansTable: React.FC = () => {
       staffingDetail: detail,
       planIndex,
       detailIndex,
-      mode: 'view',
+      mode: "view",
     });
     setIsModalOpen(true);
   };
@@ -274,18 +292,24 @@ const StaffingPlansTable: React.FC = () => {
       staffingDetail: detail,
       planIndex,
       detailIndex,
-      mode: 'allocation',
+      mode: "allocation",
     });
     setIsModalOpen(true);
   };
 
   const handleEdit = (planName: string) => {
-    router.push(`/dashboard/recruiter/requirements/create?planId=${planName}&mode=edit`);
+    router.push(
+      `/dashboard/recruiter/requirements/create?planId=${planName}&mode=edit`
+    );
   };
 
-  const handlePublish = async (jobId: string, planIndex: number, detailIndex: number) => {
-    setPublishingJobs(prev => new Set(prev).add(jobId));
-    
+  const handlePublish = async (
+    jobId: string,
+    planIndex: number,
+    detailIndex: number
+  ) => {
+    setPublishingJobs((prev) => new Set(prev).add(jobId));
+
     try {
       await frappeAPI.makeAuthenticatedRequest(
         "PUT",
@@ -306,7 +330,7 @@ const StaffingPlansTable: React.FC = () => {
       console.error("Error publishing job:", error);
       alert("Failed to publish job opening. Please try again.");
     } finally {
-      setPublishingJobs(prev => {
+      setPublishingJobs((prev) => {
         const newSet = new Set(prev);
         newSet.delete(jobId);
         return newSet;
@@ -334,72 +358,73 @@ const StaffingPlansTable: React.FC = () => {
   };
 
   const formatDateAndTimeV2 = (dateString?: string) => {
-  if (!dateString) return { date: "-", time: "-" };
-  const date = new Date(dateString);
+    if (!dateString) return { date: "-", time: "-" };
+    const date = new Date(dateString);
 
-  const formattedDate = date.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
+    const formattedDate = date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
 
-  const formattedTime = date.toLocaleTimeString("en-IN", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
+    const formattedTime = date.toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
 
-  return { date: formattedDate, time: formattedTime };
-};
-  console.log(plans)
+    return { date: formattedDate, time: formattedTime };
+  };
+  console.log(plans);
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="w-full mx-auto">
         <div className="mb-2">
-        <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
-  {/* Left Section: Heading */}
-  <div>
-    <h1 className="text-2xl font-bold text-gray-900">Customers Requirements</h1>
-    <p className="text-gray-600 mt-1">
-      Manage and track all staffing requirements
-    </p>
-  </div>
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+            {/* Left Section: Heading */}
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Customers Requirements
+              </h1>
+              <p className="text-gray-600 mt-1">
+                Manage and track all staffing requirements
+              </p>
+            </div>
 
-  {/* Right Section: Search, Filter, and Refresh */}
-  <div className="flex items-center gap-3 flex-wrap justify-end">
-    {/* Search Bar */}
-    <div className="relative min-w-[250px] max-w-md">
-      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-      <input
-        type="text"
-        placeholder="Search by company, contact, position..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-      />
-    </div>
+            {/* Right Section: Search, Filter, and Refresh */}
+            <div className="flex items-center gap-3 flex-wrap justify-end">
+              {/* Search Bar */}
+              <div className="relative min-w-[250px] max-w-md">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by company, contact, position..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                />
+              </div>
 
-    {/* Filter Button */}
-    <Button
-      variant="outline"
-      size="icon"
-      className="flex items-center justify-center h-10 w-10 hover:bg-blue-50"
-    >
-      <Filter className="w-5 h-5 text-gray-700" />
-    </Button>
+              {/* Filter Button */}
+              <Button
+                variant="outline"
+                size="icon"
+                className="flex items-center justify-center h-10 w-10 hover:bg-blue-50"
+              >
+                <Filter className="w-5 h-5 text-gray-700" />
+              </Button>
 
-    {/* Refresh Button */}
-    <Button
-      variant="outline"
-      size="icon"
-      className="h-10 w-10 flex items-center justify-center hover:bg-blue-50"
-    >
-      <RefreshCw className="w-4 h-4 text-gray-700" />
-    </Button>
-  </div>
-</div>
-
+              {/* Refresh Button */}
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-10 w-10 flex items-center justify-center hover:bg-blue-50"
+              >
+                <RefreshCw className="w-4 h-4 text-gray-700" />
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* Main Table */}
@@ -440,27 +465,29 @@ const StaffingPlansTable: React.FC = () => {
                 />
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredPlans.map((plan, planIndex) => (
-
                     <React.Fragment key={plan.name}>
                       {plan.staffing_details.map((detail, detailIndex) => (
                         <tr
                           key={`${plan.name}-${detailIndex}`}
                           className="hover:bg-gray-50 transition-colors"
                         >
-                        {plan.creation && (
-                          <td className="px-4 py-2 whitespace-nowrap text-md text-gray-900">
-        {(() => {
-          const { date, time } = formatDateAndTimeV2(plan.creation);
-          return (
-            <div className="flex flex-col leading-tight">
-              <span>{date}</span>
-              <span className="text-md text-gray-500">{time}</span>
-            </div>
-          );
-        })()}
-      </td>
-                        )
-                        }
+                          {plan.creation && (
+                            <td className="px-4 py-2 whitespace-nowrap text-md text-gray-900">
+                              {(() => {
+                                const { date, time } = formatDateAndTimeV2(
+                                  plan.creation
+                                );
+                                return (
+                                  <div className="flex flex-col leading-tight">
+                                    <span>{date}</span>
+                                    <span className="text-md text-gray-500">
+                                      {time}
+                                    </span>
+                                  </div>
+                                );
+                              })()}
+                            </td>
+                          )}
 
                           {detailIndex === 0 && (
                             <td
@@ -608,54 +635,90 @@ const StaffingPlansTable: React.FC = () => {
                           <td className="px-4 py-4">
                             <div className="flex items-center space-x-1 flex-wrap gap-2">
                               {/* View Details Button */}
-                              <button
-                                onClick={() =>
-                                  handleViewDetails(
-                                    plan,
-                                    detail,
-                                    planIndex,
-                                    detailIndex
-                                  )
-                                }
-                                className="flex items-center px-1 py-1.5 text-blue-500  rounded text-md transition-colors"
-                                title="View Details"
-                              >
-                                <Eye className="h-4 w-4 " />
-                                
-                              </button>
+                              <div className="relative group">
+                                <button
+                                  onClick={() =>
+                                    handleViewDetails(
+                                      plan,
+                                      detail,
+                                      planIndex,
+                                      detailIndex
+                                    )
+                                  }
+                                  className="flex items-center px-1 py-1.5 text-blue-500 rounded text-md transition-colors"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </button>
+
+                                {/* Tooltip */}
+                                <span
+                                  className="absolute left-1/2 -translate-x-1/2 -top-7 
+    px-2 py-1 text-xs text-white bg-gray-800 rounded opacity-0 
+    group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap"
+                                >
+                                  View Details
+                                </span>
+                              </div>
 
                               {/* Edit Button - Only show once per plan */}
                               {detailIndex === 0 && (
-                                <button
-                                  onClick={() => handleEdit(plan.name)}
-                                  className="flex items-center px-1 py-1.5 text-blue-500   rounded text-md transition-colors"
-                                  title="Edit Staffing Plan"
-                                >
-                                  <Edit className="h-4 w-4 " />
-                                  
-                                </button>
+                                <div className="relative group">
+                                  <button
+                                    onClick={() => handleEdit(plan.name)}
+                                    className="flex items-center px-1 py-1.5 text-blue-500 rounded text-md transition-colors"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                  </button>
+
+                                  {/* Tooltip */}
+                                  <span
+                                    className="absolute left-1/2 -translate-x-1/2 -top-7 
+      px-2 py-1 text-xs text-white bg-gray-800 rounded opacity-0 
+      group-hover:opacity-100 transform -translate-y-1 
+      group-hover:-translate-y-2 transition-all duration-200 pointer-events-none whitespace-nowrap"
+                                  >
+                                    Edit Staffing Plan
+                                  </span>
+                                </div>
                               )}
 
                               {/* Publish Button - Only if job_id exists */}
                               {detail.job_id && (
-                                <button
-                                  onClick={() => handlePublish(detail.job_id!, planIndex, detailIndex)}
-                                  disabled={publishingJobs.has(detail.job_id)}
-                                  className="flex items-center px-1 py-1.5 text-blue-500 rounded text-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                  title="Publish Job Opening"
-                                >
-                                  {publishingJobs.has(detail.job_id) ? (
-                                    <>
-                                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                                      {/* Publishing... */}
-                                    </>
-                                  ) : (
-                                    <>
-                                      <PaintBucket className="h-4 w-4 mr-1 " />
-                                      {/* Publish */}
-                                    </>
-                                  )}
-                                </button>
+                                <div className="relative group">
+                                  <button
+                                    onClick={() =>
+                                      handlePublish(
+                                        detail.job_id!,
+                                        planIndex,
+                                        detailIndex
+                                      )
+                                    }
+                                    disabled={publishingJobs.has(detail.job_id)}
+                                    className="flex items-center px-1 py-1.5 text-blue-500 rounded text-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    {publishingJobs.has(detail.job_id) ? (
+                                      <>
+                                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                      </>
+                                    ) : (
+                                      <>
+                                        <PaintBucket className="h-4 w-4 mr-1" />
+                                      </>
+                                    )}
+                                  </button>
+
+                                  {/* Tooltip */}
+                                  <span
+                                    className="absolute left-1/2 -translate-x-1/2 -top-7 
+      px-2 py-1 text-xs text-white bg-gray-800 rounded opacity-0 
+      group-hover:opacity-100 transform -translate-y-1 
+      group-hover:-translate-y-2 transition-all duration-200 pointer-events-none whitespace-nowrap"
+                                  >
+                                    {publishingJobs.has(detail.job_id)
+                                      ? "Publishing..."
+                                      : "Publish"}
+                                  </span>
+                                </div>
                               )}
 
                               {/* Allocation Button - Only for project managers and if job_id exists */}
@@ -701,7 +764,7 @@ const StaffingPlansTable: React.FC = () => {
             </p>
           </div>
         )}
-        
+
         {selectedJob && (
           <JobOpeningModal
             isOpen={isModalOpen}
