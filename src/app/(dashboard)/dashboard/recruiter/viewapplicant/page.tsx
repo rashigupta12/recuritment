@@ -216,6 +216,10 @@ export default function ViewApplicantPage() {
 
     checkAuthAndFetchApplicants();
   }, [router, statusParam]);
+  // Add this useEffect after your existing useEffects
+useEffect(() => {
+  handleFilterChange(filters);
+}, [searchQuery]); // Re-filter whenever searchQuery changes
 
   const handleFilterChange = (newFilters: FilterState) => {
     setFilters(newFilters);
@@ -259,7 +263,7 @@ export default function ViewApplicantPage() {
     try {
       const detailedApplicants = await fetchApplicantsData(userEmail);
       setApplicants(detailedApplicants);
-      setFilteredApplicants(detailedApplicants);
+      // setFilteredApplicants(detailedApplicants);
     } catch (err) {
       console.error("Refresh error:", err);
       toast.error("Failed to refresh applicants.");

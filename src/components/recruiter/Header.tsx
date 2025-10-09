@@ -362,61 +362,61 @@ export const TodosHeader = ({
                           </div>
                         );
                       } else {
-                        content = (
-                          <div className="space-y-3 pl-6">
-                            {section.searchKey && (
-                              <div className="relative">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                <input
-                                  type="text"
-                                  placeholder={`Search ${section.title.toLowerCase()}...`}
-                                  value={searchStates[section.id]}
-                                  onChange={(e) =>
-                                    setSearchStates({
-                                      ...searchStates,
-                                      [section.id]: e.target.value,
-                                    })
-                                  }
-                                  className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                />
-                              </div>
-                            )}
-                            {filteredOptions.length > 0 ? (
-                              <div className="space-y-2 max-h-48 overflow-y-auto">
-                                {filteredOptions.map((option) => (
-                                  <label
-                                    key={option}
-                                    className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
-                                  >
-                                    <input
-                                      type="checkbox"
-                                      checked={filters[
-                                        section.id as keyof FilterState
-                                      ].includes(option)}
-                                      onChange={() =>
-                                        toggleFilter(
-                                          section.id as keyof FilterState,
-                                          option
-                                        )
-                                      }
-                                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                                    />
-                                    <span className="text-sm font-medium text-gray-700">
-                                      {option}
-                                    </span>
-                                  </label>
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="text-center py-3 text-sm text-gray-500">
-                                {searchStates[section.id].length > 0
-                                  ? `No ${section.title.toLowerCase()} found`
-                                  : `Start typing to search ${section.title.toLowerCase()}`}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      }
+  content = (
+    <div className=" pl-6">
+      {section.searchKey && (
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder={`Search ${section.title.toLowerCase()}...`}
+            value={searchStates[section.id]}
+            onChange={(e) =>
+              setSearchStates({
+                ...searchStates,
+                [section.id]: e.target.value,
+              })
+            }
+            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+        </div>
+      )}
+      {filteredOptions.length > 0 ? (
+        <div className="space-y-2 max-h-48 overflow-y-auto">
+          {filteredOptions.map((option) => (
+            <label
+              key={option}
+              className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+            >
+              <input
+                type="checkbox"
+                checked={filters[
+                  section.id as keyof FilterState
+                ].includes(option)}
+                onChange={() =>
+                  toggleFilter(
+                    section.id as keyof FilterState,
+                    option
+                  )
+                }
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <span className="text-sm font-medium text-gray-700">
+                {option}
+              </span>
+            </label>
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-3 text-sm text-gray-500">
+          {searchStates[section.id].length > 0 &&
+            `No ${section.title.toLowerCase()} found`}
+        </div>
+      )}
+    </div>
+  );
+}
+
 
                       return (
                         <div key={section.id} className="space-y-3">
@@ -475,13 +475,13 @@ export const TodosHeader = ({
             </Button>
 
             {/* Export Button */}
-            {/* <Button
+            <Button
               onClick={onexpotcsv}
               className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2 flex-shrink-0"
             >
               <Download className="h-4 w-4" />
               <span className="hidden sm:inline">Export</span>
-            </Button> */}
+            </Button>
           </div>
         </div>
       </div>
