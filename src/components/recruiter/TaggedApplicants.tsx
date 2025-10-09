@@ -78,13 +78,13 @@ export default function TaggedApplicants({
   const [modalError, setModalError] = useState<string | null>(null);
   const [assessmentError, setAssessmentError] = useState<string | null>(null);
   const [assessmentSuccess, setAssessmentSuccess] = useState<string | null>(null);
-  const [expiryDate, setExpiryDate] = useState<string>("");
   const [testLink, setTestLink] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [refreshKey, setRefreshKey] = useState<number>(0);
   const [showDowngradeWarning, setShowDowngradeWarning] = useState<boolean>(false);
   const [downgradeInfo, setDowngradeInfo] = useState<{from: string, to: string} | null>(null);
   const router = useRouter();
+  const [expiryDate, setExpiryDate] = useState<string>("");
 
   // Auto-dismiss error messages after 3 seconds
   useEffect(() => {
@@ -312,7 +312,6 @@ export default function TaggedApplicants({
   // Handler to close the assessment modal
   const handleCloseAssessmentModal = () => {
     setIsAssessmentModalOpen(false);
-    setExpiryDate("");
     setTestLink("");
     setModalError(null);
   };
@@ -358,19 +357,21 @@ export default function TaggedApplicants({
   // Handler for starting assessment
   const handleStartAssessment = async () => {
     if (!expiryDate || !testLink) {
-      setModalError("Please fill in all assessment details.");
-      return;
-    }
+  setModalError("Please fill in all assessment details (Expiry Date and Test Link).");
+  return;
+}
 
     try {
       setAssessmentError(null);
       setAssessmentSuccess(null);
 
-      const payload = {
-        applicants: selectedApplicants.map((app) => app.name),
-        expiry_date: expiryDate,
-        test_link: testLink,
-      };
+     const currentDate = new Date().toISOString().split('T')[0];
+const payload = {
+  applicants: selectedApplicants.map((app) => app.name),
+  scheduled_on: currentDate,
+  custom_expiry_date: expiryDate,
+  assessment_link: testLink,
+};
 
       const response = await frappeAPI.createbulkAssessment(payload);
 
@@ -433,7 +434,6 @@ export default function TaggedApplicants({
 
       setIsAssessmentModalOpen(false);
       setSelectedApplicants([]);
-      setExpiryDate("");
       setTestLink("");
       setRefreshKey((prev) => prev + 1);
     } catch (err: any) {
@@ -605,16 +605,18 @@ export default function TaggedApplicants({
     <div className="bg-white shadow-lg border border-gray-200 rounded-xl pt-100 p-8 pt-4 max-w-7xl mx-auto">
       {/* Header Section */}
       <div className="relative flex flex-row items-center gap-4 sm:flex-col sm:items-start">
-        <div className="flex flex-row justify-between items-center">
+        
+          
+          {/* <p className="text-gray-500 text-md absolute right-0">
+            Total: {applicants.length} applicants
+            {selectedApplicants.length > 0 && ` | Selected: ${selectedApplicants.length}`}
+          </p> */}
+       
+        <div className="flex justify-between items-center gap-80 w-full justsm:w-auto mb-4">
           <h2 className="text-2xl font-bold text-gray-900">
             All Applicants
           </h2>
-          <p className="text-gray-500 text-md absolute right-0">
-            Total: {applicants.length} applicants
-            {selectedApplicants.length > 0 && ` | Selected: ${selectedApplicants.length}`}
-          </p>
-        </div>
-        <div className="flex items-center gap-80 w-full justsm:w-auto mb-4">
+          <div className="flex gap-4">
           <div className="relative w-full sm:w-80">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
@@ -641,6 +643,7 @@ export default function TaggedApplicants({
               </button>
             </div>
           )}
+          </div>
         </div>
       </div>
 
@@ -843,21 +846,21 @@ export default function TaggedApplicants({
             )}
             <div className="grid grid-cols-1 gap-4">
               <div>
-                <label className="block text-gray-700 font-semibold mb-2 text-md">
-                  Expiry Date
-                </label>
-                <input
-                  type="date"
-                  value={expiryDate}
-                  onChange={(e) => setExpiryDate(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition-all bg-gray-50 text-gray-900 text-md"
-                  required
-                />
-              </div>
+  <label className="block text-gray-700 font-semibold mb-2 text-md">
+    Expiry Date
+  </label>
+  <input
+    type="date"
+    value={expiryDate}
+    onChange={(e) => setExpiryDate(e.target.value)}
+    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition-all bg-gray-50 text-gray-900 text-md"
+    required
+  />
+</div>
               <div>
-                <label className="block text-gray-700 font-semibold mb-2 text-md">
+                {/* <label className="block text-gray-700 font-semibold mb-2 text-md">
                   Test Link
-                </label>
+                </label> */}
                 <input
                   type="url"
                   value={testLink}
