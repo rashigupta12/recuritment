@@ -96,9 +96,10 @@ const StaffingPlansTable: React.FC = () => {
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
   const [publishingJobs, setPublishingJobs] = useState<Set<string>>(new Set());
   const { user } = useAuth();
+  console.log(user)
 
   // Check if user is project manager
-  const isProjectManager = user?.roles?.includes("Project Manager") || false;
+  const isProjectManager = user?.roles?.includes("Projects Manager") || false;
 
   const handleSort = (field: AllFields) => {
     if (field === "contact" || field === "status" || field === "actions")
@@ -649,6 +650,10 @@ const StaffingPlansTable: React.FC = () => {
                           <td className="px-4 py-4">
                             <div className="flex items-center space-x-1 flex-wrap gap-2">
                               {/* View Details Button */}
+
+                              {!isProjectManager && (
+
+                                <div>
                               <div className="relative group">
                                 <button
                                   onClick={() =>
@@ -734,6 +739,9 @@ const StaffingPlansTable: React.FC = () => {
                                   </span>
                                 </div>
                               )}
+                              </div>
+                              )}
+                              
 
                               {/* Allocation Button - Only for project managers and if job_id exists */}
                               {isProjectManager && detail.job_id && (

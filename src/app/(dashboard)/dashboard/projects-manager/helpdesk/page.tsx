@@ -11,7 +11,8 @@ import FeedbackDetails from "@/components/feedback/FeedBackDetails";
 import { SortableTableHeader } from "@/components/recruiter/SortableTableHeader";
 import { format } from "date-fns";
 import { Plus } from "lucide-react";
-import FeedbackForm from "@/components/Leads/FeedbackForm";
+import FeedbackForm from "@/components/project-manager/Feedbackform";
+
 
 type ViewType = "list" | "form" | "details";
 

@@ -76,7 +76,7 @@ const getNavigationItems = (role: AllowedRole): NavigationItem[] => {
     ],
     "Projects Manager": [
       { icon: Home, label: "Dashboard", href: roleBasePath },
-      { icon: FolderOpen, label: "Projects", href: `${roleBasePath}/projects` },
+      { icon: FolderOpen, label: "Allocation", href: `${roleBasePath}/allocation` },
        {
         icon: Users,
         label: "Helpdesk",

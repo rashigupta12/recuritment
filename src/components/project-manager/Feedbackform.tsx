@@ -21,7 +21,7 @@ interface ImageItem {
 
 // Define Zod schema for validation
 const feedbackSchema = z.object({
-  module: z.enum(["Dashboard", "Leads","Customers"]),
+  module: z.enum(["Dashboard", "Allocation",]),
   description: z.string().min(1, "Description is required"),
   issue_type: z.enum(["General Feedback", "Bug Report", "Feature Request"]),
   type: z.enum(["Incident", "Feedback"]),
@@ -157,9 +157,9 @@ const FeedbackForm: React.FC<{
                 disabled={isSubmitting}
               >
                 <option value="Dashboard">Dashboard</option>
-                <option value="Leads">Leads</option>
-                <option value="Customers">Customers</option>
-              
+                <option value="Allocation">Allocation</option>
+
+                
               </select>
               {errors.module && (
                 <p className="text-red-600 text-xs">{errors.module.message}</p>
