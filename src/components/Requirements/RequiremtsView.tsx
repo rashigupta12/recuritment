@@ -804,16 +804,7 @@ const StaffingPlansTable: React.FC = () => {
           filterConfig={filterConfig}
           onAddButton={handleAddbutton}
         />
-        <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
-          <div>
-            <p className="text-gray-600 mt-1">
-              Manage and track all staffing requirements
-            </p>
-          </div>
-          <div className="flex items-center gap-3 flex-wrap justify-end">
-            
-          </div>
-        </div>
+        
 
         {isLoading ? (
           <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-12 text-center">
