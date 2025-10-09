@@ -149,20 +149,19 @@ const handleCreateContract = useCallback(async (lead: any) => {
             </div>
 
             {/* Filters Button */}
-            <Button className="flex items-center gap-2  transition-colors "  variant="outline"
+            {/* <Button className="flex items-center gap-2  transition-colors "  variant="outline"
               size="icon">
               <Filter className="w-5 h-5" />
-              {/* <span className="text-sm font-medium">Filters</span> */}
-            </Button>
+            </Button> */}
 
             {/* Refresh Button */}
-            <Button
+            {/* <Button
               variant="outline"
               size="icon"
               className="h-10 w-10 flex-shrink-0"
             >
               <RefreshCw className="w-4 h-4" />
-            </Button>
+            </Button> */}
           </div>
 </div>
 
