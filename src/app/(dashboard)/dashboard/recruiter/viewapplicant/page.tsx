@@ -216,50 +216,58 @@ export default function ViewApplicantPage() {
 
     checkAuthAndFetchApplicants();
   }, [router, statusParam]);
+  // Add this useEffect after your existing useEffects
 
-  const handleFilterChange = (newFilters: FilterState) => {
-    setFilters(newFilters);
+  // Add this new useEffect to handle filtering whenever applicants, searchQuery, or filters change
+useEffect(() => {
+  let filtered = applicants;
 
-    let filtered = applicants;
+  // Search filter
+  if (searchQuery.trim()) {
+    const query = searchQuery.toLowerCase().trim();
+    filtered = filtered.filter(
+      (applicant) =>
+        applicant.applicant_name?.toLowerCase().includes(query) ||
+        applicant.email_id?.toLowerCase().includes(query) ||
+        applicant.job_title?.toLowerCase().includes(query) ||
+        applicant.designation?.toLowerCase().includes(query)
+    );
+  }
 
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
-      filtered = filtered.filter(
-        (applicant) =>
-          applicant.applicant_name?.toLowerCase().includes(query) ||
-          applicant.email_id?.toLowerCase().includes(query) ||
-          applicant.job_title?.toLowerCase().includes(query) ||
-          applicant.designation?.toLowerCase().includes(query)
-      );
-    }
+  // Job titles filter
+  if (filters.jobTitles.length > 0) {
+    filtered = filtered.filter((applicant) =>
+      applicant.designation && filters.jobTitles.includes(applicant.designation)
+    );
+  }
 
-    if (newFilters.jobTitles.length > 0) {
-      filtered = filtered.filter((applicant) =>
-        applicant.designation && newFilters.jobTitles.includes(applicant.designation)
-      );
-    }
+  // Clients filter
+  if (filters.clients.length > 0) {
+    filtered = filtered.filter((applicant) =>
+      applicant.custom_company_name && filters.clients.includes(applicant.custom_company_name)
+    );
+  }
 
-    if (newFilters.clients.length > 0) {
-      filtered = filtered.filter((applicant) =>
-        applicant.custom_company_name && newFilters.clients.includes(applicant.custom_company_name)
-      );
-    }
+  // Status filter
+  if (filters.status.length > 0) {
+    filtered = filtered.filter((applicant) =>
+      applicant.status && filters.status.includes(applicant.status)
+    );
+  }
 
-    if (newFilters.status.length > 0) {
-      filtered = filtered.filter((applicant) =>
-        applicant.status && newFilters.status.includes(applicant.status)
-      );
-    }
-
-    setFilteredApplicants(filtered);
-  };
+  setFilteredApplicants(filtered);
+}, [applicants, searchQuery, filters]); // Run whenever any of these change
+ const handleFilterChange = (newFilters: FilterState) => {
+  setFilters(newFilters);
+  // The useEffect above will automatically handle the filtering
+};
 
   const handleRefresh = async () => {
     if (!userEmail) return;
     try {
       const detailedApplicants = await fetchApplicantsData(userEmail);
       setApplicants(detailedApplicants);
-      setFilteredApplicants(detailedApplicants);
+      // setFilteredApplicants(detailedApplicants);
     } catch (err) {
       console.error("Refresh error:", err);
       toast.error("Failed to refresh applicants.");

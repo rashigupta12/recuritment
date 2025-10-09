@@ -9,9 +9,9 @@ import { LoadingState } from "../Leads/LoadingState";
 import { LeadsMobileView } from "../Leads/MobileView";
 import { useRouter } from "next/navigation";
 import { LeadsTable } from "./Table";
-import { Button } from "../ui/button";
-import { Download, Filter, RefreshCw } from "lucide-react";
-import { SheetTitle } from "../ui/sheet";
+// import { TodosHeader } from "@/components/recruiter/Header";
+import { Building2, User, Bookmark } from "lucide-react";
+import { TodosHeader } from "../recruiter/TodoHeader";
 
 interface CustomerDetails {
   name: string;
@@ -23,6 +23,29 @@ interface CustomerDetails {
   website: string;
 }
 
+interface FilterState {
+  departments: string[];
+  assignedBy: string[];
+  clients: string[];
+  locations: string[];
+  jobTitles: string[];
+  status: string[];
+  dateRange: "all" | "today" | "week" | "month";
+  vacancies: "all" | "single" | "multiple";
+}
+
+interface FilterConfig {
+  id: string;
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+  options: string[];
+  searchKey?: string;
+  alwaysShowOptions?: boolean;
+  type?: "checkbox" | "radio";
+  optionLabels?: Record<string, string>;
+  showInitialOptions?: boolean;
+}
+
 const ContractLeads = () => {
   const { leads, setLeads, loading, setLoading } = useLeadStore();
   const [searchQuery, setSearchQuery] = useState("");
@@ -31,16 +54,23 @@ const ContractLeads = () => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const { user } = useAuth();
   const router = useRouter();
+  const [filters, setFilters] = useState<FilterState>({
+    departments: [],
+    assignedBy: [],
+    clients: [], // Maps to companies
+    locations: [],
+    jobTitles: [], // Maps to contacts
+    status: [], // Maps to stage
+    dateRange: "all",
+    vacancies: "all",
+  });
 
   // Optimized function to fetch contract leads
   const fetchLeads = useCallback(
     async (email: string) => {
       try {
         setLoading(true);
-
-        // Single API call to get customers with contract-ready leads
         const response = await frappeAPI.getContractReadyLeadsRecuiter(email);
-
         if (response.data && Array.isArray(response.data)) {
           setLeads(response.data);
           console.log("Fetched contract leads:", response.data);
@@ -63,21 +93,125 @@ const ContractLeads = () => {
     fetchLeads(user.email);
   }, [user, fetchLeads]);
 
-  // Memoized filtered leads for better performance
-  const filteredLeads = useMemo(() => {
-    if (!searchQuery) return leads;
+  // Extract unique values for filters
+  const uniqueCompanies = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          leads
+            .map((lead) => lead.company_name)
+            .filter((name): name is string => !!name)
+        )
+      ),
+    [leads]
+  );
 
-    const searchLower = searchQuery.toLowerCase();
-    return leads.filter((lead) => {
-      return (
-        (lead.custom_full_name || "").toLowerCase().includes(searchLower) ||
-        (lead.company_name || "").toLowerCase().includes(searchLower) ||
-        (lead.custom_email_address || "").toLowerCase().includes(searchLower) ||
-        (lead.industry || "").toLowerCase().includes(searchLower) ||
-        (lead.city || "").toLowerCase().includes(searchLower)
+  const uniqueContacts = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          leads
+            .map((lead) => lead.custom_full_name || lead.lead_name)
+            .filter((name): name is string => !!name)
+        )
+      ),
+    [leads]
+  );
+
+  const uniqueStages = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          leads
+            .map((lead) => lead.status)
+            .filter((status): status is string => !!status)
+        )
+      ),
+    [leads]
+  );
+
+  // Define filter configuration for Header
+  const filterConfig: FilterConfig[] = useMemo(
+    () => [
+      {
+        id: "clients", // Maps to companies
+        title: "Company",
+        icon: Building2,
+        options: uniqueCompanies,
+        searchKey: "clients",
+        showInitialOptions: false, // Changed to false
+        type: "checkbox",
+      },
+      {
+        id: "jobTitles", // Maps to contacts
+        title: "Contact",
+        icon: User,
+        options: uniqueContacts,
+        searchKey: "jobTitles",
+        showInitialOptions: false, // Changed to false
+        type: "checkbox",
+      },
+      {
+        id: "status", // Maps to stage
+        title: "Stage",
+        icon: Bookmark,
+        options: uniqueStages,
+        searchKey: "status",
+        showInitialOptions: true, // Unchanged
+        type: "checkbox",
+      },
+    ],
+    [uniqueCompanies, uniqueContacts, uniqueStages]
+  );
+
+  // Handle filter changes
+  const handleFilterChange = useCallback(
+    (newFilters: FilterState) => {
+      setFilters(newFilters);
+    },
+    []
+  );
+
+  // Memoized filtered leads
+  const filteredLeads = useMemo(() => {
+    let filtered = leads;
+
+    // Apply search query
+    if (searchQuery.trim()) {
+      const searchLower = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter((lead) =>
+        [
+          lead.custom_full_name || "",
+          lead.company_name || "",
+          lead.custom_email_address || "",
+          lead.industry || "",
+          lead.city || "",
+        ].some((field) => field.toLowerCase().includes(searchLower))
       );
-    });
-  }, [leads, searchQuery]);
+    }
+
+    // Apply filters
+    if (filters.clients.length > 0) {
+      filtered = filtered.filter(
+        (lead) =>
+          lead.company_name && filters.clients.includes(lead.company_name)
+      );
+    }
+    if (filters.jobTitles.length > 0) {
+      filtered = filtered.filter((lead) => {
+        const contactName = lead.custom_full_name || lead.lead_name;
+        return contactName && filters.jobTitles.includes(contactName);
+      });
+    }
+    if (filters.status.length > 0) {
+      filtered = filtered.filter(
+        (lead) => lead.status && filters.status.includes(lead.status)
+      );
+    }
+
+    console.log("Filtered Leads:", filtered);
+    return filtered;
+  }, [leads, searchQuery, filters]);
 
   const handleCloseModal = useCallback(() => {
     setShowModal(false);
@@ -111,6 +245,8 @@ const ContractLeads = () => {
     setShowConfirmation(false);
   }, []);
 
+  
+
   // Render loading state
   if (loading) {
     return <LoadingState />;
@@ -119,60 +255,28 @@ const ContractLeads = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="w-full mx-auto py-2">
-        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-          {/* Left: Header */}
-          <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
-
-          {/* Right: Search + Filters + Refresh */}
-          <div className="flex items-center gap-3 flex-wrap justify-end">
-            {/* Search Bar */}
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search leads by name, company, email, industry, or city..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg
-                  className="h-5 w-5 text-gray-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
-              </div>
-            </div>
-
-            {/* Filters Button */}
-            <Button className="flex items-center gap-2  transition-colors "  variant="outline"
-              size="icon">
-              <Filter className="w-5 h-5" />
-              {/* <span className="text-sm font-medium">Filters</span> */}
-            </Button>
-
-            {/* Refresh Button */}
-            <Button
-              variant="outline"
-              size="icon"
-              className="h-10 w-10 flex-shrink-0"
-            >
-              <RefreshCw className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
+        <TodosHeader
+          searchQuery={searchQuery}
+          onSearchChange={(value) => {
+            console.log("Search Query Updated:", value);
+            setSearchQuery(value);
+          }}
+          onRefresh={() => fetchLeads(user?.email || "")}
+          totalJobs={leads.length}
+          filteredJobs={filteredLeads.length}
+          uniqueClients={uniqueCompanies}
+          uniqueJobTitles={uniqueContacts}
+          uniqueStatus={uniqueStages}
+          onFilterChange={handleFilterChange}
+          filterConfig={filterConfig}
+          title="Customers"
+          
+        />
 
         {/* Desktop Table View */}
         {filteredLeads.length > 0 ? (
           <>
-            <div className="hidden lg:block">
+            <div className="hidden lg:block mt-4">
               <LeadsTable
                 leads={filteredLeads}
                 onViewLead={handleViewLead}
@@ -191,13 +295,19 @@ const ContractLeads = () => {
         ) : (
           <div className="text-center py-12">
             <div className="text-gray-500 text-lg">
-              {searchQuery
+              {searchQuery ||
+              filters.clients.length > 0 ||
+              filters.jobTitles.length > 0 ||
+              filters.status.length > 0
                 ? "No matching customers found"
                 : "No customers found"}
             </div>
             <div className="text-gray-400 text-sm mt-2">
-              {searchQuery
-                ? "Try adjusting your search terms"
+              {searchQuery ||
+              filters.clients.length > 0 ||
+              filters.jobTitles.length > 0 ||
+              filters.status.length > 0
+                ? "Try adjusting your search terms or filters"
                 : "No contract-ready leads are available at the moment."}
             </div>
           </div>
@@ -217,8 +327,7 @@ const ContractLeads = () => {
               Confirm Navigation
             </h3>
             <p className="text-sm text-gray-500 mb-4">
-              Are you sure you want to go back? Any unsaved changes will be
-              lost.
+              Are you sure you want to go back? Any unsaved changes will be lost.
             </p>
             <div className="flex space-x-3">
               <button

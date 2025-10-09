@@ -6,7 +6,7 @@ import { frappeAPI } from "@/lib/api/frappeClient";
 import { useEffect, useState, useMemo } from "react";
 import { LoadingState } from "./LoadingState";
 import { TodosTable } from "./TodosTable";
-import { Calendar, Briefcase, MapPin } from "lucide-react";
+import { Calendar, Briefcase, MapPin, Award } from "lucide-react";
 import { TodosHeader } from "./TodoHeader";
 
 
@@ -114,6 +114,16 @@ const TodosManagement = () => {
     const match = description?.match(/YOUR ALLOCATED POSITIONS:\s*(\d+)/i);
     return match ? parseInt(match[1]) : 0;
   };
+  const uniqueStatus = [
+    "Tagged",
+    "Shortlisted",
+    "Assessment",
+    "Interview",
+    "Interview Reject",
+    "Offered",
+    "Offer Drop",
+    "Joined",
+  ];
 
   // Filter todos based on search query AND filters
   const filteredTodos = useMemo(() => {
@@ -244,7 +254,17 @@ const TodosManagement = () => {
       searchKey: 'jobTitles',
       showInitialOptions: false,
     },
+    {
+          id: 'status',
+          title: 'Status',
+          icon: Award,
+          options: uniqueStatus,
+          searchKey: 'status',
+          alwaysShowOptions: true,
+          showInitialOptions: true,
+        },
   ];
+  
 
   // Render loading state
   if (loading) {
@@ -263,6 +283,7 @@ const TodosManagement = () => {
         uniqueAssigners={uniqueAssigners}
         uniqueLocations={uniqueLocations}
         uniqueJobTitles={uniqueJobTitles}
+        uniqueStatus={uniqueStatus}
         onFilterChange={handleFilterChange}
         
         filterConfig={filterConfig}
