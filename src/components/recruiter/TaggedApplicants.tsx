@@ -33,6 +33,8 @@ interface JobApplicant {
     year_of_passing: number;
     percentagecgpa: number;
   }>;
+  custom_offered_salary?: string;
+  custom_target_start_date?: string;
 }
 
 interface Props {
@@ -58,13 +60,19 @@ interface AssessmentResponse {
   };
 }
 
+interface UpdateData {
+  status: string;
+  custom_offered_salary?: string;
+  custom_target_start_date?: string;
+}
+
 export default function TaggedApplicants({
   jobId,
   job_title,
   ownerEmail,
   todoData,
   refreshTrigger,
-  onRefresh
+  onRefresh,
 }: Props) {
   const [applicants, setApplicants] = useState<JobApplicant[]>([]);
   const [filteredApplicants, setFilteredApplicants] = useState<JobApplicant[]>([]);
@@ -74,6 +82,7 @@ export default function TaggedApplicants({
   const [showEmailPopup, setShowEmailPopup] = useState<boolean>(false);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState<boolean>(false);
   const [isAssessmentModalOpen, setIsAssessmentModalOpen] = useState<boolean>(false);
+  const [isOfferModalOpen, setIsOfferModalOpen] = useState<boolean>(false); // New state for Offer modal
   const [selectedStatus, setSelectedStatus] = useState<string>("");
   const [modalError, setModalError] = useState<string | null>(null);
   const [assessmentError, setAssessmentError] = useState<string | null>(null);
@@ -82,43 +91,37 @@ export default function TaggedApplicants({
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [refreshKey, setRefreshKey] = useState<number>(0);
   const [showDowngradeWarning, setShowDowngradeWarning] = useState<boolean>(false);
-  const [downgradeInfo, setDowngradeInfo] = useState<{from: string, to: string} | null>(null);
+  const [downgradeInfo, setDowngradeInfo] = useState<{ from: string; to: string } | null>(null);
+  const [offeredSalary, setOfferedSalary] = useState<string>("");
+  const [targetStartDate, setTargetStartDate] = useState<string>("");
   const router = useRouter();
   const [expiryDate, setExpiryDate] = useState<string>("");
 
   // Auto-dismiss error messages after 3 seconds
   useEffect(() => {
     if (error) {
-      const timer = setTimeout(() => {
-        setError(null);
-      }, 5000);
+      const timer = setTimeout(() => setError(null), 5000);
       return () => clearTimeout(timer);
     }
   }, [error]);
 
   useEffect(() => {
     if (modalError) {
-      const timer = setTimeout(() => {
-        setModalError(null);
-      }, 5000);
+      const timer = setTimeout(() => setModalError(null), 5000);
       return () => clearTimeout(timer);
     }
   }, [modalError]);
 
   useEffect(() => {
     if (assessmentError) {
-      const timer = setTimeout(() => {
-        setAssessmentError(null);
-      }, 5000);
+      const timer = setTimeout(() => setAssessmentError(null), 5000);
       return () => clearTimeout(timer);
     }
   }, [assessmentError]);
 
   useEffect(() => {
     if (assessmentSuccess) {
-      const timer = setTimeout(() => {
-        setAssessmentSuccess(null);
-      }, 3000);
+      const timer = setTimeout(() => setAssessmentSuccess(null), 3000);
       return () => clearTimeout(timer);
     }
   }, [assessmentSuccess]);
@@ -139,15 +142,15 @@ export default function TaggedApplicants({
   // Helper function to get status hierarchy level
   const getStatusLevel = (status: string): number => {
     const statusLevels: { [key: string]: number } = {
-      "open": 0,
-      "tagged": 1,
-      "shortlisted": 2,
-      "assessment": 3,
-      "interview": 4,
+      open: 0,
+      tagged: 1,
+      shortlisted: 2,
+      assessment: 3,
+      interview: 4,
       "interview reject": -1,
-      "offered": 5,
+      offered: 5,
       "offer drop": -1,
-      "joined": 6
+      joined: 6,
     };
     return statusLevels[status.toLowerCase()] ?? 0;
   };
@@ -156,63 +159,43 @@ export default function TaggedApplicants({
   const isStatusDowngrade = (currentStatus: string, newStatus: string): boolean => {
     const currentLevel = getStatusLevel(currentStatus);
     const newLevel = getStatusLevel(newStatus);
-    
-    // Ignore negative levels (reject/drop states)
     if (currentLevel === -1 || newLevel === -1) return false;
-    
     return newLevel < currentLevel;
   };
 
   const handleDeleteApplicant = async (applicant: JobApplicant) => {
-    const canDelete = ['tagged', 'open'].includes(applicant.status?.toLowerCase() || '');
-
+    const canDelete = ["tagged", "open"].includes(applicant.status?.toLowerCase() || "");
     if (!canDelete) {
       toast.error('Can only delete applicants with "Tagged" or "Open" status');
       return;
     }
-
     if (!confirm(`Are you sure you want to delete ${applicant.applicant_name || applicant.name}?`)) {
       return;
     }
-
     try {
       setLoading(true);
       await frappeAPI.deleteApplicant(applicant.name);
-
       toast.success(`${applicant.applicant_name || applicant.name} deleted successfully`);
-
-      // Remove from selected applicants if present
-      setSelectedApplicants(prev => prev.filter(app => app.name !== applicant.name));
-
-      // Trigger refresh
+      setSelectedApplicants((prev) => prev.filter((app) => app.name !== applicant.name));
       setRefreshKey((prev) => prev + 1);
-      if (onRefresh) {
-        onRefresh();
-      } else {
-        // Fallback: increment local refresh key
-        setRefreshKey(prev => prev + 1);
-      }
-      
+      if (onRefresh) onRefresh();
       toast.success(`${applicant.applicant_name || applicant.name} deleted successfully`);
     } catch (err: any) {
-      console.error('Delete error:', err);
-      let errorMessage = 'Failed to delete applicant';
-
+      console.error("Delete error:", err);
+      let errorMessage = "Failed to delete applicant";
       if (err.response?.status === 404) {
-        errorMessage = 'Applicant not found';
+        errorMessage = "Applicant not found";
       } else if (err.response?.status === 403) {
-        errorMessage = 'You do not have permission to delete this applicant';
+        errorMessage = "You do not have permission to delete this applicant";
       } else if (err.response?.data?.message) {
         errorMessage = err.response.data.message;
       }
-
       toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  // Handler for select all
   const handleSelectAll = () => {
     if (selectedApplicants.length === applicants.length) {
       setSelectedApplicants([]);
@@ -221,10 +204,8 @@ export default function TaggedApplicants({
     }
   };
 
-  // Handle search filter
   useEffect(() => {
     let filtered = applicants;
-
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
@@ -234,33 +215,28 @@ export default function TaggedApplicants({
           applicant.job_title?.toLowerCase().includes(query)
       );
     }
-
     setFilteredApplicants(filtered);
   }, [applicants, searchQuery]);
 
   useEffect(() => {
     const fetchApplicants = async () => {
       if (!jobId || !ownerEmail) {
-        console.log('❌ Missing required data:', { jobId, ownerEmail });
+        console.log("❌ Missing required data:", { jobId, ownerEmail });
         setLoading(false);
         setError("Job ID or owner email not provided");
         return;
       }
-
       try {
         setLoading(true);
-        console.log('🔄 Fetching applicants - refreshTrigger:', refreshTrigger);
-
+        console.log("🔄 Fetching applicants - refreshTrigger:", refreshTrigger);
         const response: any = await frappeAPI.getTaggedApplicantsByJobId(jobId, ownerEmail);
         const applicantNames = response.data || [];
-
         if (applicantNames.length === 0) {
           setApplicants([]);
           setFilteredApplicants([]);
           setLoading(false);
           return;
         }
-
         const applicantsPromises = applicantNames.map(async (applicant: any) => {
           try {
             const applicantDetail = await frappeAPI.getApplicantBYId(applicant.name);
@@ -270,14 +246,11 @@ export default function TaggedApplicants({
             return null;
           }
         });
-
         const applicantsData = await Promise.all(applicantsPromises);
-        const validApplicants = applicantsData.filter(applicant => applicant !== null);
-
+        const validApplicants = applicantsData.filter((applicant) => applicant !== null);
         setApplicants(validApplicants);
         setFilteredApplicants(validApplicants);
         setError(null);
-
       } catch (err: any) {
         console.error("❌ Error in fetchApplicants:", err);
         setError("Failed to fetch applicants. Please try again later.");
@@ -287,11 +260,9 @@ export default function TaggedApplicants({
         setLoading(false);
       }
     };
-
     fetchApplicants();
   }, [jobId, ownerEmail, refreshTrigger]);
 
-  // Handler to open the status update modal
   const handleOpenStatusModal = () => {
     if (selectedApplicants.length === 0) {
       toast.error("Please select at least one applicant.");
@@ -302,17 +273,23 @@ export default function TaggedApplicants({
     setModalError(null);
   };
 
-  // Handler to close the status modal
   const handleCloseStatusModal = () => {
     setIsStatusModalOpen(false);
     setSelectedStatus("");
     setModalError(null);
   };
 
-  // Handler to close the assessment modal
   const handleCloseAssessmentModal = () => {
     setIsAssessmentModalOpen(false);
     setTestLink("");
+    setExpiryDate("");
+    setModalError(null);
+  };
+
+  const handleCloseOfferModal = () => {
+    setIsOfferModalOpen(false);
+    setOfferedSalary("");
+    setTargetStartDate("");
     setModalError(null);
   };
 
@@ -321,7 +298,6 @@ export default function TaggedApplicants({
       setModalError("Please select a status.");
       return;
     }
-    
     if (selectedStatus === "Assessment") {
       const allShortlisted = selectedApplicants.every(
         (applicant) => applicant.status?.toLowerCase() === "shortlisted"
@@ -334,53 +310,118 @@ export default function TaggedApplicants({
       setIsAssessmentModalOpen(true);
       return;
     }
-    
-    // Check if any selected applicant is being downgraded
-    const downgrades = selectedApplicants.filter(applicant => 
-      applicant.status && isStatusDowngrade(applicant.status, selectedStatus)
+    if (selectedStatus === "Offered") {
+      setIsStatusModalOpen(false);
+      setIsOfferModalOpen(true); // Open Offer Details Modal
+      return;
+    }
+    const downgrades = selectedApplicants.filter(
+      (applicant) => applicant.status && isStatusDowngrade(applicant.status, selectedStatus)
     );
-    
     if (downgrades.length > 0) {
-      // Show warning popup
       const firstDowngrade = downgrades[0];
-      setDowngradeInfo({
-        from: firstDowngrade.status || "",
-        to: selectedStatus
-      });
+      setDowngradeInfo({ from: firstDowngrade.status || "", to: selectedStatus });
       setShowDowngradeWarning(true);
     } else {
-      // No downgrades, proceed directly
       handleConfirmStatusChange();
     }
   };
 
-  // Handler for starting assessment
+  const handleConfirmOfferDetails = async () => {
+    if (!offeredSalary.trim() || !targetStartDate.trim()) {
+      setModalError("Please fill offered salary and target start date.");
+      return;
+    }
+    try {
+      setLoading(true);
+      const failedUpdates: string[] = [];
+      for (const applicant of selectedApplicants) {
+        const name = applicant.name;
+        if (!name) {
+          console.warn("Skipping update: name is undefined or empty");
+          failedUpdates.push("Unknown (missing name)");
+          continue;
+        }
+        try {
+          const updateData: UpdateData = {
+            status: "Offered",
+            custom_offered_salary: offeredSalary,
+            custom_target_start_date: targetStartDate,
+          };
+          await frappeAPI.updateApplicantStatus(name, updateData);
+        } catch (err: any) {
+          console.error(`Failed to update status for ${name}:`, err);
+          if (err?.exc_type === "DoesNotExistError" || err.response?.status === 404) {
+            failedUpdates.push(name);
+          } else {
+            throw err;
+          }
+        }
+      }
+      const response: any = await frappeAPI.getTaggedApplicantsByJobId(jobId, ownerEmail);
+      const applicantNames = response.data || [];
+      const applicantsPromises = applicantNames.map(async (applicant: any) => {
+        try {
+          const applicantDetail = await frappeAPI.getApplicantBYId(applicant.name);
+          return applicantDetail.data;
+        } catch (err) {
+          console.error(`Error fetching details for ${applicant.name}:`, err);
+          return { name: applicant.name, email_id: applicant.email_id || "Not available" };
+        }
+      });
+      const applicantsData = await Promise.all(applicantsPromises);
+      setApplicants(applicantsData.filter((applicant) => applicant !== null));
+      setFilteredApplicants(applicantsData.filter((applicant) => applicant !== null));
+      setSelectedApplicants([]);
+      setOfferedSalary("");
+      setTargetStartDate("");
+      setIsOfferModalOpen(false);
+      setRefreshKey((prev) => prev + 1);
+      if (failedUpdates.length > 0) {
+        toast.warning(
+          `Status updated for some applicants. Failed for: ${failedUpdates.join(", ")}. Applicant records may not exist or the endpoint may be incorrect.`
+        );
+      } else {
+        toast.success("Applicant status updated successfully.");
+      }
+    } catch (err: any) {
+      console.error("Status update error:", err);
+      let errorMessage = "Failed to update applicant statuses.";
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        errorMessage = "Session expired or insufficient permissions. Please try again.";
+        router.push("/login");
+      } else if (err.response?.status === 404 || err?.exc_type === "DoesNotExistError") {
+        errorMessage = "Job Applicant resource not found. Please verify the API endpoint or contact support.";
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      }
+      toast.error(errorMessage);
+      setIsOfferModalOpen(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleStartAssessment = async () => {
     if (!expiryDate || !testLink) {
-  setModalError("Please fill in all assessment details (Expiry Date and Test Link).");
-  return;
-}
-
+      setModalError("Please fill in all assessment details (Expiry Date and Test Link).");
+      return;
+    }
     try {
       setAssessmentError(null);
       setAssessmentSuccess(null);
-
-     const currentDate = new Date().toISOString().split('T')[0];
-const payload = {
-  applicants: selectedApplicants.map((app) => app.name),
-  scheduled_on: currentDate,
-  custom_expiry_date: expiryDate,
-  assessment_link: testLink,
-};
-
+      const currentDate = new Date().toISOString().split("T")[0];
+      const payload = {
+        applicants: selectedApplicants.map((app) => app.name),
+        scheduled_on: currentDate,
+        custom_expiry_date: expiryDate,
+        assessment_link: testLink,
+      };
       const response = await frappeAPI.createbulkAssessment(payload);
-
       console.log("API Response:", response);
-
       if (!response) {
         throw new Error("No response received from the API.");
       }
-
       let assessmentIds: string;
       if (response.message?.created_assessments && Array.isArray(response.message.created_assessments)) {
         assessmentIds = response.message.created_assessments.join(", ");
@@ -393,23 +434,16 @@ const payload = {
       } else {
         throw new Error("Invalid response structure: Missing assessment ID(s).");
       }
-
-      // Update status to "Assessment Stage" for all selected applicants
       const statusUpdatePromises = selectedApplicants.map(async (applicant) => {
         try {
-          await frappeAPI.updateApplicantStatus(applicant.name, {
-            status: "Assessment",
-          });
+          await frappeAPI.updateApplicantStatus(applicant.name, { status: "Assessment" });
           console.log(`✅ Status updated to "Assessment" for ${applicant.name}`);
         } catch (err: any) {
           console.error(`❌ Failed to update status for ${applicant.name}:`, err);
           throw new Error(`Failed to update status for ${applicant.applicant_name || applicant.name}`);
         }
       });
-
       await Promise.all(statusUpdatePromises);
-
-      // Refresh applicants list
       const refreshResponse: any = await frappeAPI.getTaggedApplicantsByJobId(jobId, ownerEmail);
       const applicantNames = refreshResponse.data || [];
       const applicantsPromises = applicantNames.map(async (applicant: any) => {
@@ -418,23 +452,20 @@ const payload = {
           return applicantDetail.data;
         } catch (err) {
           console.error(`Error fetching details for ${applicant.name}:`, err);
-          return {
-            name: applicant.name,
-            email_id: applicant.email_id || "Not available",
-          };
+          return { name: applicant.name, email_id: applicant.email_id || "Not available" };
         }
       });
-
       const applicantsData = await Promise.all(applicantsPromises);
       setApplicants(applicantsData.filter((applicant) => applicant !== null));
       setFilteredApplicants(applicantsData.filter((applicant) => applicant !== null));
-
-      setAssessmentSuccess(`Assessment(s) created successfully with ID(s): ${assessmentIds}. Applicant status updated to "Assessment".`);
+      setAssessmentSuccess(
+        `Assessment(s) created successfully with ID(s): ${assessmentIds}. Applicant status updated to "Assessment".`
+      );
       toast.success(`Assessment created and status updated to "Assessment Stage" successfully!`);
-
       setIsAssessmentModalOpen(false);
       setSelectedApplicants([]);
       setTestLink("");
+      setExpiryDate("");
       setRefreshKey((prev) => prev + 1);
     } catch (err: any) {
       console.error("Assessment creation error:", {
@@ -464,7 +495,6 @@ const payload = {
     }
   };
 
-  // Helper function for status colors
   const getStatusColor = (status?: string) => {
     switch (status?.toLowerCase()) {
       case "open":
@@ -484,7 +514,6 @@ const payload = {
     }
   };
 
-  // Handler for confirming status change
   const handleConfirmStatusChange = async () => {
     if (!selectedStatus) {
       setModalError("Please select a status.");
@@ -495,7 +524,6 @@ const payload = {
       setIsStatusModalOpen(false);
       return;
     }
-
     try {
       setLoading(true);
       console.log("Selected applicants for status update:", selectedApplicants);
@@ -509,9 +537,8 @@ const payload = {
         }
         try {
           console.log(`Sending PUT request to update status for ${name} to ${selectedStatus}`);
-          await frappeAPI.updateApplicantStatus(name, {
-            status: selectedStatus,
-          });
+          const updateData: UpdateData = { status: selectedStatus };
+          await frappeAPI.updateApplicantStatus(name, updateData);
         } catch (err: any) {
           console.error(`Failed to update status for ${name}:`, err);
           if (err?.exc_type === "DoesNotExistError" || err.response?.status === 404) {
@@ -521,7 +548,6 @@ const payload = {
           }
         }
       }
-
       const response: any = await frappeAPI.getTaggedApplicantsByJobId(jobId, ownerEmail);
       const applicantNames = response.data || [];
       const applicantsPromises = applicantNames.map(async (applicant: any) => {
@@ -530,13 +556,9 @@ const payload = {
           return applicantDetail.data;
         } catch (err) {
           console.error(`Error fetching details for ${applicant.name}:`, err);
-          return {
-            name: applicant.name,
-            email_id: applicant.email_id || "Not available",
-          };
+          return { name: applicant.name, email_id: applicant.email_id || "Not available" };
         }
       });
-
       const applicantsData = await Promise.all(applicantsPromises);
       setApplicants(applicantsData.filter((applicant) => applicant !== null));
       setFilteredApplicants(applicantsData.filter((applicant) => applicant !== null));
@@ -544,9 +566,10 @@ const payload = {
       setSelectedStatus("");
       setIsStatusModalOpen(false);
       setRefreshKey((prev) => prev + 1);
-
       if (failedUpdates.length > 0) {
-        toast.warning(`Status updated for some applicants. Failed for: ${failedUpdates.join(", ")}. Applicant records may not exist or the endpoint may be incorrect.`);
+        toast.warning(
+          `Status updated for some applicants. Failed for: ${failedUpdates.join(", ")}. Applicant records may not exist or the endpoint may be incorrect.`
+        );
       } else {
         toast.success("Applicant status updated successfully.");
       }
@@ -572,9 +595,7 @@ const payload = {
     return (
       <div className="flex justify-center items-center py-8 bg-gray-50 min-h-[200px] rounded-lg">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-        <span className="ml-3 text-gray-700 font-medium text-lg">
-          Loading applicants...
-        </span>
+        <span className="ml-3 text-gray-700 font-medium text-lg">Loading applicants...</span>
       </div>
     );
   }
@@ -594,60 +615,47 @@ const payload = {
   if (!applicants.length) {
     return (
       <div className="bg-yellow-50 border pt-4 border-yellow-200 rounded-lg p-6 text-center shadow-sm">
-        <p className="text-yellow-800 font-semibold text-lg">
-          No applicants found for this job.
-        </p>
+        <p className="text-yellow-800 font-semibold text-lg">No applicants found for this job.</p>
       </div>
     );
   }
 
   return (
     <div className="bg-white shadow-lg border border-gray-200 rounded-xl pt-100 p-8 pt-4 max-w-7xl mx-auto">
-      {/* Header Section */}
       <div className="relative flex flex-row items-center gap-4 sm:flex-col sm:items-start">
-        
-          
-          {/* <p className="text-gray-500 text-md absolute right-0">
-            Total: {applicants.length} applicants
-            {selectedApplicants.length > 0 && ` | Selected: ${selectedApplicants.length}`}
-          </p> */}
-       
         <div className="flex justify-between items-center gap-80 w-full justsm:w-auto mb-4">
-          <h2 className="text-2xl font-bold text-gray-900">
-            All Applicants
-          </h2>
+          <h2 className="text-2xl font-bold text-gray-900">All Applicants</h2>
           <div className="flex gap-4">
-          <div className="relative w-full sm:w-80">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search by name, email, or job title..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm text-md bg-gray-50 hover:bg-white"
-            />
-          </div>
-          {selectedApplicants.length > 0 && (
-            <div className="flex justify-between gap-3 items-center flex-nowrap">
-              <button
-                onClick={() => setShowEmailPopup(true)}
-                className="px-3 py-3 text-white bg-green-600 rounded-lg text-md font-medium transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 whitespace-nowrap w-[120px]"
-              >
-                📧 Send ({selectedApplicants.length})
-              </button>
-              <button
-                onClick={handleOpenStatusModal}
-                className="px-2 py-3 text-white bg-blue-700 rounded-lg text-md font-medium transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 whitespace-nowrap w-[160px]"
-              >
-                Update Status ({selectedApplicants.length})
-              </button>
+            <div className="relative w-full sm:w-80">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search by name, email, or job title..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm text-md bg-gray-50 hover:bg-white"
+              />
             </div>
-          )}
+            {selectedApplicants.length > 0 && (
+              <div className="flex justify-between gap-3 items-center flex-nowrap">
+                <button
+                  onClick={() => setShowEmailPopup(true)}
+                  className="px-3 py-3 text-white bg-green-600 rounded-lg text-md font-medium transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 whitespace-nowrap w-[120px]"
+                >
+                  📧 Send ({selectedApplicants.length})
+                </button>
+                <button
+                  onClick={handleOpenStatusModal}
+                  className="px-2 py-3 text-white bg-blue-700 rounded-lg text-md font-medium transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 whitespace-nowrap w-[160px]"
+                >
+                  Update Status ({selectedApplicants.length})
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Error and Success Messages - Auto-dismissing */}
       {error && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg shadow-sm flex items-center gap-2">
           <AlertCircle className="h-5 w-5 text-red-600" />
@@ -676,7 +684,6 @@ const payload = {
         </div>
       )}
 
-      {/* Applicants Table */}
       <ApplicantsTable
         applicants={filteredApplicants}
         showCheckboxes={true}
@@ -687,7 +694,6 @@ const payload = {
         onDeleteApplicant={handleDeleteApplicant}
       />
 
-      {/* Email Sending Popup */}
       {showEmailPopup && (
         <EmailSendingPopup
           isOpen={showEmailPopup}
@@ -758,7 +764,6 @@ const payload = {
                 <option value="Joined" className="text-md">Joined</option>
               </select>
             </div>
-
             <div className="mb-6">
               <p className="text-gray-600 font-medium mb-2 text-md">
                 Selected Applicants ({selectedApplicants.length})
@@ -777,9 +782,7 @@ const payload = {
                         <p className="font-semibold text-gray-900 text-md">
                           {applicant.applicant_name || applicant.name}
                         </p>
-                        <p className="text-sm text-gray-500">
-                          {applicant.email_id}
-                        </p>
+                        <p className="text-sm text-gray-500">{applicant.email_id}</p>
                       </div>
                     </div>
                     {selectedStatus && (
@@ -846,21 +849,18 @@ const payload = {
             )}
             <div className="grid grid-cols-1 gap-4">
               <div>
-  <label className="block text-gray-700 font-semibold mb-2 text-md">
-    Expiry Date
-  </label>
-  <input
-    type="date"
-    value={expiryDate}
-    onChange={(e) => setExpiryDate(e.target.value)}
-    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition-all bg-gray-50 text-gray-900 text-md"
-    required
-  />
-</div>
+                <label className="block text-gray-700 font-semibold mb-2 text-md">
+                  Expiry Date
+                </label>
+                <input
+                  type="date"
+                  value={expiryDate}
+                  onChange={(e) => setExpiryDate(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition-all bg-gray-50 text-gray-900 text-md"
+                  required
+                />
+              </div>
               <div>
-                {/* <label className="block text-gray-700 font-semibold mb-2 text-md">
-                  Test Link
-                </label> */}
                 <input
                   type="url"
                   value={testLink}
@@ -891,6 +891,84 @@ const payload = {
         </div>
       )}
 
+      {/* Offer Details Modal */}
+      {isOfferModalOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="offer-modal-title"
+        >
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl transform transition-all duration-300 ease-in-out">
+            <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-3">
+              <h2
+                id="offer-modal-title"
+                className="text-xl font-bold text-gray-900 flex items-center gap-2"
+              >
+                <Award className="h-6 w-6 text-blue-600" />
+                Enter Offer Details
+              </h2>
+              <button
+                onClick={handleCloseOfferModal}
+                className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                aria-label="Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            {modalError && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
+                <AlertCircle className="h-4 w-4" />
+                <p className="text-md">{modalError}</p>
+              </div>
+            )}
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <label className="block text-gray-700 font-semibold mb-2 text-md">
+                  Offered Salary
+                </label>
+                <input
+                  type="text"
+                  value={offeredSalary}
+                  onChange={(e) => setOfferedSalary(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition-all bg-gray-50 text-gray-900 text-md"
+                  placeholder="Enter offered salary"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700 font-semibold mb-2 text-md">
+                  Target Start Date
+                </label>
+                <input
+                  type="date"
+                  value={targetStartDate}
+                  onChange={(e) => setTargetStartDate(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition-all bg-gray-50 text-gray-900 text-md"
+                  required
+                />
+              </div>
+            </div>
+            <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100 mt-4">
+              <button
+                onClick={handleCloseOfferModal}
+                className="px-5 py-2.5 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-all font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-gray-400 text-md"
+                aria-label="Cancel"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmOfferDetails}
+                className="px-5 py-2.5 text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-lg transition-all font-medium shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-md"
+                aria-label="Confirm offer details"
+              >
+                Confirm Offer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Downgrade Warning Modal */}
       {showDowngradeWarning && downgradeInfo && (
         <div
@@ -914,7 +992,6 @@ const payload = {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            
             <div className="mb-6">
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
                 <p className="text-gray-800 font-semibold mb-2">
@@ -933,12 +1010,10 @@ const payload = {
                   This action will move {selectedApplicants.length} applicant(s) backwards in the hiring process.
                 </p>
               </div>
-              
               <p className="text-gray-600 font-medium text-md">
                 Are you sure you want to proceed?
               </p>
             </div>
-            
             <div className="flex justify-end space-x-3 pt-3 border-t border-gray-100">
               <button
                 onClick={() => {

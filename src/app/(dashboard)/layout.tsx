@@ -67,11 +67,21 @@ const getNavigationItems = (role: AllowedRole): NavigationItem[] => {
       { icon: Home, label: "Dashboard", href: roleBasePath },
       { icon: Target, label: "Leads", href: `${roleBasePath}/leads` },
       { icon: Users, label: "Customers", href: `${roleBasePath}/contract` },
+       {
+        icon: Users,
+        label: "Helpdesk",
+        href: `${roleBasePath}/helpdesk`,
+      },
       
     ],
     "Projects Manager": [
       { icon: Home, label: "Dashboard", href: roleBasePath },
       { icon: FolderOpen, label: "Projects", href: `${roleBasePath}/projects` },
+       {
+        icon: Users,
+        label: "Helpdesk",
+        href: `${roleBasePath}/helpdesk`,
+      },
     ],
     "Projects User": [{ icon: Home, label: "Dashboard", href: roleBasePath }],
     "Delivery Manager": [
@@ -80,6 +90,12 @@ const getNavigationItems = (role: AllowedRole): NavigationItem[] => {
         icon: FolderOpen,
         label: "Deliveries",
         href: `${roleBasePath}/deliveries`,
+      },
+
+       {
+        icon: Users,
+        label: "Helpdesk",
+        href: `${roleBasePath}/helpdesk`,
       },
     ],
     Recruiter: [
@@ -695,7 +711,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                       </>
                     )}
 
-                    <DropdownMenuItem
+                    {/* <DropdownMenuItem
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
@@ -704,7 +720,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     >
                       <MessageCircle className="mr-2 h-4 w-4" />
                       <span>HelpDesk</span>
-                    </DropdownMenuItem>
+                    </DropdownMenuItem> */}
 
                     <DropdownMenuSeparator />
 

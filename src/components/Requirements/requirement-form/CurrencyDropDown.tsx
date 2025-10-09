@@ -1,7 +1,5 @@
-'use client'
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, ChevronDown, Check } from 'lucide-react';
-import { frappeAPI } from "@/lib/api/frappeClient";
 
 interface Currency {
   name: string;
@@ -60,33 +58,10 @@ const CurrencyDropdown: React.FC<CurrencyDropdownProps> = ({
     const fetchCurrencies = async () => {
       setIsLoading(true);
       try {
-        // const response = await frappeAPI.makeAuthenticatedRequest(
-        //   "GET",
-        //   "/resource/Currency?fields=[\"name\"]&limit_page_length=0&order_by=name"
-        // );
-
-        const combinedCurrencies = [
-            ...commonCurrencies,
-            // ...fetchedCurrencies.filter((curr: Currency) => !commonCurrencyNames.has(curr.name))
-          ];
-
-          setCurrencies(combinedCurrencies);
-        
-        // if (response.data) {
-          // Combine common currencies with fetched currencies, removing duplicates
-          const commonCurrencyNames = new Set(commonCurrencies.map(c => c.name));
-          // const fetchedCurrencies = response.data.map((curr: Currency) => ({
-          //   name: curr.name,
-          //   symbol: commonCurrencies.find(c => c.name === curr.name)?.symbol
-          // }));
-          
-          
-          
-          
-        // }
+        const combinedCurrencies = [...commonCurrencies];
+        setCurrencies(combinedCurrencies);
       } catch (error) {
         console.error('Error fetching currencies:', error);
-        // Fallback to common currencies if API fails
         setCurrencies(commonCurrencies);
       } finally {
         setIsLoading(false);
@@ -138,44 +113,28 @@ const CurrencyDropdown: React.FC<CurrencyDropdownProps> = ({
     currency.symbol?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // const getCurrencyDisplay = (currencyCode: string) => {
-  //   const currency = currencies.find(c => c.name === currencyCode);
-  //   if (currency) {
-  //     return currency.symbol ? `${currency.name} (${currency.symbol})` : currency.name;
-  //   }
-  //   return currencyCode;
-  // };
-
   const handleCurrencySelect = (currencyCode: string) => {
     onChange(currencyCode);
     setIsOpen(false);
     setSearchTerm('');
   };
 
-  // const getSymbolForCurrency = (currencyCode: string) => {
-  //   const currency = currencies.find(c => c.name === currencyCode);
-  //   return currency?.symbol || currencyCode;
-  // };
-
   return (
     <>
-      <div className="relative w-full ">
-     <button
-  ref={triggerRef}
-  type="button"
-  onClick={() => !disabled && setIsOpen(!isOpen)}
-  disabled={disabled}
-  className="px-2 py-1 text-md border border-gray-300 rounded  bg-gray-100 flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed w-14"
->
-  <span className="flex">
-    <span className='text-md'>{value || 'Select Currency'}</span>
-  </span>
-  <ChevronDown className={`h-3 w-3 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-</button>
-
+      <div className="relative">
+        <button
+          ref={triggerRef}
+          type="button"
+          onClick={() => !disabled && setIsOpen(!isOpen)}
+          disabled={disabled}
+          className="w-20 px-3 py-2 text-sm bg-white flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+        >
+          <span className="text-sm font-medium">{value || 'INR'}</span>
+          <ChevronDown className={`h-3 w-3 text-gray-400 ml-1 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        </button>
       </div>
 
-      {/* Dropdown Portal - Fixed positioning like MultiUserAssignment */}
+      {/* Dropdown Portal - Fixed positioning */}
       {isOpen && (
         <div 
           ref={dropdownRef} 
@@ -188,21 +147,6 @@ const CurrencyDropdown: React.FC<CurrencyDropdownProps> = ({
             maxHeight: '300px'
           }}
         >
-          {/* Search Header */}
-          {/* <div className="p-3 border-b">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search currencies..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:outline-none"
-                autoFocus
-              />
-            </div>
-          </div> */}
-
           {/* Currency List */}
           <div className="max-h-48 overflow-y-auto">
             {isLoading ? (
@@ -221,20 +165,10 @@ const CurrencyDropdown: React.FC<CurrencyDropdownProps> = ({
                     }`}
                   >
                     <div className="flex items-center space-x-2">
-                      {/* {currency.symbol && (
-                        <span className="font-medium text-gray-700 w-6 text-center">
-                          {currency.symbol}
-                        </span>
-                      )} */}
                       <div className="text-left">
                         <div className="text-sm font-medium text-gray-900">
                           {currency.name}
                         </div>
-                        {/* {currency.symbol && currency.name !== currency.symbol && (
-                          <div className="text-xs text-gray-500">
-                            {currency.symbol}
-                          </div>
-                        )} */}
                       </div>
                     </div>
                     {value === currency.name && (
@@ -246,30 +180,9 @@ const CurrencyDropdown: React.FC<CurrencyDropdownProps> = ({
             ) : (
               <div className="p-4 text-center">
                 <p className="text-sm text-gray-500">No currencies found</p>
-                <p className="text-xs text-gray-400 mt-1">
-                  {searchTerm ? `for "${searchTerm}"` : 'Try searching for a currency'}
-                </p>
               </div>
             )}
           </div>
-
-          {/* Footer with common currencies quick access */}
-          {/* {!searchTerm && (
-            <div className="border-t p-2">
-              <div className="text-xs text-gray-500 mb-1">Common Currencies</div>
-              <div className="flex flex-wrap gap-1">
-                {commonCurrencies.slice(0, 6).map((currency) => (
-                  <button
-                    key={currency.name}
-                    onClick={() => handleCurrencySelect(currency.name)}
-                    className="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded border transition-colors"
-                  >
-                    {currency.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )} */}
         </div>
       )}
     </>
