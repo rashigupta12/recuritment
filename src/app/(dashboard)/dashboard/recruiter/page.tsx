@@ -1,3 +1,4 @@
+
 /*eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
@@ -69,7 +70,7 @@ interface JobOpening {
   title: string;
   client: string;
   location: string;
-  status: "Open" | "Offered" | "Joined" | "Cancelled";
+  status: "Open" | "Closed" | "Cancelled";
   positions: number;
   createdDate: string;
 }
@@ -130,8 +131,40 @@ export default function RecruiterDashboard() {
 
   // Get clients from API data
   const clients = useMemo(() => {
-    if (!apiData?.jobs_opening_by_company?.jobs_by_company) return ["All"];
-    return ["All", ...Object.keys(apiData.jobs_opening_by_company.jobs_by_company)];
+    if (!apiData) return ["All"];
+    const clientsSet = new Set<string>();
+    
+    // Extract clients from all applicant data
+    const applicantKeys = [
+      'tagged_applicants_by_company',
+      'shortlisted_applicants_by_company',
+      'assessment_stage_applicants_by_company',
+      'interview_stage_applicants_by_company',
+      'interview_reject_applicants_by_company',
+      'offered_applicants_by_company',
+      'offer_drop_applicants_by_company',
+      'joined_applicants_by_company'
+    ];
+    
+    applicantKeys.forEach(key => {
+      const companies = apiData[key]?.applicants_by_company;
+      if (companies) {
+        Object.keys(companies).forEach(company => clientsSet.add(company));
+      }
+    });
+    
+    // Extract clients from job openings
+    if (apiData.jobs_opening_by_company?.jobs_by_status) {
+      Object.values(apiData.jobs_opening_by_company.jobs_by_status).forEach((jobs: any) => {
+        if (Array.isArray(jobs)) {
+          jobs.forEach(job => {
+            if (job.company) clientsSet.add(job.company);
+          });
+        }
+      });
+    }
+    
+    return ["All", ...Array.from(clientsSet).sort()];
   }, [apiData]);
 
   // Transform API data to match component structure
@@ -172,21 +205,24 @@ export default function RecruiterDashboard() {
   }, [apiData]);
 
   const transformedJobs = useMemo((): JobOpening[] => {
-    if (!apiData?.jobs_opening_by_company?.jobs_by_company) return [];
+    if (!apiData?.jobs_opening_by_company?.jobs_by_status) return [];
     const jobs: JobOpening[] = [];
-    Object.entries(apiData.jobs_opening_by_company.jobs_by_company).forEach(
-      ([company, jobTitles]: [string, any]) => {
-        (jobTitles || []).forEach((title: string, index: number) => {
-          jobs.push({
-            id: `${company}-${index}`,
-            title: title,
-            client: company,
-            location: "N/A",
-            status: "Open",
-            positions: 1,
-            createdDate: new Date().toISOString().split("T")[0],
+    
+    Object.entries(apiData.jobs_opening_by_company.jobs_by_status).forEach(
+      ([status, jobList]: [string, any]) => {
+        if (Array.isArray(jobList)) {
+          jobList.forEach((job: any) => {
+            jobs.push({
+              id: job.name,
+              title: job.job_title,
+              client: job.company,
+              location: "N/A",
+              status: status as JobOpening["status"],
+              positions: 1,
+              createdDate: job.creation ? new Date(job.creation).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
+            });
           });
-        });
+        }
       }
     );
     return jobs;
@@ -315,6 +351,7 @@ export default function RecruiterDashboard() {
     
     return normalizedTrends;
   }, [apiData, trendPeriod]);
+  
   const kpiMetrics = useMemo(() => {
     const metrics = apiData?.trends_data?.metrics || {};
     const total = metrics.totalApplicants || 0;
@@ -458,16 +495,15 @@ export default function RecruiterDashboard() {
       return acc;
     }, {} as Record<string, number>);
     return {
-      labels: ["Open", "Offered", "Joined", "Cancelled"],
+      labels: ["Open", "Closed", "Cancelled"],
       datasets: [
         {
           data: [
             statusCounts["Open"] || 0,
-            statusCounts["Offered"] || 0,
-            statusCounts["Joined"] || 0,
+            statusCounts["Closed"] || 0,
             statusCounts["Cancelled"] || 0,
           ],
-          backgroundColor: ["#6366F1", "#F59E0B", "#10B981", "#EF4444"],
+          backgroundColor: ["#6366F1", "#10B981", "#EF4444"],
           borderColor: "#FFFFFF",
           borderWidth: 2,
         },
@@ -584,25 +620,6 @@ export default function RecruiterDashboard() {
   );
 
   // Chart click handlers
-  // const handleJobStatusClick = (elements: any[]) => {
-  //   if (!elements.length) return;
-  //   const clickedIndex = elements[0].index;
-  //   const status = jobStatusData.labels[clickedIndex];
-  //   router.push(`/jobs/status/${status.toLowerCase()}`);
-  // };
-  // const handleCandidatePipelineClick = (elements: any[]) => {
-  //   if (!elements.length) return;
-  //   const datasetIndex = elements[0].datasetIndex;
-  //   const clientIndex = elements[0].index;
-  //   const client = candidatePipelineData.labels[clientIndex];
-  //   const status = candidatePipelineData.datasets[datasetIndex].label;
-  //   router.push(`/candidates?client=${client}&status=${status.toLowerCase()}`);
-  // };
-  // const chartHover = (event: ChartEvent, elements: ActiveElement[]) => {
-  //   const nativeEvent = event.native as unknown as MouseEvent;
-  //   const target = nativeEvent?.target as HTMLElement;
-  //   if (target) target.style.cursor = elements[0] ? "pointer" : "default";
-  // };
   const handleFunnelClick = (elements: any[]) => {
     if (!elements.length) return;
     const clickedIndex = elements[0].index;
@@ -642,76 +659,51 @@ export default function RecruiterDashboard() {
     <main className="min-h-screen bg-slate-50">
       <div className="w-full mx-auto space-y-4">
         {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-  <div>
-    <h1 className="text-2xl font-bold text-slate-800">
-      Recruiter Dashboard
-    </h1>
-    <p className="text-md text-slate-500 mt-0.5">
-      Monitor performance and track hiring progress
-    </p>
-  </div>
-  
-  <div className="flex flex-wrap items-center gap-3">
-    {/* Filters Section */}
-    <div className="flex items-center gap-3">
-      <div className="flex items-center gap-1.5">
-        <Filter className="h-4 w-4 text-slate-400" />
-        <span className="text-md font-medium text-slate-600">
-          Clients:
-        </span>
-      </div>
-      <select
-        ref={selectRef}
-        value={selectedClient}
-        onChange={(e) => setSelectedClient(e.target.value)}
-        style={{ width: selectWidth }}
-        className="px-3 py-1.5 border border-slate-200 rounded-lg text-md focus:outline-none focus:ring-1 focus:ring-indigo-400 text-slate-700 bg-white min-w-[150px] max-w-[150px] transition-all duration-200"
-      >
-        {clients.map((client) => (
-          <option key={client} value={client}>
-            {client}
-          </option>
-        ))}
-      </select>
-    </div>
-    
-    {/* Export Button */}
-    <button
-      type="button"
-      className="flex items-center justify-center gap-2 px-3 py-2 bg-white text-slate-700 rounded-lg shadow-sm border border-slate-200 hover:border-slate-300 transition-all text-md font-medium"
-      onClick={exportCSV}
-    >
-      <Download className="h-3.5 w-3.5" />
-      Export Data
-    </button>
-  </div>
-</div>
-
-        {/* Filters */}
-        {/* <section className="bg-white p-3 rounded-lg shadow-sm border border-slate-200">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-1.5">
-              <Filter className="h-4 w-4 text-slate-400" />
-              <span className="text-md font-medium text-slate-600">
-                Clients:
-              </span>
-            </div>
-            <select
-              ref={selectRef}
-              value={selectedClient}
-              onChange={(e) => setSelectedClient(e.target.value)}
-              style={{ width: selectWidth }}
-              className="px-3 py-1.5 border border-slate-200 rounded-lg text-md focus:outline-none focus:ring-1 focus:ring-indigo-400 text-slate-700 bg-white min-w-[150px] max-w-[150px] transition-all duration-200"
-            >
-              {clients.map((client) => (
-                <option key={client} value={client}>
-                  {client}
-                </option>
-              ))}
-            </select>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-800">
+              Recruiter Dashboard
+            </h1>
+            <p className="text-md text-slate-500 mt-0.5">
+              Monitor performance and track hiring progress
+            </p>
           </div>
-        </section> */}
+          
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Filters Section */}
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                <Filter className="h-4 w-4 text-slate-400" />
+                <span className="text-md font-medium text-slate-600">
+                  Clients:
+                </span>
+              </div>
+              <select
+                ref={selectRef}
+                value={selectedClient}
+                onChange={(e) => setSelectedClient(e.target.value)}
+                style={{ width: selectWidth }}
+                className="px-3 py-1.5 border border-slate-200 rounded-lg text-md focus:outline-none focus:ring-1 focus:ring-indigo-400 text-slate-700 bg-white min-w-[150px] max-w-[150px] transition-all duration-200"
+              >
+                {clients.map((client) => (
+                  <option key={client} value={client}>
+                    {client}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            {/* Export Button */}
+            <button
+              type="button"
+              className="flex items-center justify-center gap-2 px-3 py-2 bg-white text-slate-700 rounded-lg shadow-sm border border-slate-200 hover:border-slate-300 transition-all text-md font-medium"
+              onClick={exportCSV}
+            >
+              <Download className="h-3.5 w-3.5" />
+              Export Data
+            </button>
+          </div>
+        </div>
 
         {/* KPI Cards */}
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -789,34 +781,42 @@ export default function RecruiterDashboard() {
             </div>
             <div className="h-64 flex items-center justify-center cursor-pointer mt-2">
               <Doughnut
-                data={jobStatusData}
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: {
-                    datalabels: { display: false },
-                    tooltip: {
-                      callbacks: {
-                        label: (context) => {
-                          const dataset = context.dataset.data as number[];
-                          const total = dataset.reduce((acc, curr) => acc + curr, 0);
-                          const value = context.parsed;
-                          return `${context.label}: ${value}`;
-                        },
-                      },
-                    },
-                    legend: {
-                      position: "bottom",
-                      labels: {
-                        usePointStyle: true,
-                        pointStyle: "circle",
-                        font: { size: 14 },
-                        padding: 24,
-                      },
-                    },
-                  },
-                }}
-              />
+  data={{
+    ...jobStatusData,
+    datasets: jobStatusData.datasets.map((dataset) => ({
+      ...dataset,
+      borderWidth: 0, // 🔹 Removes partition lines
+      borderColor: "transparent", // Optional: Ensures no visible border
+    })),
+  }}
+  options={{
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      datalabels: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (context) => {
+            const dataset = context.dataset.data as number[];
+            const total = dataset.reduce((acc, curr) => acc + curr, 0);
+            const value = context.parsed;
+            return `${context.label}: ${value}`;
+          },
+        },
+      },
+      legend: {
+        position: "bottom",
+        labels: {
+          usePointStyle: true,
+          pointStyle: "circle",
+          font: { size: 14 },
+          padding: 24,
+        },
+      },
+    },
+  }}
+/>
+
             </div>
           </div>
         </section>

@@ -989,7 +989,7 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
       </div>
 
       {selectedContact && (
-        <div className="border border-primary/20 rounded-lg p-4 py-2 bg-primary/5 animate-in fade-in-50">
+        <div className="border  rounded-lg p-4 py-2  animate-in fade-in-50">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div>
