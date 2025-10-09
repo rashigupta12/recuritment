@@ -7,13 +7,19 @@ import {
   CheckCircle,
   ChevronDown,
   ChevronRight,
+  Clock,
   Edit,
   FileText,
+  IndianRupee,
   Loader2,
+  Mail,
+  MapPin,
+  Phone,
   Plus,
   Save,
   Trash2,
   Upload,
+  User,
   Users,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -178,12 +184,10 @@ type StaffingTableColumn =
   | "experience"
   | "location"
   | "employment_type"
-  // | "publish"
   | "upload"
   | "action";
 
 // Employment Type Dropdown Component with Search
-// Employment Type Dropdown Component with Search - FIXED VERSION
 const EmploymentTypeDropdown: React.FC<{
   value: string;
   onChange: (value: string) => void;
@@ -197,7 +201,6 @@ const EmploymentTypeDropdown: React.FC<{
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Fetch employment types on component mount
   useEffect(() => {
     const fetchEmploymentTypes = async () => {
       setIsLoading(true);
@@ -214,7 +217,6 @@ const EmploymentTypeDropdown: React.FC<{
         }
       } catch (error) {
         console.error("Error fetching employment types:", error);
-        // Fallback to common employment types
         const fallbackTypes = [
           "Full-time",
           "Part-time",
@@ -235,7 +237,6 @@ const EmploymentTypeDropdown: React.FC<{
     fetchEmploymentTypes();
   }, []);
 
-  // Filter types based on search query
   useEffect(() => {
     if (searchQuery.trim() === "") {
       setFilteredTypes(employmentTypes);
@@ -247,7 +248,6 @@ const EmploymentTypeDropdown: React.FC<{
     }
   }, [searchQuery, employmentTypes]);
 
-  // Handle click outside to close dropdown
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -261,7 +261,6 @@ const EmploymentTypeDropdown: React.FC<{
 
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
-      // Focus input when dropdown opens
       setTimeout(() => {
         inputRef.current?.focus();
       }, 100);
@@ -272,19 +271,16 @@ const EmploymentTypeDropdown: React.FC<{
     };
   }, [isOpen]);
 
-  // Handle selection
   const handleSelect = (type: string) => {
     onChange(type);
     setIsOpen(false);
     setSearchQuery("");
   };
 
-  // Handle input change for search
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
   };
 
-  // Handle dropdown toggle
   const handleToggle = () => {
     if (disabled) return;
 
@@ -293,14 +289,12 @@ const EmploymentTypeDropdown: React.FC<{
 
     if (newIsOpen) {
       setSearchQuery("");
-      // Focus input after dropdown opens
       setTimeout(() => {
         inputRef.current?.focus();
       }, 100);
     }
   };
 
-  // Handle key down for better accessibility
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") {
       setIsOpen(false);
@@ -312,7 +306,6 @@ const EmploymentTypeDropdown: React.FC<{
 
   return (
     <div className="relative w-full" ref={dropdownRef}>
-      {/* Display selected value when closed */}
       {!isOpen ? (
         <button
           type="button"
@@ -331,7 +324,6 @@ const EmploymentTypeDropdown: React.FC<{
           />
         </button>
       ) : (
-        /* Search input when open */
         <div className="w-full border border-blue-500 rounded shadow-sm bg-white">
           <input
             ref={inputRef}
@@ -345,7 +337,6 @@ const EmploymentTypeDropdown: React.FC<{
         </div>
       )}
 
-      {/* Dropdown menu - FIXED: Changed positioning and z-index */}
       {isOpen && (
         <div
           className="fixed bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto mt-1 min-w-[200px]"
@@ -399,6 +390,7 @@ const EmploymentTypeDropdown: React.FC<{
     </div>
   );
 };
+
 // Main Component
 const StaffingPlanCreator: React.FC = () => {
   const router = useRouter();
@@ -407,16 +399,13 @@ const StaffingPlanCreator: React.FC = () => {
     initialStaffingPlanForm
   );
   const [selectedLead, setSelectedLead] = useState<LeadType | null>(null);
-  console.log(selectedLead);
   const [isSaving, setIsSaving] = useState(false);
   const [uploadingJDs, setUploadingJDs] = useState<{
     [key: number]: boolean;
   }>({});
-  // Store File objects temporarily until form submission
   const [pendingJDFiles, setPendingJDFiles] = useState<{
     [key: number]: File;
   }>({});
-  // Track which job descriptions are expanded
   const [expandedDescriptions, setExpandedDescriptions] = useState<{
     [key: number]: boolean;
   }>({});
@@ -431,6 +420,8 @@ const StaffingPlanCreator: React.FC = () => {
   const [initialFormData, setInitialFormData] = useState<StaffingPlanForm>(
     initialStaffingPlanForm
   );
+  const [previousPlans, setPreviousPlans] = useState<any[]>([]);
+  const [isLoadingPrevious, setIsLoadingPrevious] = useState(false);
 
   // Table sorting state
   const [sortField, setSortField] = useState<StaffingTableColumn | null>(null);
@@ -482,13 +473,6 @@ const StaffingPlanCreator: React.FC = () => {
       align: "center",
       width: "80px",
     },
-    // {
-    //   field: "publish",
-    //   label: "Publish",
-    //   sortable: false,
-    //   align: "center",
-    //   width: "80px",
-    // },
     {
       field: "upload",
       label: "Job Description",
@@ -507,8 +491,6 @@ const StaffingPlanCreator: React.FC = () => {
 
   // Handle table sorting
   const handleSort = (field: StaffingTableColumn) => {
-    // Since sortable is false for all columns, this won't be triggered
-    // But keeping the function for future use if needed
     if (sortField === field) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
@@ -564,7 +546,6 @@ const StaffingPlanCreator: React.FC = () => {
                 assign_to: item.assign_to || "",
                 location: item.location || "",
                 employment_type: item.employment_type || "",
-                // publish: item.publish || false,
               })) || [initialStaffingPlanItem],
             };
 
@@ -637,7 +618,6 @@ const StaffingPlanCreator: React.FC = () => {
     }
   }, [selectedLead, isEditMode]);
 
-  // Handle browser back/forward/reload
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasFormChanges(formData, initialFormData, pendingJDFiles)) {
@@ -651,7 +631,6 @@ const StaffingPlanCreator: React.FC = () => {
     const handlePopState = (e: PopStateEvent) => {
       if (hasFormChanges(formData, initialFormData, pendingJDFiles)) {
         setShowBackConfirm(true);
-        // Prevent the navigation
         window.history.pushState(null, "", window.location.href);
       }
     };
@@ -665,9 +644,51 @@ const StaffingPlanCreator: React.FC = () => {
     };
   }, [formData, initialFormData, pendingJDFiles]);
 
-  // Staffing Details Management
+  useEffect(() => {
+    if (selectedLead) {
+      const fetchPreviousPlans = async () => {
+        setIsLoadingPrevious(true);
+        try {
+          const response = await frappeAPI.makeAuthenticatedRequest(
+            "GET",
+            `/resource/Staffing Plan?filters=[["custom_lead","=","${selectedLead.name}"]]&order_by=creation%20desc`
+          );
+
+          const plansData = response.data || [];
+          const detailedPlans = await Promise.all(
+            plansData.map(async (plan: { name: string }) => {
+              try {
+                const planDetails = await frappeAPI.makeAuthenticatedRequest(
+                  "GET",
+                  `/resource/Staffing Plan/${plan.name}`
+                );
+                return planDetails.data;
+              } catch (err) {
+                console.error(`Error fetching details for ${plan.name}:`, err);
+                return null;
+              }
+            })
+          );
+
+          const validPlans = detailedPlans.filter(
+            (plan) => plan !== null && plan.name !== originalPlanId
+          ) as any[];
+          setPreviousPlans(validPlans);
+        } catch (error) {
+          console.error("Error fetching previous staffing plans:", error);
+          setError("Failed to load previous requirements. Please try again.");
+        } finally {
+          setIsLoadingPrevious(false);
+        }
+      };
+
+      fetchPreviousPlans();
+    } else {
+      setPreviousPlans([]);
+    }
+  }, [selectedLead, originalPlanId]);
+
   const addStaffingItem = () => {
-    // Check if all existing rows have designation before adding new one
     if (!allRowsHaveDesignation(formData.staffing_details)) {
       showToast.error(
         "Please fill designation for all existing rows before adding a new one"
@@ -691,14 +712,12 @@ const StaffingPlanCreator: React.FC = () => {
         staffing_details: prev.staffing_details.filter((_, i) => i !== index),
       }));
 
-      // Remove pending file if exists
       setPendingJDFiles((prev) => {
         const updated = { ...prev };
         delete updated[index];
         return updated;
       });
 
-      // Remove expanded state if exists
       setExpandedDescriptions((prev) => {
         const updated = { ...prev };
         delete updated[index];
@@ -720,7 +739,6 @@ const StaffingPlanCreator: React.FC = () => {
     }));
   };
 
-  // Toggle description accordion
   const toggleDescription = (index: number) => {
     setExpandedDescriptions((prev) => ({
       ...prev,
@@ -728,11 +746,9 @@ const StaffingPlanCreator: React.FC = () => {
     }));
   };
 
-  // Job Description Upload - Parse only for summary
   const handleJDUpload = async (file: File, index: number) => {
     if (!file) return;
 
-    // Validate file type
     const allowedTypes = [
       "application/pdf",
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -766,10 +782,8 @@ const StaffingPlanCreator: React.FC = () => {
       const result = await response.json();
 
       if (result.success && result.description) {
-        // Only update the job_description field with the summary
         updateStaffingItem(index, "job_description", result.description);
 
-        // Store the file for later upload
         setPendingJDFiles((prev) => ({
           ...prev,
           [index]: file,
@@ -787,7 +801,6 @@ const StaffingPlanCreator: React.FC = () => {
     }
   };
 
-  // Form Submission - Upload all pending JD files first
   const handleSubmit = async () => {
     if (!selectedLead) {
       setError("Please select a lead first");
@@ -799,7 +812,6 @@ const StaffingPlanCreator: React.FC = () => {
       return;
     }
 
-    // Validate all rows before submission
     let allValid = true;
     formData.staffing_details.forEach((item, index) => {
       if (!validateStaffingItem(item, index)) {
@@ -815,7 +827,6 @@ const StaffingPlanCreator: React.FC = () => {
     setError("");
 
     try {
-      // Step 1: Upload all pending JD files to Frappe
       const uploadedFileUrls: { [key: number]: string } = {};
 
       for (const [indexStr, file] of Object.entries(pendingJDFiles)) {
@@ -842,7 +853,6 @@ const StaffingPlanCreator: React.FC = () => {
         }
       }
 
-      // Step 2: Prepare submission data with uploaded file URLs
       const submissionData = {
         custom_lead: formData.custom_lead,
         from_date: formData.from_date,
@@ -865,11 +875,9 @@ const StaffingPlanCreator: React.FC = () => {
           assign_to: item.assign_to || "",
           location: item.location || "",
           employment_type: item.employment_type || "",
-          // publish: item.publish || false,
         })),
       };
 
-      // Step 3: Create or update the staffing plan
       let response;
       if (isEditMode && originalPlanId) {
         response = await frappeAPI.makeAuthenticatedRequest(
@@ -879,7 +887,6 @@ const StaffingPlanCreator: React.FC = () => {
         );
         setSuccessMessage(`Plan updated: ${originalPlanId}`);
 
-        // Update initial form data after successful save
         setInitialFormData(formData);
         setPendingJDFiles({});
       } else {
@@ -894,7 +901,6 @@ const StaffingPlanCreator: React.FC = () => {
         }
       }
 
-      // Immediate redirect after successful submission
       setSuccessMessage("");
       router.push("/dashboard/recruiter/requirements");
     } catch (error) {
@@ -915,13 +921,33 @@ const StaffingPlanCreator: React.FC = () => {
 
   const confirmBack = () => {
     setShowBackConfirm(false);
-    router.push("/dashboard/recruiterr/requirements");
+    router.push("/dashboard/recruiter/requirements");
   };
 
   const cancelBack = () => {
     setShowBackConfirm(false);
   };
 
+  const formatDateAndTimeV2 = (dateString?: string) => {
+    if (!dateString) return { date: "-", time: "-" };
+    const date = new Date(dateString);
+
+    const formattedDate = date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+
+    const formattedTime = date.toLocaleTimeString("en-IN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+
+    return { date: formattedDate, time: formattedTime };
+  };
+
+  // RENDER - Moved loading check here instead of early return
   if (isLoadingPlan) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -941,9 +967,7 @@ const StaffingPlanCreator: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="flex gap-2 w-full mx-auto">
-        {/* Main Content */}
         <div className="flex-1 bg-white rounded-lg shadow-sm border">
-          {/* Header */}
           <div className="p-3 border-b border-gray-200">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
@@ -970,8 +994,6 @@ const StaffingPlanCreator: React.FC = () => {
                 )}
               </div>
 
-        
-
               <button
                 onClick={addStaffingItem}
                 disabled={!allRowsHaveDesignation(formData.staffing_details)}
@@ -987,30 +1009,30 @@ const StaffingPlanCreator: React.FC = () => {
               </button>
             </div>
 
-                  <div className="flex items-center justify-between mb-3">
-                {!selectedLead && !isLoadingLead && (
-                  <LeadSearchSection
-                    onLeadSelect={setSelectedLead}
-                    selectedLead={selectedLead}
-                    disabled={isEditMode}
-                  />
-                )}
-                {selectedLead && (
-                  <div className="bg-green-50 border border-green-200 rounded p-2 text-sm text-green-800">
-                    <span className="font-medium">Selected Lead:</span>{" "}
-                    {selectedLead.custom_full_name} -{" "}
-                    {selectedLead.company_name}
-                    {!isEditMode && (
-                      <button
-                        onClick={() => setSelectedLead(null)}
-                        className="ml-2 text-green-600 hover:text-green-800 underline"
-                      >
-                        Change Lead
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
+            <div className="flex items-center justify-between mb-3">
+              {!selectedLead && !isLoadingLead && (
+                <LeadSearchSection
+                  onLeadSelect={setSelectedLead}
+                  selectedLead={selectedLead}
+                  disabled={isEditMode}
+                />
+              )}
+              {selectedLead && (
+                <div className="bg-green-50 border border-green-200 rounded p-2 text-sm text-green-800">
+                  <span className="font-medium">Selected Lead:</span>{" "}
+                  {selectedLead.custom_full_name} -{" "}
+                  {selectedLead.company_name}
+                  {!isEditMode && (
+                    <button
+                      onClick={() => setSelectedLead(null)}
+                      className="ml-2 text-green-600 hover:text-green-800 underline"
+                    >
+                      Change Lead
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
 
             {error && (
               <div className="bg-red-50 border border-red-200 rounded p-2 text-md text-red-800 mb-2 flex items-center">
@@ -1020,14 +1042,9 @@ const StaffingPlanCreator: React.FC = () => {
             )}
           </div>
 
-          
-
-          {/* Form Content */}
           {selectedLead && (
             <div className="p-3">
-              {/* Staffing Requirements Table */}
               <div>
-                {/* Table */}
                 <div className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
                   <div className="overflow-x-auto">
                     <table
@@ -1044,9 +1061,7 @@ const StaffingPlanCreator: React.FC = () => {
                       <tbody className="divide-y divide-gray-200">
                         {formData.staffing_details.map((item, index) => (
                           <React.Fragment key={index}>
-                            {/* Main Row */}
                             <tr className="bg-white hover:bg-gray-50 transition-colors">
-                              {/* Designation */}
                               <td
                                 className="p-3"
                                 style={{
@@ -1067,7 +1082,6 @@ const StaffingPlanCreator: React.FC = () => {
                                 />
                               </td>
 
-                              {/* Vacancies */}
                               <td
                                 className="p-3 text-center"
                                 style={{
@@ -1092,8 +1106,6 @@ const StaffingPlanCreator: React.FC = () => {
                                 />
                               </td>
 
-                              {/* Currency */}
-                              {/* Currency & Salary - Merged Column */}
                               <td
                                 className="p-2 text-center"
                                 style={{
@@ -1103,7 +1115,6 @@ const StaffingPlanCreator: React.FC = () => {
                                 }}
                               >
                                 <div className="flex items-center border border-gray-300 rounded overflow-hidden">
-                                  {/* Currency - 30% width */}
                                   <div className="w-[25%] border-r border-gray-300">
                                     <CurrencyDropdown
                                       value={item.currency}
@@ -1117,7 +1128,6 @@ const StaffingPlanCreator: React.FC = () => {
                                     />
                                   </div>
 
-                                  {/* Salary Input - 70% width */}
                                   <div className="w-[45%]">
                                     <input
                                       type="text"
@@ -1142,7 +1152,6 @@ const StaffingPlanCreator: React.FC = () => {
                                 </div>
                               </td>
 
-                              {/* Min Experience */}
                               <td
                                 className="p-3 text-center"
                                 style={{
@@ -1168,7 +1177,6 @@ const StaffingPlanCreator: React.FC = () => {
                                 />
                               </td>
 
-                              {/* Location */}
                               <td
                                 className="p-3"
                                 style={{
@@ -1205,30 +1213,6 @@ const StaffingPlanCreator: React.FC = () => {
                                 />
                               </td>
 
-                              {/* Publish Checkbox */}
-                              {/* <td
-                                className="p-2 text-center"
-                                style={{
-                                  width: "50px",
-                                  minWidth: "50px",
-                                  maxWidth: "50px",
-                                }}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={item.publish || false}
-                                  onChange={(e) =>
-                                    updateStaffingItem(
-                                      index,
-                                      "publish",
-                                      e.target.checked
-                                    )
-                                  }
-                                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                />
-                              </td> */}
-
-                              {/* Upload JD */}
                               <td
                                 className="p-3 text-center"
                                 style={{ width: "120px" }}
@@ -1271,7 +1255,6 @@ const StaffingPlanCreator: React.FC = () => {
                                 </div>
                               </td>
 
-                              {/* Action */}
                               <td
                                 className="p-3 text-center"
                                 style={{
@@ -1297,12 +1280,10 @@ const StaffingPlanCreator: React.FC = () => {
                               </td>
                             </tr>
 
-                            {/* Description Row - Always shown as accordion header, content expands below */}
                             {item.job_description && (
                               <tr className="bg-gray-50 border-t border-gray-200">
                                 <td colSpan={8} className="p-0">
                                   <div>
-                                    {/* Accordion Header */}
                                     <button
                                       onClick={() => toggleDescription(index)}
                                       className="w-full flex items-center justify-between p-3 hover:bg-gray-100 transition-colors"
@@ -1321,7 +1302,6 @@ const StaffingPlanCreator: React.FC = () => {
                                       </div>
                                     </button>
 
-                                    {/* Accordion Content */}
                                     {expandedDescriptions[index] && (
                                       <div className="border-t border-gray-200 px-3 py-3 bg-white">
                                         <textarea
@@ -1351,7 +1331,6 @@ const StaffingPlanCreator: React.FC = () => {
                     </table>
                   </div>
 
-                  {/* Create Button at Bottom */}
                   <div className="p-4 border-t border-gray-200 bg-white flex justify-end">
                     <button
                       onClick={handleSubmit}
@@ -1382,10 +1361,152 @@ const StaffingPlanCreator: React.FC = () => {
               </div>
             </div>
           )}
+
+          {selectedLead && (
+            <div className="p-6 border-t border-gray-200 bg-white">
+              <h2 className="text-xl font-bold text-gray-900 mb-4">
+                Previous Requirements for {selectedLead.company_name}
+              </h2>
+              {isLoadingPrevious ? (
+                <div className="text-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
+                  <p className="text-gray-600">Loading previous requirements...</p>
+                </div>
+              ) : previousPlans.length > 0 ? (
+                <div className="bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-blue-500 text-white">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-sm font-semibold">Date</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold">Position Details</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold">Location & Experience</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold">Vacancies & Budget</th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {previousPlans.map((plan) => (
+                          <React.Fragment key={plan.name}>
+                            {plan.staffing_details.map((detail: any, detailIndex: number) => (
+                              <tr
+                                key={`${plan.name}-${detailIndex}`}
+                                className="hover:bg-gray-50 transition-colors"
+                              >
+                                {plan.creation && (
+                                  <td className="px-4 py-2 whitespace-nowrap text-md text-gray-900">
+                                    {(() => {
+                                      const { date, time } = formatDateAndTimeV2(
+                                        plan.creation
+                                      );
+                                      return (
+                                        <div className="flex flex-col leading-tight">
+                                          <span>{date}</span>
+                                          <span className="text-md text-gray-500">
+                                            {time}
+                                          </span>
+                                        </div>
+                                      );
+                                    })()}
+                                  </td>
+                                )}
+                                <td className="px-4 py-4 capitalize">
+                                  <div className="flex flex-col">
+                                    <span className="font-medium text-gray-900 text-md">
+                                      {detail.designation}
+                                    </span>
+                                    <div className="text-md text-gray-500 mt-1">
+                                      <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-800">
+                                        {detail.number_of_positions}{" "}
+                                        {detail.number_of_positions === 1
+                                          ? "Position"
+                                          : "Positions"}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-4">
+                                  <div className="flex flex-col space-y-2">
+                                    <div className="flex items-center text-md text-gray-600">
+                                      <MapPin className="h-4 w-4 text-gray-400 mr-1" />
+                                      <span>{detail.location}</span>
+                                    </div>
+                                    <div className="flex items-center text-md text-gray-600">
+                                      <Clock className="h-4 w-4 text-gray-400 mr-1" />
+                                      <span>
+                                        {detail.min_experience_reqyrs}+ years exp
+                                      </span>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-4">
+                                  <div className="flex flex-col space-y-2">
+                                    {(() => {
+                                      const allocated = detail.assign_to
+                                        ? detail.assign_to
+                                            .split(",")
+                                            .reduce((sum: number, item: string) => {
+                                              const [, allocation] = item
+                                                .trim()
+                                                .split("-");
+                                              return (
+                                                sum + (parseInt(allocation) || 0)
+                                              );
+                                            }, 0)
+                                        : 0;
+                                      const remaining = detail.vacancies - allocated;
+                                      return (
+                                        <div className="flex items-center text-md">
+                                          <Users className="h-4 w-4 text-green-500 mr-1" />
+                                          <span className="font-semibold text-green-600">
+                                            {detail.vacancies}
+                                          </span>
+                                          <span className="text-gray-400 mx-1">
+                                            |
+                                          </span>
+                                          <span className="text-blue-600 font-medium">
+                                            {allocated}
+                                          </span>
+                                          <span className="text-gray-500 text-md ml-0.5">
+                                            alloc
+                                          </span>
+                                          <span className="text-gray-400 mx-1">
+                                            |
+                                          </span>
+                                          <span className="text-orange-600 font-medium">
+                                            {remaining}
+                                          </span>
+                                          <span className="text-gray-500 text-md ml-0.5">
+                                            left
+                                          </span>
+                                        </div>
+                                      );
+                                    })()}
+                                    <div className="flex items-center">
+                                      <IndianRupee className="h-4 w-4 text-purple-500 mr-1" />
+                                      <span className="font-medium text-gray-900">
+                                        {detail.estimated_cost_per_position}L
+                                      </span>
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </React.Fragment>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-gray-50 rounded-lg p-6 text-center text-gray-600">
+                  No previous requirements found for this company.
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Success Toast */}
       {successMessage && (
         <div className="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg flex items-center space-x-2 z-50 animate-in slide-in-from-bottom max-w-md">
           <CheckCircle className="h-4 w-4 flex-shrink-0" />
@@ -1393,7 +1514,6 @@ const StaffingPlanCreator: React.FC = () => {
         </div>
       )}
 
-      {/* Back Confirmation Dialog */}
       <ConfirmationDialog
         isOpen={showBackConfirm}
         onConfirm={confirmBack}
@@ -1408,4 +1528,3 @@ const StaffingPlanCreator: React.FC = () => {
 };
 
 export default StaffingPlanCreator;
-

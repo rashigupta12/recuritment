@@ -46,6 +46,7 @@ export type StaffingPlanItem = {
 };
 
 export type StaffingPlanForm = {
+  creation?: string; // Make optional and specify type as string
   name: string;
   custom_lead: string;
   from_date: string;

@@ -32,15 +32,15 @@ const LeadDetailModal = ({ lead, onClose }: LeadDetailModalProps) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         {/* Modal Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">Lead Details</h2>
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-primary">
+          <h2 className="text-xl font-semibold text-white">Lead Details</h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            <X className="h-5 w-5 text-gray-500" />
+            <X className="h-5 w-5 text-white" />
           </button>
         </div>
 
@@ -48,25 +48,25 @@ const LeadDetailModal = ({ lead, onClose }: LeadDetailModalProps) => {
         <div className="p-4 space-y-4">
           {/* Contact Information */}
           <div className="bg-gray-50 rounded-lg p-2">
-            <h3 className="text-md font-medium text-gray-900 mb-2 flex items-center">
+            <h3 className="text-lg font-medium text-gray-900 mb-2 flex items-center">
               <Users className="h-3 w-3 mr-2 text-blue-600" />
               Contact Information
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
               <div>
-                <label className="text-sm font-medium text-gray-600">Full Name</label>
+                <label className="text-md font-medium text-gray-600">Full Name</label>
                 <p className="text-gray-900">{lead.custom_full_name || lead.lead_name || "N/A"}</p>
               </div>
               
               <div>
-                <label className="text-sm font-medium text-gray-600">Phone</label>
+                <label className="text-md font-medium text-gray-600">Phone</label>
                 <p className="text-gray-900 flex items-center">
                   {/* <Phone className="h-4 w-4 mr-2 text-gray-400" /> */}
                   {lead.custom_phone_number || "N/A"}
                 </p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-600">Email</label>
+                <label className="text-md font-medium text-gray-600">Email</label>
                 <p className="text-gray-900 flex items-center">
                   {/* <Mail className="h-4 w-4 mr-2 text-gray-400" /> */}
                   {lead.custom_email_address || "N/A"}
@@ -77,24 +77,24 @@ const LeadDetailModal = ({ lead, onClose }: LeadDetailModalProps) => {
 
           {/* Company Information */}
           <div className="bg-gray-50 rounded-lg p-2">
-            <h3 className="text-md font-medium text-gray-900 mb-2 flex items-center">
+            <h3 className="text-lg font-medium text-gray-900 mb-2 flex items-center">
               <Building2 className="h-3 w-3 mr-2 text-green-600" />
               Company Information
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="text-sm font-medium text-gray-600">Company Name</label>
+                <label className="text-md font-medium text-gray-600">Company Name</label>
                 <p className="text-gray-900">{lead.company_name || "N/A"}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-600">Industry</label>
+                <label className="text-md font-medium text-gray-600">Industry</label>
                 <p className="text-gray-900 flex items-center">
                   <Factory className="h-4 w-4 mr-2 text-gray-400" />
                   {lead.industry || "N/A"}
                 </p>
               </div>
               <div className="">
-                <label className="text-sm font-medium text-gray-600">Website</label>
+                <label className="text-md font-medium text-gray-600">Website</label>
                 <p className="text-gray-900">{lead.website || "N/A"}</p>
               </div>
             </div>
@@ -102,17 +102,17 @@ const LeadDetailModal = ({ lead, onClose }: LeadDetailModalProps) => {
 
           {/* Stage & Offering Information */}
           <div className="bg-gray-50 rounded-lg p-2">
-            <h3 className="text-md font-medium text-gray-900 mb-2 flex items-center">
+            <h3 className="text-lg font-medium text-gray-900 mb-2 flex items-center">
               <Users2Icon className="h-3 w-3 mr-2 text-purple-600" />
               Stage & Offering
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-gray-600">Stage</label>
+                <label className="text-md font-medium text-gray-600">Stage</label>
                 <p className="text-gray-900">{formatTextWithLines(lead.custom_stage)}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-600">Offering</label>
+                <label className="text-md font-medium text-gray-600">Offering</label>
                 <p className="text-gray-900">{formatTextWithLines(lead.custom_offerings)}</p>
               </div>
             </div>
@@ -126,7 +126,7 @@ const LeadDetailModal = ({ lead, onClose }: LeadDetailModalProps) => {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="text-sm font-medium text-gray-600">Average Salary</label>
+                <label className="text-md font-medium text-gray-600">Average Salary</label>
                 <p className="text-gray-900 flex items-center">
                   {/* <IndianRupee className="h-4 w-4 mr-2 text-gray-400" /> */}
                   {lead.custom_average_salary 
@@ -135,15 +135,15 @@ const LeadDetailModal = ({ lead, onClose }: LeadDetailModalProps) => {
                 </p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-600">Estimated Hiring</label>
+                <label className="text-md font-medium text-gray-600">Estimated Hiring</label>
                 <p className="text-gray-900">{lead.custom_estimated_hiring_ || "N/A"}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-600">Fee Percentage</label>
+                <label className="text-md font-medium text-gray-600">Fee Percentage</label>
                 <p className="text-gray-900">{lead.custom_fee ? `${lead.custom_fee}%` : "N/A"}</p>
               </div>
                  <div>
-                <label className="text-sm font-medium text-gray-600">Deal Value</label>
+                <label className="text-md font-medium text-gray-600">Deal Value</label>
                 <p className="text-gray-900 flex items-center">
                   {/* <IndianRupee className="h-4 w-4 mr-2 text-gray-400" /> */}
                   {lead.custom_deal_value 
@@ -152,7 +152,7 @@ const LeadDetailModal = ({ lead, onClose }: LeadDetailModalProps) => {
                 </p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-600">Closing Date</label>
+                <label className="text-md font-medium text-gray-600">Closing Date</label>
                 <p className="text-gray-900">{lead.custom_expected_close_date || "N/A"}</p>
               </div>
 
