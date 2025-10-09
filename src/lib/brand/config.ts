@@ -1,6 +1,7 @@
 export interface BrandConfig {
   name: string;
   logo: string;
+  collapsedLogo: string;
   favicon: string;
   colors: {
     primary: string;
@@ -61,7 +62,8 @@ export const getBrandConfig = (): BrandConfig => {
   
   return {
     name: process.env.NEXT_PUBLIC_BRAND_NAME || 'HEVHIRE',
-    logo: process.env.NEXT_PUBLIC_BRAND_LOGO || '/brands/default/logo.svg',
+    logo: process.env.NEXT_PUBLIC_BRAND_LOGO || '/brands/default/logo.png',
+    collapsedLogo:process.env.NEXT_PUBLIC_COLLAPSED_BRAND_LOGO || '/brands/default/collapsed-icon.png',
     favicon: process.env.NEXT_PUBLIC_BRAND_FAVICON || '/brands/default/favicon.ico',
     colors: {
       primary,
