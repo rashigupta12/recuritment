@@ -1,12 +1,11 @@
-// ============================================
-// StaffingPlansTable.tsx (Updated)
-// ============================================
 /*eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { frappeAPI } from "@/lib/api/frappeClient";
 import {
   AlertCircle,
   Building,
+  ChevronDown,
+  ChevronUp,
   Clock,
   Edit,
   Eye,
@@ -21,6 +20,7 @@ import {
   Search,
   User,
   Users,
+  X,
 } from "lucide-react";
 import React, { useEffect, useState, useMemo } from "react";
 import { JobOpeningModal } from "./requirement-view/JobopeningModal";
@@ -28,6 +28,29 @@ import { useAuth } from "@/contexts/AuthContext";
 import { SortableTableHeader } from "../recruiter/SortableTableHeader";
 import { useRouter } from "next/navigation";
 import { Button } from "../ui/button";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+
+// FilterConfig and FilterState interfaces for TodosHeader
+interface FilterConfig {
+  id: string;
+  title: string;
+  icon: React.ComponentType<{ className?: string }>;
+  options: string[];
+  searchKey?: string;
+  alwaysShowOptions?: boolean;
+  type?: 'checkbox' | 'radio';
+  optionLabels?: Record<string, string>;
+  showInitialOptions?: boolean;
+}
+
+interface FilterState {
+  company: string[];
+  contact: string[];
+  designation: string[];
+}
 
 // Type definitions
 type StaffingPlanItem = {
@@ -82,6 +105,345 @@ type SortField =
 type AllFields = SortField | "contact" | "status" | "actions";
 type SortDirection = "asc" | "desc" | null;
 
+// TodosHeader Component
+interface TodosHeaderProps {
+  searchQuery: string;
+  onSearchChange: (query: string) => void;
+  onRefresh: () => Promise<void>;
+  totalJobs?: number;
+  filteredJobs?: number;
+  uniqueCompany?: string[];
+  uniqueContact?: string[];
+  uniqueDesignation?: string[];
+  onFilterChange?: (filters: FilterState) => void;
+  filterConfig?: FilterConfig[];
+  title?: string;
+   onAddButton: () => Promise<void>;
+
+}
+
+const TodosHeader = ({
+  searchQuery,
+  onSearchChange,
+  onRefresh,
+  totalJobs = 0,
+  filteredJobs = 0,
+  uniqueCompany = [],
+  uniqueContact = [],
+  uniqueDesignation = [],
+  onFilterChange,
+  filterConfig = [],
+  title = 'Customers Requirements',
+  onAddButton
+}: TodosHeaderProps) => {
+  const [filters, setFilters] = useState<FilterState>({
+    company: [],
+    contact: [],
+    designation: [],
+  });
+
+  const [searchStates, setSearchStates] = useState<Record<string, string>>({
+    company: '',
+    contact: '',
+    designation: '',
+  });
+  const [openSection, setOpenSection] = useState<string | null>(null);
+
+  const toggleFilter = (type: keyof FilterState, value: string) => {
+    const current = filters[type];
+    if (Array.isArray(current)) {
+      const newValue = current.includes(value)
+        ? current.filter((v) => v !== value)
+        : [...current, value];
+      const newFilters = { ...filters, [type]: newValue };
+      setFilters(newFilters);
+      onFilterChange?.(newFilters);
+    }
+  };
+
+  const clearAllFilters = () => {
+    const resetFilters: FilterState = {
+      company: [],
+      contact: [],
+      designation: [],
+    };
+    setFilters(resetFilters);
+    setSearchStates({
+      company: '',
+      contact: '',
+      designation: '',
+    });
+    onFilterChange?.(resetFilters);
+  };
+
+  const toggleSection = (section: string) => {
+    setOpenSection(openSection === section ? null : section);
+  };
+
+  const getFilteredOptions = (section: FilterConfig, options: string[]) => {
+    const searchKey = searchStates[section.id] || '';
+    if (section.searchKey) {
+      if (section.showInitialOptions) {
+        return searchKey ? options.filter((option) =>
+          option.toLowerCase().includes(searchKey.toLowerCase())
+        ) : options;
+      } else {
+        return searchKey ? options.filter((option) =>
+          option.toLowerCase().includes(searchKey.toLowerCase())
+        ) : [];
+      }
+    } else {
+      return options;
+    }
+  };
+
+  const activeFilterCount = Object.entries(filters).reduce((count, [key, value]) => {
+    if (Array.isArray(value)) {
+      return count + value.length;
+    }
+    return count;
+  }, 0);
+
+  return (
+    <div className="">
+      <div className="flex flex-wrap items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 whitespace-nowrap">{title}</h1>
+         
+        <div className="flex items-center gap-3 flex-wrap justify-end">
+          <div className="flex-1 min-w-[250px] max-w-md items-end justify-end relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search jobs..."
+
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={`flex items-center gap-2 ${activeFilterCount > 0
+                    ? 'bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100'
+                    : ''
+                    }`}
+                >
+                  <Filter className="w-4 h-4" />
+                  {activeFilterCount > 0 && (
+                    <Badge variant="secondary" className="ml-1 bg-blue-600 text-white px-1.5 min-w-[20px] h-5 flex items-center justify-center">
+                      {activeFilterCount}
+                    </Badge>
+                  )}
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-full sm:max-w-md flex flex-col p-0">
+                <SheetHeader className="px-6 py-4 border-b">
+                  <div className="flex items-center justify-between">
+                    <SheetTitle className="flex items-center gap-2 text-lg">
+                      <Filter className="w-5 h-5" />
+                      Filters
+                    </SheetTitle>
+                  </div>
+                </SheetHeader>
+                <ScrollArea className="flex-1">
+                  <div className="p-6 py-2 space-y-4">
+                    {activeFilterCount > 0 && (
+                      <div className="space-y-3">
+                        <h4 className="text-sm font-medium text-gray-700">Active Filters</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {filters.company.map((company) => (
+                            <Badge key={company} variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
+                              Company: {company}
+                              <button
+                                onClick={() => toggleFilter('company', company)}
+                                className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </Badge>
+                          ))}
+                          {filters.contact.map((contact) => (
+                            <Badge key={contact} variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
+                              Contact: {contact}
+                              <button
+                                onClick={() => toggleFilter('contact', contact)}
+                                className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </Badge>
+                          ))}
+                          {filters.designation.map((designation) => (
+                            <Badge key={designation} variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
+                              Position: {designation}
+                              <button
+                                onClick={() => toggleFilter('designation', designation)}
+                                className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </Badge>
+                          ))}
+                        </div>
+                        <Separator />
+                      </div>
+                    )}
+                    {filterConfig.map((section) => {
+                      const options = section.options;
+                      const filteredOptions = getFilteredOptions(section, options);
+                      const isOpen = openSection === section.id;
+
+                      return (
+                        <div key={section.id} className="space-y-3">
+                          <button
+                            onClick={() => toggleSection(section.id)}
+                            className="flex items-center justify-between w-full text-sm font-semibold text-gray-900 hover:bg-gray-50 p-2 rounded-lg transition-colors"
+                          >
+                            <span className="flex items-center gap-2">
+                              <section.icon className="w-4 h-4 text-gray-600" />
+                              {section.title}
+                            </span>
+                            {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                          </button>
+                          {isOpen && (
+                            <div className="space-y-1 pl-6">
+                              {section.searchKey && (
+                                <div className="relative mb-1">
+                                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                  <input
+                                    type="text"
+                                    placeholder={`Search ${section.title.toLowerCase()}...`}
+                                    value={searchStates[section.id]}
+                                    onChange={(e) =>
+                                      setSearchStates({ ...searchStates, [section.id]: e.target.value })
+                                    }
+                                    className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                  />
+                                </div>
+                              )}
+                              {filteredOptions.length > 0 ? (
+                                <div className="space-y-2 max-h-48 overflow-y-auto">
+                                  {filteredOptions.map((option) => (
+                                    <label
+                                      key={option}
+                                      className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={filters[section.id as keyof FilterState].includes(option)}
+                                        onChange={() =>
+                                          toggleFilter(section.id as keyof FilterState, option)
+                                        }
+                                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                      />
+                                      <span className="text-sm font-medium text-gray-700">
+                                        {option}
+                                      </span>
+                                    </label>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="text-center py-3 text-sm text-gray-500">
+                                  {searchStates[section.id].length > 0 &&
+                                    `No ${section.title.toLowerCase()} found`}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          {section.id !== filterConfig[filterConfig.length - 1]?.id && <Separator />}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
+                <div className="border-t p-4 bg-gray-50">
+                  <div className="flex gap-3">
+                    <Button
+                      variant="outline"
+                      onClick={clearAllFilters}
+                      className="flex-1 border-gray-300 hover:bg-gray-200"
+                    >
+                      Clear All
+                    </Button>
+                    <SheetTrigger asChild>
+                      <Button className="flex-1 bg-blue-600 hover:bg-blue-700">
+                        Show Results
+                      </Button>
+                    </SheetTrigger>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={onRefresh}
+              className="h-10 w-10"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </Button>
+            <Button
+              onClick={onAddButton}
+              className="bg-primary text-white rounded-full h-10 w-10 flex items-center justify-center hover:bg-primary/90 transition-colors shadow-md"
+            >
+              <Plus className="h-4 w-4 stroke-[3]" />
+            </Button>
+          </div>
+        </div>
+      </div>
+      {activeFilterCount > 0 && (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="text-sm text-gray-600 font-medium">Active filters:</span>
+          {filters.company.map((company) => (
+            <Badge key={company} variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
+              Company: {company}
+              <button
+                onClick={() => toggleFilter('company', company)}
+                className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </Badge>
+          ))}
+          {filters.contact.map((contact) => (
+            <Badge key={contact} variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
+              Contact: {contact}
+              <button
+                onClick={() => toggleFilter('contact', contact)}
+                className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </Badge>
+          ))}
+          {filters.designation.map((designation) => (
+            <Badge key={designation} variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
+              Position: {designation}
+              <button
+                onClick={() => toggleFilter('designation', designation)}
+                className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </Badge>
+          ))}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={clearAllFilters}
+            className="text-blue-600 hover:text-blue-700 h-auto px-2 py-1 text-sm"
+          >
+            Clear all
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // Main Staffing Plans Table Component
 const StaffingPlansTable: React.FC = () => {
   const router = useRouter();
@@ -96,9 +458,42 @@ const StaffingPlansTable: React.FC = () => {
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
   const [publishingJobs, setPublishingJobs] = useState<Set<string>>(new Set());
   const { user } = useAuth();
+  const [filters, setFilters] = useState<FilterState>({
+    company: [],
+    contact: [],
+    designation: [],
+  });
 
   // Check if user is project manager
   const isProjectManager = user?.roles?.includes("Project Manager") || false;
+
+  // Filter configuration
+  const filterConfig: FilterConfig[] = useMemo(() => [
+    {
+      id: 'company',
+      title: 'Company',
+      icon: Building,
+      options: Array.from(new Set(plans.map(plan => plan.company))),
+      searchKey: 'company',
+      showInitialOptions: false,
+    },
+    {
+      id: 'contact',
+      title: 'Contact',
+      icon: User,
+      options: Array.from(new Set(plans.map(plan => plan.custom_contact_name))),
+      searchKey: 'contact',
+      showInitialOptions: false,
+    },
+    {
+      id: 'designation',
+      title: 'Position',
+      icon: Users,
+      options: Array.from(new Set(plans.flatMap(plan => plan.staffing_details.map(detail => detail.designation)))),
+      searchKey: 'designation',
+      showInitialOptions: false,
+    },
+  ], [plans]);
 
   const handleSort = (field: AllFields) => {
     if (field === "contact" || field === "status" || field === "actions")
@@ -134,7 +529,6 @@ const StaffingPlansTable: React.FC = () => {
       { field: "designation", label: "Position Details", align: "center" },
       { field: "location", label: "Location & Experience", align: "center" },
       { field: "vacancies", label: "Vacancies & Budget", align: "center" },
-      // { field: 'status', label: 'Status', sortable: false , align:"center"},
       { field: "actions", label: "Action", sortable: false, align: "center" },
     ];
     return cols;
@@ -185,6 +579,8 @@ const StaffingPlansTable: React.FC = () => {
 
   useEffect(() => {
     let filtered = [...plans];
+
+    // Apply search term
     if (searchTerm) {
       filtered = filtered.filter(
         (plan) =>
@@ -199,6 +595,19 @@ const StaffingPlansTable: React.FC = () => {
                 .includes(searchTerm.toLowerCase()) ||
               detail.location.toLowerCase().includes(searchTerm.toLowerCase())
           )
+      );
+    }
+
+    // Apply filters
+    if (filters.company.length > 0) {
+      filtered = filtered.filter(plan => filters.company.includes(plan.company));
+    }
+    if (filters.contact.length > 0) {
+      filtered = filtered.filter(plan => filters.contact.includes(plan.custom_contact_name));
+    }
+    if (filters.designation.length > 0) {
+      filtered = filtered.filter(plan =>
+        plan.staffing_details.some(detail => filters.designation.includes(detail.designation))
       );
     }
 
@@ -264,7 +673,7 @@ const StaffingPlansTable: React.FC = () => {
     }
 
     setFilteredPlans(filtered);
-  }, [searchTerm, plans, sortField, sortDirection]);
+  }, [searchTerm, plans, sortField, sortDirection, filters]);
 
   const handleViewDetails = (
     plan: StaffingPlan,
@@ -318,14 +727,6 @@ const StaffingPlansTable: React.FC = () => {
         { publish: 1 }
       );
 
-      // Update local state
-      setPlans((prevPlans) => {
-        const newPlans = [...prevPlans];
-        // Note: The publish status is in Job Opening, not Staffing Plan
-        // So we just refresh or show success
-        return newPlans;
-      });
-
       alert("Job opening published successfully!");
     } catch (error) {
       console.error("Error publishing job:", error);
@@ -376,72 +777,44 @@ const StaffingPlansTable: React.FC = () => {
 
     return { date: formattedDate, time: formattedTime };
   };
-  const handleAddbutton = ()=>{
-    router.push(
-      `/dashboard/recruiter/requirements/create`
-    );
-  }
+
+ const handleAddbutton = async () => {
+  router.push(`/dashboard/recruiter/requirements/create`);
+};
+
+  const handleFilterChange = (newFilters: FilterState) => {
+    setFilters(newFilters);
+  };
+
   console.log(plans);
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="w-full mx-auto">
-        <div className="mb-2">
-          <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
-            {/* Left Section: Heading */}
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                Customers Requirements
-              </h1>
-              <p className="text-gray-600 mt-1">
-                Manage and track all staffing requirements
-              </p>
-            </div>
-
-            {/* Right Section: Search, Filter, and Refresh */}
-            <div className="flex items-center gap-3 flex-wrap justify-end">
-              {/* Search Bar */}
-              <div className="relative min-w-[250px] max-w-md">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Search by company, contact, position..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                />
-              </div>
-
-              {/* Filter Button */}
-              <Button
-                variant="outline"
-                size="icon"
-                className="flex items-center justify-center h-10 w-10 hover:bg-blue-50"
-              >
-                <Filter className="w-5 h-5 text-gray-700" />
-              </Button>
-
-              {/* Refresh Button */}
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-10 w-10 flex items-center justify-center hover:bg-blue-50"
-              >
-                <RefreshCw className="w-4 h-4 text-gray-700" />
-              </Button>
-
-              <Button
-                onClick={handleAddbutton}
-                className="bg-primary text-white rounded-full h-10 w-10 flex items-center justify-center hover:bg-primary/90 transition-colors shadow-md"
-              >
-                <Plus className="h-4 w-4 stroke-[3]" />{" "}
-                {/* precise balanced size */}
-              </Button>
-            </div>
+        <TodosHeader
+          searchQuery={searchTerm}
+          onSearchChange={setSearchTerm}
+          onRefresh={fetchStaffingPlans}
+          totalJobs={plans.length}
+          filteredJobs={filteredPlans.length}
+          uniqueCompany={Array.from(new Set(plans.map(plan => plan.company)))}
+          uniqueContact={Array.from(new Set(plans.map(plan => plan.custom_contact_name)))}
+          uniqueDesignation={Array.from(new Set(plans.flatMap(plan => plan.staffing_details.map(detail => detail.designation))))}
+          onFilterChange={handleFilterChange}
+          filterConfig={filterConfig}
+          onAddButton={handleAddbutton}
+        />
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+          <div>
+            <p className="text-gray-600 mt-1">
+              Manage and track all staffing requirements
+            </p>
+          </div>
+          <div className="flex items-center gap-3 flex-wrap justify-end">
+            
           </div>
         </div>
 
-        {/* Main Table */}
         {isLoading ? (
           <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-12 text-center">
             <Loader2 className="h-16 w-16 text-blue-500 animate-spin mx-auto mb-4" />
@@ -625,30 +998,8 @@ const StaffingPlansTable: React.FC = () => {
                             </div>
                           </td>
 
-                          {/* <td className="px-4 py-4">
-                            <div className="flex flex-col space-y-1">
-                              {detail.job_id ? (
-                                <>
-                                  <span className="inline-flex items-center px-2 py-1 rounded-full text-md bg-green-100 text-green-800">
-                                    Job Created
-                                  </span>
-                                  {detail.assign_to && (
-                                    <span className="inline-flex items-center px-2 py-1 rounded-full text-md bg-blue-100 text-blue-800">
-                                      Allocated
-                                    </span>
-                                  )}
-                                </>
-                              ) : (
-                                <span className="inline-flex items-center px-2 py-1 rounded-full text-md bg-gray-100 text-gray-800">
-                                  Pending
-                                </span>
-                              )}
-                            </div>
-                          </td> */}
-
                           <td className="px-4 py-4">
                             <div className="flex items-center space-x-1 flex-wrap gap-2">
-                              {/* View Details Button */}
                               <div className="relative group">
                                 <button
                                   onClick={() =>
@@ -663,8 +1014,6 @@ const StaffingPlansTable: React.FC = () => {
                                 >
                                   <Eye className="h-4 w-4" />
                                 </button>
-
-                                {/* Tooltip */}
                                 <span
                                   className="absolute left-1/2 -translate-x-1/2 -top-7 
     px-2 py-1 text-xs text-white bg-gray-800 rounded opacity-0 
@@ -674,7 +1023,6 @@ const StaffingPlansTable: React.FC = () => {
                                 </span>
                               </div>
 
-                              {/* Edit Button - Only show once per plan */}
                               {detailIndex === 0 && (
                                 <div className="relative group">
                                   <button
@@ -683,8 +1031,6 @@ const StaffingPlansTable: React.FC = () => {
                                   >
                                     <Edit className="h-4 w-4" />
                                   </button>
-
-                                  {/* Tooltip */}
                                   <span
                                     className="absolute left-1/2 -translate-x-1/2 -top-7 
       px-2 py-1 text-xs text-white bg-gray-800 rounded opacity-0 
@@ -696,7 +1042,6 @@ const StaffingPlansTable: React.FC = () => {
                                 </div>
                               )}
 
-                              {/* Publish Button - Only if job_id exists */}
                               {detail.job_id && (
                                 <div className="relative group">
                                   <button
@@ -720,8 +1065,6 @@ const StaffingPlansTable: React.FC = () => {
                                       </>
                                     )}
                                   </button>
-
-                                  {/* Tooltip */}
                                   <span
                                     className="absolute left-1/2 -translate-x-1/2 -top-7 
       px-2 py-1 text-xs text-white bg-gray-800 rounded opacity-0 
@@ -735,7 +1078,6 @@ const StaffingPlansTable: React.FC = () => {
                                 </div>
                               )}
 
-                              {/* Allocation Button - Only for project managers and if job_id exists */}
                               {isProjectManager && detail.job_id && (
                                 <button
                                   onClick={() =>
@@ -767,12 +1109,12 @@ const StaffingPlansTable: React.FC = () => {
           <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-12 text-center">
             <Building className="h-16 w-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              {searchTerm
+              {searchTerm || filters.company.length > 0 || filters.contact.length > 0 || filters.designation.length > 0
                 ? "No matching results found"
                 : "No job openings available"}
             </h3>
             <p className="text-gray-600 mb-6">
-              {searchTerm
+              {searchTerm || filters.company.length > 0 || filters.contact.length > 0 || filters.designation.length > 0
                 ? "Try adjusting your search terms or filters"
                 : "Start by creating your first staffing plan"}
             </p>
@@ -788,7 +1130,6 @@ const StaffingPlansTable: React.FC = () => {
             planIndex={selectedJob.planIndex}
             detailIndex={selectedJob.detailIndex}
             onSuccess={handleJobSuccess}
-            // mode={selectedJob.mode}
           />
         )}
       </div>
