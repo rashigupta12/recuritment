@@ -16,6 +16,7 @@ import {
   MapPin,
   PaintBucket,
   Phone,
+  Plus,
   RefreshCw,
   Search,
   User,
@@ -375,6 +376,11 @@ const StaffingPlansTable: React.FC = () => {
 
     return { date: formattedDate, time: formattedTime };
   };
+  const handleAddbutton = ()=>{
+    router.push(
+      `/dashboard/recruiter/requirements/create`
+    );
+  }
   console.log(plans);
 
   return (
@@ -422,6 +428,14 @@ const StaffingPlansTable: React.FC = () => {
                 className="h-10 w-10 flex items-center justify-center hover:bg-blue-50"
               >
                 <RefreshCw className="w-4 h-4 text-gray-700" />
+              </Button>
+
+              <Button
+                onClick={handleAddbutton}
+                className="bg-primary text-white rounded-full h-10 w-10 flex items-center justify-center hover:bg-primary/90 transition-colors shadow-md"
+              >
+                <Plus className="h-4 w-4 stroke-[3]" />{" "}
+                {/* precise balanced size */}
               </Button>
             </div>
           </div>
