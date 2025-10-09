@@ -199,11 +199,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="flex items-center justify-center h-14 px-3 border-b border-gray-200/60 flex-shrink-0">
             <Link
               href="/dashboard"
-              className={`flex items-center ${
-                sidebarCollapsed ? "justify-center" : "space-x-2"
-              }`}
+              className={`flex items-center ${sidebarCollapsed ? "justify-center" : "space-x-2"
+                }`}
             >
-              <div className="rounded-lg flex items-center justify-center flex-shrink-0">
+              {/* <div className="rounded-lg flex items-center justify-center flex-shrink-0">
                 {!sidebarCollapsed && (
                   <Image
                     src={brandConfig.logo}
@@ -212,8 +211,48 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     height={150}
                     className=""
                   />
+                ): (
+    <Image
+      src={brandConfig.logo}
+      alt={brandConfig.name}
+      width={150}
+      height={150}
+      className="object-contain transition-all duration-300"
+    />)}
+              </div> */}
+              {/* <div className="rounded-lg flex items-center justify-center flex-shrink-0">
+                {sidebarCollapsed ? (
+                  <Image
+                    src={brandConfig.collapsedLogo || "/collapsed-logo.png"} // 👈 fallback if you want
+                    alt={brandConfig.name}
+                    width={40}
+                    height={40}
+                    className="object-contain transition-all duration-100"
+                  />
+                ) : (
+                  <Image
+                    src={brandConfig.logo}
+                    alt={brandConfig.name}
+                    width={150}
+                    height={150}
+                    className="object-contain duration-100"
+                  />
                 )}
+              </div> */}
+              <div className="flex items-center justify-center flex-shrink-0 h-[80px] transition-all duration-300">
+                <div className="relative w-[150px] h-[60px] flex items-center justify-center">
+                  <Image
+                    key={sidebarCollapsed ? "collapsed" : "expanded"} // forces React to re-render properly
+                    src={sidebarCollapsed ? brandConfig.collapsedLogo || "/collapsed-logo.png" : brandConfig.logo}
+                    alt={brandConfig.name}
+                    width={sidebarCollapsed ? 40 : 150}
+                    height={sidebarCollapsed ? 40 : 60}
+                    className={`object-contain transition-all duration-300 ease-in-out ${sidebarCollapsed ? "scale-90 opacity-90" : "scale-100 opacity-100"
+                      }`}
+                  />
+                </div>
               </div>
+
             </Link>
           </div>
 
@@ -239,27 +278,25 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 <Link
                   key={index}
                   href={item.href}
-                  className={`group flex items-center px-3 py-2 text-md font-medium rounded-lg transition-all duration-200 ${
-                    isActive
-                      ? "text-white shadow-sm"
-                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-100/80"
-                  } ${sidebarCollapsed ? "justify-center" : ""}`}
+                  className={`group flex items-center px-3 py-2 text-md font-medium rounded-lg transition-all duration-200 ${isActive
+                    ? "text-white shadow-sm"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-100/80"
+                    } ${sidebarCollapsed ? "justify-center" : ""}`}
                   style={
                     isActive
                       ? {
-                          backgroundColor: brandConfig.colors.primary,
-                          boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                        }
+                        backgroundColor: brandConfig.colors.primary,
+                        boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                      }
                       : {}
                   }
                   onClick={() => setSidebarOpen(false)}
                 >
                   <item.icon
-                    className={`h-4 w-4 flex-shrink-0 ${
-                      isActive
-                        ? "text-white"
-                        : "text-gray-400 group-hover:text-gray-600"
-                    } ${sidebarCollapsed ? "" : "mr-3"}`}
+                    className={`h-4 w-4 flex-shrink-0 ${isActive
+                      ? "text-white"
+                      : "text-gray-400 group-hover:text-gray-600"
+                      } ${sidebarCollapsed ? "" : "mr-3"}`}
                   />
 
                   {!sidebarCollapsed && (
@@ -301,9 +338,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </nav>
 
           <div
-            className={`p-3 border-t border-gray-200/60 flex-shrink-0 ${
-              sidebarCollapsed ? "px-2" : "px-3"
-            }`}
+            className={`p-3 border-t border-gray-200/60 flex-shrink-0 ${sidebarCollapsed ? "px-2" : "px-3"
+              }`}
           >
             {sidebarCollapsed ? (
               <Tooltip>
@@ -359,9 +395,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
           {availableRoles.length > 1 && (
             <div
-              className={`p-2 border-t border-gray-200/60 flex-shrink-0 ${
-                sidebarCollapsed ? "px-2" : "px-3"
-              }`}
+              className={`p-2 border-t border-gray-200/60 flex-shrink-0 ${sidebarCollapsed ? "px-2" : "px-3"
+                }`}
             >
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -420,9 +455,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
 
         <div
-          className={`lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 shadow-lg transform transition-transform duration-300 ease-in-out ${
-            sidebarOpen ? "translate-x-0" : "-translate-x-full"
-          }`}
+          className={`lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 shadow-lg transform transition-transform duration-300 ease-in-out ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
+            }`}
         >
           <div className="flex flex-col h-full">
             <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 flex-shrink-0">
@@ -491,11 +525,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   <Link
                     key={index}
                     href={item.href}
-                    className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
-                      isActive
-                        ? "text-white shadow-sm"
-                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-                    }`}
+                    className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${isActive
+                      ? "text-white shadow-sm"
+                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                      }`}
                     style={
                       isActive
                         ? { backgroundColor: brandConfig.colors.primary }
@@ -504,11 +537,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     onClick={() => setSidebarOpen(false)}
                   >
                     <item.icon
-                      className={`mr-3 h-5 w-5 ${
-                        isActive
-                          ? "text-white"
-                          : "text-gray-400 group-hover:text-gray-500"
-                      }`}
+                      className={`mr-3 h-5 w-5 ${isActive
+                        ? "text-white"
+                        : "text-gray-400 group-hover:text-gray-500"
+                        }`}
                     />
                     <span className="flex-1">{item.label}</span>
                     {item.badge && (
@@ -593,7 +625,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   <Menu className="h-4 w-4" />
                 </Button>
 
-                <div className="flex items-center space-x-3">
+                {/* <div className="flex items-center space-x-3">
                   {sidebarCollapsed && (
                     <div className="hidden lg:flex items-center space-x-2">
                       <Image
@@ -605,7 +637,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                       />
                     </div>
                   )}
-                </div>
+                </div> */}
               </div>
 
               <div className="flex items-center space-x-3">
@@ -682,7 +714,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
 
         {/* Feedback Component */}
-        <FeedbackComponent 
+        <FeedbackComponent
           open={feedbackModalOpen}
           onOpenChange={setFeedbackModalOpen}
         />
