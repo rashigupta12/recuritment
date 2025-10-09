@@ -61,7 +61,7 @@ ${applicants
     )
     .join('\n')}
 
-Please find their resumes attached with this email.
+Please find their resume attached with this email.
 We trust that the shared ${
             applicants.length === 1 ? 'candidate' : 'candidates'
         } have the skills and experience that align with your requirements.

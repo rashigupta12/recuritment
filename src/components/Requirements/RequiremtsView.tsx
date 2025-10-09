@@ -19,6 +19,7 @@ import {
   Plus,
   RefreshCw,
   Search,
+  Upload,
   User,
   Users,
 } from "lucide-react";
@@ -647,122 +648,96 @@ const StaffingPlansTable: React.FC = () => {
                             </div>
                           </td> */}
 
-                          <td className="px-4 py-4">
-                            <div className="flex items-center space-x-1 flex-wrap gap-2">
-                              {/* View Details Button */}
+                         <td className="px-4 py-4">
+  <div className="flex items-center space-x-1 flex-wrap gap-2">
+    {/* If user is Project Manager → show Allocation button only */}
+    {isProjectManager ? (
+      detail.job_id && (
+        <button
+          onClick={() =>
+            handleAllocation(plan, detail, planIndex, detailIndex)
+          }
+          className="flex items-center px-3 py-1.5 text-white bg-green-600 hover:bg-green-700 rounded text-md transition-colors"
+          title="Manage Allocation"
+        >
+          <Users className="h-4 w-4 mr-1" />
+          Allocation
+        </button>
+      )
+    ) : (
+      <>
+        {/* View Details */}
+        <div className="relative group">
+          <button
+            onClick={() =>
+              handleViewDetails(plan, detail, planIndex, detailIndex)
+            }
+            className="flex items-center px-1 py-1.5 text-blue-500 rounded text-md transition-colors"
+          >
+            <Eye className="h-4 w-4" />
+          </button>
+          <span
+            className="absolute left-1/2 -translate-x-1/2 -top-7 
+              px-2 py-1 text-xs text-white bg-gray-800 rounded opacity-0 
+              group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap"
+          >
+            View Details
+          </span>
+        </div>
 
-                              {!isProjectManager && (
+        {/* Edit Button - Only once per plan */}
+        {detailIndex === 0 && (
+          <div className="relative group">
+            <button
+              onClick={() => handleEdit(plan.name)}
+              className="flex items-center px-1 py-1.5 text-blue-500 rounded text-md transition-colors"
+            >
+              <Edit className="h-4 w-4" />
+            </button>
+            <span
+              className="absolute left-1/2 -translate-x-1/2 -top-7 
+                px-2 py-1 text-xs text-white bg-gray-800 rounded opacity-0 
+                group-hover:opacity-100 transform -translate-y-1 
+                group-hover:-translate-y-2 transition-all duration-200 pointer-events-none whitespace-nowrap"
+            >
+              Edit Staffing Plan
+            </span>
+          </div>
+        )}
 
-                                <div>
-                              <div className="relative group">
-                                <button
-                                  onClick={() =>
-                                    handleViewDetails(
-                                      plan,
-                                      detail,
-                                      planIndex,
-                                      detailIndex
-                                    )
-                                  }
-                                  className="flex items-center px-1 py-1.5 text-blue-500 rounded text-md transition-colors"
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </button>
+        {/* Publish Button - Only if job_id exists */}
+        {detail.job_id && (
+          <div className="relative group">
+            <button
+              onClick={() =>
+                handlePublish(detail.job_id!, planIndex, detailIndex)
+              }
+              disabled={publishingJobs.has(detail.job_id)}
+              className="flex items-center px-1 py-1.5 text-blue-500 rounded text-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {publishingJobs.has(detail.job_id) ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <Upload className="h-4 w-4 mr-1" />
+              )}
+            </button>
+            <span
+              className="absolute left-1/2 -translate-x-1/2 -top-7 
+                px-2 py-1 text-xs text-white bg-gray-800 rounded opacity-0 
+                group-hover:opacity-100 transform -translate-y-1 
+                group-hover:-translate-y-2 transition-all duration-200 pointer-events-none whitespace-nowrap"
+            >
+              {publishingJobs.has(detail.job_id)
+                ? "Publishing..."
+                : "Publish"}
+            </span>
+          </div>
+        )}
+      </>
+    )}
+  </div>
+</td>
 
-                                {/* Tooltip */}
-                                <span
-                                  className="absolute left-1/2 -translate-x-1/2 -top-7 
-    px-2 py-1 text-xs text-white bg-gray-800 rounded opacity-0 
-    group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap"
-                                >
-                                  View Details
-                                </span>
-                              </div>
-
-                              {/* Edit Button - Only show once per plan */}
-                              {detailIndex === 0 && (
-                                <div className="relative group">
-                                  <button
-                                    onClick={() => handleEdit(plan.name)}
-                                    className="flex items-center px-1 py-1.5 text-blue-500 rounded text-md transition-colors"
-                                  >
-                                    <Edit className="h-4 w-4" />
-                                  </button>
-
-                                  {/* Tooltip */}
-                                  <span
-                                    className="absolute left-1/2 -translate-x-1/2 -top-7 
-      px-2 py-1 text-xs text-white bg-gray-800 rounded opacity-0 
-      group-hover:opacity-100 transform -translate-y-1 
-      group-hover:-translate-y-2 transition-all duration-200 pointer-events-none whitespace-nowrap"
-                                  >
-                                    Edit Staffing Plan
-                                  </span>
-                                </div>
-                              )}
-
-                              {/* Publish Button - Only if job_id exists */}
-                              {detail.job_id && (
-                                <div className="relative group">
-                                  <button
-                                    onClick={() =>
-                                      handlePublish(
-                                        detail.job_id!,
-                                        planIndex,
-                                        detailIndex
-                                      )
-                                    }
-                                    disabled={publishingJobs.has(detail.job_id)}
-                                    className="flex items-center px-1 py-1.5 text-blue-500 rounded text-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                  >
-                                    {publishingJobs.has(detail.job_id) ? (
-                                      <>
-                                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                                      </>
-                                    ) : (
-                                      <>
-                                        <PaintBucket className="h-4 w-4 mr-1" />
-                                      </>
-                                    )}
-                                  </button>
-
-                                  {/* Tooltip */}
-                                  <span
-                                    className="absolute left-1/2 -translate-x-1/2 -top-7 
-      px-2 py-1 text-xs text-white bg-gray-800 rounded opacity-0 
-      group-hover:opacity-100 transform -translate-y-1 
-      group-hover:-translate-y-2 transition-all duration-200 pointer-events-none whitespace-nowrap"
-                                  >
-                                    {publishingJobs.has(detail.job_id)
-                                      ? "Publishing..."
-                                      : "Publish"}
-                                  </span>
-                                </div>
-                              )}
-                              </div>
-                              )}
-                              
-
-                              {/* Allocation Button - Only for project managers and if job_id exists */}
-                              {isProjectManager && detail.job_id && (
-                                <button
-                                  onClick={() =>
-                                    handleAllocation(
-                                      plan,
-                                      detail,
-                                      planIndex,
-                                      detailIndex
-                                    )
-                                  }
-                                  className="flex items-center px-3 py-1.5 text-white bg-green-600 hover:bg-green-700 rounded text-md transition-colors"
-                                  title="Manage Allocation"
-                                >
-                                  <Users className="h-4 w-4 mr-1" />
-                                  Allocation
-                                </button>
-                              )}
-                            </div>
-                          </td>
                         </tr>
                       ))}
                     </React.Fragment>
