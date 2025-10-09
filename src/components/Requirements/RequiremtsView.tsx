@@ -463,6 +463,7 @@ const StaffingPlansTable: React.FC = () => {
     contact: [],
     designation: [],
   });
+  
 
   // Check if user is project manager
   const isProjectManager = user?.roles?.includes("Project Manager") || false;
