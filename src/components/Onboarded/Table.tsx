@@ -35,8 +35,8 @@ interface LeadsTableProps {
   onCreateContract: (lead: Lead) => Promise<void>;
 }
 
-type SortField = "company" | "contact" | "offering" | "salary" | "vacancies" | "fee" | "dealValue" | "createdOn";
-type AllFields = SortField | "actions";
+type SortField = "company" | "contact" | "offering" | "salary" | "vacancies" | "fee" | "dealValue" | "createdOn" |"stage";
+type AllFields = SortField ;
 type SortDirection = "asc" | "desc" | null;
 
 
@@ -51,7 +51,7 @@ export const LeadsTable = ({
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
 
   const handleSort = (field: AllFields) => {
-    if (field === 'actions') return;
+    // if (field === 'actions') return;
     
     if (sortField === field) {
       if (sortDirection === "asc") setSortDirection("desc");
@@ -82,16 +82,16 @@ export const LeadsTable = ({
 
     const columns = useMemo(() => {
       const cols: Array<{ field: AllFields; label: string; sortable?: boolean }> = [
-        { field: 'company', label: 'Company',sortable: false },
+        { field: 'company', label: 'Company Name',sortable: false },
         { field: 'contact', label: 'Contact',sortable: false },
-        // { field: 'stage', label: 'Stage',sortable: false },
+        { field: 'stage', label: 'Stage',sortable: false },
         { field: 'offering', label: 'Offering',sortable: false },
         { field: 'salary', label: 'AVG.SAL (LPA)',sortable: false },
         { field: 'vacancies', label: 'No. Of Vac',sortable: false },
         { field: 'fee', label: 'Fee (%/K)',sortable: false },
         { field: 'dealValue', label: 'Deal Value(L)',sortable: false },
         { field: 'createdOn', label: 'Created On',sortable: false },
-        { field: 'actions', label: 'Actions', sortable: false },
+        // { field: 'actions', label: 'Actions', sortable: false },
       ];
       return cols;
     }, []);
@@ -215,17 +215,20 @@ const formatDateAndTime = (dateString?: string) => {
   return { date: formattedDate, time: formattedTime };
 };
 
+const getStageAbbreviation = (stage: string | null | undefined): string => {
+  if (!stage) return "-";
+  
+  const clean = stage.replace(/[^a-zA-Z\s]/g, "").trim();
+  const words = clean.split(/\s+/);
+  
+  if (words.length === 1) {
+    return words[0].slice(0, 2);
+  }
+  
+  return words.map((w) => w.charAt(0)).join("");
+};
 const LeadsTableRow = memo(
   ({ lead, onView, onEdit, onCreateContract, isLoading }: LeadsTableRowProps) => {
-    const canCreateContract =
-      lead.custom_stage === "Contract" ||
-      lead.custom_stage === "Onboarded" ||
-      lead.custom_stage === "Follow-Up / Relationship Management";
-
-    const canEdit =
-      lead.custom_stage !== "Contract" &&
-      lead.custom_stage !== "Onboarded" &&
-      lead.custom_stage !== "Follow-Up / Relationship Management";
 
     return (
       <tr className="hover:bg-gray-50">
@@ -260,6 +263,22 @@ const LeadsTableRow = memo(
             </div>
           </div>
         </td>
+        <td className="px-4 py-2">
+        <div className="relative group">
+          <div className="text-md text-gray-900 uppercase cursor-default">
+            {getStageAbbreviation(lead.custom_stage)}
+          </div>
+          {lead.custom_stage && (
+            <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block z-10">
+              <div className="bg-gray-900 text-white text-xs font-medium px-2 py-1 rounded shadow-lg whitespace-nowrap">
+                {lead.custom_stage}
+                {/* Tooltip arrow */}
+                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+              </div>
+            </div>
+          )}
+        </div>
+      </td>
         <td className="px-4 py-2">
           <div className="text-md text-gray-900">
             {lead.custom_offerings || "-"}
@@ -313,7 +332,7 @@ const LeadsTableRow = memo(
             );
           })()}
         </td>
-        <td className="px-6 py-2 whitespace-nowrap">
+        {/* <td className="px-6 py-2 whitespace-nowrap">
           <div className="flex items-center gap-2">
             {canCreateContract && (
               <button
@@ -337,7 +356,7 @@ const LeadsTableRow = memo(
               <div className="w-4 h-4" />
             )}
           </div>
-        </td>
+        </td> */}
       </tr>
     );
   }

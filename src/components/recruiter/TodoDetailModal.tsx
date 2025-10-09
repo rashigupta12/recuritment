@@ -231,12 +231,20 @@ export const TodoDetailModal = ({
             <div className="flex flex-row gap-6 mb-6">
              
               <div className="flex-1 bg-gradient-to-br from-white to-slate-50 rounded-xl p-6 border border-slate-200" style={{ flex: '0 0 65%' }}>
-                <h2 className="text-lg font-semibold text-slate-900 mb-4">JOB DESCRIPTION</h2>
+                <h2 className="text-lg font-semibold text-slate-900 mb-2">JOB DESCRIPTION</h2>
 
-                <div
-                  className="prose max-w-none text-slate-800 leading-relaxed"
-                  dangerouslySetInnerHTML={{ __html: todo.custom_job_desc || '' }}
-                />
+<div
+  className="prose max-w-none text-slate-800"
+  dangerouslySetInnerHTML={{
+    __html:
+      todo.custom_job_desc
+        ?.split(/•\s*/g)
+        .filter(Boolean)
+        .map((line) => `<p>• ${line.trim()}</p>`)
+        .join('') || '',
+  }}
+/>
+
               </div>
               {/* Company Information - 23% width */}
               <div className="flex-1 bg-gradient-to-br from-white to-slate-50 rounded-xl p-6 border border-slate-200" style={{ flex: '0 0 30%' }}>
@@ -248,10 +256,10 @@ export const TodoDetailModal = ({
                     <span className="text-sm text-slate-900 truncate">{extractCompany(todo.description)}</span>
                   </div>
 
-                  <div className="flex flex-col">
+                  {/* <div className="flex flex-col">
                     <span className="text-sm font-bold text-slate-700">Industry</span>
                     <span className="text-sm text-slate-900 truncate">{extractIndustry(todo.description)}</span>
-                  </div>
+                  </div> */}
 
                   <div className="flex flex-col">
                     <span className="text-sm font-bold text-slate-700">Location</span>

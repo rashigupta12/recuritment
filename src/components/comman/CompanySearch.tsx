@@ -547,7 +547,7 @@ useEffect(() => {
 
       {/* Selected Company Display */}
       {selectedCompany && (
-        <div className="border border-primary/20 rounded-lg p-4 bg-primary/5 animate-in fade-in-50">
+        <div className="border rounded-lg p-4  animate-in fade-in-50">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div>
@@ -593,15 +593,15 @@ useEffect(() => {
       {showCompanyDialog && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white">
-              <h2 className="text-xl font-bold text-gray-900">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-primary">
+              <h2 className="text-xl font-bold text-white">
                 {selectedCompany ? "Edit Company" : "Add New Company"}
               </h2>
               <button
                 onClick={handleCloseCompanyDialog}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-2   "
               >
-                <X className="h-5 w-5 text-gray-500" />
+                <X className="h-5 w-5 text-white" />
               </button>
             </div>
             <div className="p-6 space-y-4">

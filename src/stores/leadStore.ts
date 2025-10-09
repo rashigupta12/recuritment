@@ -68,6 +68,7 @@ export interface Lead {
 }
 
 export interface LeadFormData {
+  currency: string
   custom_fixed_charges: number
   contact: Contact | null
   company: Company | null
@@ -139,7 +140,8 @@ const initialFormData: LeadFormData = {
   custom_fee: 0,
   custom_deal_value: 0,
   custom_expected_close_date: '',
-  custom_fixed_charges: 0
+  custom_fixed_charges: 0 , 
+  currency:""
 }
 
 export const useLeadStore = create<LeadStore>()(

@@ -240,7 +240,7 @@ const EmploymentTypeDropdown: React.FC<{
     if (searchQuery.trim() === "") {
       setFilteredTypes(employmentTypes);
     } else {
-      const filtered = employmentTypes.filter(type =>
+      const filtered = employmentTypes.filter((type) =>
         type.toLowerCase().includes(searchQuery.toLowerCase())
       );
       setFilteredTypes(filtered);
@@ -287,10 +287,10 @@ const EmploymentTypeDropdown: React.FC<{
   // Handle dropdown toggle
   const handleToggle = () => {
     if (disabled) return;
-    
+
     const newIsOpen = !isOpen;
     setIsOpen(newIsOpen);
-    
+
     if (newIsOpen) {
       setSearchQuery("");
       // Focus input after dropdown opens
@@ -347,14 +347,21 @@ const EmploymentTypeDropdown: React.FC<{
 
       {/* Dropdown menu - FIXED: Changed positioning and z-index */}
       {isOpen && (
-        <div className="fixed bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto mt-1 min-w-[200px]"
+        <div
+          className="fixed bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto mt-1 min-w-[200px]"
           style={{
-            top: dropdownRef.current ? 
-              dropdownRef.current.getBoundingClientRect().bottom + window.scrollY + 4 : 0,
-            left: dropdownRef.current ? 
-              dropdownRef.current.getBoundingClientRect().left + window.scrollX : 0,
-            width: dropdownRef.current ? 
-              dropdownRef.current.getBoundingClientRect().width : 'auto',
+            top: dropdownRef.current
+              ? dropdownRef.current.getBoundingClientRect().bottom +
+                window.scrollY +
+                4
+              : 0,
+            left: dropdownRef.current
+              ? dropdownRef.current.getBoundingClientRect().left +
+                window.scrollX
+              : 0,
+            width: dropdownRef.current
+              ? dropdownRef.current.getBoundingClientRect().width
+              : "auto",
             zIndex: 9999,
           }}
         >
@@ -378,7 +385,9 @@ const EmploymentTypeDropdown: React.FC<{
                 key={type}
                 onClick={() => handleSelect(type)}
                 className={`w-full px-3 py-2 text-sm text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0 ${
-                  value === type ? "bg-blue-50 text-blue-600 font-medium" : "text-gray-700"
+                  value === type
+                    ? "bg-blue-50 text-blue-600 font-medium"
+                    : "text-gray-700"
                 }`}
               >
                 {type}
@@ -398,7 +407,7 @@ const StaffingPlanCreator: React.FC = () => {
     initialStaffingPlanForm
   );
   const [selectedLead, setSelectedLead] = useState<LeadType | null>(null);
-  console.log(selectedLead)
+  console.log(selectedLead);
   const [isSaving, setIsSaving] = useState(false);
   const [uploadingJDs, setUploadingJDs] = useState<{
     [key: number]: boolean;
@@ -959,31 +968,49 @@ const StaffingPlanCreator: React.FC = () => {
                     Loading lead...
                   </div>
                 )}
-
-                
-
-                <div className="flex items-center justify-between mb-3">
-                  
-                
-                </div>
               </div>
 
-                <button
-                    onClick={addStaffingItem}
-                    disabled={
-                      !allRowsHaveDesignation(formData.staffing_details)
-                    }
-                    className="flex items-center space-x-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    title={
-                      !allRowsHaveDesignation(formData.staffing_details)
-                        ? "Please fill designation for all existing rows"
-                        : "Add new requirement"
-                    }
-                  >
-                    <Plus className="h-4 w-4" />
-                    <span>Add Requirement</span>
-                  </button>
+        
+
+              <button
+                onClick={addStaffingItem}
+                disabled={!allRowsHaveDesignation(formData.staffing_details)}
+                className="flex items-center space-x-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title={
+                  !allRowsHaveDesignation(formData.staffing_details)
+                    ? "Please fill designation for all existing rows"
+                    : "Add new requirement"
+                }
+              >
+                <Plus className="h-4 w-4" />
+                <span>Add Requirement</span>
+              </button>
             </div>
+
+                  <div className="flex items-center justify-between mb-3">
+                {!selectedLead && !isLoadingLead && (
+                  <LeadSearchSection
+                    onLeadSelect={setSelectedLead}
+                    selectedLead={selectedLead}
+                    disabled={isEditMode}
+                  />
+                )}
+                {selectedLead && (
+                  <div className="bg-green-50 border border-green-200 rounded p-2 text-sm text-green-800">
+                    <span className="font-medium">Selected Lead:</span>{" "}
+                    {selectedLead.custom_full_name} -{" "}
+                    {selectedLead.company_name}
+                    {!isEditMode && (
+                      <button
+                        onClick={() => setSelectedLead(null)}
+                        className="ml-2 text-green-600 hover:text-green-800 underline"
+                      >
+                        Change Lead
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
 
             {error && (
               <div className="bg-red-50 border border-red-200 rounded p-2 text-md text-red-800 mb-2 flex items-center">
@@ -993,13 +1020,13 @@ const StaffingPlanCreator: React.FC = () => {
             )}
           </div>
 
+          
+
           {/* Form Content */}
           {selectedLead && (
             <div className="p-3">
               {/* Staffing Requirements Table */}
               <div>
-                
-
                 {/* Table */}
                 <div className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
                   <div className="overflow-x-auto">
@@ -1111,9 +1138,7 @@ const StaffingPlanCreator: React.FC = () => {
                                       placeholder="Enter salary"
                                     />
                                   </div>
-                                  <div className="w-[25%] ">
-                                    LPA
-                                  </div>
+                                  <div className="w-[25%] ">LPA</div>
                                 </div>
                               </td>
 
@@ -1204,41 +1229,47 @@ const StaffingPlanCreator: React.FC = () => {
                               </td> */}
 
                               {/* Upload JD */}
-<td className="p-3 text-center" style={{ width: "120px" }}>
-  <div className="flex justify-center items-center gap-2">
-    <label className="flex items-center space-x-1 cursor-pointer text-blue-600 hover:text-blue-800 transition-colors">
-      {uploadingJDs[index] ? (
-        <>
-          <Loader2 className="h-4 w-4 animate-spin" />
-          <span className="text-md">Parsing...</span>
-        </>
-      ) : (
-        <>
-          <Upload className="h-4 w-4" />
-        </>
-      )}
-      <input
-        type="file"
-        className="hidden"
-        accept=".pdf,.docx,.txt"
-        onChange={(e) =>
-          e.target.files?.[0] && handleJDUpload(e.target.files[0], index)
-        }
-        disabled={uploadingJDs[index]}
-      />
-    </label>
+                              <td
+                                className="p-3 text-center"
+                                style={{ width: "120px" }}
+                              >
+                                <div className="flex justify-center items-center gap-2">
+                                  <label className="flex items-center space-x-1 cursor-pointer text-blue-600 hover:text-blue-800 transition-colors">
+                                    {uploadingJDs[index] ? (
+                                      <>
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        <span className="text-md">
+                                          Parsing...
+                                        </span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Upload className="h-4 w-4" />
+                                      </>
+                                    )}
+                                    <input
+                                      type="file"
+                                      className="hidden"
+                                      accept=".pdf,.docx,.txt"
+                                      onChange={(e) =>
+                                        e.target.files?.[0] &&
+                                        handleJDUpload(e.target.files[0], index)
+                                      }
+                                      disabled={uploadingJDs[index]}
+                                    />
+                                  </label>
 
-    {pendingJDFiles[index] && !uploadingJDs[index] && (
-      <FileText className="h-4 w-4 text-orange-600" />
-    )}
+                                  {pendingJDFiles[index] &&
+                                    !uploadingJDs[index] && (
+                                      <FileText className="h-4 w-4 text-orange-600" />
+                                    )}
 
-    {item.attachmentsoptional && !pendingJDFiles[index] && (
-      <CheckCircle className="h-4 w-4 text-green-600" />
-    )}
-  </div>
-</td>
-
-
+                                  {item.attachmentsoptional &&
+                                    !pendingJDFiles[index] && (
+                                      <CheckCircle className="h-4 w-4 text-green-600" />
+                                    )}
+                                </div>
+                              </td>
 
                               {/* Action */}
                               <td
@@ -1285,7 +1316,7 @@ const StaffingPlanCreator: React.FC = () => {
                                         <FileText className="h-4 w-4" />
                                         <span>Job Description </span>
                                         <span className="text-xs text-gray-500">
-                                          <Edit className="h-4 w-4"/>
+                                          <Edit className="h-4 w-4" />
                                         </span>
                                       </div>
                                     </button>
@@ -1377,3 +1408,4 @@ const StaffingPlanCreator: React.FC = () => {
 };
 
 export default StaffingPlanCreator;
+

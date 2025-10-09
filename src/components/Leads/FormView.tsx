@@ -57,10 +57,10 @@ export const LeadsFormView = ({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       <div className="py-2">
         <div className="w-full mx-auto">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+          <div className=" rounded-xl shadow-sm border ">
             <div className="p-4">
               <LeadForm 
                 onClose={handleFormClose}

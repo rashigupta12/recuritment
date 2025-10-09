@@ -28,20 +28,20 @@ const AccordionSection: React.FC<AccordionSectionProps> = ({
         className={`w-full flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors ${
           compact ? 'px-4 py-3' : 'px-5 py-4'
         } ${
-          completed ? "bg-primary/5 border-primary/20" : ""
+          completed ? "" : ""
         }`}
       >
         <div className={`flex items-center ${compact ? 'space-x-3' : 'space-x-4'}`}>
           <div
             className={`${compact ? 'w-8 h-8' : 'w-10 h-10'} rounded-full flex items-center justify-center ${
-              completed ? "bg-primary text-white" : "bg-gray-200 text-gray-600"
+              completed ? " text-black" : " text-gray-600"
             }`}
           >
             <Icon className={compact ? "h-5 w-5" : "h-7 w-7"} />
           </div>
           <span
             className={`${compact ? 'text-lg' : 'text-lg'} font-bold ${
-              completed ? "text-primary" : "text-gray-900"
+              completed ? "text-black" : "text-gray-900"
             }`}
           >
             {title}
