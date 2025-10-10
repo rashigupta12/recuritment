@@ -1,9 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
+import { useAuth } from "@/contexts/AuthContext";
 import { frappeAPI } from "@/lib/api/frappeClient";
 import {
   AlertCircle,
   Building,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   Edit,
   Eye,
@@ -11,17 +14,15 @@ import {
   Loader2,
   MapPin,
   Phone,
-  Plus,
   Upload,
   User,
-  Users,
+  Users
 } from "lucide-react";
-import React, { useEffect, useState, useMemo } from "react";
-import { JobOpeningModal } from "./requirement-view/JobopeningModal";
-import { useAuth } from "@/contexts/AuthContext";
-import { SortableTableHeader } from "../recruiter/SortableTableHeader";
 import { useRouter } from "next/navigation";
-import { TodosHeader,FilterState } from "../recruiter/TodoHeader";
+import React, { useEffect, useMemo, useState } from "react";
+import { SortableTableHeader } from "../recruiter/SortableTableHeader";
+import { FilterState, TodosHeader } from "../recruiter/TodoHeader";
+import { JobOpeningModal } from "./requirement-view/JobopeningModal";
 
 // Type definitions
 type StaffingPlanItem = {
@@ -89,23 +90,29 @@ const StaffingPlansTable: React.FC = () => {
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
   const [publishingJobs, setPublishingJobs] = useState<Set<string>>(new Set());
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
+  
   const { user } = useAuth();
 
   // Check if user is project manager
   const isProjectManager = user?.roles?.includes("Projects Manager") || false;
 
   // Filter state for TodosHeader
- const [filterState, setFilterState] = useState<FilterState>({
-  departments: [],
-  assignedBy: [],
-  clients: [],
-  locations: [],
-  jobTitles: [],
-  status: [],
-  contacts: [], // Add contacts
-  dateRange: "all",
-  vacancies: "all",
-});
+  const [filterState, setFilterState] = useState<FilterState>({
+    departments: [],
+    assignedBy: [],
+    clients: [],
+    locations: [],
+    jobTitles: [],
+    status: [],
+    contacts: [],
+    dateRange: "all",
+    vacancies: "all",
+  });
 
   // Collect unique values for filters
   const uniqueCompanies = useMemo(
@@ -198,37 +205,25 @@ const StaffingPlansTable: React.FC = () => {
     return cols;
   }, []);
 
-  const fetchStaffingPlans = async () => {
+  const fetchStaffingPlans = async (page: number = 1) => {
     setIsLoading(true);
     setError(null);
 
     try {
+      const limitStart = (page - 1) * itemsPerPage;
       const response = await frappeAPI.makeAuthenticatedRequest(
         "GET",
-        `/resource/Staffing Plan?filters=[["owner","=","${user?.email}"]]&order_by=creation%20desc`
+        `/method/recruitment_app.get_staffing_plan.get_staffing_plans_with_children?limit_start=${limitStart}&limit_page_length=${itemsPerPage}`
       );
 
-      const plansData = response.data || [];
-      const detailedPlans = await Promise.all(
-        plansData.map(async (plan: { name: string }) => {
-          try {
-            const planDetails = await frappeAPI.makeAuthenticatedRequest(
-              "GET",
-              `/resource/Staffing Plan/${plan.name}`
-            );
-            return planDetails.data;
-          } catch (err) {
-            console.error(`Error fetching details for ${plan.name}:`, err);
-            return null;
-          }
-        })
-      );
+      console.log("API Response:", response.message);
 
-      const validPlans = detailedPlans.filter(
-        (plan) => plan !== null
-      ) as StaffingPlan[];
-      setPlans(validPlans);
-      setFilteredPlans(validPlans);
+      const plansData = response.message?.data || [];
+      const total = response.message?.total || 0;
+      
+      setPlans(plansData);
+      setFilteredPlans(plansData);
+      setTotalCount(total);
     } catch (error) {
       console.error("Error fetching staffing plans:", error);
       setError("Failed to load staffing plans. Please try again.");
@@ -238,8 +233,56 @@ const StaffingPlansTable: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchStaffingPlans();
-  }, []);
+    fetchStaffingPlans(currentPage);
+  }, [currentPage]);
+
+  // Calculate total pages
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
+
+  console.log("Pagination Debug:", { totalCount, itemsPerPage, totalPages, currentPage });
+
+  // Generate page numbers to display
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    const maxPagesToShow = 5;
+    
+    if (totalPages <= maxPagesToShow) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) {
+          pages.push(i);
+        }
+        pages.push('...');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push('...');
+        for (let i = totalPages - 3; i <= totalPages; i++) {
+          pages.push(i);
+        }
+      } else {
+        pages.push(1);
+        pages.push('...');
+        pages.push(currentPage - 1);
+        pages.push(currentPage);
+        pages.push(currentPage + 1);
+        pages.push('...');
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
+  };
+
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
 
   // Handle filter changes from TodosHeader
   const handleFilterChange = (newFilters: FilterState) => {
@@ -461,13 +504,13 @@ const StaffingPlansTable: React.FC = () => {
         <TodosHeader
           searchQuery={searchTerm}
           onSearchChange={setSearchTerm}
-          onRefresh={fetchStaffingPlans}
-          totalJobs={plans.length}
+          onRefresh={() => fetchStaffingPlans(currentPage)}
+          totalJobs={totalCount}
           filteredJobs={filteredPlans.length}
           uniqueClients={uniqueCompanies}
           uniqueContacts={uniqueContacts}
           uniqueJobTitles={uniquePositions}
-          uniqueStatus={[]} // You can add status options if needed
+          uniqueStatus={[]}
           onFilterChange={handleFilterChange}
           filterConfig={filterConfig}
           title="Customers Requirements"
@@ -492,217 +535,217 @@ const StaffingPlansTable: React.FC = () => {
             </h3>
             <p className="text-gray-600 mb-6">{error}</p>
             <button
-              onClick={fetchStaffingPlans}
+              onClick={() => fetchStaffingPlans(currentPage)}
               className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg mx-auto transition-colors"
             >
               <span>Try Again</span>
             </button>
           </div>
         ) : filteredPlans.length > 0 ? (
-          <div className="bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden mt-4">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <SortableTableHeader
-                  columns={columns}
-                  sortField={sortField}
-                  sortDirection={sortDirection}
-                  onSort={handleSort}
-                  className="bg-blue-500 text-white"
-                />
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredPlans.map((plan, planIndex) => (
-                    <React.Fragment key={plan.name}>
-                      {plan.staffing_details.map((detail, detailIndex) => (
-                        <tr
-                          key={`${plan.name}-${detailIndex}`}
-                          className="hover:bg-gray-50 transition-colors"
-                        >
-                          {plan.creation && (
-                            <td className="px-4 py-2 whitespace-nowrap text-md text-gray-900">
-                              {(() => {
-                                const { date, time } = formatDateAndTimeV2(
-                                  plan.creation
-                                );
-                                return (
-                                  <div className="flex flex-col leading-tight">
-                                    <span>{date}</span>
-                                    <span className="text-md text-gray-500">
-                                      {time}
-                                    </span>
-                                  </div>
-                                );
-                              })()}
-                            </td>
-                          )}
+          <>
+            <div className="bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden mt-4">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <SortableTableHeader
+                    columns={columns}
+                    sortField={sortField}
+                    sortDirection={sortDirection}
+                    onSort={handleSort}
+                    className="bg-blue-500 text-white"
+                  />
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredPlans.map((plan, planIndex) => (
+                      <React.Fragment key={plan.name}>
+                        {plan.staffing_details.map((detail, detailIndex) => (
+                          <tr
+                            key={`${plan.name}-${detailIndex}`}
+                            className="hover:bg-gray-50 transition-colors"
+                          >
+                            {plan.creation && (
+                              <td className="px-4 py-2 whitespace-nowrap text-md text-gray-900">
+                                {(() => {
+                                  const { date, time } = formatDateAndTimeV2(
+                                    plan.creation
+                                  );
+                                  return (
+                                    <div className="flex flex-col leading-tight">
+                                      <span>{date}</span>
+                                      <span className="text-md text-gray-500">
+                                        {time}
+                                      </span>
+                                    </div>
+                                  );
+                                })()}
+                              </td>
+                            )}
 
-                          {detailIndex === 0 && (
-                            <td
-                              className="px-4 py-3 align-top"
-                              rowSpan={plan.staffing_details.length}
-                              width={"300px"}
-                            >
-                              <div className="flex flex-col space-y-1 max-w-[250px]">
-                                <div className="group relative">
-                                  <div className="flex items-center">
-                                    <Building className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0" />
-                                    <span className="font-semibold text-gray-900 text-md leading-tight line-clamp-2">
+                            {detailIndex === 0 && (
+                              <td
+                                className="px-4 py-3 align-top"
+                                rowSpan={plan.staffing_details.length}
+                                width={"300px"}
+                              >
+                                <div className="flex flex-col space-y-1 max-w-[250px]">
+                                  <div className="group relative">
+                                    <div className="flex items-center">
+                                      <Building className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0" />
+                                      <span className="font-semibold text-gray-900 text-md leading-tight line-clamp-2">
+                                        {plan.company}
+                                      </span>
+                                    </div>
+                                    <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-gray-900 text-white text-md rounded py-1 px-2 z-10 whitespace-nowrap">
                                       {plan.company}
-                                    </span>
+                                    </div>
                                   </div>
-                                  <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-gray-900 text-white text-md rounded py-1 px-2 z-10 whitespace-nowrap">
-                                    {plan.company}
+                                  <div className="text-md text-gray-600 space-y-0.5">
+                                    <div
+                                      className="flex items-center truncate"
+                                      title={plan.custom_contact_name}
+                                    >
+                                      <User className="h-3 w-3 text-gray-400 mr-1 flex-shrink-0" />
+                                      <span className="truncate">
+                                        {plan.custom_contact_name}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center truncate">
+                                      <Phone className="h-3 w-3 text-gray-400 mr-1 flex-shrink-0" />
+                                      <span className="truncate">
+                                        {plan.custom_contact_phone}
+                                      </span>
+                                    </div>
                                   </div>
                                 </div>
-                                <div className="text-md text-gray-600 space-y-0.5">
-                                  <div
-                                    className="flex items-center truncate"
-                                    title={plan.custom_contact_name}
-                                  >
-                                    <User className="h-3 w-3 text-gray-400 mr-1 flex-shrink-0" />
-                                    <span className="truncate">
-                                      {plan.custom_contact_name}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center truncate">
-                                    <Phone className="h-3 w-3 text-gray-400 mr-1 flex-shrink-0" />
-                                    <span className="truncate">
-                                      {plan.custom_contact_phone}
-                                    </span>
-                                  </div>
+                              </td>
+                            )}
+
+                            <td className="px-4 py-4 capitalize">
+                              <div className="flex flex-col">
+                                <span className="font-medium text-gray-900 text-md">
+                                  {detail.designation}
+                                </span>
+                                <div className="text-md text-gray-500 mt-1">
+                                  <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-800">
+                                    {detail.number_of_positions}{" "}
+                                    {detail.number_of_positions === 1
+                                      ? "Position"
+                                      : "Positions"}
+                                  </span>
                                 </div>
                               </div>
                             </td>
-                          )}
 
-                          <td className="px-4 py-4 capitalize">
-                            <div className="flex flex-col">
-                              <span className="font-medium text-gray-900 text-md">
-                                {detail.designation}
-                              </span>
-                              <div className="text-md text-gray-500 mt-1">
-                                <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-800">
-                                  {detail.number_of_positions}{" "}
-                                  {detail.number_of_positions === 1
-                                    ? "Position"
-                                    : "Positions"}
-                                </span>
+                            <td className="px-4 py-4">
+                              <div className="flex flex-col space-y-2">
+                                <div className="flex items-center text-md text-gray-600">
+                                  <MapPin className="h-4 w-4 text-gray-400 mr-1" />
+                                  <span>{detail.location}</span>
+                                </div>
+                                <div className="flex items-center text-md text-gray-600">
+                                  <Clock className="h-4 w-4 text-gray-400 mr-1" />
+                                  <span>
+                                    {detail.min_experience_reqyrs}+ years exp
+                                  </span>
+                                </div>
                               </div>
-                            </div>
-                          </td>
+                            </td>
 
-                          <td className="px-4 py-4">
-                            <div className="flex flex-col space-y-2">
-                              <div className="flex items-center text-md text-gray-600">
-                                <MapPin className="h-4 w-4 text-gray-400 mr-1" />
-                                <span>{detail.location}</span>
+                            <td className="px-4 py-4">
+                              <div className="flex flex-col space-y-2">
+                                {(() => {
+                                  const allocated = detail.assign_to
+                                    ? detail.assign_to
+                                        .split(",")
+                                        .reduce((sum, item) => {
+                                          const [, allocation] = item
+                                            .trim()
+                                            .split("-");
+                                          return (
+                                            sum + (parseInt(allocation) || 0)
+                                          );
+                                        }, 0)
+                                    : 0;
+                                  const remaining = detail.vacancies - allocated;
+                                  return (
+                                    <div className="flex items-center text-md">
+                                      <Users className="h-4 w-4 text-green-500 mr-1" />
+                                      <span className="font-semibold text-green-600">
+                                        {detail.vacancies}
+                                      </span>
+                                      <span className="text-gray-400 mx-1">
+                                        |
+                                      </span>
+                                      <span className="text-blue-600 font-medium">
+                                        {allocated}
+                                      </span>
+                                      <span className="text-gray-500 text-md ml-0.5">
+                                        alloc
+                                      </span>
+                                      <span className="text-gray-400 mx-1">
+                                        |
+                                      </span>
+                                      <span className="text-orange-600 font-medium">
+                                        {remaining}
+                                      </span>
+                                      <span className="text-gray-500 text-md ml-0.5">
+                                        left
+                                      </span>
+                                    </div>
+                                  );
+                                })()}
+                                <div className="flex items-center">
+                                  <IndianRupee className="h-4 w-4 text-purple-500 mr-1" />
+                                  <span className="font-medium text-gray-900">
+                                    {detail.estimated_cost_per_position}L
+                                  </span>
+                                </div>
                               </div>
-                              <div className="flex items-center text-md text-gray-600">
-                                <Clock className="h-4 w-4 text-gray-400 mr-1" />
-                                <span>
-                                  {detail.min_experience_reqyrs}+ years exp
-                                </span>
-                              </div>
-                            </div>
-                          </td>
+                            </td>
 
-                          <td className="px-4 py-4">
-                            <div className="flex flex-col space-y-2">
-                              {(() => {
-                                const allocated = detail.assign_to
-                                  ? detail.assign_to
-                                      .split(",")
-                                      .reduce((sum, item) => {
-                                        const [, allocation] = item
-                                          .trim()
-                                          .split("-");
-                                        return (
-                                          sum + (parseInt(allocation) || 0)
-                                        );
-                                      }, 0)
-                                  : 0;
-                                const remaining = detail.vacancies - allocated;
-                                return (
-                                  <div className="flex items-center text-md">
-                                    <Users className="h-4 w-4 text-green-500 mr-1" />
-                                    <span className="font-semibold text-green-600">
-                                      {detail.vacancies}
-                                    </span>
-                                    <span className="text-gray-400 mx-1">
-                                      |
-                                    </span>
-                                    <span className="text-blue-600 font-medium">
-                                      {allocated}
-                                    </span>
-                                    <span className="text-gray-500 text-md ml-0.5">
-                                      alloc
-                                    </span>
-                                    <span className="text-gray-400 mx-1">
-                                      |
-                                    </span>
-                                    <span className="text-orange-600 font-medium">
-                                      {remaining}
-                                    </span>
-                                    <span className="text-gray-500 text-md ml-0.5">
-                                      left
-                                    </span>
-                                  </div>
-                                );
-                              })()}
-                              <div className="flex items-center">
-                                <IndianRupee className="h-4 w-4 text-purple-500 mr-1" />
-                                <span className="font-medium text-gray-900">
-                                  {detail.estimated_cost_per_position}L
-                                </span>
-                              </div>
-                            </div>
-                          </td>
-
-                          <td className="px-4 py-4">
-                            <div className="flex items-center space-x-1 flex-wrap gap-2">
-                              {isProjectManager ? (
-                                detail.job_id && (
-                                  <button
-                                    onClick={() =>
-                                      handleAllocation(
-                                        plan,
-                                        detail,
-                                        planIndex,
-                                        detailIndex
-                                      )
-                                    }
-                                    className="flex items-center px-3 py-1.5 text-white bg-green-600 hover:bg-green-700 rounded text-md transition-colors"
-                                    title="Manage Allocation"
-                                  >
-                                    <Users className="h-4 w-4 mr-1" />
-                                    Allocation
-                                  </button>
-                                )
-                              ) : (
-                                <>
-                                  <div className="relative group">
+                            <td className="px-4 py-4">
+                              <div className="flex items-center space-x-1 flex-wrap gap-2">
+                                {isProjectManager ? (
+                                  detail.job_id && (
                                     <button
                                       onClick={() =>
-                                        handleViewDetails(
+                                        handleAllocation(
                                           plan,
                                           detail,
                                           planIndex,
                                           detailIndex
                                         )
                                       }
-                                      className="flex items-center px-1 py-1.5 text-blue-500 rounded text-md transition-colors"
+                                      className="flex items-center px-3 py-1.5 text-white bg-green-600 hover:bg-green-700 rounded text-md transition-colors"
+                                      title="Manage Allocation"
                                     >
-                                      <Eye className="h-4 w-4" />
+                                      <Users className="h-4 w-4 mr-1" />
+                                      Allocation
                                     </button>
-                                    <span
-                                      className="absolute left-1/2 -translate-x-1/2 -top-7 
-                                        px-2 py-1 text-xs text-white bg-gray-800 rounded opacity-0 
-                                        group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap"
-                                    >
-                                      View Details
-                                    </span>
-                                  </div>
+                                  )
+                                ) : (
+                                  <>
+                                    <div className="relative group">
+                                      <button
+                                        onClick={() =>
+                                          handleViewDetails(
+                                            plan,
+                                            detail,
+                                            planIndex,
+                                            detailIndex
+                                          )
+                                        }
+                                        className="flex items-center px-1 py-1.5 text-blue-500 rounded text-md transition-colors"
+                                      >
+                                        <Eye className="h-4 w-4" />
+                                      </button>
+                                      <span
+                                        className="absolute left-1/2 -translate-x-1/2 -top-7 
+                                          px-2 py-1 text-xs text-white bg-gray-800 rounded opacity-0 
+                                          group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap"
+                                      >
+                                        View Details
+                                      </span>
+                                    </div>
 
-                                  {detailIndex === 0 && (
                                     <div className="relative group">
                                       <button
                                         onClick={() => handleEdit(plan.name)}
@@ -719,53 +762,127 @@ const StaffingPlansTable: React.FC = () => {
                                         Edit Staffing Plan
                                       </span>
                                     </div>
-                                  )}
 
-                                  {detail.job_id && (
-                                    <div className="relative group">
-                                      <button
-                                        onClick={() =>
-                                          handlePublish(
-                                            detail.job_id!,
-                                            planIndex,
-                                            detailIndex
-                                          )
-                                        }
-                                        disabled={publishingJobs.has(
-                                          detail.job_id
-                                        )}
-                                        className="flex items-center px-1 py-1.5 text-blue-500 rounded text-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                      >
-                                        {publishingJobs.has(detail.job_id) ? (
-                                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                                        ) : (
-                                          <Upload className="h-4 w-4 mr-1" />
-                                        )}
-                                      </button>
-                                      <span
-                                        className="absolute left-1/2 -translate-x-1/2 -top-7 
-                                          px-2 py-1 text-xs text-white bg-gray-800 rounded opacity-0 
-                                          group-hover:opacity-100 transform -translate-y-1 
-                                          group-hover:-translate-y-2 transition-all duration-200 pointer-events-none whitespace-nowrap"
-                                      >
-                                        {publishingJobs.has(detail.job_id)
-                                          ? "Publishing..."
-                                          : "Publish"}
-                                      </span>
-                                    </div>
-                                  )}
-                                </>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </React.Fragment>
-                  ))}
-                </tbody>
-              </table>
+                                    {detail.job_id && (
+                                      <div className="relative group">
+                                        <button
+                                          onClick={() =>
+                                            handlePublish(
+                                              detail.job_id!,
+                                              planIndex,
+                                              detailIndex
+                                            )
+                                          }
+                                          disabled={publishingJobs.has(
+                                            detail.job_id
+                                          )}
+                                          className="flex items-center px-1 py-1.5 text-blue-500 rounded text-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                          {publishingJobs.has(detail.job_id) ? (
+                                            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                          ) : (
+                                            <Upload className="h-4 w-4 mr-1" />
+                                          )}
+                                        </button>
+                                        <span
+                                          className="absolute left-1/2 -translate-x-1/2 -top-7 
+                                            px-2 py-1 text-xs text-white bg-gray-800 rounded opacity-0 
+                                            group-hover:opacity-100 transform -translate-y-1 
+                                            group-hover:-translate-y-2 transition-all duration-200 pointer-events-none whitespace-nowrap"
+                                        >
+                                          {publishingJobs.has(detail.job_id)
+                                            ? "Publishing..."
+                                            : "Publish"}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </React.Fragment>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="bg-white shadow-sm border border-gray-200 rounded-lg mt-4 px-6 py-4">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="text-sm text-gray-700">
+                    Showing page <span className="font-semibold">{currentPage}</span> of{' '}
+                    <span className="font-semibold">{totalPages}</span>
+                    {' '}({totalCount} total records)
+                  </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    {/* Previous Button */}
+                    <button
+                      onClick={() => handlePageChange(currentPage - 1)}
+                      disabled={currentPage === 1}
+                      className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        currentPage === 1
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                      }`}
+                    >
+                      <ChevronLeft className="h-4 w-4 mr-1" />
+                      Previous
+                    </button>
+
+                    {/* Page Numbers */}
+                    <div className="flex items-center space-x-1">
+                      {getPageNumbers().map((pageNum, index) => {
+                        if (pageNum === '...') {
+                          return (
+                            <span
+                              key={`ellipsis-${index}`}
+                              className="px-3 py-2 text-gray-500"
+                            >
+                              ...
+                            </span>
+                          );
+                        }
+                        
+                        const page = pageNum as number;
+                        return (
+                          <button
+                            key={page}
+                            onClick={() => handlePageChange(page)}
+                            className={`min-w-[40px] px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                              currentPage === page
+                                ? 'bg-blue-600 text-white shadow-sm'
+                                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Next Button */}
+                    <button
+                      onClick={() => handlePageChange(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                      className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        currentPage === totalPages
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                      }`}
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4 ml-1" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         ) : (
           <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-12 text-center mt-4">
             <Building className="h-16 w-16 text-gray-400 mx-auto mb-4" />
