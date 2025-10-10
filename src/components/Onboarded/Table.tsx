@@ -160,7 +160,7 @@ export const LeadsTable = ({
   );
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mt-4">
       <div className="overflow-x-auto">
         <table className="w-full">
           <SortableTableHeader
@@ -215,7 +215,7 @@ const formatDateAndTime = (dateString?: string) => {
   return { date: formattedDate, time: formattedTime };
 };
 
-const getStageAbbreviation = (stage: string | null | undefined): string => {
+export const getStageAbbreviation = (stage: string | null | undefined): string => {
   if (!stage) return "-";
   
   const clean = stage.replace(/[^a-zA-Z\s]/g, "").trim();

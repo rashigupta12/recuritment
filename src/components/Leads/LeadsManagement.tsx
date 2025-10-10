@@ -5,11 +5,12 @@ import { Lead, useLeadStore } from "@/stores/leadStore";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import LeadDetailModal from "./Details";
 import { LoadingState } from "./LoadingState";
-import { LeadsHeader } from "./Header";
 import { LeadsFormView } from "./FormView";
 import { LeadsStats } from "./Stats";
 import { LeadsTable } from "./Table";
 import { LeadsEmptyState, LeadsMobileView } from "./MobileView";
+import { FilterState, TodosHeader } from "../recruiter/Header";
+import { Building, Tag, Users } from "lucide-react";
 
 const LeadsManagement = () => {
   const { leads, setLeads, loading, setLoading } = useLeadStore();
@@ -19,6 +20,30 @@ const LeadsManagement = () => {
   const [currentView, setCurrentView] = useState<"list" | "add" | "edit">("list");
   
   const { user } = useAuth();
+
+  // Define all possible stages (excluding Onboarded)
+  const allStages = useMemo(() => [
+    "Prospecting",
+    "Lead Qualification",
+    "Needs Analysis / Discovery",
+    "Presentation / Proposal",
+    "Contract",
+    "Follow-Up / Relationship Management",
+    "Converted",
+  ], []);
+
+  // State for filters
+  const [filters, setFilters] = useState<FilterState>({
+    departments: [],
+    assignedBy: [],
+    clients: [],
+    locations: [],
+    jobTitles: [],
+    status: [],
+    contacts: [],
+    dateRange: "all",
+    vacancies: "all",
+  });
 
   // Optimized function to fetch leads with batch processing
   const fetchLeads = useCallback(async (email: string) => {
@@ -42,6 +67,13 @@ const LeadsManagement = () => {
     }
   }, [setLeads, setLoading]);
 
+  // Wrapper function for refresh that doesn't require parameters
+  const handleRefresh = useCallback(async () => {
+    if (user?.email) {
+      await fetchLeads(user.email);
+    }
+  }, [user?.email, fetchLeads]);
+
   useEffect(() => {
     if (!user?.email) return;
     fetchLeads(user.email);
@@ -49,19 +81,34 @@ const LeadsManagement = () => {
 
   // Memoized filtered leads for better performance
   const filteredLeads = useMemo(() => {
-    if (!searchQuery) return leads;
-    
-    const searchLower = searchQuery.toLowerCase();
-    return leads.filter((lead) => {
-      return (
-        (lead.custom_full_name || "").toLowerCase().includes(searchLower) ||
-        (lead.company_name || "").toLowerCase().includes(searchLower) ||
-        (lead.custom_email_address || "").toLowerCase().includes(searchLower) ||
-        (lead.industry || "").toLowerCase().includes(searchLower) ||
-        (lead.city || "").toLowerCase().includes(searchLower)
-      );
-    });
-  }, [leads, searchQuery]);
+    let result = leads;
+
+    if (searchQuery) {
+      const searchLower = searchQuery.toLowerCase();
+      result = result.filter((lead) => {
+        return (
+          (lead.custom_full_name || "").toLowerCase().includes(searchLower) ||
+          (lead.company_name || "").toLowerCase().includes(searchLower) ||
+          (lead.custom_email_address || "").toLowerCase().includes(searchLower) ||
+          (lead.industry || "").toLowerCase().includes(searchLower) ||
+          (lead.city || "").toLowerCase().includes(searchLower)
+        );
+      });
+    }
+
+    // Apply filters
+    if (filters.clients.length > 0) {
+      result = result.filter((lead) => filters.clients.includes(lead.company_name || ""));
+    }
+    if (filters.contacts.length > 0) {
+      result = result.filter((lead) => filters.contacts.includes(lead.custom_full_name || ""));
+    }
+    if (filters.status.length > 0) {
+      result = result.filter((lead) => filters.status.includes(lead.custom_stage || ""));
+    }
+
+    return result;
+  }, [leads, searchQuery, filters]);
 
   // Event handlers
   const handleFormClose = useCallback(() => {
@@ -90,6 +137,41 @@ const LeadsManagement = () => {
     setCurrentView("edit");
   }, []);
 
+  // Handle filter change
+  const handleFilterChange = useCallback((newFilters: FilterState) => {
+    setFilters(newFilters);
+  }, []);
+
+  // Define filter configuration
+  const filterConfig = useMemo(
+    () => [
+      {
+        id: "clients",
+        title: "Company",
+        icon: Building,
+        options: Array.from(new Set(leads.map((lead) => lead.company_name || ""))).filter(Boolean),
+        searchKey: "company_name",
+        showInitialOptions: false,
+      },
+      {
+        id: "contacts",
+        title: "Contact",
+        icon: Users,
+        options: Array.from(new Set(leads.map((lead) => lead.custom_full_name || ""))).filter(Boolean),
+        searchKey: "custom_full_name",
+        showInitialOptions: false,
+      },
+      {
+        id: "status",
+        title: "Stage",
+        icon: Tag,
+        options: allStages, // Use predefined stages
+        alwaysShowOptions: true,
+      },
+    ],
+    [leads, allStages]
+  );
+
   // Render loading state
   if (loading) {
     return <LoadingState />;
@@ -110,10 +192,21 @@ const LeadsManagement = () => {
   // Render list view
   return (
     <div className="min-h-screen bg-gray-50">
-      <LeadsHeader
+      <TodosHeader
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        onRefresh={handleRefresh}
+        totalJobs={leads.length}
+        filteredJobs={filteredLeads.length}
+        uniqueClients={Array.from(new Set(leads.map((lead) => lead.company_name || ""))).filter(Boolean)}
+        uniqueContacts={Array.from(new Set(leads.map((lead) => lead.custom_full_name || ""))).filter(Boolean)}
+        uniqueStatus={allStages} // Use predefined stages
+        onFilterChange={handleFilterChange}
+        filterConfig={filterConfig}
+        title="Leads"
         onAddLead={handleAddLead}
+        showExportButton={false}
+        showAddLeadButton={true}
       />
 
       {/* <LeadsStats leads={leads} /> */}
