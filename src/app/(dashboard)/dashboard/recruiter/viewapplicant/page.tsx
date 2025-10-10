@@ -236,60 +236,74 @@ export default function ViewApplicantPage() {
     checkAuthAndFetchApplicants();
   }, [router, statusParam, currentPage]);
 
-  useEffect(() => {
-    let filtered = applicants;
-
-    // Search filter
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
-      filtered = filtered.filter(
-        (applicant) =>
-          applicant.applicant_name?.toLowerCase().includes(query) ||
-          applicant.email_id?.toLowerCase().includes(query) ||
-          applicant.job_title?.toLowerCase().includes(query) ||
-          applicant.designation?.toLowerCase().includes(query)
-      );
-    }
-
-    // Job titles filter
-    if (filters.jobTitles.length > 0) {
-      filtered = filtered.filter((applicant) =>
-        applicant.designation && filters.jobTitles.includes(applicant.designation)
-      );
-    }
-
-    // Clients filter
-    if (filters.clients.length > 0) {
-      filtered = filtered.filter((applicant) =>
-        applicant.custom_company_name && filters.clients.includes(applicant.custom_company_name)
-      );
-    }
-
-    // Status filter
-    if (filters.status.length > 0) {
-      filtered = filtered.filter((applicant) =>
-        applicant.status && filters.status.includes(applicant.status)
-      );
-    }
-
-    setFilteredApplicants(filtered);
-  }, [applicants, searchQuery, filters]);
+useEffect(() => {
+  let filtered = applicants;
+  // Search filter
+  if (searchQuery.trim()) {
+    const query = searchQuery.toLowerCase().trim();
+    filtered = filtered.filter(
+      (applicant) =>
+        applicant.applicant_name?.toLowerCase().includes(query) ||
+        applicant.email_id?.toLowerCase().includes(query) ||
+        applicant.job_title?.toLowerCase().includes(query) ||
+        applicant.designation?.toLowerCase().includes(query)
+    );
+  }
+  // Job titles filter
+  if (filters.jobTitles.length > 0) {
+    filtered = filtered.filter((applicant) =>
+      applicant.designation && filters.jobTitles.includes(applicant.designation)
+    );
+  }
+  // Clients filter
+  if (filters.clients.length > 0) {
+    filtered = filtered.filter((applicant) =>
+      applicant.custom_company_name && filters.clients.includes(applicant.custom_company_name)
+    );
+  }
+  // Status filter
+  if (filters.status.length > 0) {
+    filtered = filtered.filter((applicant) =>
+      applicant.status && filters.status.includes(applicant.status)
+    );
+  }
+  setFilteredApplicants(filtered);
+}, [applicants, searchQuery, filters]);
 
   const handleFilterChange = (newFilters: FilterState) => {
     setFilters(newFilters);
   };
 
-  const handleRefresh = async () => {
-    if (!userEmail) return;
-    try {
-      const { data, total } = await fetchApplicantsData(userEmail, (currentPage - 1) * itemsPerPage, itemsPerPage);
-      setApplicants(data);
-      setTotalCount(total);
-    } catch (err) {
-      console.error("Refresh error:", err);
-      toast.error("Failed to refresh applicants.");
-    }
-  };
+const handleRefresh = async () => {
+  console.log("clicked");
+  if (!userEmail) return;
+  try {
+    setLoading(true); // Set loading to true during refresh
+    const { data, total } = await fetchApplicantsData(userEmail, 0, itemsPerPage);
+    console.log("Refreshed data:", data);
+    setApplicants([...data]); // Create new array reference
+    setTotalCount(total);
+    setCurrentPage(1); // Reset to first page
+    setSelectedApplicants([]); // Clear selected applicants
+    setFilters({
+      departments: [],
+      assignedBy: [],
+      clients: [],
+      locations: [],
+      jobTitles: [],
+      status: statusParam && statusParam.toLowerCase() !== "all" ? [statusParam] : [],
+      dateRange: 'all',
+      vacancies: 'all',
+    }); // Reset filters
+    setSearchQuery(""); // Clear search query
+    toast.success("Table refreshed successfully."); // Confirm refresh
+  } catch (err) {
+    console.error("Refresh error:", err);
+    toast.error("Failed to refresh applicants.");
+  } finally {
+    setLoading(false); // Reset loading state
+  }
+};
 
   const uniqueJobTitles = Array.from(new Set(applicants.map((applicant) => applicant.designation).filter(Boolean) as string[]));
   const uniqueClients = Array.from(new Set(applicants.map((applicant) => applicant.custom_company_name).filter(Boolean) as string[]));
@@ -564,37 +578,47 @@ export default function ViewApplicantPage() {
           </div>
         )}
         {filteredApplicants.length === 0 && filters.status.length > 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-600 text-lg">No applicants for this status.</p>
-          </div>
-        )}
-        {filteredApplicants.length === 0 && filters.status.length === 0 && applicants.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-600 text-lg">No applicants found.</p>
-          </div>
-        ) : filteredApplicants.length === 0 && filters.status.length === 0 && applicants.length > 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-600 text-lg">No applicants match your filters.</p>
-          </div>
-        ) : (
-          <>
-            <ApplicantsTable
-              applicants={filteredApplicants}
-              selectedApplicants={selectedApplicants}
-              onSelectApplicant={handleSelectApplicant}
-              onViewDetails={handleOpenDetailsModal}
-              showCheckboxes={true}
-              showStatus={true}
-            />
-            <Pagination
-              currentPage={currentPage}
-              totalPages={Math.ceil(totalCount / itemsPerPage)}
-              totalCount={totalCount}
-              itemsPerPage={itemsPerPage}
-              onPageChange={setCurrentPage}
-            />
-          </>
-        )}
+  <div className="text-center py-12">
+    <p className="text-gray-600 text-lg">No applicants for this status.</p>
+  </div>
+)}
+{filteredApplicants.length === 0 && filters.status.length === 0 && applicants.length === 0 ? (
+  <div className="text-center py-12">
+    <p className="text-gray-600 text-lg">No applicants found.</p>
+  </div>
+) : filteredApplicants.length === 0 && filters.status.length === 0 && applicants.length > 0 ? (
+  <div className="text-center py-12">
+    <p className="text-gray-600 text-lg">No applicants match your filters.</p>
+  </div>
+) : (
+  <div className="relative">
+    {/* Loading Overlay */}
+    {loading && (
+      <div className="absolute inset-0 bg-gray-100 bg-opacity-75 flex items-center justify-center z-10">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-lg font-semibold text-gray-700">Refreshing table...</p>
+        </div>
+      </div>
+    )}
+    <ApplicantsTable
+      key={Date.now()} // Force re-render on refresh
+      applicants={filteredApplicants}
+      selectedApplicants={selectedApplicants}
+      onSelectApplicant={handleSelectApplicant}
+      onViewDetails={handleOpenDetailsModal}
+      showCheckboxes={true}
+      showStatus={true}
+    />
+    <Pagination
+      currentPage={currentPage}
+      totalPages={Math.ceil(totalCount / itemsPerPage)}
+      totalCount={totalCount}
+      itemsPerPage={itemsPerPage}
+      onPageChange={setCurrentPage}
+    />
+  </div>
+)}
         {isModalOpen && (
           <div
             className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
