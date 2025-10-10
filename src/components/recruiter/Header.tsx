@@ -7,6 +7,7 @@ import {
   ChevronDown,
   ChevronUp,
   Download,
+  Plus,
 } from "lucide-react";
 import { useState } from "react";
 import {
@@ -45,19 +46,24 @@ interface TodosHeaderProps {
   uniqueLocations?: string[];
   uniqueJobTitles?: string[];
   uniqueStatus?: string[];
+  uniqueContacts?: string[];
   onFilterChange?: (filters: FilterState) => void;
   filterConfig?: FilterConfig[];
   title?: string;
-  onexpotcsv: () => Promise<void>;
+  onexportcsv?: () => Promise<void>;
+  onAddLead?: () => void;
+  showExportButton?: boolean;
+  showAddLeadButton?: boolean;
 }
 
-interface FilterState {
+export interface FilterState {
   departments: string[];
   assignedBy: string[];
   clients: string[];
   locations: string[];
   jobTitles: string[];
   status: string[];
+  contacts: string[];
   dateRange: "all" | "today" | "week" | "month";
   vacancies: "all" | "single" | "multiple";
 }
@@ -74,10 +80,14 @@ export const TodosHeader = ({
   uniqueLocations = [],
   uniqueJobTitles = [],
   uniqueStatus = [],
+  uniqueContacts = [],
   onFilterChange,
   filterConfig = [],
   title = "My Jobs",
-  onexpotcsv,
+  onexportcsv,
+  onAddLead,
+  showExportButton = true,
+  showAddLeadButton = false,
 }: TodosHeaderProps) => {
   const [filters, setFilters] = useState<FilterState>({
     departments: [],
@@ -86,6 +96,7 @@ export const TodosHeader = ({
     locations: [],
     jobTitles: [],
     status: [],
+    contacts: [],
     dateRange: "all",
     vacancies: "all",
   });
@@ -97,6 +108,7 @@ export const TodosHeader = ({
     status: "",
     departments: "",
     assignedBy: "",
+    contacts: "",
   });
   const [openSection, setOpenSection] = useState<string | null>(null);
 
@@ -126,6 +138,7 @@ export const TodosHeader = ({
       locations: [],
       jobTitles: [],
       status: [],
+      contacts: [],
       dateRange: "all",
       vacancies: "all",
     };
@@ -137,6 +150,7 @@ export const TodosHeader = ({
       status: "",
       departments: "",
       assignedBy: "",
+      contacts: "",
     });
     onFilterChange?.(resetFilters);
   };
@@ -215,7 +229,6 @@ export const TodosHeader = ({
                   }`}
                 >
                   <Filter className="w-4 h-4" />
-                  {/* Filters */}
                   {activeFilterCount > 0 && (
                     <Badge
                       variant="secondary"
@@ -258,6 +271,21 @@ export const TodosHeader = ({
                               Client: {client}
                               <button
                                 onClick={() => toggleFilter("clients", client)}
+                                className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </Badge>
+                          ))}
+                          {filters.contacts.map((contact) => (
+                            <Badge
+                              key={contact}
+                              variant="secondary"
+                              className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                            >
+                              Contact: {contact}
+                              <button
+                                onClick={() => toggleFilter("contacts", contact)}
                                 className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
                               >
                                 <X className="w-3 h-3" />
@@ -362,61 +390,60 @@ export const TodosHeader = ({
                           </div>
                         );
                       } else {
-  content = (
-    <div className=" pl-6">
-      {section.searchKey && (
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder={`Search ${section.title.toLowerCase()}...`}
-            value={searchStates[section.id]}
-            onChange={(e) =>
-              setSearchStates({
-                ...searchStates,
-                [section.id]: e.target.value,
-              })
-            }
-            className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
-      )}
-      {filteredOptions.length > 0 ? (
-        <div className="space-y-2 max-h-48 overflow-y-auto">
-          {filteredOptions.map((option) => (
-            <label
-              key={option}
-              className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
-            >
-              <input
-                type="checkbox"
-                checked={filters[
-                  section.id as keyof FilterState
-                ].includes(option)}
-                onChange={() =>
-                  toggleFilter(
-                    section.id as keyof FilterState,
-                    option
-                  )
-                }
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-              />
-              <span className="text-sm font-medium text-gray-700">
-                {option}
-              </span>
-            </label>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-3 text-sm text-gray-500">
-          {searchStates[section.id].length > 0 &&
-            `No ${section.title.toLowerCase()} found`}
-        </div>
-      )}
-    </div>
-  );
-}
-
+                        content = (
+                          <div className=" pl-6">
+                            {section.searchKey && (
+                              <div className="relative">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <input
+                                  type="text"
+                                  placeholder={`Search ${section.title.toLowerCase()}...`}
+                                  value={searchStates[section.id]}
+                                  onChange={(e) =>
+                                    setSearchStates({
+                                      ...searchStates,
+                                      [section.id]: e.target.value,
+                                    })
+                                  }
+                                  className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                />
+                              </div>
+                            )}
+                            {filteredOptions.length > 0 ? (
+                              <div className="space-y-2 max-h-48 overflow-y-auto">
+                                {filteredOptions.map((option) => (
+                                  <label
+                                    key={option}
+                                    className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      checked={filters[
+                                        section.id as keyof FilterState
+                                      ].includes(option)}
+                                      onChange={() =>
+                                        toggleFilter(
+                                          section.id as keyof FilterState,
+                                          option
+                                        )
+                                      }
+                                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                    />
+                                    <span className="text-sm font-medium text-gray-700">
+                                      {option}
+                                    </span>
+                                  </label>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="text-center py-3 text-sm text-gray-500">
+                                {searchStates[section.id].length > 0 &&
+                                  `No ${section.title.toLowerCase()} found`}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
 
                       return (
                         <div key={section.id} className="space-y-3">
@@ -474,14 +501,26 @@ export const TodosHeader = ({
               <RefreshCw className="w-4 h-4" />
             </Button>
 
-            {/* Export Button */}
-            <Button
-              onClick={onexpotcsv}
-              className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2 flex-shrink-0"
-            >
-              <Download className="h-4 w-4" />
-              <span className="hidden sm:inline">Export</span>
-            </Button>
+            {/* Conditional: Export CSV Button OR Add Lead Button */}
+            {showExportButton && onexportcsv && (
+              <Button
+                onClick={onexportcsv}
+                className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2 flex-shrink-0"
+              >
+                <Download className="h-4 w-4" />
+                <span className="hidden sm:inline">Export</span>
+              </Button>
+            )}
+
+            {showAddLeadButton && onAddLead && (
+              <Button
+  onClick={onAddLead}
+  className="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-2 w-10 h-10 flex items-center justify-center"
+>
+  <Plus className="h-5 w-5" />
+</Button>
+
+            )}
           </div>
         </div>
       </div>
@@ -531,6 +570,21 @@ export const TodosHeader = ({
               Client: {client}
               <button
                 onClick={() => toggleFilter("clients", client)}
+                className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </Badge>
+          ))}
+          {filters.contacts.map((contact) => (
+            <Badge
+              key={contact}
+              variant="secondary"
+              className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+            >
+              Contact: {contact}
+              <button
+                onClick={() => toggleFilter("contacts", contact)}
                 className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
               >
                 <X className="w-3 h-3" />

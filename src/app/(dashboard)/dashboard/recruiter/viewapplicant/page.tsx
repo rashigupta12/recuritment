@@ -519,7 +519,7 @@ useEffect(() => {
       uniqueClients={uniqueClients}
       uniqueStatus={uniqueStatus}
       onFilterChange={handleFilterChange}
-      onexpotcsv={handleExport}
+      onexportcsv={handleExport}
       filterConfig={filterConfig}
       title="Applicants"
     />
