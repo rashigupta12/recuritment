@@ -3,12 +3,13 @@
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { frappeAPI } from "@/lib/api/frappeClient";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { LoadingState } from "./LoadingState";
 import { TodosTable } from "./TodosTable";
 import { Calendar, Briefcase, MapPin, Award } from "lucide-react";
 import { TodosHeader } from "./TodoHeader";
-
+import { Pagination } from "@/components/comman/Pagination"; // Import Pagination component
+import { toast } from "sonner"; // Import toast for refresh feedback
 
 interface ToDo {
   name: string;
@@ -53,9 +54,12 @@ const TodosManagement = () => {
     jobTitles: [],
     status: [],
     dateRange: 'all',
-    vacancies: 'all'
+    vacancies: 'all',
   });
-  
+  const [currentPage, setCurrentPage] = useState(1); // State for current page
+  const itemsPerPage = 10; // Number of items per page
+  const tableRef = useRef<HTMLDivElement>(null); // Ref for scrolling to table
+
   const { user } = useAuth();
   const router = useRouter();
 
@@ -66,8 +70,10 @@ const TodosManagement = () => {
       const todos = response.data || [];
       console.log('All todos with full details:', todos);
       setTodos(todos);
+      setCurrentPage(1); // Reset to first page on fetch
     } catch (error) {
       console.error("Error fetching todos:", error);
+      toast.error("Failed to fetch todos.");
     } finally {
       setLoading(false);
     }
@@ -114,6 +120,7 @@ const TodosManagement = () => {
     const match = description?.match(/YOUR ALLOCATED POSITIONS:\s*(\d+)/i);
     return match ? parseInt(match[1]) : 0;
   };
+
   const uniqueStatus = [
     "Tagged",
     "Shortlisted",
@@ -131,7 +138,7 @@ const TodosManagement = () => {
       // Search filter
       if (searchQuery) {
         const searchLower = searchQuery.toLowerCase();
-        const matchesSearch = 
+        const matchesSearch =
           (todo.description || "").toLowerCase().includes(searchLower) ||
           (todo.reference_type || "").toLowerCase().includes(searchLower) ||
           (todo.reference_name || "").toLowerCase().includes(searchLower) ||
@@ -140,7 +147,7 @@ const TodosManagement = () => {
           (todo.priority || "").toLowerCase().includes(searchLower) ||
           (todo.custom_job_title || "").toLowerCase().includes(searchLower) ||
           (todo.custom_department || "").toLowerCase().includes(searchLower);
-        
+
         if (!matchesSearch) return false;
       }
 
@@ -208,6 +215,15 @@ const TodosManagement = () => {
     });
   }, [todos, searchQuery, filters]);
 
+  // Paginate filteredTodos
+  const totalCount = filteredTodos.length;
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
+  const paginatedTodos = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filteredTodos.slice(startIndex, endIndex);
+  }, [filteredTodos, currentPage, itemsPerPage]);
+
   // Event handlers
   const handleViewTodo = (todo: ToDo) => {
     router.push(`/dashboard/recruiter/todos/${todo.name}`);
@@ -217,18 +233,35 @@ const TodosManagement = () => {
     console.log('Edit todo:', todo);
   };
 
-  // Fix: Make handleRefresh async to match the expected type
   const handleRefresh = async () => {
     if (user) {
-      await fetchTodos(user.email);
+      try {
+        setLoading(true);
+        await fetchTodos(user.email);
+        toast.success("Table refreshed successfully.");
+        if (tableRef.current) {
+          tableRef.current.scrollIntoView({ behavior: "smooth" });
+        }
+      } catch (error) {
+        toast.error("Failed to refresh todos.");
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
   const handleFilterChange = (newFilters: FilterState) => {
     setFilters(newFilters);
+    setCurrentPage(1); // Reset to first page when filters change
   };
 
-  // Fix: Explicitly type the filterConfig with proper type literals
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    if (tableRef.current) {
+      tableRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   const filterConfig = [
     {
       id: 'dateRange',
@@ -236,7 +269,7 @@ const TodosManagement = () => {
       icon: Calendar,
       type: 'radio' as const,
       options: ['all', 'today', 'week', 'month'],
-      optionLabels: {all: 'All Time', today: 'Today', week: 'This Week', month: 'This Month'},
+      optionLabels: { all: 'All Time', today: 'Today', week: 'This Week', month: 'This Month' },
     },
     {
       id: 'locations',
@@ -255,18 +288,16 @@ const TodosManagement = () => {
       showInitialOptions: false,
     },
     {
-          id: 'status',
-          title: 'Status',
-          icon: Award,
-          options: uniqueStatus,
-          searchKey: 'status',
-          alwaysShowOptions: true,
-          showInitialOptions: true,
-        },
+      id: 'status',
+      title: 'Status',
+      icon: Award,
+      options: uniqueStatus,
+      searchKey: 'status',
+      alwaysShowOptions: true,
+      showInitialOptions: true,
+    },
   ];
-  
 
-  // Render loading state
   if (loading) {
     return <LoadingState />;
   }
@@ -285,25 +316,41 @@ const TodosManagement = () => {
         uniqueJobTitles={uniqueJobTitles}
         uniqueStatus={uniqueStatus}
         onFilterChange={handleFilterChange}
-        
         filterConfig={filterConfig}
         title="My Jobs"
       />
 
-      <div className="w-full mx-auto mt-4">
-        {filteredTodos.length > 0 ? (
-          <TodosTable
-            todos={filteredTodos}
-            onViewTodo={handleViewTodo}
-            onEditTodo={handleEditTodo}
-          />
+      <div className="w-full mx-auto mt-4" ref={tableRef}>
+        {loading && (
+          <div className="absolute inset-0 bg-gray-100 bg-opacity-75 flex items-center justify-center z-10">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-600 mx-auto mb-4"></div>
+              <p className="text-lg font-semibold text-gray-700">Refreshing table...</p>
+            </div>
+          </div>
+        )}
+        {paginatedTodos.length > 0 ? (
+          <>
+            <TodosTable
+              todos={paginatedTodos}
+              onViewTodo={handleViewTodo}
+              onEditTodo={handleEditTodo}
+            />
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalCount={totalCount}
+              itemsPerPage={itemsPerPage}
+              onPageChange={handlePageChange}
+            />
+          </>
         ) : (
           <div className="text-center py-8">
             <div className="text-gray-500 text-lg">
-              {searchQuery || Object.values(filters).some(filter => 
+              {searchQuery || Object.values(filters).some(filter =>
                 Array.isArray(filter) ? filter.length > 0 : filter !== 'all'
-              ) 
-                ? "No Jobs found matching your search and filters." 
+              )
+                ? "No Jobs found matching your search and filters."
                 : "No Jobs assigned to you."}
             </div>
             <button
