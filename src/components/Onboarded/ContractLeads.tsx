@@ -9,9 +9,10 @@ import { LoadingState } from "../Leads/LoadingState";
 import { LeadsMobileView } from "../Leads/MobileView";
 import { useRouter } from "next/navigation";
 import { LeadsTable } from "./Table";
-// import { TodosHeader } from "@/components/recruiter/Header";
 import { Building2, User, Bookmark } from "lucide-react";
 import { TodosHeader } from "../recruiter/TodoHeader";
+import Pagination from "../comman/Pagination";
+
 
 interface CustomerDetails {
   name: string;
@@ -57,13 +58,16 @@ const ContractLeads = () => {
   const [filters, setFilters] = useState<FilterState>({
     departments: [],
     assignedBy: [],
-    clients: [], // Maps to companies
+    clients: [],
     locations: [],
-    jobTitles: [], // Maps to contacts
-    status: [], // Maps to stage
+    jobTitles: [],
+    status: [],
     dateRange: "all",
     vacancies: "all",
   });
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10; // Number of leads per page
 
   // Optimized function to fetch contract leads
   const fetchLeads = useCallback(
@@ -123,7 +127,7 @@ const ContractLeads = () => {
       Array.from(
         new Set(
           leads
-            .map((lead) => lead.status)
+            .map((lead) => lead.custom_stage)
             .filter((status): status is string => !!status)
         )
       ),
@@ -134,30 +138,30 @@ const ContractLeads = () => {
   const filterConfig: FilterConfig[] = useMemo(
     () => [
       {
-        id: "clients", // Maps to companies
+        id: "clients",
         title: "Company",
         icon: Building2,
         options: uniqueCompanies,
         searchKey: "clients",
-        showInitialOptions: false, // Changed to false
+        showInitialOptions: false,
         type: "checkbox",
       },
       {
-        id: "jobTitles", // Maps to contacts
+        id: "jobTitles",
         title: "Contact",
         icon: User,
         options: uniqueContacts,
         searchKey: "jobTitles",
-        showInitialOptions: false, // Changed to false
+        showInitialOptions: false,
         type: "checkbox",
       },
       {
-        id: "status", // Maps to stage
+        id: "status",
         title: "Stage",
         icon: Bookmark,
         options: uniqueStages,
         searchKey: "status",
-        showInitialOptions: true, // Unchanged
+        showInitialOptions: true,
         type: "checkbox",
       },
     ],
@@ -168,9 +172,16 @@ const ContractLeads = () => {
   const handleFilterChange = useCallback(
     (newFilters: FilterState) => {
       setFilters(newFilters);
+      setCurrentPage(1); // Reset to first page when filters change
     },
     []
   );
+
+  // Handle search query change
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1); // Reset to first page when search query changes
+  }, []);
 
   // Memoized filtered leads
   const filteredLeads = useMemo(() => {
@@ -213,6 +224,18 @@ const ContractLeads = () => {
     return filtered;
   }, [leads, searchQuery, filters]);
 
+  // Pagination calculations
+  const totalCount = filteredLeads.length;
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedLeads = filteredLeads.slice(startIndex, endIndex);
+
+  // Handle page change
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(page);
+  }, []);
+
   const handleCloseModal = useCallback(() => {
     setShowModal(false);
     setSelectedLead(null);
@@ -245,8 +268,6 @@ const ContractLeads = () => {
     setShowConfirmation(false);
   }, []);
 
-  
-
   // Render loading state
   if (loading) {
     return <LoadingState />;
@@ -257,10 +278,7 @@ const ContractLeads = () => {
       <div className="w-full mx-auto py-2">
         <TodosHeader
           searchQuery={searchQuery}
-          onSearchChange={(value) => {
-            console.log("Search Query Updated:", value);
-            setSearchQuery(value);
-          }}
+          onSearchChange={handleSearchChange} // Updated to use handleSearchChange
           onRefresh={() => fetchLeads(user?.email || "")}
           totalJobs={leads.length}
           filteredJobs={filteredLeads.length}
@@ -270,7 +288,6 @@ const ContractLeads = () => {
           onFilterChange={handleFilterChange}
           filterConfig={filterConfig}
           title="Customers"
-          
         />
 
         {/* Desktop Table View */}
@@ -278,7 +295,7 @@ const ContractLeads = () => {
           <>
             <div className="hidden lg:block mt-4">
               <LeadsTable
-                leads={filteredLeads}
+                leads={paginatedLeads} // Use paginatedLeads
                 onViewLead={handleViewLead}
                 onEditLead={handleEditLead}
                 onCreateContract={handleCreateContract}
@@ -287,9 +304,19 @@ const ContractLeads = () => {
 
             {/* Mobile Card View */}
             <LeadsMobileView
-              leads={filteredLeads}
+              leads={paginatedLeads} // Use paginatedLeads
               onViewLead={handleViewLead}
               onEditLead={handleEditLead}
+            />
+
+            {/* Pagination Component */}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalCount={totalCount}
+              itemsPerPage={itemsPerPage}
+              onPageChange={handlePageChange}
+              maxPagesToShow={5}
             />
           </>
         ) : (

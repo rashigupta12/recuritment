@@ -11,8 +11,10 @@ import { LeadsMobileView } from "@/components/Leads/MobileView";
 import LeadDetailModal from "@/components/Leads/Details";
 import { Button } from "@/components/ui/button";
 import { Filter, RefreshCw, Users, Building, Tag } from "lucide-react";
-import { getStageAbbreviation } from "@/components/Onboarded/Table"; // Import the function
+import { getStageAbbreviation } from "@/components/Onboarded/Table";
 import { FilterState, TodosHeader } from "@/components/recruiter/TodoHeader";
+import Pagination from "@/components/comman/Pagination";
+
 
 interface CustomerDetails {
   name: string;
@@ -33,6 +35,10 @@ const ContractLeads = () => {
   const { user } = useAuth();
   const router = useRouter();
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10; // Number of leads per page
+
   // State for filters
   const [filters, setFilters] = useState<FilterState>({
     departments: [],
@@ -47,16 +53,15 @@ const ContractLeads = () => {
   });
 
   // Define stage mapping (full name to abbreviation)
-  const stageMapping: Record<string, string> = useMemo(() => ({
-    "Prospecting": "Pr",
-    "Lead Qualification": "LQ",
-    "Needs Analysis / Discovery": "NAD",
-    "Presentation / Proposal": "PP",
-    "Contract": "Co",
-    "Onboarded": "On",
-    "Follow-Up / Relationship Management": "FURM",
-    
-  }), []);
+  const stageMapping: Record<string, string> = useMemo(
+    () => ({
+  
+      Contract: "Co",
+      Onboarded: "On",
+      
+    }),
+    []
+  );
 
   // Define filter configuration with full names as options
   const filterConfig = useMemo(
@@ -82,36 +87,40 @@ const ContractLeads = () => {
         title: "Stage",
         icon: Tag,
         options: Object.keys(stageMapping), // Use full names as options
-        // No need for optionLabels if options are full names
       },
     ],
     [leads, stageMapping]
   );
 
   // Optimized function to fetch contract leads
-  const fetchLeads = useCallback(async (email: string) => {
-    try {
-      setLoading(true);
-      const response = await frappeAPI.getContractReadyLeads(email);
-      
-      if (response.data && Array.isArray(response.data)) {
-        const transformedLeads = response.data.map((lead: Lead) => ({
-          ...lead,
-          status: lead.custom_stage ? getStageAbbreviation(lead.custom_stage) : lead.status,
-        }));
-        setLeads(transformedLeads);
-        console.log("Fetched leads data:", transformedLeads);
-      } else {
-        console.log("No contract-ready leads found");
+  const fetchLeads = useCallback(
+    async (email: string) => {
+      try {
+        setLoading(true);
+        const response = await frappeAPI.getContractReadyLeads(email);
+
+        console.log(email);
+
+        if (response.data && Array.isArray(response.data)) {
+          const transformedLeads = response.data.map((lead: Lead) => ({
+            ...lead,
+            status: lead.custom_stage ? getStageAbbreviation(lead.custom_stage) : lead.status,
+          }));
+          setLeads(transformedLeads);
+          console.log("Fetched leads data:", transformedLeads);
+        } else {
+          console.log("No contract-ready leads found");
+          setLeads([]);
+        }
+      } catch (error) {
+        console.error("Error fetching contract leads:", error);
         setLeads([]);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Error fetching contract leads:", error);
-      setLeads([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [setLeads, setLoading]);
+    },
+    [setLeads, setLoading]
+  );
 
   useEffect(() => {
     if (!user?.email) return;
@@ -121,14 +130,24 @@ const ContractLeads = () => {
   }, [user, fetchLeads]);
 
   // Handle filter change with mapping
-  const handleFilterChange = useCallback((newFilters: FilterState) => {
-    const updatedFilters = { ...newFilters };
-    // Map full names to abbreviations for status
-    if (updatedFilters.status.length > 0) {
-      updatedFilters.status = updatedFilters.status.map(status => stageMapping[status] || status);
-    }
-    setFilters(updatedFilters);
-  }, [stageMapping]);
+  const handleFilterChange = useCallback(
+    (newFilters: FilterState) => {
+      const updatedFilters = { ...newFilters };
+      // Map full names to abbreviations for status
+      if (updatedFilters.status.length > 0) {
+        updatedFilters.status = updatedFilters.status.map((status) => stageMapping[status] || status);
+      }
+      setFilters(updatedFilters);
+      setCurrentPage(1); // Reset to first page when filters change
+    },
+    [stageMapping]
+  );
+
+  // Handle search query change
+  const handleSearchChange = useCallback((query: string) => {
+    setSearchQuery(query);
+    setCurrentPage(1); // Reset to first page when search query changes
+  }, []);
 
   // Memoized filtered leads with filter application
   const filteredLeads = useMemo(() => {
@@ -161,6 +180,18 @@ const ContractLeads = () => {
     return result;
   }, [leads, searchQuery, filters]);
 
+  // Pagination calculations
+  const totalCount = filteredLeads.length;
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedLeads = filteredLeads.slice(startIndex, endIndex);
+
+  // Handle page change
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(page);
+  }, []);
+
   const handleCloseModal = useCallback(() => {
     setShowModal(false);
     setSelectedLead(null);
@@ -176,9 +207,12 @@ const ContractLeads = () => {
     console.log("Edit lead:", lead);
   }, []);
 
-  const handleCreateContract = useCallback(async (lead: any) => {
-    await router.push(`/dashboard/sales-manager/requirements/create?leadId=${lead.name}`);
-  }, [router]);
+  const handleCreateContract = useCallback(
+    async (lead: any) => {
+      await router.push(`/dashboard/sales-manager/requirements/create?leadId=${lead.name}`);
+    },
+    [router]
+  );
 
   const handleConfirmBack = useCallback(() => {
     setShowConfirmation(false);
@@ -206,7 +240,7 @@ const ContractLeads = () => {
         {/* TodosHeader Component with custom filter config and onFilterChange */}
         <TodosHeader
           searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
+          onSearchChange={handleSearchChange}
           onRefresh={handleRefresh}
           totalJobs={leads.length}
           filteredJobs={filteredLeads.length}
@@ -223,7 +257,7 @@ const ContractLeads = () => {
           <>
             <div className="hidden lg:block">
               <LeadsTable
-                leads={filteredLeads}
+                leads={paginatedLeads} // Use paginatedLeads instead of filteredLeads
                 onViewLead={handleViewLead}
                 onEditLead={handleEditLead}
                 onCreateContract={handleCreateContract}
@@ -232,9 +266,19 @@ const ContractLeads = () => {
 
             {/* Mobile Card View */}
             <LeadsMobileView
-              leads={filteredLeads}
+              leads={paginatedLeads} // Use paginatedLeads instead of filteredLeads
               onViewLead={handleViewLead}
               onEditLead={handleEditLead}
+            />
+
+            {/* Pagination Component */}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalCount={totalCount}
+              itemsPerPage={itemsPerPage}
+              onPageChange={handlePageChange}
+              maxPagesToShow={5}
             />
           </>
         ) : (

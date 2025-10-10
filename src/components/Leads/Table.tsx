@@ -60,9 +60,8 @@ export const LeadsTable = ({
   }, []);
 
   const sortedLeads = useMemo(() => {
-    const filteredLeads = leads.filter(
-      (lead) => lead.custom_stage?.toLowerCase() !== "onboarded"
-    );
+   const filteredLeads = leads
+
 
     if (!sortField || !sortDirection) return filteredLeads;
 
@@ -215,6 +214,8 @@ const getStageAbbreviation = (stage: string | null | undefined): string => {
 };
 
 const LeadsTableRowV2 = ({ lead, onView, onEdit }: LeadsTableRowV2Props) => {
+
+  console.log(lead)
   return (
     <tr className="hover:bg-gray-50">
       <td className="px-4 py-2 max-w-[230px]">
@@ -272,7 +273,7 @@ const LeadsTableRowV2 = ({ lead, onView, onEdit }: LeadsTableRowV2Props) => {
       <td className="px-4 py-2 whitespace-nowrap">
         {lead.custom_average_salary ? (
           <div className="text-md text-gray-900 flex items-center">
-            {formatToIndianCurrency(Number(lead.custom_average_salary))}
+            {formatToIndianCurrency(Number(lead.custom_average_salary) , lead.custom_currency ||"")}
           </div>
         ) : (
           "-"
@@ -304,7 +305,7 @@ const LeadsTableRowV2 = ({ lead, onView, onEdit }: LeadsTableRowV2Props) => {
       <td className="px-4 py-2 whitespace-nowrap">
         {lead.custom_deal_value ? (
           <div className="text-md text-gray-900 flex items-center">
-            {formatToIndianCurrency(Number(lead.custom_deal_value))}
+            {formatToIndianCurrency(Number(lead.custom_deal_value) , lead.custom_currency || "")}
           </div>
         ) : (
           "-"

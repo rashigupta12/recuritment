@@ -783,7 +783,6 @@ const StaffingPlanCreator: React.FC = () => {
 
       if (result.success && result.description) {
         updateStaffingItem(index, "job_description", result.description);
-
         setPendingJDFiles((prev) => ({
           ...prev,
           [index]: file,
@@ -1020,8 +1019,7 @@ const StaffingPlanCreator: React.FC = () => {
               {selectedLead && (
                 <div className="bg-green-50 border border-green-200 rounded p-2 text-sm text-green-800">
                   <span className="font-medium">Selected Lead:</span>{" "}
-                  {selectedLead.custom_full_name} -{" "}
-                  {selectedLead.company_name}
+                  {selectedLead.custom_full_name} - {selectedLead.company_name}
                   {!isEditMode && (
                     <button
                       onClick={() => setSelectedLead(null)}
@@ -1370,7 +1368,9 @@ const StaffingPlanCreator: React.FC = () => {
               {isLoadingPrevious ? (
                 <div className="text-center py-8">
                   <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
-                  <p className="text-gray-600">Loading previous requirements...</p>
+                  <p className="text-gray-600">
+                    Loading previous requirements...
+                  </p>
                 </div>
               ) : previousPlans.length > 0 ? (
                 <div className="bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden">
@@ -1378,119 +1378,134 @@ const StaffingPlanCreator: React.FC = () => {
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-blue-500 text-white">
                         <tr>
-                          <th className="px-4 py-3 text-left text-sm font-semibold">Date</th>
-                          <th className="px-4 py-3 text-left text-sm font-semibold">Position Details</th>
-                          <th className="px-4 py-3 text-left text-sm font-semibold">Location & Experience</th>
-                          <th className="px-4 py-3 text-left text-sm font-semibold">Vacancies & Budget</th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold">
+                            Date
+                          </th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold">
+                            Position Details
+                          </th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold">
+                            Location & Experience
+                          </th>
+                          <th className="px-4 py-3 text-left text-sm font-semibold">
+                            Vacancies & Budget
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
                         {previousPlans.map((plan) => (
                           <React.Fragment key={plan.name}>
-                            {plan.staffing_details.map((detail: any, detailIndex: number) => (
-                              <tr
-                                key={`${plan.name}-${detailIndex}`}
-                                className="hover:bg-gray-50 transition-colors"
-                              >
-                                {plan.creation && (
-                                  <td className="px-4 py-2 whitespace-nowrap text-md text-gray-900">
-                                    {(() => {
-                                      const { date, time } = formatDateAndTimeV2(
-                                        plan.creation
-                                      );
-                                      return (
-                                        <div className="flex flex-col leading-tight">
-                                          <span>{date}</span>
-                                          <span className="text-md text-gray-500">
-                                            {time}
-                                          </span>
-                                        </div>
-                                      );
-                                    })()}
+                            {plan.staffing_details.map(
+                              (detail: any, detailIndex: number) => (
+                                <tr
+                                  key={`${plan.name}-${detailIndex}`}
+                                  className="hover:bg-gray-50 transition-colors"
+                                >
+                                  {plan.creation && (
+                                    <td className="px-4 py-2 whitespace-nowrap text-md text-gray-900">
+                                      {(() => {
+                                        const { date, time } =
+                                          formatDateAndTimeV2(plan.creation);
+                                        return (
+                                          <div className="flex flex-col leading-tight">
+                                            <span>{date}</span>
+                                            <span className="text-md text-gray-500">
+                                              {time}
+                                            </span>
+                                          </div>
+                                        );
+                                      })()}
+                                    </td>
+                                  )}
+                                  <td className="px-4 py-4 capitalize">
+                                    <div className="flex flex-col">
+                                      <span className="font-medium text-gray-900 text-md">
+                                        {detail.designation}
+                                      </span>
+                                      <div className="text-md text-gray-500 mt-1">
+                                        <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-800">
+                                          {detail.number_of_positions}{" "}
+                                          {detail.number_of_positions === 1
+                                            ? "Position"
+                                            : "Positions"}
+                                        </span>
+                                      </div>
+                                    </div>
                                   </td>
-                                )}
-                                <td className="px-4 py-4 capitalize">
-                                  <div className="flex flex-col">
-                                    <span className="font-medium text-gray-900 text-md">
-                                      {detail.designation}
-                                    </span>
-                                    <div className="text-md text-gray-500 mt-1">
-                                      <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-800">
-                                        {detail.number_of_positions}{" "}
-                                        {detail.number_of_positions === 1
-                                          ? "Position"
-                                          : "Positions"}
-                                      </span>
+                                  <td className="px-4 py-4">
+                                    <div className="flex flex-col space-y-2">
+                                      <div className="flex items-center text-md text-gray-600">
+                                        <MapPin className="h-4 w-4 text-gray-400 mr-1" />
+                                        <span>{detail.location}</span>
+                                      </div>
+                                      <div className="flex items-center text-md text-gray-600">
+                                        <Clock className="h-4 w-4 text-gray-400 mr-1" />
+                                        <span>
+                                          {detail.min_experience_reqyrs}+ years
+                                          exp
+                                        </span>
+                                      </div>
                                     </div>
-                                  </div>
-                                </td>
-                                <td className="px-4 py-4">
-                                  <div className="flex flex-col space-y-2">
-                                    <div className="flex items-center text-md text-gray-600">
-                                      <MapPin className="h-4 w-4 text-gray-400 mr-1" />
-                                      <span>{detail.location}</span>
+                                  </td>
+                                  <td className="px-4 py-4">
+                                    <div className="flex flex-col space-y-2">
+                                      {(() => {
+                                        const allocated = detail.assign_to
+                                          ? detail.assign_to
+                                              .split(",")
+                                              .reduce(
+                                                (sum: number, item: string) => {
+                                                  const [, allocation] = item
+                                                    .trim()
+                                                    .split("-");
+                                                  return (
+                                                    sum +
+                                                    (parseInt(allocation) || 0)
+                                                  );
+                                                },
+                                                0
+                                              )
+                                          : 0;
+                                        const remaining =
+                                          detail.vacancies - allocated;
+                                        return (
+                                          <div className="flex items-center text-md">
+                                            <Users className="h-4 w-4 text-green-500 mr-1" />
+                                            <span className="font-semibold text-green-600">
+                                              {detail.vacancies}
+                                            </span>
+                                            <span className="text-gray-400 mx-1">
+                                              |
+                                            </span>
+                                            <span className="text-blue-600 font-medium">
+                                              {allocated}
+                                            </span>
+                                            <span className="text-gray-500 text-md ml-0.5">
+                                              alloc
+                                            </span>
+                                            <span className="text-gray-400 mx-1">
+                                              |
+                                            </span>
+                                            <span className="text-orange-600 font-medium">
+                                              {remaining}
+                                            </span>
+                                            <span className="text-gray-500 text-md ml-0.5">
+                                              left
+                                            </span>
+                                          </div>
+                                        );
+                                      })()}
+                                      <div className="flex items-center">
+                                        <IndianRupee className="h-4 w-4 text-purple-500 mr-1" />
+                                        <span className="font-medium text-gray-900">
+                                          {detail.estimated_cost_per_position}L
+                                        </span>
+                                      </div>
                                     </div>
-                                    <div className="flex items-center text-md text-gray-600">
-                                      <Clock className="h-4 w-4 text-gray-400 mr-1" />
-                                      <span>
-                                        {detail.min_experience_reqyrs}+ years exp
-                                      </span>
-                                    </div>
-                                  </div>
-                                </td>
-                                <td className="px-4 py-4">
-                                  <div className="flex flex-col space-y-2">
-                                    {(() => {
-                                      const allocated = detail.assign_to
-                                        ? detail.assign_to
-                                            .split(",")
-                                            .reduce((sum: number, item: string) => {
-                                              const [, allocation] = item
-                                                .trim()
-                                                .split("-");
-                                              return (
-                                                sum + (parseInt(allocation) || 0)
-                                              );
-                                            }, 0)
-                                        : 0;
-                                      const remaining = detail.vacancies - allocated;
-                                      return (
-                                        <div className="flex items-center text-md">
-                                          <Users className="h-4 w-4 text-green-500 mr-1" />
-                                          <span className="font-semibold text-green-600">
-                                            {detail.vacancies}
-                                          </span>
-                                          <span className="text-gray-400 mx-1">
-                                            |
-                                          </span>
-                                          <span className="text-blue-600 font-medium">
-                                            {allocated}
-                                          </span>
-                                          <span className="text-gray-500 text-md ml-0.5">
-                                            alloc
-                                          </span>
-                                          <span className="text-gray-400 mx-1">
-                                            |
-                                          </span>
-                                          <span className="text-orange-600 font-medium">
-                                            {remaining}
-                                          </span>
-                                          <span className="text-gray-500 text-md ml-0.5">
-                                            left
-                                          </span>
-                                        </div>
-                                      );
-                                    })()}
-                                    <div className="flex items-center">
-                                      <IndianRupee className="h-4 w-4 text-purple-500 mr-1" />
-                                      <span className="font-medium text-gray-900">
-                                        {detail.estimated_cost_per_position}L
-                                      </span>
-                                    </div>
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
+                                  </td>
+                                </tr>
+                              )
+                            )}
                           </React.Fragment>
                         ))}
                       </tbody>

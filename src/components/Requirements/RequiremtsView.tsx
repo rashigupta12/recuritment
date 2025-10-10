@@ -672,7 +672,7 @@ const StaffingPlansTable: React.FC = () => {
                                   )
                                 ) : (
                                   <>
-                                    <div className="relative group">
+                                    {/* <div className="relative group">
                                       <button
                                         onClick={() =>
                                           handleViewDetails(
@@ -693,7 +693,7 @@ const StaffingPlansTable: React.FC = () => {
                                       >
                                         View Details
                                       </span>
-                                    </div>
+                                    </div> */}
 
                                     <div className="relative group">
                                       <button
