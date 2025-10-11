@@ -2,6 +2,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
+import type SMTPTransport from 'nodemailer/lib/smtp-transport';
+import { decrypt } from '@/lib/crypto';
 
 interface EmailRequest {
     from_email: string;
@@ -10,6 +12,7 @@ interface EmailRequest {
     designation?: string;
     message: string;
     job_id: string;
+    username?: string; // Add username to identify the logged-in user
     applicants: Array<{
         name: string;
         applicant_name: string;
@@ -30,31 +33,135 @@ export async function POST(request: NextRequest) {
                 { status: 400 }
             );
         }
+
+        let userSmtpEmail = null;
+        let userSmtpPassword = null;
+        let senderName = process.env.COMPANY_NAME || 'HevHire';
+
+        // Try to fetch user's SMTP credentials if username is provided
+        if (emailData.username) {
+            console.log('🔍 Fetching SMTP credentials for user:', emailData.username);
+            
+            try {
+                const cookies = request.headers.get('cookie') || '';
+                const FRAPPE_BASE_URL = process.env.NEXT_PUBLIC_dev_prod_FRAPPE_BASE_URL;
+
+                // First, get the encrypted password from User Setting
+                const userSettingResponse = await fetch(
+                    `${FRAPPE_BASE_URL}/resource/User%20Setting/${encodeURIComponent(emailData.username)}?fields=["custom_mailp","full_name"]`,
+                    {
+                        method: 'GET',
+                        headers: {
+                            'Cookie': cookies,
+                        },
+                    }
+                );
+
+                console.log('User Setting Response Status:', userSettingResponse.status);
+
+                let encryptedPassword = null;
+                let fullName = null;
+
+                if (userSettingResponse.ok) {
+                    const userSettingData = await userSettingResponse.json();
+                    console.log('User Setting Data:', JSON.stringify(userSettingData, null, 2));
+                    
+                    encryptedPassword = userSettingData.data?.custom_mailp;
+                    fullName = userSettingData.data?.full_name;
+                } else {
+                    console.warn('⚠️ Could not fetch User Setting:', await userSettingResponse.text());
+                }
+
+                // Then, get the SMTP email from User doctype
+                const userResponse = await fetch(
+                    `${FRAPPE_BASE_URL}/resource/User/${encodeURIComponent(emailData.username)}?fields=["custom_smtp_email","full_name","email"]`,
+                    {
+                        method: 'GET',
+                        headers: {
+                            'Cookie': cookies,
+                        },
+                    }
+                );
+
+                console.log('User Response Status:', userResponse.status);
+
+                if (userResponse.ok) {
+                    const userData = await userResponse.json();
+                    console.log('User Data:', JSON.stringify(userData, null, 2));
+                    
+                    userSmtpEmail = userData.data?.custom_smtp_email || userData.data?.email;
+                    
+                    // Use full name from User if not found in User Setting
+                    if (!fullName) {
+                        fullName = userData.data?.full_name;
+                    }
+
+                    if (userSmtpEmail && encryptedPassword) {
+                        console.log('✅ Found user SMTP credentials');
+                        console.log('SMTP Email:', userSmtpEmail);
+                        console.log('Has encrypted password:', !!encryptedPassword);
+                        
+                        // Decrypt the password
+                        try {
+                            userSmtpPassword = decrypt(encryptedPassword);
+                            console.log('🔓 Password decrypted successfully');
+                        } catch (decryptError) {
+                            console.error('❌ Failed to decrypt password:', decryptError);
+                            userSmtpPassword = null;
+                        }
+
+                        // Use user's full name if available
+                        if (fullName) {
+                            senderName = fullName;
+                        }
+                    } else {
+                        console.log('ℹ️ No complete SMTP credentials found, using company credentials');
+                        console.log('- SMTP Email:', userSmtpEmail ? 'Found' : 'Missing');
+                        console.log('- Encrypted Password:', encryptedPassword ? 'Found' : 'Missing');
+                    }
+                } else {
+                    console.warn('⚠️ Could not fetch User:', await userResponse.text());
+                }
+            } catch (fetchError) {
+                console.error('⚠️ Error fetching user SMTP credentials:', fetchError);
+                console.log('ℹ️ Falling back to company credentials');
+            }
+        }
+
+        // Determine which credentials to use
+        const useUserCredentials = !!(userSmtpEmail && userSmtpPassword);
         
-        // Create transporter using company SMTP configuration
-        const transporter = nodemailer.createTransport({
-            host: process.env.SMTP_SERVER,
-            port: parseInt(process.env.SMTP_PORT || '587'),
-            secure: parseInt(process.env.SMTP_PORT || '587') === 465,
+        console.log(`📧 Sending email using ${useUserCredentials ? 'USER' : 'COMPANY'} credentials`);
+        if (useUserCredentials) {
+            console.log('Using email:', userSmtpEmail);
+        }
+
+        // Create transporter with appropriate credentials
+        const transportOptions: SMTPTransport.Options = {
+            host: process.env.SMTP_SERVER || 'crystal.herosite.pro',
+            port: parseInt(process.env.SMTP_PORT || '465'),
+            secure: true,
             auth: {
-                user: process.env.COMPANY_EMAIL,
-                pass: process.env.COMPANY_EMAIL_PASSWORD,
+                user: (useUserCredentials ? userSmtpEmail : process.env.COMPANY_EMAIL) || '',
+                pass: (useUserCredentials ? userSmtpPassword : process.env.COMPANY_EMAIL_PASSWORD) || '',
             },
             tls: {
                 rejectUnauthorized: false
             }
-        });
+        };
+
+        const transporter = nodemailer.createTransport(transportOptions);
 
         // Get resume attachments
         const attachments = await getResumeAttachments(emailData.applicants);
 
         // Email options
         const mailOptions = {
-            from: `"${process.env.COMPANY_NAME}" <${process.env.COMPANY_EMAIL}>`,
+            from: `"${senderName}" <${useUserCredentials ? userSmtpEmail : process.env.COMPANY_EMAIL}>`,
             to: emailData.to_email,
             subject: emailData.subject,
             text: emailData.message,
-html: `
+            html: `
   <div style="font-family: Arial, sans-serif; max-width: 650px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden;">
       
       <!-- Header with White Background for Logo -->
@@ -96,10 +203,10 @@ html: `
       <!-- Footer -->
       <div style="padding: 20px; background: #1e3a8a; text-align: center; color: #f8fafc;">
           <p style="margin: 0; font-size: 14px;">This email was sent from <strong style="color: #ffffff;">HevHire</strong></p>
+          ${useUserCredentials ? `<p style="margin: 5px 0 0 0; font-size: 12px; opacity: 0.8;">Sent by ${senderName}</p>` : ''}
       </div>
   </div>
 `,
-
             attachments: attachments
         };
 
@@ -115,7 +222,8 @@ html: `
             success: true,
             messageId: result.messageId,
             attachmentsSent: attachments.length,
-            message: 'Email sent successfully'
+            message: 'Email sent successfully',
+            sentFrom: useUserCredentials ? userSmtpEmail : process.env.COMPANY_EMAIL
         });
 
     } catch (error: any) {
@@ -161,7 +269,7 @@ async function downloadFileFromUrl(fileUrl: string): Promise<Buffer | null> {
 // Improved helper function to handle resume attachments
 async function getResumeAttachments(applicants: any[]) {
     const attachments = [];
-        const baseUrl = process.env.NEXT_PUBLIC_FRAPPE_BASE_URL;
+    const baseUrl = process.env.NEXT_PUBLIC_FRAPPE_BASE_URL;
 
     console.log('🔍 API - Processing applicants for attachments:');
     applicants.forEach((applicant, index) => {
@@ -256,7 +364,6 @@ async function getResumeAttachments(applicants: any[]) {
                     console.log(`✅ Resume attached: ${filename} (${fileBuffer.length} bytes)`);
                 } else {
                     console.warn(`❌ No file buffer created for ${applicant.applicant_name || applicant.name}`);
-                    // Don't create placeholder files - we want to know which resumes failed
                 }
 
             } catch (error) {

@@ -26,7 +26,9 @@ export default function EmailSendingPopup({
     jobTitle,
 }: EmailSendingPopupProps) {
     const [clientEmail, setClientEmail] = useState('');
-    const [subject, setSubject] = useState(`Applicants for Job Title ${jobTitle}`);
+
+    console.log(jobTitle)
+    const [subject, setSubject] = useState(`Applicants for  ${jobTitle}`);
     const [message, setMessage] = useState('');
     const [sending, setSending] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -96,6 +98,7 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || ''}`;
                 subject: subject,
                 message: message,
                 job_id: jobId,
+                username :currentUserEmail,
                 applicants: selectedApplicants.map((applicant) => ({
                     name: applicant.name,
                     applicant_name: applicant.applicant_name,

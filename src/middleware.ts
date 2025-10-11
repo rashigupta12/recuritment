@@ -8,7 +8,7 @@ const ROLE_ROUTES: Record<string, string> = {
   'Projects Manager': '/dashboard/projects-manager',
   'Projects User': '/dashboard/projects-user',
   'Delivery Manager': '/dashboard/delivery-manager',
-  'Recruiter': '/dashboard/recruiter'
+  'Recruiter': '/dashboard/recruiter',
 };
 
 export function middleware(request: NextRequest) {
@@ -16,13 +16,18 @@ export function middleware(request: NextRequest) {
 
   // Public routes that don't need authentication
   const publicRoutes = ['/login', '/api/auth/login', '/api/health', '/api/frappe'];
-  
+
   // All dashboard routes
   const isDashboardRoute = pathname.startsWith('/dashboard');
+  const isSettingsRoute = pathname.startsWith('/dashboard/settings');
   const isRootRoute = pathname === '/';
 
-  // OPTIMIZATION: Quick exit for public routes and API routes
-  if (publicRoutes.some(route => pathname.startsWith(route)) || pathname.startsWith('/api/')) {
+  // OPTIMIZATION: Quick exit for public routes, API routes, and settings routes
+  if (
+    publicRoutes.some((route) => pathname.startsWith(route)) ||
+    pathname.startsWith('/api/') ||
+    isSettingsRoute
+  ) {
     return NextResponse.next();
   }
 
@@ -45,13 +50,11 @@ export function middleware(request: NextRequest) {
   // OPTIMIZATION: Single authentication check
   if (!userData || !sessionCookie || !userData.username) {
     console.log(`[Middleware] No authentication - redirecting to login`);
-    
     const response = NextResponse.redirect(new URL('/login', request.url));
     response.cookies.delete('frappe_user');
     if (userData?.username) {
       response.cookies.delete(`currentRole_${userData.username}`);
     }
-    
     return response;
   }
 
@@ -108,9 +111,12 @@ export function middleware(request: NextRequest) {
       return response;
     }
 
-    // Check if accessing correct dashboard
+    // Check if accessing correct dashboard (exclude settings routes)
     const allowedDashboard = ROLE_ROUTES[currentRole];
     if (!pathname.startsWith(allowedDashboard)) {
+      console.log(
+        `[Middleware] Redirecting from ${pathname} to ${allowedDashboard} for role ${currentRole}`
+      );
       return NextResponse.redirect(new URL(allowedDashboard, request.url));
     }
 
@@ -129,7 +135,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|public|brands).*)',
-  ],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|public|brands).*)'],
 };

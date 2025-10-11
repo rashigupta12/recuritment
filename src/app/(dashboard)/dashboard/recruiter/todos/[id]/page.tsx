@@ -28,6 +28,7 @@ export default function TodoDetailPage() {
   const [loading, setLoading] = useState(true);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const[jobTiitle , setJobTitle] = useState<string>('')
   const {user } = useAuth()
   const userEmail = user?.email
 
@@ -62,6 +63,7 @@ export default function TodoDetailPage() {
         setTodoData(todo);
         if (todo.custom_job_id) {
           setJobId(todo.custom_job_id);
+          setJobTitle(todo.custom_job_title)
         } else {
           console.warn('No job ID found for this todo');
           setJobId('');
@@ -78,6 +80,8 @@ export default function TodoDetailPage() {
       fetchTodoDetails();
     }
   }, [todoId]);
+
+  console.log(todoData)
 
   if (loading) {
     return (
@@ -166,6 +170,7 @@ export default function TodoDetailPage() {
                   todoData={todoData}
                   refreshTrigger={refreshKey}
                   onRefresh={() => setRefreshKey(prev => prev + 1)}
+                  job_title={jobTiitle}
                 />
               </>
             ) : (

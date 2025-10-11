@@ -1,6 +1,26 @@
-// src/api/frappeclient
+// lib/api/frappeClient.ts
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import axios from "axios";
+
+// Safe localStorage helper for server-side compatibility
+const safeLocalStorage = {
+  getItem: (key: string): string | null => {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      return localStorage.getItem(key);
+    }
+    return null;
+  },
+  setItem: (key: string, value: string): void => {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(key, value);
+    }
+  },
+  removeItem: (key: string): void => {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.removeItem(key);
+    }
+  }
+};
 
 const frappeClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_dev_prod_FRAPPE_BASE_URL,
@@ -11,7 +31,6 @@ const frappeClient = axios.create({
     Accept: "application/json"
   },
 });
-
 
 const frappeFileClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_dev_prod_FRAPPE_BASE_URL,
@@ -31,7 +50,6 @@ frappeFileClient.interceptors.request.use(
     });
 
     // For development, add CORS headers
-
     config.headers['Access-Control-Allow-Origin'] = 'http://localhost:3000';
     config.headers['Access-Control-Allow-Credentials'] = 'true';
 
@@ -91,11 +109,11 @@ frappeFileClient.interceptors.response.use(
       error.response?.data?.exc?.includes('OperationalError') ||
       error.response?.data?.exc?.includes('Can\'t connect to MySQL');
 
-    if (isServerDown) {
+    if (isServerDown && typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('serverDown', { detail: true }));
     } else if (error.response?.status === 401 || error.response?.status === 403) {
-      localStorage.removeItem('frappe_user');
-      localStorage.removeItem('frappe_session');
+      safeLocalStorage.removeItem('frappe_user');
+      safeLocalStorage.removeItem('frappe_session');
       // Optionally redirect to login
       if (typeof window !== 'undefined') {
         window.location.href = '/login';
@@ -104,6 +122,7 @@ frappeFileClient.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
 // Request interceptor
 frappeClient.interceptors.request.use(
   (config) => {
@@ -129,7 +148,7 @@ frappeClient.interceptors.response.use(
     // Handle authentication errors
     if (error.response?.status === 401 || error.response?.status === 403) {
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('frappe_user');
+        safeLocalStorage.removeItem('frappe_user');
       }
     }
 
@@ -160,7 +179,7 @@ export const frappeAPI = {
         };
 
         // Store in localStorage for middleware access
-        localStorage.setItem('frappe_user', JSON.stringify(userData));
+        safeLocalStorage.setItem('frappe_user', JSON.stringify(userData));
 
         return {
           success: true,
@@ -204,7 +223,7 @@ export const frappeAPI = {
           loginTime: Date.now()
         };
 
-        localStorage.setItem('frappe_user', JSON.stringify(userData));
+        safeLocalStorage.setItem('frappe_user', JSON.stringify(userData));
 
         return {
           authenticated: true,
@@ -216,7 +235,7 @@ export const frappeAPI = {
       return { authenticated: false };
     } catch (error) {
       console.error('Session check failed:', error);
-      localStorage.removeItem('frappe_user');
+      safeLocalStorage.removeItem('frappe_user');
       return { authenticated: false };
     }
   },
@@ -240,28 +259,18 @@ export const frappeAPI = {
   },
 
   checkFirstLogin: async (username: string) => {
-
-
     try {
       // First check User Settings
-
       const response = await frappeClient.get(
         `/resource/User Setting/${encodeURIComponent(username)}`
       );
 
-
       if (response.data && response.data.data) {
-
-
         // Handle both array and object responses
         const userSettings = Array.isArray(response.data.data) ? response.data.data[0] : response.data.data;
 
         if (userSettings) {
-
-
           const requiresPasswordReset = userSettings.first_password === 1 || userSettings.first_password === '1';
-
-
 
           return {
             success: true,
@@ -271,18 +280,13 @@ export const frappeAPI = {
         }
       }
 
-
-
       // Fallback: check User table
       const userResponse = await frappeClient.get(
         `/resource/User/${username}?fields=["last_login"]`
       );
 
-
-
       if (userResponse.data && userResponse.data.data) {
         const requiresPasswordReset = !userResponse.data.data.last_login;
-
 
         return {
           success: true,
@@ -291,15 +295,12 @@ export const frappeAPI = {
         };
       }
 
-
       return {
         success: true,
         requiresPasswordReset: false
       };
 
     } catch (error) {
-
-
       // Enhanced error logging
       if (axios.isAxiosError(error)) {
         console.error('🌐 Axios error details:', {
@@ -394,12 +395,77 @@ export const frappeAPI = {
   logout: async () => {
     try {
       await frappeClient.post('method/logout');
-      localStorage.removeItem('frappe_user');
+      safeLocalStorage.removeItem('frappe_user');
       return { success: true };
     } catch (error) {
-      localStorage.removeItem('frappe_user');
+      safeLocalStorage.removeItem('frappe_user');
       console.error('Logout error:', error);
       return { success: false, error: 'Logout failed but local session cleared' };
+    }
+  },
+
+  // SMTP Configuration methods
+  getUserSMTPSettings: async (username: string) => {
+    try {
+      // Get SMTP email from User doctype
+      const userResponse = await frappeClient.get(
+        `/resource/User/${encodeURIComponent(username)}?fields=["custom_smtp_email","full_name"]`
+      );
+      
+      // Get encrypted password from User Setting
+      const userSettingResponse = await frappeClient.get(
+        `/resource/User Setting/${encodeURIComponent(username)}?fields=["custom_mailp"]`
+      );
+
+      return {
+        success: true,
+        data: {
+          custom_smtp_email: userResponse.data.data?.custom_smtp_email,
+          custom_mailp: userSettingResponse.data.data?.custom_mailp,
+          full_name: userResponse.data.data?.full_name
+        }
+      };
+    } catch (error) {
+      console.error('Error fetching user SMTP settings:', error);
+      return {
+        success: false,
+        error: axios.isAxiosError(error) ?
+          (error.response?.data?.message || error.message) :
+          'Failed to fetch SMTP settings'
+      };
+    }
+  },
+
+  updateUserSMTPSettings: async (username: string, smtpEmail: string, encryptedPassword: string) => {
+    try {
+      // Update User doctype with SMTP email
+      await frappeClient.put(
+        `/resource/User/${encodeURIComponent(username)}`,
+        {
+          custom_smtp_email: smtpEmail
+        }
+      );
+
+      // Update User Setting with encrypted password
+      await frappeClient.put(
+        `/resource/User Setting/${encodeURIComponent(username)}`,
+        {
+          custom_mailp: encryptedPassword
+        }
+      );
+
+      return {
+        success: true,
+        message: 'SMTP settings updated successfully'
+      };
+    } catch (error) {
+      console.error('Error updating user SMTP settings:', error);
+      return {
+        success: false,
+        error: axios.isAxiosError(error) ?
+          (error.response?.data?.message || error.message) :
+          'Failed to update SMTP settings'
+      };
     }
   },
 
@@ -414,7 +480,7 @@ export const frappeAPI = {
       return response.data;
     } catch (error) {
       if (axios.isAxiosError(error) && (error.response?.status === 403 || error.response?.status === 401)) {
-        localStorage.removeItem('frappe_user');
+        safeLocalStorage.removeItem('frappe_user');
         throw new Error('Session expired. Please login again.');
       }
       throw error;
@@ -427,7 +493,7 @@ export const frappeAPI = {
       return response;
     } catch (error) {
       if (axios.isAxiosError(error) && (error.response?.status === 403 || error.response?.status === 401)) {
-        localStorage.removeItem('frappe_user');
+        safeLocalStorage.removeItem('frappe_user');
         throw new Error('Session expired. Please login again.');
       }
       throw error;
@@ -437,12 +503,8 @@ export const frappeAPI = {
   getAllLeads: async (email: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Lead?filters=[["lead_owner", "=", "${email}"]]&order_by=creation%20desc`);
   },
-  //  getAllLeads: async () => {
-  //   return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Lead`);
-  // },
 
   getAllLeadsDetailed: async (email: string) => {
-
     return await frappeAPI.makeAuthenticatedRequest(
       'GET',
       `/resource/Lead?fields=["name","custom_full_name","custom_phone_number","custom_email_address","status","company_name","custom_expected_hiring_volume","industry","city","custom_budgetinr","website","state","country","creation","lead_name","email_id","custom_stage","custom_offerings","custom_estimated_hiring_","custom_average_salary","custom_fee","custom_deal_value","custom_expected_close_date","custom_fixed_charges","owner","lead_owner","custom_lead_owner_name","mobile_no" , "custom_currency"]&filters=[["owner","=","${email}"],["custom_stage","in",["Prospecting","Lead Qualification","Needs Analysis / Discovery","Presentation / Proposal"]]]&limit_page_length=0&limit_start=0&order_by=modified desc`
@@ -457,17 +519,11 @@ export const frappeAPI = {
   },
 
   getContractReadyLeadsRecuiter: async (email: string) => {
-
     return await frappeAPI.makeAuthenticatedRequest(
       'GET',
       `/resource/Lead?fields=["name","custom_full_name","custom_phone_number","custom_email_address","status","company_name","custom_expected_hiring_volume","industry","city","custom_budgetinr","website","state","country","creation","lead_name","email_id","custom_stage","custom_offerings","custom_estimated_hiring_","custom_average_salary","custom_fee","custom_deal_value","custom_expected_close_date","custom_fixed_charges","owner","lead_owner","custom_lead_owner_name","mobile_no","custom_currency"]&filters=[["custom_stage","in",["Contract","Onboarded"]]]&limit_page_length=0&limit_start=0&order_by=modified desc`
     );
-
   },
-
-
-
-
 
   getContractReadyLeadsOptimized: async (email: string) => {
     const fields = [
@@ -499,17 +555,16 @@ export const frappeAPI = {
       "mobile_no"
     ];
 
-    // Single query to get leads that have associated customers
     return await frappeAPI.makeAuthenticatedRequest(
       'GET',
       `/resource/Lead?fields=${JSON.stringify(fields)}&filters=[["lead_owner", "=", "${email}"],["custom_stage", "=", "onboarded"]]&order_by=creation desc&limit_page_length=0`
     );
   },
 
-
   getLeadById: async (leadId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Lead/${leadId}`);
   },
+
   getAllInsdustryType: async () => {
     return await frappeAPI.makeAuthenticatedRequest('GET', '/resource/Industry Type')
   },
@@ -521,47 +576,46 @@ export const frappeAPI = {
   updateLead: async (leadId: string, leadData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('PUT', `/resource/Lead/${leadId}`, leadData);
   },
+
   updateLeadStatus: async (LeaId: string, status: string) => {
     return await frappeAPI.makeAuthenticatedRequest('PUT', `/resource/Lead/${LeaId}`, { status });
   },
+
   createContact: async (contactData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('POST', '/resource/Contact', contactData);
   },
+
   updateContact: async (contactId: string, contactData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('PUT', `/resource/Contact/${contactId}`, contactData);
   },
+
   createCompany: async (companyData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('POST', '/resource/Company', companyData);
   },
+
   updateCompany: async (companyId: string, companyData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('PUT', `/resource/Company/${companyId}`, companyData);
   },
+
   getAllLeadsbyContract: async (email: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Lead?filters=[["custom_stage", "=", "onboarded"] , ["lead_owner", "=", "${email}"]]`);
   },
 
-
-
-
   getAllOpportunity: async (email: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Opportunity?filters= [["custom_assigned_to_" ,"=","${email}"]]`);
   },
+
   getOpportunityBYId: async (TodoId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Opportunity/${TodoId}`);
   },
 
-
-
   createStaffingPlan: async (StaffingData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('POST', '/resource/Staffing Plan', StaffingData);
   },
+
   updateStaffingPLan: async (StaffingId: string, StaffingData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('PUT', `/resource/Company/${StaffingId}`, StaffingData);
   },
-  // getAllTodos: async (email: string) => {
-  //   return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/ToDo?filters=[["allocated_to" ,"=","${email}"]]`);
-  // },
-
 
   getAllTodos: async (email: string) => {
     const fields = [
@@ -578,8 +632,9 @@ export const frappeAPI = {
       "role",
       "sender",
       "assignment_rule",
-      "custom_date_assigned", "custom_job_title", "custom_department"
-      // Add any other fields you need
+      "custom_date_assigned", 
+      "custom_job_title", 
+      "custom_department"
     ];
 
     const filters = JSON.stringify([["allocated_to", "=", email]]);
@@ -589,15 +644,19 @@ export const frappeAPI = {
       `/resource/ToDo?fields=${JSON.stringify(fields)}&filters=${filters}&limit_page_length=0&order_by=creation desc`
     );
   },
+
   getTodoBYId: async (TodoId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/ToDo/${TodoId}`);
   },
+
   getStaffingPlanById: async (PlanId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Staffing Plan/${PlanId}`);
   },
+
   getAllCustomers: async (email: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Customer?filters=[["owner" ,"=","${email}"]]&order_by=creation desc`);
   },
+
   getCustomerBYId: async (CustomerId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Customer/${CustomerId}`);
   },
@@ -609,58 +668,43 @@ export const frappeAPI = {
       applicantsData
     );
   },
+
   createApplicants: async (ApplicantData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('POST', '/resource/Job Applicant', ApplicantData);
   },
-  // getAllApplicants: async (email: string) => {
-  //   return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Job Applicant?limit_page_length=0&order_by=creation desc`);
-  // },
 
   getAllApplicants: async (email: string, limitStart = 0, limitPageLength = 10) => {
-  const fields = [
-    "name",
-    "applicant_name",
-    "email_id",
-    "phone_number",
-    "country",
-    "job_title",
-    "designation",
-    "status",
-    "resume_attachment",
-    "custom_experience",
-    "custom_education",
-    "creation",
-    "custom_company_name",
-    "owner"
-  ];
+    const url = `/method/recruitment_app.get_all_applicants.get_all_applicants?limit_start=${limitStart}&limit_page_length=${limitPageLength}&owner=${email}`;
+    return await frappeAPI.makeAuthenticatedRequest('GET', url);
+  },
 
-  const url = `/method/recruitment_app.get_all_applicants.get_all_applicants?limit_start=${limitStart}&limit_page_length=${limitPageLength}&owner=${email}`;
-
-  return await frappeAPI.makeAuthenticatedRequest('GET', url);
-},
-
-  getApplicantBYId: async (name:string) => {
+  getApplicantBYId: async (name: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Job Applicant/${name}`);
   },
 
   createbulkAssessment: async (assessment: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('POST', '/method/recruitment_app.bulk_create_assessment.bulk_create_assessments', assessment);
   },
+
   getAllShortlistedCandidates: async (email: string, status: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Job Applicant?filters=[["owner","=","${email}"],["status","=","${status}"]]&order_by=creation desc`);
   },
+
   getJobOpeningById: async (jobopeningId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Job Opening/${jobopeningId}`);
   },
+
   getTaggedApplicantsByJobId: async (jobId: string, email: string) => {
     return await frappeAPI.makeAuthenticatedRequest(
       'GET',
       `/resource/Job Applicant?filters=[["owner","=","${email}"],["job_title","=","${jobId}"]]&order_by=creation desc`
     );
   },
+
   deleteApplicant: async (applicantName: string) => {
     return await frappeAPI.makeAuthenticatedRequest('DELETE', `/resource/Job Applicant/${applicantName}`);
   },
+
   updateApplicantStatus: async (name: string, data: { status: string }) => {
     return await frappeAPI.makeAuthenticatedRequest('PUT', `/resource/Job Applicant/${encodeURIComponent(name)}`, data);
   },
@@ -668,16 +712,18 @@ export const frappeAPI = {
   createFeedback: async (feedbackData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('POST', '/resource/Issue', feedbackData);
   },
+
   editFeedback: async (feedbackId: string, feedbackData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('PUT', `/resource/Issue/${feedbackId}`, feedbackData);
   },
+
   getFeedbackByUserId: async (userId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Issue?filters=[["raised_by","=","${userId}"]]&order_by=modified desc`);
   },
+
   getFeedbackById: async (feedbackId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Issue/${feedbackId}`);
   },
-
 
   upload: async (file: File, options: {
     is_private?: boolean;
@@ -705,8 +751,6 @@ export const frappeAPI = {
       formData.append('method', options.method);
     }
 
-
-
     try {
       const response = await frappeFileClient.post('/method/upload_file', formData, {
         timeout: 30000,
@@ -720,7 +764,6 @@ export const frappeAPI = {
           }
         }
       });
-
 
       return {
         success: true,
@@ -755,9 +798,6 @@ export const frappeAPI = {
       };
     }
   }
-
-
-
 };
 
 export default frappeClient;

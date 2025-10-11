@@ -1,8 +1,8 @@
 'use client';
 
-import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 import { ROLE_ROUTES } from '@/lib/constants/roles';
 
 const HomePage = () => {

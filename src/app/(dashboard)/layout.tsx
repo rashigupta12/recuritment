@@ -1,4 +1,4 @@
-/* eslint-disable  @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import FeedbackComponent from "@/components/comman/FeedbackManagement";
@@ -35,11 +35,14 @@ import {
   User,
   Users,
   X,
+  Settings,
+  AlertCircle,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ReactNode, useEffect, useState } from "react";
+import { frappeAPI } from "@/lib/api/frappeClient";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -62,73 +65,39 @@ const getNavigationItems = (role: AllowedRole): NavigationItem[] => {
     "Sales User": [
       { icon: Home, label: "Dashboard", href: roleBasePath },
       { icon: Target, label: "Leads", href: `${roleBasePath}/leads` },
+      { icon: Settings, label: "Settings", href: "/dashboard/settings/email" },
     ],
     "Sales Manager": [
       { icon: Home, label: "Dashboard", href: roleBasePath },
       { icon: Target, label: "Leads", href: `${roleBasePath}/leads` },
       { icon: Users, label: "Customers", href: `${roleBasePath}/contract` },
-       {
-        icon: Users,
-        label: "Helpdesk",
-        href: `${roleBasePath}/helpdesk`,
-      },
-      
+      { icon: Users, label: "Helpdesk", href: `${roleBasePath}/helpdesk` },
+      { icon: Settings, label: "Settings", href: "/dashboard/settings/email" },
     ],
     "Projects Manager": [
       { icon: Home, label: "Dashboard", href: roleBasePath },
       { icon: FolderOpen, label: "Allocation", href: `${roleBasePath}/allocation` },
-       {
-        icon: Users,
-        label: "Helpdesk",
-        href: `${roleBasePath}/helpdesk`,
-      },
+      { icon: Users, label: "Helpdesk", href: `${roleBasePath}/helpdesk` },
+      { icon: Settings, label: "Settings", href: "/dashboard/settings/email" },
     ],
-    "Projects User": [{ icon: Home, label: "Dashboard", href: roleBasePath }],
+    "Projects User": [
+      { icon: Home, label: "Dashboard", href: roleBasePath },
+      { icon: Settings, label: "Settings", href: "/dashboard/settings/email" },
+    ],
     "Delivery Manager": [
       { icon: Home, label: "Dashboard", href: roleBasePath },
-      {
-        icon: FolderOpen,
-        label: "Deliveries",
-        href: `${roleBasePath}/deliveries`,
-      },
-
-       {
-        icon: Users,
-        label: "Helpdesk",
-        href: `${roleBasePath}/helpdesk`,
-      },
+      { icon: FolderOpen, label: "Deliveries", href: `${roleBasePath}/deliveries` },
+      { icon: Users, label: "Helpdesk", href: `${roleBasePath}/helpdesk` },
+      { icon: Settings, label: "Settings", href: "/dashboard/settings/email" },
     ],
     Recruiter: [
       { icon: Home, label: "Dashboard", href: roleBasePath },
-
-       { icon: Users, label: "Customers", href: `${roleBasePath}/contract` },
-      //  {
-      //   icon: FolderOpen,
-      //   label: "Requirements",
-      //   href: `${roleBasePath}/requirements`,
-      // },
-{
-        icon: TrendingUp,
-        label: "Requirements",
-        href: `${roleBasePath}/requirements`,
-      },
-      {
-        icon: FolderOpen,
-        label: "Jobs Assigned",
-        href: `${roleBasePath}/todos`,
-      },
-      {
-        icon: Users,
-        label: "Candidate Tracker",
-        href: `${roleBasePath}/viewapplicant`,
-      },
-
-
-      {
-        icon: Users,
-        label: "Helpdesk",
-        href: `${roleBasePath}/helpdesk`,
-      },
+      { icon: Users, label: "Customers", href: `${roleBasePath}/contract` },
+      { icon: TrendingUp, label: "Requirements", href: `${roleBasePath}/requirements` },
+      { icon: FolderOpen, label: "Jobs Assigned", href: `${roleBasePath}/todos` },
+      { icon: Users, label: "Candidate Tracker", href: `${roleBasePath}/viewapplicant` },
+      { icon: Users, label: "Helpdesk", href: `${roleBasePath}/helpdesk` },
+      { icon: Settings, label: "Settings", href: "/dashboard/settings/email" },
     ],
   };
 
@@ -149,6 +118,37 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
+  const [emailConfigured, setEmailConfigured] = useState<boolean | null>(null);
+  const [fetchingEmailConfig, setFetchingEmailConfig] = useState(true);
+
+  // Fetch email configuration status
+  useEffect(() => {
+    const fetchEmailConfig = async () => {
+      if (user?.username) {
+        try {
+          setFetchingEmailConfig(true);
+          const response = await frappeAPI.makeAuthenticatedRequest(
+            "GET",
+            `/resource/User Setting/${user.username}`
+          );
+          console.log('DashboardLayout Email Config Response:', response); // Debug log
+          
+          if (response.data) {
+            setEmailConfigured(response.data.custom_email_configured === 1);
+          }
+        } catch (error) {
+          console.error("Error fetching email configuration:", error);
+          setEmailConfigured(false);
+        } finally {
+          setFetchingEmailConfig(false);
+        }
+      } else {
+        setFetchingEmailConfig(false);
+      }
+    };
+
+    fetchEmailConfig();
+  }, [user]);
 
   // Auto-collapse on mobile, remember desktop state
   useEffect(() => {
@@ -200,6 +200,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   };
 
   const isNavItemActive = (href: string): boolean => {
+    // Handle role-specific dashboard root
     if (
       href.endsWith(
         `/dashboard/${currentRole.toLowerCase().replace(/\s+/g, "-")}`
@@ -207,6 +208,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     ) {
       return pathname === href;
     }
+    // Handle settings route
+    if (href === "/dashboard/settings/email") {
+      return pathname === href || pathname.startsWith("/dashboard/settings");
+    }
+    // Handle other routes
     return (
       pathname === href ||
       (pathname.startsWith(href + "/") && href !== "/dashboard")
@@ -228,60 +234,20 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="flex items-center justify-center h-14 px-3 border-b border-gray-200/60 flex-shrink-0">
             <Link
               href="/dashboard"
-              className={`flex items-center ${sidebarCollapsed ? "justify-center" : "space-x-2"
-                }`}
+              className={`flex items-center ${sidebarCollapsed ? "justify-center" : "space-x-2"}`}
             >
-              {/* <div className="rounded-lg flex items-center justify-center flex-shrink-0">
-                {!sidebarCollapsed && (
-                  <Image
-                    src={brandConfig.logo}
-                    alt={brandConfig.name}
-                    width={150}
-                    height={150}
-                    className=""
-                  />
-                ): (
-    <Image
-      src={brandConfig.logo}
-      alt={brandConfig.name}
-      width={150}
-      height={150}
-      className="object-contain transition-all duration-300"
-    />)}
-              </div> */}
-              {/* <div className="rounded-lg flex items-center justify-center flex-shrink-0">
-                {sidebarCollapsed ? (
-                  <Image
-                    src={brandConfig.collapsedLogo || "/collapsed-logo.png"} // 👈 fallback if you want
-                    alt={brandConfig.name}
-                    width={40}
-                    height={40}
-                    className="object-contain transition-all duration-100"
-                  />
-                ) : (
-                  <Image
-                    src={brandConfig.logo}
-                    alt={brandConfig.name}
-                    width={150}
-                    height={150}
-                    className="object-contain duration-100"
-                  />
-                )}
-              </div> */}
               <div className="flex items-center justify-center flex-shrink-0 h-[80px] transition-all duration-300">
                 <div className="relative w-[150px] h-[60px] flex items-center justify-center">
                   <Image
-                    key={sidebarCollapsed ? "collapsed" : "expanded"} // forces React to re-render properly
+                    key={sidebarCollapsed ? "collapsed" : "expanded"}
                     src={sidebarCollapsed ? brandConfig.collapsedLogo || "/collapsed-logo.png" : brandConfig.logo}
                     alt={brandConfig.name}
                     width={sidebarCollapsed ? 40 : 150}
                     height={sidebarCollapsed ? 40 : 60}
-                    className={`object-contain transition-all duration-300 ease-in-out ${sidebarCollapsed ? "scale-90 opacity-90" : "scale-100 opacity-100"
-                      }`}
+                    className={`object-contain transition-all duration-300 ease-in-out ${sidebarCollapsed ? "scale-90 opacity-90" : "scale-100 opacity-100"}`}
                   />
                 </div>
               </div>
-
             </Link>
           </div>
 
@@ -309,30 +275,28 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   href={item.href}
                   className={`group flex items-center px-3 py-2 text-md font-medium rounded-lg transition-all duration-200 ${isActive
                     ? "text-white shadow-sm"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-100/80"
-                    } ${sidebarCollapsed ? "justify-center" : ""}`}
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-100/80"} ${sidebarCollapsed ? "justify-center" : ""}`}
                   style={
                     isActive
                       ? {
-                        backgroundColor: brandConfig.colors.primary,
-                        boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                      }
+                          backgroundColor: brandConfig.colors.primary,
+                          boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                        }
                       : {}
                   }
-                  onClick={() => setSidebarOpen(false)}
+                  onClick={() => {
+                    console.log(`Navigating to: ${item.href}`); // Debug navigation
+                    setSidebarOpen(false);
+                  }}
                 >
                   <item.icon
                     className={`h-4 w-4 flex-shrink-0 ${isActive
                       ? "text-white"
-                      : "text-gray-400 group-hover:text-gray-600"
-                      } ${sidebarCollapsed ? "" : "mr-3"}`}
+                      : "text-gray-400 group-hover:text-gray-600"} ${sidebarCollapsed ? "" : "mr-3"}`}
                   />
-
                   {!sidebarCollapsed && (
                     <>
-                      <span className="flex-1 truncate text-md">
-                        {item.label}
-                      </span>
+                      <span className="flex-1 truncate text-md">{item.label}</span>
                       {item.badge && (
                         <Badge
                           variant="destructive"
@@ -367,13 +331,12 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </nav>
 
           <div
-            className={`p-3 border-t border-gray-200/60 flex-shrink-0 ${sidebarCollapsed ? "px-2" : "px-3"
-              }`}
+            className={`p-3 border-t border-gray-200/60 flex-shrink-0 ${sidebarCollapsed ? "px-2" : "px-3"}`}
           >
             {sidebarCollapsed ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="flex justify-center">
+                  <div className="flex justify-center relative">
                     <Avatar className="h-8 w-8 cursor-pointer">
                       <AvatarFallback
                         className="text-white font-semibold text-md"
@@ -382,6 +345,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                         {user.full_name.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
+                    {!fetchingEmailConfig && !emailConfigured && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <AlertCircle
+                            className="absolute -top-1 -right-1 h-4 w-4 text-red-500"
+                            style={{ backgroundColor: "white", borderRadius: "50%", padding: "2px" }}
+                          />
+                        </TooltipTrigger>
+                        <TooltipContent side="right" className="ml-2">
+                          <p>Email configuration not set. Go to Settings to configure your email.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="right" className="ml-2">
@@ -393,7 +369,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 </TooltipContent>
               </Tooltip>
             ) : (
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 relative">
                 <Avatar className="h-8 w-8 flex-shrink-0">
                   <AvatarFallback
                     className="text-white font-semibold text-md"
@@ -402,6 +378,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     {user.full_name.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
+                {!fetchingEmailConfig && !emailConfigured && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <AlertCircle
+                        className="absolute top-0 right-0 h-4 w-4 text-red-500"
+                        style={{ backgroundColor: "white", borderRadius: "50%", padding: "2px" }}
+                      />
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="ml-2">
+                      <p>Email configuration not set. Go to Settings to configure your email.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
                 <div className="flex-1 min-w-0">
                   <p className="text-lg font-medium text-gray-900 truncate">
                     {user.full_name}
@@ -424,19 +413,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
           {availableRoles.length > 1 && (
             <div
-              className={`p-2 border-t border-gray-200/60 flex-shrink-0 ${sidebarCollapsed ? "px-2" : "px-3"
-                }`}
+              className={`p-2 border-t border-gray-200/60 flex-shrink-0 ${sidebarCollapsed ? "px-2" : "px-3"}`}
             >
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   {sidebarCollapsed ? (
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="w-full h-8 p-0"
-                          size="sm"
-                        >
+                        <Button variant="outline" className="w-full h-8 p-0" size="sm">
                           <User className="h-3 w-3" />
                         </Button>
                       </TooltipTrigger>
@@ -483,9 +467,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           )}
         </div>
 
+        {/* Mobile Sidebar */}
         <div
-          className={`lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 shadow-lg transform transition-transform duration-300 ease-in-out ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
-            }`}
+          className={`lg:hidden fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 shadow-lg transform transition-transform duration-300 ease-in-out ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
         >
           <div className="flex flex-col h-full">
             <div className="flex items-center justify-between h-16 px-6 border-b border-gray-200 flex-shrink-0">
@@ -516,7 +500,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
 
             <div className="p-6 border-b border-gray-200 flex-shrink-0">
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-3 relative">
                 <Avatar className="h-10 w-10">
                   <AvatarFallback
                     className="text-white font-semibold"
@@ -525,6 +509,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     {user.full_name.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
+                {!fetchingEmailConfig && !emailConfigured && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <AlertCircle
+                        className="absolute top-0 right-0 h-4 w-4 text-red-500"
+                        style={{ backgroundColor: "white", borderRadius: "50%", padding: "2px" }}
+                      />
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="ml-2">
+                      <p>Email configuration not set. Go to Settings to configure your email.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">
                     {user.full_name}
@@ -556,20 +553,21 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     href={item.href}
                     className={`group flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors ${isActive
                       ? "text-white shadow-sm"
-                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-                      }`}
+                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"}`}
                     style={
                       isActive
                         ? { backgroundColor: brandConfig.colors.primary }
                         : {}
                     }
-                    onClick={() => setSidebarOpen(false)}
+                    onClick={() => {
+                      console.log(`Navigating to: ${item.href}`); // Debug navigation
+                      setSidebarOpen(false);
+                    }}
                   >
                     <item.icon
                       className={`mr-3 h-5 w-5 ${isActive
                         ? "text-white"
-                        : "text-gray-400 group-hover:text-gray-500"
-                        }`}
+                        : "text-gray-400 group-hover:text-gray-500"}`}
                     />
                     <span className="flex-1">{item.label}</span>
                     {item.badge && (
@@ -653,24 +651,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 >
                   <Menu className="h-4 w-4" />
                 </Button>
-
-                {/* <div className="flex items-center space-x-3">
-                  {sidebarCollapsed && (
-                    <div className="hidden lg:flex items-center space-x-2">
-                      <Image
-                        src={brandConfig.logo}
-                        alt={brandConfig.name}
-                        width={150}
-                        height={150}
-                        className="object-contain"
-                      />
-                    </div>
-                  )}
-                </div> */}
               </div>
 
               <div className="flex items-center space-x-3">
-                {/* User Menu */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -687,6 +670,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                           {user.full_name.charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
+                      {!fetchingEmailConfig && !emailConfigured && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <AlertCircle
+                              className="absolute -top-1 -right-1 h-4 w-4 text-red-500"
+                              style={{ backgroundColor: "white", borderRadius: "50%", padding: "2px" }}
+                            />
+                          </TooltipTrigger>
+                          <TooltipContent side="right" className="ml-2">
+                            <p>Email configuration not set. Go to Settings to configure your email.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56" align="end" forceMount>
@@ -743,16 +739,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                       </>
                     )}
 
-                    {/* <DropdownMenuItem
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setFeedbackModalOpen(true);
-                      }}
-                    >
-                      <MessageCircle className="mr-2 h-4 w-4" />
-                      <span>HelpDesk</span>
-                    </DropdownMenuItem> */}
 
                     <DropdownMenuSeparator />
 
@@ -771,7 +757,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
           {/* Main Content Area */}
           <main className="flex-1 bg-gray-50/50 overflow-auto">
-            <div className="p-4 sm:p-6 lg:p-5 min-h-full">{children}</div>
+            <div className="p-3 min-h-full">{children}</div>
           </main>
         </div>
 

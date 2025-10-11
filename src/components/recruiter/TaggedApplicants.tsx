@@ -97,6 +97,8 @@ export default function TaggedApplicants({
   const router = useRouter();
   const [expiryDate, setExpiryDate] = useState<string>("");
 
+  console.log(job_title)
+
   // Auto-dismiss error messages after 3 seconds
   useEffect(() => {
     if (error) {
@@ -693,6 +695,8 @@ export default function TaggedApplicants({
         showDeleteButton={true}
         onDeleteApplicant={handleDeleteApplicant}
       />
+
+    
 
       {showEmailPopup && (
         <EmailSendingPopup
