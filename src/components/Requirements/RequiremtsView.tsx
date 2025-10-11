@@ -111,7 +111,7 @@ const StaffingPlansTable: React.FC = () => {
     clients: [],
     locations: [],
     jobTitles: [],
-    status: "", // Use empty array to match TodosHeader
+    status: "", // Changed to empty string to match FilterState
     contacts: [],
     dateRange: "all",
     vacancies: "all",
@@ -207,18 +207,19 @@ const StaffingPlansTable: React.FC = () => {
       align?: "left" | "center" | "right";
       width?: string;
     }> = [
-        { field: "datetime", label: "Date", align: "center" },
-        {
-          field: "company",
-          label: "Company & Contact",
-          width: "200px",
-          align: "center",
-        },
-        { field: "designation", label: "Position Details", align: "center" },
-        { field: "location", label: "Location & Experience", align: "center" },
-        { field: "vacancies", label: "Vacancies & Budget", align: "center" },
-        { field: "actions", label: "Action", sortable: false, align: "center" },
-      ];
+      { field: "datetime", label: "Date", sortable: true, align: "center" },
+      {
+        field: "company",
+        label: "Company & Contact",
+        sortable: true,
+        width: "200px",
+        align: "center",
+      },
+      { field: "designation", label: "Position Details", sortable: true, align: "center" },
+      { field: "location", label: "Location & Experience", sortable: true, align: "center" },
+      { field: "vacancies", label: "Vacancies & Budget", sortable: true, align: "center" },
+      { field: "actions", label: "Action", sortable: false, align: "center" },
+    ];
     return cols;
   }, []);
 
@@ -248,17 +249,8 @@ const StaffingPlansTable: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    fetchStaffingPlans(currentPage);
-  }, [currentPage]);
-
-  // Calculate total pages
-  const totalPages = Math.ceil(totalCount / itemsPerPage);
-
-  // Handle filter changes from TodosHeader
-  const handleFilterChange = (newFilters: FilterState) => {
-    console.log("Applying filters:", newFilters);
-    setFilterState(newFilters);
+  // Combined filtering and sorting logic
+  const applyFiltersAndSort = () => {
     let filtered = [...plans];
 
     // Apply search term filter
@@ -276,27 +268,94 @@ const StaffingPlansTable: React.FC = () => {
     }
 
     // Apply filters from TodosHeader
-    if (newFilters.clients.length > 0) {
+    if (filterState.clients.length > 0) {
       filtered = filtered.filter((plan) =>
-        newFilters.clients.includes(plan.company || "")
+        filterState.clients.includes(plan.company || "")
       );
     }
-    if (newFilters.contacts.length > 0) {
+    if (filterState.contacts.length > 0) {
       filtered = filtered.filter((plan) =>
-        plan.custom_contact_name && newFilters.contacts.includes(plan.custom_contact_name)
+        plan.custom_contact_name && filterState.contacts.includes(plan.custom_contact_name)
       );
     }
-    if (newFilters.jobTitles.length > 0) {
+    if (filterState.jobTitles.length > 0) {
       filtered = filtered.filter((plan) =>
         plan.staffing_details.some((detail) =>
-          newFilters.jobTitles.includes(detail.designation || "")
+          filterState.jobTitles.includes(detail.designation || "")
         )
       );
     }
-    // No status filtering needed
 
-    console.log("Filtered plans:", filtered);
+    // Apply sorting
+    if (sortField && sortDirection) {
+      filtered.sort((a, b) => {
+        // Since staffing_details is an array, sort based on the first detail for fields like designation, location, etc.
+        const aDetail = a.staffing_details[0] || {};
+        const bDetail = b.staffing_details[0] || {};
+
+        let valueA: any;
+        let valueB: any;
+
+        switch (sortField) {
+          case "company":
+            valueA = (a.company || "").toLowerCase();
+            valueB = (b.company || "").toLowerCase();
+            break;
+          case "designation":
+            valueA = (aDetail.designation || "").toLowerCase();
+            valueB = (bDetail.designation || "").toLowerCase();
+            break;
+          case "location":
+            valueA = (aDetail.location || "").toLowerCase();
+            valueB = (bDetail.location || "").toLowerCase();
+            break;
+          case "experience":
+            valueA = aDetail.min_experience_reqyrs || 0;
+            valueB = bDetail.min_experience_reqyrs || 0;
+            break;
+          case "vacancies":
+            valueA = aDetail.vacancies || 0;
+            valueB = bDetail.vacancies || 0;
+            break;
+          case "budget":
+            valueA = aDetail.estimated_cost_per_position || 0;
+            valueB = bDetail.estimated_cost_per_position || 0;
+            break;
+          case "datetime":
+            valueA = new Date(a.creation || "").getTime();
+            valueB = new Date(b.creation || "").getTime();
+            break;
+          default:
+            return 0;
+        }
+
+        if (valueA < valueB) return sortDirection === "asc" ? -1 : 1;
+        if (valueA > valueB) return sortDirection === "asc" ? 1 : -1;
+        return 0;
+      });
+    }
+
+    console.log("Filtered and sorted plans:", filtered);
     setFilteredPlans(filtered);
+  };
+
+  useEffect(() => {
+    fetchStaffingPlans(currentPage);
+  }, [currentPage]);
+
+  // Apply filters and sorting whenever relevant states change
+  useEffect(() => {
+    applyFiltersAndSort();
+  }, [plans, searchTerm, filterState, sortField, sortDirection]);
+
+  // Calculate total pages
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
+
+  // Handle filter changes from TodosHeader
+  const handleFilterChange = (newFilters: FilterState) => {
+    console.log("Applying filters:", newFilters);
+    setFilterState(newFilters);
+    applyFiltersAndSort();
   };
 
   const handleViewDetails = (
@@ -419,7 +478,7 @@ const StaffingPlansTable: React.FC = () => {
           uniqueClients={uniqueCompanies}
           uniqueContacts={uniqueContacts}
           uniqueJobTitles={uniquePositions}
-          uniqueStatus={[]} // No status options
+          uniqueStatus={[] as string[]} // Explicitly typed as string[]
           onFilterChange={handleFilterChange}
           filterConfig={filterConfig}
           title="Customers Requirements"
@@ -603,8 +662,8 @@ const StaffingPlansTable: React.FC = () => {
                                   );
                                 })()}
                                 <div className="flex items-center">
-                                  {formatToIndianCurrency(Number(detail.estimated_cost_per_position), detail.currency || "")}L                                  <span className="font-medium text-gray-900">
-                                    {/* {detail.estimated_cost_per_position || 0}L */}
+                                  <span className="font-medium text-gray-900">
+                                    {formatToIndianCurrency(Number(detail.estimated_cost_per_position), detail.currency || "")}L
                                   </span>
                                 </div>
                               </div>
