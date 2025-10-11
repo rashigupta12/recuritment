@@ -153,7 +153,7 @@ const ContractLeads = () => {
       },
       {
         id: "status",
-        title: "Stage",
+        title: "Status",
         icon: Tag,
         options: ["Contract", "Onboarded"],
         searchKey: "status",

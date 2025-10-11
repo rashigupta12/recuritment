@@ -484,7 +484,7 @@ const StaffingPlansTable: React.FC = () => {
           uniqueStatus={[]}
           onFilterChange={handleFilterChange}
           filterConfig={filterConfig}
-          title="Customers Requirements"
+          title="Customer Requirements"
           oncreateButton={handleCreate}
         />
 
