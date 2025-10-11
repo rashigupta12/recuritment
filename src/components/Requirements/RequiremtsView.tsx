@@ -36,6 +36,7 @@ type StaffingPlanItem = {
   currency: string;
   designation: string;
   vacancies: number;
+  currency_symbol: string;
   estimated_cost_per_position: number;
   number_of_positions: number;
   min_experience_reqyrs: number;
@@ -52,6 +53,7 @@ type StaffingPlan = {
   custom_contact_email: string;
   name: string;
   custom_lead: string;
+  currency: string;
   from_date: string;
   to_date: string;
   creation: string;
@@ -98,7 +100,7 @@ const StaffingPlansTable: React.FC = () => {
   const [publishingJobs, setPublishingJobs] = useState<Set<string>>(new Set());
   const { user } = useAuth();
   console.log(user)
-
+// console.log("dafrstydutkmnbavef",StaffingPlansItems.currency_symbol)
   // Check if user is project manager
   const isProjectManager = user?.roles?.includes("Projects Manager") || false;
 
@@ -549,14 +551,14 @@ const StaffingPlansTable: React.FC = () => {
                               <span className="font-medium text-gray-900 text-md">
                                 {detail.designation}
                               </span>
-                              <div className="text-md text-gray-500 mt-1">
+                              {/* <div className="text-md text-gray-500 mt-1">
                                 <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-800">
                                   {detail.number_of_positions}{" "}
                                   {detail.number_of_positions === 1
                                     ? "Position"
                                     : "Positions"}
                                 </span>
-                              </div>
+                              </div> */}
                             </div>
                           </td>
 
@@ -569,7 +571,7 @@ const StaffingPlansTable: React.FC = () => {
                               <div className="flex items-center text-md text-gray-600">
                                 <Clock className="h-4 w-4 text-gray-400 mr-1" />
                                 <span>
-                                  {detail.min_experience_reqyrs}+ years exp
+                                  {detail.min_experience_reqyrs}+ years
                                 </span>
                               </div>
                             </div>
@@ -619,7 +621,8 @@ const StaffingPlansTable: React.FC = () => {
                                 );
                               })()}
                               <div className="flex items-center">
-                                <IndianRupee className="h-4 w-4 text-purple-500 mr-1" />
+                                {/* <IndianRupee className="h-4 w-4 text-purple-500 mr-1" /> */}
+                                {detail.currency_symbol }
                                 <span className="font-medium text-gray-900">
                                   {detail.estimated_cost_per_position}L
                                 </span>
