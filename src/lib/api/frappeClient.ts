@@ -644,6 +644,17 @@ export const frappeAPI = {
       `/resource/ToDo?fields=${JSON.stringify(fields)}&filters=${filters}&limit_page_length=0&order_by=creation desc`
     );
   },
+  searchApplicants:async (email:string)=>{
+    const fields =  ["name", "job_title", "designation", "custom_company_name", "status", "email_id", "phone_number", "applicant_name", "country", "resume_attachment"];
+    const filters= JSON.stringify([["email_id","=",email]]
+
+    );
+    
+    return await frappeAPI.makeAuthenticatedRequest(
+      'GET', 
+      `/resource/Job Applicant?fields=${JSON.stringify(fields)}&filters=${filters}&limit_page_length=0&order_by=creation desc`
+    );
+  },
 
   getTodoBYId: async (TodoId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/ToDo/${TodoId}`);
@@ -669,9 +680,12 @@ export const frappeAPI = {
     );
   },
 
+
+
   createApplicants: async (ApplicantData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('POST', '/resource/Job Applicant', ApplicantData);
   },
+  
 
   getAllApplicants: async (email: string, limitStart = 0, limitPageLength = 10) => {
     const url = `/method/recruitment_app.get_all_applicants.get_all_applicants?limit_start=${limitStart}&limit_page_length=${limitPageLength}&owner=${email}`;
@@ -700,7 +714,9 @@ export const frappeAPI = {
       `/resource/Job Applicant?filters=[["owner","=","${email}"],["job_title","=","${jobId}"]]&order_by=creation desc`
     );
   },
-
+getApplicantById: async (applicantId: string) => {
+  return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Job Applicant/${applicantId}`);
+},
   deleteApplicant: async (applicantName: string) => {
     return await frappeAPI.makeAuthenticatedRequest('DELETE', `/resource/Job Applicant/${applicantName}`);
   },
