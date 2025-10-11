@@ -246,56 +246,55 @@ export default function ApplicantSearchAndTag({
           <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
             <div className="flex items-center gap-2 text-blue-800">
               <Briefcase className="w-4 h-4" />
-              <span className="font-medium">Tagging to:</span>
+              <span className="font-medium">Tagging to:{currentJobTitle}</span>
             </div>
-            <p className="text-blue-700 text-sm mt-1">{currentJobTitle}</p>
+            {/* <p className="text-blue-700 text-sm mt-1">{currentJobTitle}</p> */}
           </div>
         )}
         
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Email Address *
-          </label>
-          <div className="relative">
-            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="email"
-              value={searchEmail}
-              onChange={(e) => setSearchEmail(e.target.value)}
-              className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md"
-              placeholder="email@example.com"
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') {
-                  searchApplicant();
-                }
-              }}
-            />
-          </div>
-        </div>
+  <label className="block text-sm font-medium text-gray-700 mb-1">
+    Email Address *
+  </label>
 
-        <button
-          onClick={searchApplicant}
-          disabled={isSearching}
-          className={`w-full py-2 px-4 rounded-md text-white font-medium flex items-center justify-center gap-2 ${
-            isSearching ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
-          }`}
-        >
-          {isSearching ? (
-            <>
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              Searching...
-            </>
-          ) : (
-            <>
-              <Search className="w-4 h-4" />
-              Search & Continue
-            </>
-          )}
-        </button>
+  <div className="flex items-center gap-2">
+    {/* Input with icon */}
+    <div className="flex relative w-[90%]">
+      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+      <input
+        type="email"
+        value={searchEmail}
+        onChange={(e) => setSearchEmail(e.target.value)}
+        className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md"
+        placeholder="email@example.com"
+        onKeyPress={(e) => {
+          if (e.key === 'Enter') searchApplicant();
+        }}
+      />
+    </div>
 
-        {searchError && (
-          <p className="text-red-600 text-sm mt-2">{searchError}</p>
-        )}
+    {/* Search Button */}
+    <button
+      onClick={searchApplicant}
+      disabled={isSearching}
+      className={`w-[10%] min-w-[40px] py-2 px-2 rounded-md text-white font-medium flex items-center justify-center ${
+        isSearching
+          ? 'bg-gray-400 cursor-not-allowed'
+          : 'bg-blue-600 hover:bg-blue-700'
+      }`}
+    >
+      {isSearching ? (
+        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+      ) : (
+        <Search className="w-6 h-6" />
+      )}
+    </button>
+  </div>
+
+  {searchError && (
+    <p className="text-red-600 text-sm mt-2">{searchError}</p>
+  )}
+</div>
 
         {/* Already Tagged Warning */}
         {alreadyTaggedJob && (
