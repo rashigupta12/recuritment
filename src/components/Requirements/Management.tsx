@@ -40,6 +40,7 @@ import LocationDropdown from "./requirement-form/LocationDropdown";
 import toast from "react-hot-toast";
 import { SortableTableHeader } from "../recruiter/SortableTableHeader";
 import { TooltipProvider } from "../ui/tooltip";
+import { formatToIndianCurrency } from "../Leads/helper";
 
 const TOAST_ID = "global-toast";
 
@@ -980,11 +981,16 @@ const StaffingPlanCreator: React.FC = () => {
                 <h1 className="text-2xl font-bold text-gray-900">
                   {isEditMode ? "Edit Requirements" : "Create Requirements"}
                 </h1>
-                {selectedLead?.company_name && (
-                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-md">
+                {/* {selectedLead?.company_name && (
+                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-sm text-md">
                     {selectedLead.company_name}
                   </span>
                 )}
+                {selectedLead?.custom_full_name && (
+                  <span className="px-2 py-1 rounded text-md">
+                    {selectedLead.custom_full_name}
+                  </span>
+                )} */}
                 {isLoadingLead && (
                   <div className="flex items-center text-md text-blue-600">
                     <Loader2 className="h-4 w-4 animate-spin mr-1" />
@@ -996,7 +1002,7 @@ const StaffingPlanCreator: React.FC = () => {
               <button
                 onClick={addStaffingItem}
                 disabled={!allRowsHaveDesignation(formData.staffing_details)}
-                className="flex items-center space-x-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded text-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex items-center space-x-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded text-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 title={
                   !allRowsHaveDesignation(formData.staffing_details)
                     ? "Please fill designation for all existing rows"
@@ -1004,7 +1010,7 @@ const StaffingPlanCreator: React.FC = () => {
                 }
               >
                 <Plus className="h-4 w-4" />
-                <span>Add Requirement</span>
+                <span>Add</span>
               </button>
             </div>
 
@@ -1017,7 +1023,7 @@ const StaffingPlanCreator: React.FC = () => {
                 />
               )}
               {selectedLead && (
-                <div className="bg-green-50 border border-green-200 rounded p-2 text-sm text-green-800">
+                <div className="bg-green-50 border border-green-200 rounded p-2 pl-5 text-sm text-green-800">
                   <span className="font-medium">Selected Lead:</span>{" "}
                   {selectedLead.custom_full_name} - {selectedLead.company_name}
                   {!isEditMode && (
@@ -1350,7 +1356,7 @@ const StaffingPlanCreator: React.FC = () => {
                             ? "Updating..."
                             : "Creating..."
                           : isEditMode
-                          ? "Update Requirement(s)"
+                          ? "Save Requirement(s)"
                           : "Create Requirement(s)"}
                       </span>
                     </button>
@@ -1363,7 +1369,7 @@ const StaffingPlanCreator: React.FC = () => {
           {selectedLead && (
             <div className="p-6 border-t border-gray-200 bg-white">
               <h2 className="text-xl font-bold text-gray-900 mb-4">
-                Previous Requirements for {selectedLead.company_name}
+                Previous Requirements
               </h2>
               {isLoadingPrevious ? (
                 <div className="text-center py-8">
@@ -1422,14 +1428,14 @@ const StaffingPlanCreator: React.FC = () => {
                                       <span className="font-medium text-gray-900 text-md">
                                         {detail.designation}
                                       </span>
-                                      <div className="text-md text-gray-500 mt-1">
+                                      {/* <div className="text-md text-gray-500 mt-1">
                                         <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-800">
                                           {detail.number_of_positions}{" "}
                                           {detail.number_of_positions === 1
                                             ? "Position"
                                             : "Positions"}
                                         </span>
-                                      </div>
+                                      </div> */}
                                     </div>
                                   </td>
                                   <td className="px-4 py-4">
@@ -1442,7 +1448,7 @@ const StaffingPlanCreator: React.FC = () => {
                                         <Clock className="h-4 w-4 text-gray-400 mr-1" />
                                         <span>
                                           {detail.min_experience_reqyrs}+ years
-                                          exp
+                                          
                                         </span>
                                       </div>
                                     </div>
@@ -1496,9 +1502,9 @@ const StaffingPlanCreator: React.FC = () => {
                                         );
                                       })()}
                                       <div className="flex items-center">
-                                        <IndianRupee className="h-4 w-4 text-purple-500 mr-1" />
+                                        {/* <IndianRupee className="h-4 w-4 text-purple-500 mr-1" /> */}
                                         <span className="font-medium text-gray-900">
-                                          {detail.estimated_cost_per_position}L
+                                         {formatToIndianCurrency(Number(detail.estimated_cost_per_position), detail.currency || "")}L
                                         </span>
                                       </div>
                                     </div>

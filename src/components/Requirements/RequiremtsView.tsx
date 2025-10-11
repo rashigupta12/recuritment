@@ -23,6 +23,7 @@ import { FilterState } from "../recruiter/TodoHeader";
 import { JobOpeningModal } from "./requirement-view/JobopeningModal";
 import Pagination from "../comman/Pagination";
 import { TodosHeader } from "./Header";
+import { formatToIndianCurrency } from "../Leads/helper";
 
 // Type definitions
 type StaffingPlanItem = {
@@ -92,12 +93,12 @@ const StaffingPlansTable: React.FC = () => {
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
   const [publishingJobs, setPublishingJobs] = useState<Set<string>>(new Set());
-  
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [totalCount, setTotalCount] = useState(0);
-  
+
   const { user } = useAuth();
 
   // Check if user is project manager
@@ -176,7 +177,7 @@ const StaffingPlansTable: React.FC = () => {
         icon: User,
         options: uniqueContacts,
         searchKey: "contact",
-        showInitialOptions:false,
+        showInitialOptions: false,
       },
     ],
     [uniqueCompanies, uniqueContacts, uniquePositions]
@@ -206,18 +207,18 @@ const StaffingPlansTable: React.FC = () => {
       align?: "left" | "center" | "right";
       width?: string;
     }> = [
-      { field: "datetime", label: "Date", align: "center" },
-      {
-        field: "company",
-        label: "Company & Contact",
-        width: "200px",
-        align: "center",
-      },
-      { field: "designation", label: "Position Details", align: "center" },
-      { field: "location", label: "Location & Experience", align: "center" },
-      { field: "vacancies", label: "Vacancies & Budget", align: "center" },
-      { field: "actions", label: "Action", sortable: false, align: "center" },
-    ];
+        { field: "datetime", label: "Date", align: "center" },
+        {
+          field: "company",
+          label: "Company & Contact",
+          width: "200px",
+          align: "center",
+        },
+        { field: "designation", label: "Position Details", align: "center" },
+        { field: "location", label: "Location & Experience", align: "center" },
+        { field: "vacancies", label: "Vacancies & Budget", align: "center" },
+        { field: "actions", label: "Action", sortable: false, align: "center" },
+      ];
     return cols;
   }, []);
 
@@ -397,9 +398,9 @@ const StaffingPlansTable: React.FC = () => {
     );
   };
 
- const handleCreate = async () => {
-  await router.push(`/dashboard/recruiter/requirements/create`);
-};
+  const handleCreate = async () => {
+    await router.push(`/dashboard/recruiter/requirements/create`);
+  };
 
   const handlePublish = async (
     jobId: string,
@@ -484,7 +485,7 @@ const StaffingPlansTable: React.FC = () => {
           onFilterChange={handleFilterChange}
           filterConfig={filterConfig}
           title="Customers Requirements"
-          oncreateButton ={handleCreate}
+          oncreateButton={handleCreate}
         />
 
         {/* Main Table */}
@@ -594,14 +595,14 @@ const StaffingPlansTable: React.FC = () => {
                                 <span className="font-medium text-gray-900 text-md">
                                   {detail.designation || "-"}
                                 </span>
-                                <div className="text-md text-gray-500 mt-1">
+                                {/* <div className="text-md text-gray-500 mt-1">
                                   <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-800">
                                     {detail.number_of_positions}{" "}
                                     {detail.number_of_positions === 1
                                       ? "Position"
                                       : "Positions"}
                                   </span>
-                                </div>
+                                </div> */}
                               </div>
                             </td>
 
@@ -614,7 +615,7 @@ const StaffingPlansTable: React.FC = () => {
                                 <div className="flex items-center text-md text-gray-600">
                                   <Clock className="h-4 w-4 text-gray-400 mr-1" />
                                   <span>
-                                    {detail.min_experience_reqyrs || 0}+ years exp
+                                    {detail.min_experience_reqyrs || 0}+ years
                                   </span>
                                 </div>
                               </div>
@@ -625,15 +626,15 @@ const StaffingPlansTable: React.FC = () => {
                                 {(() => {
                                   const allocated = detail.assign_to
                                     ? detail.assign_to
-                                        .split(",")
-                                        .reduce((sum, item) => {
-                                          const [, allocation] = item
-                                            .trim()
-                                            .split("-");
-                                          return (
-                                            sum + (parseInt(allocation) || 0)
-                                          );
-                                        }, 0)
+                                      .split(",")
+                                      .reduce((sum, item) => {
+                                        const [, allocation] = item
+                                          .trim()
+                                          .split("-");
+                                        return (
+                                          sum + (parseInt(allocation) || 0)
+                                        );
+                                      }, 0)
                                     : 0;
                                   const remaining = detail.vacancies - allocated;
                                   return (
@@ -664,9 +665,8 @@ const StaffingPlansTable: React.FC = () => {
                                   );
                                 })()}
                                 <div className="flex items-center">
-                                  <IndianRupee className="h-4 w-4 text-purple-500 mr-1" />
-                                  <span className="font-medium text-gray-900">
-                                    {detail.estimated_cost_per_position || 0}L
+                                  {formatToIndianCurrency(Number(detail.estimated_cost_per_position), detail.currency || "")}L                                  <span className="font-medium text-gray-900">
+                                    {/* {detail.estimated_cost_per_position || 0}L */}
                                   </span>
                                 </div>
                               </div>
