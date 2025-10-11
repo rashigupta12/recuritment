@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-'use client';
+"use client";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { frappeAPI } from "@/lib/api/frappeClient";
@@ -8,8 +8,8 @@ import { LoadingState } from "./LoadingState";
 import { TodosTable } from "./TodosTable";
 import { Calendar, Briefcase, MapPin, Award } from "lucide-react";
 import { TodosHeader } from "./TodoHeader";
-import { Pagination } from "@/components/comman/Pagination"; // Import Pagination component
-import { toast } from "sonner"; // Import toast for refresh feedback
+import { Pagination } from "@/components/comman/Pagination";
+import { toast } from "sonner";
 
 interface ToDo {
   name: string;
@@ -38,8 +38,8 @@ interface FilterState {
   locations: string[];
   jobTitles: string[];
   status: string[];
-  dateRange: 'all' | 'today' | 'week' | 'month';
-  vacancies: 'all' | 'single' | 'multiple';
+  dateRange: "all" | "today" | "week" | "month";
+  vacancies: "all" | "single" | "multiple";
 }
 
 const TodosManagement = () => {
@@ -53,12 +53,12 @@ const TodosManagement = () => {
     locations: [],
     jobTitles: [],
     status: [],
-    dateRange: 'all',
-    vacancies: 'all',
+    dateRange: "all",
+    vacancies: "all",
   });
-  const [currentPage, setCurrentPage] = useState(1); // State for current page
-  const itemsPerPage = 10; // Number of items per page
-  const tableRef = useRef<HTMLDivElement>(null); // Ref for scrolling to table
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  const tableRef = useRef<HTMLDivElement>(null);
 
   const { user } = useAuth();
   const router = useRouter();
@@ -68,9 +68,9 @@ const TodosManagement = () => {
       setLoading(true);
       const response = await frappeAPI.getAllTodos(email);
       const todos = response.data || [];
-      console.log('All todos with full details:', todos);
+      console.log("All todos with full details:", todos);
       setTodos(todos);
-      setCurrentPage(1); // Reset to first page on fetch
+      setCurrentPage(1);
     } catch (error) {
       console.error("Error fetching todos:", error);
       toast.error("Failed to fetch todos.");
@@ -84,36 +84,46 @@ const TodosManagement = () => {
     fetchTodos(user.email);
   }, [user]);
 
-  // Extract unique departments, assigners, locations, and job titles from todos
+  // Extract unique departments, assigners, locations, job titles, and statuses
   const uniqueDepartments = useMemo(() => {
     const departments = todos
-      .map(todo => todo.custom_department)
-      .filter(Boolean) as string[];
+      .map((todo) => todo.custom_department)
+      .filter((dept): dept is string => typeof dept === "string" && dept.trim() !== "");
     return [...new Set(departments)];
   }, [todos]);
 
   const uniqueAssigners = useMemo(() => {
     const assigners = todos
-      .map(todo => todo.assigned_by_full_name)
-      .filter(Boolean) as string[];
+      .map((todo) => todo.assigned_by_full_name)
+      .filter((name): name is string => typeof name === "string" && name.trim() !== "");
     return [...new Set(assigners)];
   }, [todos]);
 
   const uniqueLocations = useMemo(() => {
     const locations = todos
-      .map(todo => {
+      .map((todo) => {
         const match = todo.description?.match(/Location:\s*([^\n]+)/i);
         return match ? match[1].trim() : null;
       })
-      .filter(Boolean) as string[];
+      .filter((loc): loc is string => typeof loc === "string" && loc.trim() !== "");
     return [...new Set(locations)];
   }, [todos]);
 
   const uniqueJobTitles = useMemo(() => {
     const jobTitles = todos
-      .map(todo => todo.custom_job_title)
-      .filter(Boolean) as string[];
+      .map((todo) => todo.custom_job_title)
+      .filter((title): title is string => typeof title === "string" && title.trim() !== "");
     return [...new Set(jobTitles)];
+  }, [todos]);
+
+  const uniqueStatus = useMemo(() => {
+    const statuses = todos
+      .map((todo) => todo.status)
+      .filter((status): status is string => typeof status === "string" && status.trim() !== "");
+    console.log("Unique Statuses:", statuses);
+    return [...new Set(statuses)];
+    // Optionally exclude specific statuses:
+    // return [...new Set(statuses)].filter(status => !["UnwantedStatus"].includes(status));
   }, [todos]);
 
   const extractVacancies = (description?: string) => {
@@ -121,18 +131,7 @@ const TodosManagement = () => {
     return match ? parseInt(match[1]) : 0;
   };
 
-  const uniqueStatus = [
-    "Tagged",
-    "Shortlisted",
-    "Assessment",
-    "Interview",
-    "Interview Reject",
-    "Offered",
-    "Offer Drop",
-    "Joined",
-  ];
-
-  // Filter todos based on search query AND filters
+  // Filter todos based on search query and filters
   const filteredTodos = useMemo(() => {
     return todos.filter((todo) => {
       // Search filter
@@ -160,7 +159,10 @@ const TodosManagement = () => {
 
       // Assigned by filter
       if (filters.assignedBy.length > 0) {
-        if (!todo.assigned_by_full_name || !filters.assignedBy.includes(todo.assigned_by_full_name)) {
+        if (
+          !todo.assigned_by_full_name ||
+          !filters.assignedBy.includes(todo.assigned_by_full_name)
+        ) {
           return false;
         }
       }
@@ -179,25 +181,32 @@ const TodosManagement = () => {
         }
       }
 
+      // Status filter
+      if (filters.status.length > 0) {
+        if (!todo.status || !filters.status.includes(todo.status)) {
+          return false;
+        }
+      }
+
       // Date range filter
-      if (filters.dateRange !== 'all') {
+      if (filters.dateRange !== "all") {
         if (!todo.custom_date_assigned) return false;
         const todoDate = new Date(todo.custom_date_assigned);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
         switch (filters.dateRange) {
-          case 'today':
+          case "today":
             const todoDay = new Date(todoDate);
             todoDay.setHours(0, 0, 0, 0);
             if (todoDay.getTime() !== today.getTime()) return false;
             break;
-          case 'week':
+          case "week":
             const startOfWeek = new Date(today);
             startOfWeek.setDate(today.getDate() - today.getDay());
             if (todoDate < startOfWeek) return false;
             break;
-          case 'month':
+          case "month":
             const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
             if (todoDate < startOfMonth) return false;
             break;
@@ -205,10 +214,10 @@ const TodosManagement = () => {
       }
 
       // Vacancies filter
-      if (filters.vacancies !== 'all') {
+      if (filters.vacancies !== "all") {
         const vacanciesCount = extractVacancies(todo.description);
-        if (filters.vacancies === 'single' && vacanciesCount !== 1) return false;
-        if (filters.vacancies === 'multiple' && vacanciesCount < 2) return false;
+        if (filters.vacancies === "single" && vacanciesCount !== 1) return false;
+        if (filters.vacancies === "multiple" && vacanciesCount < 2) return false;
       }
 
       return true;
@@ -230,7 +239,7 @@ const TodosManagement = () => {
   };
 
   const handleEditTodo = (todo: ToDo) => {
-    console.log('Edit todo:', todo);
+    console.log("Edit todo:", todo);
   };
 
   const handleRefresh = async () => {
@@ -252,7 +261,7 @@ const TodosManagement = () => {
 
   const handleFilterChange = (newFilters: FilterState) => {
     setFilters(newFilters);
-    setCurrentPage(1); // Reset to first page when filters change
+    setCurrentPage(1);
   };
 
   const handlePageChange = (page: number) => {
@@ -264,35 +273,35 @@ const TodosManagement = () => {
 
   const filterConfig = [
     {
-      id: 'dateRange',
-      title: 'Date Range',
+      id: "dateRange",
+      title: "Date Range",
       icon: Calendar,
-      type: 'radio' as const,
-      options: ['all', 'today', 'week', 'month'],
-      optionLabels: { all: 'All Time', today: 'Today', week: 'This Week', month: 'This Month' },
+      type: "radio" as const,
+      options: ["all", "today", "week", "month"],
+      optionLabels: { all: "All Time", today: "Today", week: "This Week", month: "This Month" },
     },
     {
-      id: 'locations',
-      title: 'Location',
+      id: "locations",
+      title: "Location",
       icon: MapPin,
       options: uniqueLocations,
-      searchKey: 'locations',
+      searchKey: "locations",
       showInitialOptions: false,
     },
     {
-      id: 'jobTitles',
-      title: 'Job Title',
+      id: "jobTitles",
+      title: "Job Title",
       icon: Briefcase,
       options: uniqueJobTitles,
-      searchKey: 'jobTitles',
+      searchKey: "jobTitles",
       showInitialOptions: false,
     },
     {
-      id: 'status',
-      title: 'Status',
+      id: "status",
+      title: "Status",
       icon: Award,
       options: uniqueStatus,
-      searchKey: 'status',
+      searchKey: "status",
       alwaysShowOptions: true,
       showInitialOptions: true,
     },
@@ -347,8 +356,8 @@ const TodosManagement = () => {
         ) : (
           <div className="text-center py-8">
             <div className="text-gray-500 text-lg">
-              {searchQuery || Object.values(filters).some(filter =>
-                Array.isArray(filter) ? filter.length > 0 : filter !== 'all'
+              {searchQuery || Object.values(filters).some((filter) =>
+                Array.isArray(filter) ? filter.length > 0 : filter !== "all"
               )
                 ? "No Jobs found matching your search and filters."
                 : "No Jobs assigned to you."}

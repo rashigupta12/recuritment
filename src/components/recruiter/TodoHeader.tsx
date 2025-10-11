@@ -25,8 +25,8 @@ export interface FilterState {
   clients: string[];
   locations: string[];
   jobTitles: string[];
-  status: string[];
-  contacts: string[]; // Added contacts to FilterState
+  status: string;
+  contacts: string[];
   dateRange: "all" | "today" | "week" | "month";
   vacancies: "all" | "single" | "multiple";
 }
@@ -43,7 +43,7 @@ interface TodosHeaderProps {
   uniqueLocations?: string[];
   uniqueJobTitles?: string[];
   uniqueStatus?: string[];
-  uniqueContacts?: string[]; // Added uniqueContacts to props
+  uniqueContacts?: string[];
   onFilterChange?: (filters: FilterState) => void;
   filterConfig?: FilterConfig[];
   title?: string;
@@ -61,7 +61,7 @@ export const TodosHeader = ({
   uniqueLocations = [],
   uniqueJobTitles = [],
   uniqueStatus = [],
-  uniqueContacts = [], // Added to props
+  uniqueContacts = [],
   onFilterChange,
   filterConfig = [],
   title = "My Jobs",
@@ -72,8 +72,8 @@ export const TodosHeader = ({
     clients: [],
     locations: [],
     jobTitles: [],
-    status: [],
-    contacts: [], // Initialize contacts
+    status: "",
+    contacts: [],
     dateRange: "all",
     vacancies: "all",
   });
@@ -85,26 +85,26 @@ export const TodosHeader = ({
     status: "",
     departments: "",
     assignedBy: "",
-    contacts: "", // Added contacts to searchStates
+    contacts: "",
   });
   const [openSection, setOpenSection] = useState<string | null>(null);
 
   const toggleFilter = (type: keyof FilterState, value: string) => {
-    const current = filters[type];
-    if (Array.isArray(current)) {
-      const newValue = current.includes(value)
-        ? current.filter((v) => v !== value)
-        : [...current, value];
-      const newFilters = { ...filters, [type]: newValue };
+    if (type === "status" || type === "dateRange" || type === "vacancies") {
+      const newFilters = { ...filters, [type]: filters[type] === value ? "" : value };
       setFilters(newFilters);
       onFilterChange?.(newFilters);
+    } else {
+      const current = filters[type];
+      if (Array.isArray(current)) {
+        const newValue = current.includes(value)
+          ? current.filter((v) => v !== value)
+          : [...current, value];
+        const newFilters = { ...filters, [type]: newValue };
+        setFilters(newFilters);
+        onFilterChange?.(newFilters);
+      }
     }
-  };
-
-  const updateRadioFilter = (type: keyof FilterState, value: string) => {
-    const newFilters = { ...filters, [type]: value };
-    setFilters(newFilters);
-    onFilterChange?.(newFilters);
   };
 
   const clearAllFilters = () => {
@@ -114,8 +114,8 @@ export const TodosHeader = ({
       clients: [],
       locations: [],
       jobTitles: [],
-      status: [],
-      contacts: [], // Reset contacts
+      status: "",
+      contacts: [],
       dateRange: "all",
       vacancies: "all",
     };
@@ -127,7 +127,7 @@ export const TodosHeader = ({
       status: "",
       departments: "",
       assignedBy: "",
-      contacts: "", // Reset contacts search
+      contacts: "",
     });
     onFilterChange?.(resetFilters);
   };
@@ -159,10 +159,10 @@ export const TodosHeader = ({
 
   const activeFilterCount = Object.entries(filters).reduce(
     (count, [key, value]) => {
-      if (Array.isArray(value)) {
-        return count + value.length;
-      } else if (value !== "all") {
+      if ((key === "status" || key === "dateRange" || key === "vacancies") && typeof value === "string" && value !== "" && value !== "all") {
         return count + 1;
+      } else if (Array.isArray(value) && value.length > 0) {
+        return count + value.length;
       }
       return count;
     },
@@ -252,30 +252,28 @@ export const TodosHeader = ({
                             >
                               Job Title: {jobTitle}
                               <button
-                                onClick={() =>
-                                  toggleFilter("jobTitles", jobTitle)
-                                }
+                                onClick={() => toggleFilter("jobTitles", jobTitle)}
                                 className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
                               >
                                 <X className="w-3 h-3" />
                               </button>
                             </Badge>
                           ))}
-                          {filters.status.map((status) => (
+                          {filters.status !== "" && (
                             <Badge
-                              key={status}
+                              key={filters.status}
                               variant="secondary"
                               className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
                             >
-                              Status: {status}
+                              Status: {filters.status}
                               <button
-                                onClick={() => toggleFilter("status", status)}
+                                onClick={() => toggleFilter("status", filters.status)}
                                 className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
                               >
                                 <X className="w-3 h-3" />
                               </button>
                             </Badge>
-                          ))}
+                          )}
                           {filters.contacts.map((contact) => (
                             <Badge
                               key={contact}
@@ -302,9 +300,21 @@ export const TodosHeader = ({
                                 ? "This Week"
                                 : "This Month"}
                               <button
-                                onClick={() =>
-                                  updateRadioFilter("dateRange", "all")
-                                }
+                                onClick={() => toggleFilter("dateRange", "all")}
+                                className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </Badge>
+                          )}
+                          {filters.vacancies !== "all" && (
+                            <Badge
+                              variant="secondary"
+                              className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                            >
+                              Vacancies: {filters.vacancies}
+                              <button
+                                onClick={() => toggleFilter("vacancies", "all")}
                                 className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
                               >
                                 <X className="w-3 h-3" />
@@ -334,16 +344,8 @@ export const TodosHeader = ({
                                 <input
                                   type="radio"
                                   name={section.id}
-                                  checked={
-                                    filters[section.id as keyof FilterState] ===
-                                    option
-                                  }
-                                  onChange={() =>
-                                    updateRadioFilter(
-                                      section.id as keyof FilterState,
-                                      option
-                                    )
-                                  }
+                                  checked={filters[section.id as keyof FilterState] === option}
+                                  onChange={() => toggleFilter(section.id as keyof FilterState, option)}
                                   className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                                 />
                                 <span className="text-sm font-medium text-gray-700">
@@ -382,15 +384,8 @@ export const TodosHeader = ({
                                   >
                                     <input
                                       type="checkbox"
-                                      checked={filters[
-                                        section.id as keyof FilterState
-                                      ].includes(option)}
-                                      onChange={() =>
-                                        toggleFilter(
-                                          section.id as keyof FilterState,
-                                          option
-                                        )
-                                      }
+                                      checked={filters[section.id as keyof FilterState].includes(option)}
+                                      onChange={() => toggleFilter(section.id as keyof FilterState, option)}
                                       className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                     />
                                     <span className="text-sm font-medium text-gray-700">
@@ -426,8 +421,7 @@ export const TodosHeader = ({
                             )}
                           </button>
                           {isOpen && content}
-                          {section.id !==
-                            filterConfig[filterConfig.length - 1]?.id && (
+                          {section.id !== filterConfig[filterConfig.length - 1]?.id && (
                             <Separator />
                           )}
                         </div>
@@ -466,9 +460,7 @@ export const TodosHeader = ({
       </div>
       {activeFilterCount > 0 && (
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <span className="text-sm text-gray-600 font-medium">
-            Active filters:
-          </span>
+          <span className="text-sm text-gray-600 font-medium">Active filters:</span>
           {filters.departments.map((dept) => (
             <Badge
               key={dept}
@@ -544,21 +536,21 @@ export const TodosHeader = ({
               </button>
             </Badge>
           ))}
-          {filters.status.map((status) => (
+          {filters.status !== "" && (
             <Badge
-              key={status}
+              key={filters.status}
               variant="secondary"
               className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
             >
-              Status: {status}
+              Status: {filters.status}
               <button
-                onClick={() => toggleFilter("status", status)}
+                onClick={() => toggleFilter("status", filters.status)}
                 className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
               >
                 <X className="w-3 h-3" />
               </button>
             </Badge>
-          ))}
+          )}
           {filters.contacts.map((contact) => (
             <Badge
               key={contact}
@@ -585,7 +577,21 @@ export const TodosHeader = ({
                 ? "This Week"
                 : "This Month"}
               <button
-                onClick={() => updateRadioFilter("dateRange", "all")}
+                onClick={() => toggleFilter("dateRange", "all")}
+                className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </Badge>
+          )}
+          {filters.vacancies !== "all" && (
+            <Badge
+              variant="secondary"
+              className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+            >
+              Vacancies: {filters.vacancies}
+              <button
+                onClick={() => toggleFilter("vacancies", "all")}
                 className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
               >
                 <X className="w-3 h-3" />
