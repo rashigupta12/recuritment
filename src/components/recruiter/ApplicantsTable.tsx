@@ -160,10 +160,10 @@ export function ApplicantsTable({
                   <td className="px-2 sm:px-4 py-4 truncate">
                     {applicant.phone_number || "N/A"}
                   </td>
-                  <td className="px-2 sm:px-4 py-4 truncate">
+                  <td className="px-2 sm:px-4 py-4 truncate capitalize">
                     {applicant.designation || 'N/A'}
                   </td>
-                  <td className="px-2 sm:px-4 py-4 truncate">
+                  <td className="px-2 sm:px-4 py-4 truncate capitalize">
                     {applicant.custom_company_name || 'N/A'}
                   </td>
                   {showStatus && (
