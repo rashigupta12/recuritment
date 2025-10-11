@@ -9,10 +9,9 @@ import { LoadingState } from "../Leads/LoadingState";
 import { LeadsMobileView } from "../Leads/MobileView";
 import { useRouter } from "next/navigation";
 import { LeadsTable } from "./Table";
-import { Building2, User, Bookmark } from "lucide-react";
+import { Building2, User, Bookmark, Tag } from "lucide-react";
 import { TodosHeader } from "../recruiter/TodoHeader";
 import Pagination from "../comman/Pagination";
-
 
 interface CustomerDetails {
   name: string;
@@ -30,7 +29,7 @@ interface FilterState {
   clients: string[];
   locations: string[];
   jobTitles: string[];
-  status: string[];
+  status: string;
   dateRange: "all" | "today" | "week" | "month";
   vacancies: "all" | "single" | "multiple";
 }
@@ -61,15 +60,26 @@ const ContractLeads = () => {
     clients: [],
     locations: [],
     jobTitles: [],
-    status: [],
+    status: "",
     dateRange: "all",
     vacancies: "all",
   });
-  // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10; // Number of leads per page
+  const itemsPerPage = 10;
 
-  // Optimized function to fetch contract leads
+  const stageMapping: Record<string, string> = useMemo(
+    () => ({
+      Prospecting: "Pr",
+      "Lead Qualification": "LQ",
+      "Needs Analysis / Discovery": "NAD",
+      "Presentation / Proposal": "PP",
+      Contract: "Co",
+      Onboarded: "On",
+      "Follow-Up / Relationship Management": "FURM",
+    }),
+    []
+  );
+
   const fetchLeads = useCallback(
     async (email: string) => {
       try {
@@ -97,14 +107,13 @@ const ContractLeads = () => {
     fetchLeads(user.email);
   }, [user, fetchLeads]);
 
-  // Extract unique values for filters
   const uniqueCompanies = useMemo(
     () =>
       Array.from(
         new Set(
           leads
             .map((lead) => lead.company_name)
-            .filter((name): name is string => !!name)
+            .filter((name): name is string => typeof name === "string" && name.trim() !== "")
         )
       ),
     [leads]
@@ -116,25 +125,12 @@ const ContractLeads = () => {
         new Set(
           leads
             .map((lead) => lead.custom_full_name || lead.lead_name)
-            .filter((name): name is string => !!name)
+            .filter((name): name is string => typeof name === "string" && name.trim() !== "")
         )
       ),
     [leads]
   );
 
-  const uniqueStages = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          leads
-            .map((lead) => lead.custom_stage)
-            .filter((status): status is string => !!status)
-        )
-      ),
-    [leads]
-  );
-
-  // Define filter configuration for Header
   const filterConfig: FilterConfig[] = useMemo(
     () => [
       {
@@ -158,36 +154,37 @@ const ContractLeads = () => {
       {
         id: "status",
         title: "Stage",
-        icon: Bookmark,
-        options: uniqueStages,
+        icon: Tag,
+        options: ["Contract", "Onboarded"],
         searchKey: "status",
         showInitialOptions: true,
-        type: "checkbox",
+        type: "radio",
       },
     ],
-    [uniqueCompanies, uniqueContacts, uniqueStages]
+    [uniqueCompanies, uniqueContacts]
   );
 
-  // Handle filter changes
   const handleFilterChange = useCallback(
     (newFilters: FilterState) => {
-      setFilters(newFilters);
-      setCurrentPage(1); // Reset to first page when filters change
+      setFilters((prev) => ({
+        ...prev,
+        ...newFilters,
+        status: newFilters.status || "",
+      }));
+      console.log("Updated Filters:", { ...filters, ...newFilters });
+      setCurrentPage(1);
     },
     []
   );
 
-  // Handle search query change
   const handleSearchChange = useCallback((value: string) => {
     setSearchQuery(value);
-    setCurrentPage(1); // Reset to first page when search query changes
+    setCurrentPage(1);
   }, []);
 
-  // Memoized filtered leads
   const filteredLeads = useMemo(() => {
     let filtered = leads;
 
-    // Apply search query
     if (searchQuery.trim()) {
       const searchLower = searchQuery.toLowerCase().trim();
       filtered = filtered.filter((lead) =>
@@ -201,11 +198,9 @@ const ContractLeads = () => {
       );
     }
 
-    // Apply filters
     if (filters.clients.length > 0) {
       filtered = filtered.filter(
-        (lead) =>
-          lead.company_name && filters.clients.includes(lead.company_name)
+        (lead) => lead.company_name && filters.clients.includes(lead.company_name)
       );
     }
     if (filters.jobTitles.length > 0) {
@@ -214,9 +209,9 @@ const ContractLeads = () => {
         return contactName && filters.jobTitles.includes(contactName);
       });
     }
-    if (filters.status.length > 0) {
+    if (filters.status) {
       filtered = filtered.filter(
-        (lead) => lead.status && filters.status.includes(lead.status)
+        (lead) => lead.custom_stage === filters.status
       );
     }
 
@@ -224,14 +219,12 @@ const ContractLeads = () => {
     return filtered;
   }, [leads, searchQuery, filters]);
 
-  // Pagination calculations
   const totalCount = filteredLeads.length;
   const totalPages = Math.ceil(totalCount / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const paginatedLeads = filteredLeads.slice(startIndex, endIndex);
 
-  // Handle page change
   const handlePageChange = useCallback((page: number) => {
     setCurrentPage(page);
   }, []);
@@ -268,7 +261,6 @@ const ContractLeads = () => {
     setShowConfirmation(false);
   }, []);
 
-  // Render loading state
   if (loading) {
     return <LoadingState />;
   }
@@ -278,38 +270,33 @@ const ContractLeads = () => {
       <div className="w-full mx-auto py-2">
         <TodosHeader
           searchQuery={searchQuery}
-          onSearchChange={handleSearchChange} // Updated to use handleSearchChange
+          onSearchChange={handleSearchChange}
           onRefresh={() => fetchLeads(user?.email || "")}
           totalJobs={leads.length}
           filteredJobs={filteredLeads.length}
           uniqueClients={uniqueCompanies}
           uniqueJobTitles={uniqueContacts}
-          uniqueStatus={uniqueStages}
+          uniqueStatus={["Contract", "Onboarded"]}
           onFilterChange={handleFilterChange}
           filterConfig={filterConfig}
           title="Customers"
         />
 
-        {/* Desktop Table View */}
         {filteredLeads.length > 0 ? (
           <>
             <div className="hidden lg:block mt-4">
               <LeadsTable
-                leads={paginatedLeads} // Use paginatedLeads
+                leads={paginatedLeads}
                 onViewLead={handleViewLead}
                 onEditLead={handleEditLead}
                 onCreateContract={handleCreateContract}
               />
             </div>
-
-            {/* Mobile Card View */}
             <LeadsMobileView
-              leads={paginatedLeads} // Use paginatedLeads
+              leads={paginatedLeads}
               onViewLead={handleViewLead}
               onEditLead={handleEditLead}
             />
-
-            {/* Pagination Component */}
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
@@ -325,7 +312,7 @@ const ContractLeads = () => {
               {searchQuery ||
               filters.clients.length > 0 ||
               filters.jobTitles.length > 0 ||
-              filters.status.length > 0
+              filters.status
                 ? "No matching customers found"
                 : "No customers found"}
             </div>
@@ -333,7 +320,7 @@ const ContractLeads = () => {
               {searchQuery ||
               filters.clients.length > 0 ||
               filters.jobTitles.length > 0 ||
-              filters.status.length > 0
+              filters.status
                 ? "Try adjusting your search terms or filters"
                 : "No contract-ready leads are available at the moment."}
             </div>
@@ -341,12 +328,10 @@ const ContractLeads = () => {
         )}
       </div>
 
-      {/* Lead Detail Modal */}
       {showModal && (
         <LeadDetailModal lead={selectedLead} onClose={handleCloseModal} />
       )}
 
-      {/* Confirmation Dialog */}
       {showConfirmation && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-sm mx-4">

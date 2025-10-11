@@ -298,23 +298,6 @@ export default function TaggedApplicants({
       setModalError("Please select a status.");
       return;
     }
-    if (selectedStatus === "Assessment") {
-      const allShortlisted = selectedApplicants.every(
-        (applicant) => applicant.status?.toLowerCase() === "shortlisted"
-      );
-      if (!allShortlisted) {
-        setModalError('Assessment can only be created for applicants with "Shortlisted" status.');
-        return;
-      }
-      setIsStatusModalOpen(false);
-      setIsAssessmentModalOpen(true);
-      return;
-    }
-    if (selectedStatus === "Offered") {
-      setIsStatusModalOpen(false);
-      setIsOfferModalOpen(true); // Open Offer Details Modal
-      return;
-    }
     const downgrades = selectedApplicants.filter(
       (applicant) => applicant.status && isStatusDowngrade(applicant.status, selectedStatus)
     );
@@ -640,13 +623,13 @@ export default function TaggedApplicants({
               <div className="flex justify-between gap-3 items-center flex-nowrap">
                 <button
                   onClick={() => setShowEmailPopup(true)}
-                  className="px-3 py-3 text-white bg-green-600 rounded-lg text-md font-medium transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-green-500 whitespace-nowrap w-[120px]"
+                  className="px-3 py-3 text-white bg-blue-600 hover:bg-blue-700  rounded-lg text-md font-medium transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 whitespace-nowrap w-[120px]"
                 >
                   📧 Send ({selectedApplicants.length})
                 </button>
                 <button
                   onClick={handleOpenStatusModal}
-                  className="px-2 py-3 text-white bg-blue-700 rounded-lg text-md font-medium transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 whitespace-nowrap w-[160px]"
+                  className="px-2 py-3 text-white bg-blue-600 hover:bg-blue-700  rounded-lg text-md font-medium transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 whitespace-nowrap w-[160px]"
                 >
                   Update Status ({selectedApplicants.length})
                 </button>
@@ -748,7 +731,24 @@ export default function TaggedApplicants({
               <select
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition-all bg-gray-50 text-gray-900 text-md"
                 value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
+                onChange={(e) => {
+                  const newStatus = e.target.value;
+                  setSelectedStatus(newStatus);
+                  if (newStatus === "Assessment") {
+                    const allShortlisted = selectedApplicants.every(
+                      (applicant) => applicant.status?.toLowerCase() === "shortlisted"
+                    );
+                    if (!allShortlisted) {
+                      setModalError('Assessment can only be created for applicants with "Shortlisted" status.');
+                      return;
+                    }
+                    setIsStatusModalOpen(false);
+                    setIsAssessmentModalOpen(true);
+                  } else if (newStatus === "Offered") {
+                    setIsStatusModalOpen(false);
+                    setIsOfferModalOpen(true);
+                  }
+                }}
                 aria-label="Select status"
               >
                 <option value="" disabled className="text-gray-500 text-md">
@@ -806,8 +806,8 @@ export default function TaggedApplicants({
               </button>
               <button
                 onClick={handleStatusChangeRequest}
-                disabled={!selectedStatus}
-                className="px-5 py-2.5 text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-lg transition-all font-medium shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed text-md"
+                disabled={!selectedStatus || selectedStatus === "Assessment" || selectedStatus === "Offered"}
+                className="px-5 py-2.5 text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all font-medium shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed text-md"
                 aria-label="Confirm status change"
               >
                 Confirm Change
@@ -830,7 +830,7 @@ export default function TaggedApplicants({
               <h2
                 id="assessment-modal-title"
                 className="text-xl font-bold text-gray-900 flex items-center gap-2"
-              >
+              ><Award className="h-6 w-6 text-blue-600" />
                 Create Assessment
               </h2>
               <button
@@ -881,7 +881,7 @@ export default function TaggedApplicants({
               </button>
               <button
                 onClick={handleStartAssessment}
-                className="px-5 py-2.5 text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-lg transition-all font-medium shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-md"
+                className="px-5 py-2.5 text-white bg-blue-600 hover:bg-blue-700  rounded-lg transition-all font-medium shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-md"
                 aria-label="Confirm assessment creation"
               >
                 Create Assessment
@@ -959,7 +959,7 @@ export default function TaggedApplicants({
               </button>
               <button
                 onClick={handleConfirmOfferDetails}
-                className="px-5 py-2.5 text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-lg transition-all font-medium shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-md"
+                className="px-5 py-2.5 text-white bg-blue-600 hover:bg-blue-700  rounded-lg transition-all font-medium shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-md"
                 aria-label="Confirm offer details"
               >
                 Confirm Offer

@@ -529,7 +529,7 @@ export default function BulkApplicantForm({ initialJobId,prefilledData, onFormSu
                     disabled={isSubmitting || applicantRows.some(row => row.isAutofilling)}
                     className={`py-2 px-8 rounded-md text-white font-medium flex items-center gap-2 ${isSubmitting || applicantRows.some(row => row.isAutofilling)
                       ? 'bg-gray-400 cursor-not-allowed'
-                      : 'bg-green-600 hover:bg-green-700'
+                      : 'bg-blue-600 hover:bg-blue-700'
                       } transition-colors`}
                   >
                     {isSubmitting ? (
