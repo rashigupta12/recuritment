@@ -14,12 +14,12 @@ import {
   Phone,
   Upload,
   User,
-  Users
+  Users,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
 import { SortableTableHeader } from "../recruiter/SortableTableHeader";
-import { FilterState } from "../recruiter/TodoHeader";
+import { FilterState } from "../recruiter/TodoHeader"; // Import FilterState from TodoHeader
 import { JobOpeningModal } from "./requirement-view/JobopeningModal";
 import Pagination from "../comman/Pagination";
 import { TodosHeader } from "./Header";
@@ -111,7 +111,7 @@ const StaffingPlansTable: React.FC = () => {
     clients: [],
     locations: [],
     jobTitles: [],
-    status: [],
+    status: "", // Use empty array to match TodosHeader
     contacts: [],
     dateRange: "all",
     vacancies: "all",
@@ -236,7 +236,6 @@ const StaffingPlansTable: React.FC = () => {
       const plansData = response.message?.data || [];
       const total = response.message?.total || 0;
 
-      // Log data for debugging
       console.log("Fetched plans:", plansData);
       setPlans(plansData);
       setFilteredPlans(plansData);
@@ -294,67 +293,7 @@ const StaffingPlansTable: React.FC = () => {
         )
       );
     }
-
-    // Apply sorting
-    if (sortField && sortDirection) {
-      const sortedFiltered: StaffingPlan[] = [];
-      filtered.forEach((plan) => {
-        const sortedDetails = [...plan.staffing_details].sort((a, b) => {
-          let aValue: any;
-          let bValue: any;
-
-          switch (sortField) {
-            case "designation":
-              aValue = (a.designation || "").toLowerCase();
-              bValue = (b.designation || "").toLowerCase();
-              break;
-            case "location":
-              aValue = (a.location || "").toLowerCase();
-              bValue = (b.location || "").toLowerCase();
-              break;
-            case "experience":
-              aValue = a.min_experience_reqyrs || 0;
-              bValue = b.min_experience_reqyrs || 0;
-              break;
-            case "vacancies":
-              aValue = a.vacancies || 0;
-              bValue = b.vacancies || 0;
-              break;
-            case "budget":
-              aValue = a.estimated_cost_per_position || 0;
-              bValue = b.estimated_cost_per_position || 0;
-              break;
-            case "company":
-              aValue = (plan.company || "").toLowerCase();
-              bValue = (plan.company || "").toLowerCase();
-              break;
-            default:
-              return 0;
-          }
-
-          if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
-          if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
-          return 0;
-        });
-
-        sortedFiltered.push({
-          ...plan,
-          staffing_details: sortedDetails,
-        });
-      });
-
-      if (sortField === "company") {
-        sortedFiltered.sort((a, b) => {
-          const aValue = (a.company || "").toLowerCase();
-          const bValue = (b.company || "").toLowerCase();
-          if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
-          if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
-          return 0;
-        });
-      }
-
-      filtered = sortedFiltered;
-    }
+    // No status filtering needed
 
     console.log("Filtered plans:", filtered);
     setFilteredPlans(filtered);
@@ -448,7 +387,6 @@ const StaffingPlansTable: React.FC = () => {
     setIsModalOpen(false);
   };
 
-
   const formatDateAndTimeV2 = (dateString?: string) => {
     if (!dateString) return { date: "-", time: "-" };
     const date = new Date(dateString);
@@ -481,10 +419,10 @@ const StaffingPlansTable: React.FC = () => {
           uniqueClients={uniqueCompanies}
           uniqueContacts={uniqueContacts}
           uniqueJobTitles={uniquePositions}
-          uniqueStatus={[]}
+          uniqueStatus={[]} // No status options
           onFilterChange={handleFilterChange}
           filterConfig={filterConfig}
-          title="Customer Requirements"
+          title="Customers Requirements"
           oncreateButton={handleCreate}
         />
 
@@ -694,7 +632,7 @@ const StaffingPlansTable: React.FC = () => {
                                   )
                                 ) : (
                                   <>
-                                    {/* <div className="relative group">
+                                    <div className="relative group">
                                       <button
                                         onClick={() =>
                                           handleViewDetails(
@@ -715,7 +653,7 @@ const StaffingPlansTable: React.FC = () => {
                                       >
                                         View Details
                                       </span>
-                                    </div> */}
+                                    </div>
 
                                     <div className="relative group">
                                       <button

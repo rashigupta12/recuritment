@@ -13,7 +13,6 @@ import { FilterState, TodosHeader } from "../recruiter/Header";
 import { Building, Tag, Users } from "lucide-react";
 import Pagination from "../comman/Pagination";
 
-
 const LeadsManagement = () => {
   const { leads, setLeads, loading, setLoading } = useLeadStore();
   const [searchQuery, setSearchQuery] = useState("");
@@ -24,7 +23,7 @@ const LeadsManagement = () => {
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10; // Number of leads per page
+  const itemsPerPage = 10;
 
   // Define all possible stages (excluding Onboarded)
   const allStages = useMemo(
@@ -55,7 +54,6 @@ const LeadsManagement = () => {
     async (email: string) => {
       try {
         setLoading(true);
-        // Fetch all leads with necessary fields in single request
         const response = await frappeAPI.getAllLeadsDetailed(email);
         if (response.data && Array.isArray(response.data)) {
           setLeads(response.data);
@@ -131,7 +129,7 @@ const LeadsManagement = () => {
   // Event handlers
   const handleFormClose = useCallback(() => {
     setCurrentView("list");
-    setCurrentPage(1); // Reset to first page on form close
+    setCurrentPage(1);
     if (user?.email) {
       fetchLeads(user.email);
     }
@@ -159,7 +157,7 @@ const LeadsManagement = () => {
   // Handle filter change
   const handleFilterChange = useCallback((newFilters: FilterState) => {
     setFilters(newFilters);
-    setCurrentPage(1); // Reset to first page when filters change
+    setCurrentPage(1);
   }, []);
 
   // Define filter configuration
@@ -187,6 +185,8 @@ const LeadsManagement = () => {
         icon: Tag,
         options: allStages,
         alwaysShowOptions: true,
+        type: "radio"as const,
+        showInitialOptions: true,
       },
     ],
     [leads, allStages]
@@ -234,19 +234,18 @@ const LeadsManagement = () => {
           <>
             <div className="hidden lg:block">
               <LeadsTable
-                leads={paginatedLeads} // Use paginatedLeads instead of filteredLeads
+                leads={paginatedLeads}
                 onViewLead={handleViewLead}
                 onEditLead={handleEditLead}
               />
             </div>
 
             <LeadsMobileView
-              leads={paginatedLeads} // Use paginatedLeads instead of filteredLeads
+              leads={paginatedLeads}
               onViewLead={handleViewLead}
               onEditLead={handleEditLead}
             />
 
-            {/* Add Pagination Component */}
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}

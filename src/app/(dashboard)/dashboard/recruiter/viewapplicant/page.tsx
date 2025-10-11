@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+  /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -340,6 +340,7 @@ const handleRefresh = async () => {
       title: 'Status',
       icon: Award,
       options: uniqueStatus,
+      type: 'radio'as const,
       searchKey: 'status',
       alwaysShowOptions: true,
       showInitialOptions: true,
@@ -604,10 +605,10 @@ const handleRefresh = async () => {
     <ApplicantsTable
       key={Date.now()} // Force re-render on refresh
       applicants={filteredApplicants}
-      selectedApplicants={selectedApplicants}
+      // selectedApplicants={selectedApplicants}
       onSelectApplicant={handleSelectApplicant}
       onViewDetails={handleOpenDetailsModal}
-      showCheckboxes={true}
+      // showCheckboxes={true}
       showStatus={true}
     />
     <Pagination
