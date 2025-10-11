@@ -52,6 +52,28 @@ export const TodosTable = ({ todos, onViewTodo }: TodosTableProps) => {
     }
   };
 
+  const extractCompany = (description?: string) => {
+    const match = description?.match(/Company:\s*([^\n]+)/i);
+    return match ? match[1].trim() : 'No company found';
+  };
+
+  const extractLocation = (description?: string) => {
+    const match = description?.match(/Location:\s*([^\n]+)/i);
+    return match ? match[1].trim() : 'No location found';
+  };
+
+  const extractVacancies = (description?: string) => {
+    const match = description?.match(/YOUR ALLOCATED POSITIONS:\s*(\d+)/i);
+    return match ? parseInt(match[1]) : 0;
+  };
+
+  const calculateAging = (dateAssigned?: string) => {
+    if (!dateAssigned) return 'Not set';
+    const assigned = new Date(dateAssigned);
+    const now = new Date();
+    const diffDays = Math.floor((now.getTime() - assigned.getTime()) / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
   const columns = [
     { field: 'date' as const, label: 'Date Assigned' },
     { field: 'aging' as const, label: 'Aging (Days)', align: 'center' as const },
@@ -100,28 +122,7 @@ export const TodosTable = ({ todos, onViewTodo }: TodosTableProps) => {
     return 0;
   });
 
-  const extractCompany = (description?: string) => {
-    const match = description?.match(/Company:\s*([^\n]+)/i);
-    return match ? match[1].trim() : 'No company found';
-  };
-
-  const extractLocation = (description?: string) => {
-    const match = description?.match(/Location:\s*([^\n]+)/i);
-    return match ? match[1].trim() : 'No location found';
-  };
-
-  const extractVacancies = (description?: string) => {
-    const match = description?.match(/YOUR ALLOCATED POSITIONS:\s*(\d+)/i);
-    return match ? parseInt(match[1]) : 0;
-  };
-
-  const calculateAging = (dateAssigned?: string) => {
-    if (!dateAssigned) return 'Not set';
-    const assigned = new Date(dateAssigned);
-    const now = new Date();
-    const diffDays = Math.floor((now.getTime() - assigned.getTime()) / (1000 * 60 * 60 * 24));
-    return diffDays;
-  };
+  
 
   const handleRowClick = (todo: ToDo, event: React.MouseEvent) => {
     if ((event.target as HTMLElement).closest('button')) return;

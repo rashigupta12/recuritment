@@ -70,7 +70,7 @@ const ContractLeads = () => {
         options: Array.from(new Set(leads.map((lead) => lead.company_name || ""))).filter(Boolean),
         searchKey: "company_name",
         showInitialOptions: false,
-        type: "checkbox",
+        type: "checkbox"as const,
       },
       {
         id: "contacts",
@@ -79,14 +79,14 @@ const ContractLeads = () => {
         options: Array.from(new Set(leads.map((lead) => lead.custom_full_name || ""))).filter(Boolean),
         searchKey: "custom_full_name",
         showInitialOptions: false,
-        type: "checkbox",
+        type: "checkbox"as const,
       },
       {
         id: "status",
         title: "Stage",
         icon: Tag,
         options: Object.keys(stageMapping), // Use full names as options
-        type: "radio", // Explicitly set to radio for single selection
+        type: "radio"as const, // Explicitly set to radio for single selection
         showInitialOptions: true,
       },
     ],

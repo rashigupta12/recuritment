@@ -9,7 +9,7 @@ import { TodosTable } from "./TodosTable";
 import { Calendar, Briefcase, MapPin, Award } from "lucide-react";
 import { Pagination } from "@/components/comman/Pagination";
 import { toast } from "sonner";
-import { TodoFilter } from "./TodoFilter";
+import { TodosHeader } from "@/components/recruiter/Header";
 
 interface ToDo {
   name: string;
@@ -122,8 +122,6 @@ const TodosManagement = () => {
       .filter((status): status is string => typeof status === "string" && status.trim() !== "");
     console.log("Unique Statuses:", statuses);
     return [...new Set(statuses)];
-    // Optionally exclude specific statuses:
-    // return [...new Set(statuses)].filter(status => !["UnwantedStatus"].includes(status));
   }, [todos]);
 
   const extractVacancies = (description?: string) => {
@@ -303,6 +301,7 @@ const TodosManagement = () => {
       options: uniqueStatus,
       searchKey: "status",
       alwaysShowOptions: true,
+      type: "radio" as const,
       showInitialOptions: true,
     },
   ];
@@ -313,7 +312,7 @@ const TodosManagement = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <TodoFilter
+      <TodosHeader
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         onRefresh={handleRefresh}
