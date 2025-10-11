@@ -7,9 +7,9 @@ import { useEffect, useState, useMemo, useRef } from "react";
 import { LoadingState } from "./LoadingState";
 import { TodosTable } from "./TodosTable";
 import { Calendar, Briefcase, MapPin, Award } from "lucide-react";
-import { TodosHeader } from "./TodoHeader";
 import { Pagination } from "@/components/comman/Pagination";
 import { toast } from "sonner";
+import { TodoFilter } from "./TodoFilter";
 
 interface ToDo {
   name: string;
@@ -313,7 +313,7 @@ const TodosManagement = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <TodosHeader
+      <TodoFilter
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         onRefresh={handleRefresh}
