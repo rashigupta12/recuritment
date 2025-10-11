@@ -23,7 +23,6 @@ import { FilterState, TodosHeader } from "../recruiter/TodoHeader";
 import { JobOpeningModal } from "./requirement-view/JobopeningModal";
 import Pagination from "../comman/Pagination";
 
-
 // Type definitions
 type StaffingPlanItem = {
   location: string;
@@ -41,7 +40,7 @@ type StaffingPlanItem = {
 };
 
 type StaffingPlan = {
-  custom_contact_name: string;
+  custom_contact_name: string | null;
   custom_contact_phone: string;
   custom_contact_email: string;
   name: string;
@@ -116,20 +115,34 @@ const StaffingPlansTable: React.FC = () => {
 
   // Collect unique values for filters
   const uniqueCompanies = useMemo(
-    () => Array.from(new Set(plans.map((plan) => plan.company))),
+    () =>
+      Array.from(
+        new Set(
+          plans
+            .map((plan) => plan.company)
+            .filter((company): company is string => typeof company === "string" && company.trim() !== "")
+        )
+      ),
     [plans]
   );
   const uniqueContacts = useMemo(
-    () => Array.from(new Set(plans.map((plan) => plan.custom_contact_name))),
+    () =>
+      Array.from(
+        new Set(
+          plans
+            .map((plan) => plan.custom_contact_name)
+            .filter((contact): contact is string => typeof contact === "string" && contact.trim() !== "")
+        )
+      ),
     [plans]
   );
   const uniquePositions = useMemo(
     () =>
       Array.from(
         new Set(
-          plans.flatMap((plan) =>
-            plan.staffing_details.map((detail) => detail.designation)
-          )
+          plans
+            .flatMap((plan) => plan.staffing_details.map((detail) => detail.designation))
+            .filter((designation): designation is string => typeof designation === "string" && designation.trim() !== "")
         )
       ),
     [plans]
@@ -160,7 +173,7 @@ const StaffingPlansTable: React.FC = () => {
         icon: User,
         options: uniqueContacts,
         searchKey: "contact",
-        showInitialOptions: false,
+        showInitialOptions:false,
       },
     ],
     [uniqueCompanies, uniqueContacts, uniquePositions]
@@ -218,7 +231,9 @@ const StaffingPlansTable: React.FC = () => {
 
       const plansData = response.message?.data || [];
       const total = response.message?.total || 0;
-      
+
+      // Log data for debugging
+      console.log("Fetched plans:", plansData);
       setPlans(plansData);
       setFilteredPlans(plansData);
       setTotalCount(total);
@@ -239,6 +254,7 @@ const StaffingPlansTable: React.FC = () => {
 
   // Handle filter changes from TodosHeader
   const handleFilterChange = (newFilters: FilterState) => {
+    console.log("Applying filters:", newFilters);
     setFilterState(newFilters);
     let filtered = [...plans];
 
@@ -246,16 +262,12 @@ const StaffingPlansTable: React.FC = () => {
     if (searchTerm) {
       filtered = filtered.filter(
         (plan) =>
-          plan.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          plan.custom_contact_name
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
+          (plan.company || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (plan.custom_contact_name || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
           plan.staffing_details.some(
             (detail) =>
-              detail.designation
-                .toLowerCase()
-                .includes(searchTerm.toLowerCase()) ||
-              detail.location.toLowerCase().includes(searchTerm.toLowerCase())
+              (detail.designation || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+              (detail.location || "").toLowerCase().includes(searchTerm.toLowerCase())
           )
       );
     }
@@ -263,18 +275,18 @@ const StaffingPlansTable: React.FC = () => {
     // Apply filters from TodosHeader
     if (newFilters.clients.length > 0) {
       filtered = filtered.filter((plan) =>
-        newFilters.clients.includes(plan.company)
+        newFilters.clients.includes(plan.company || "")
       );
     }
     if (newFilters.contacts.length > 0) {
       filtered = filtered.filter((plan) =>
-        newFilters.contacts.includes(plan.custom_contact_name)
+        plan.custom_contact_name && newFilters.contacts.includes(plan.custom_contact_name)
       );
     }
     if (newFilters.jobTitles.length > 0) {
       filtered = filtered.filter((plan) =>
         plan.staffing_details.some((detail) =>
-          newFilters.jobTitles.includes(detail.designation)
+          newFilters.jobTitles.includes(detail.designation || "")
         )
       );
     }
@@ -289,28 +301,28 @@ const StaffingPlansTable: React.FC = () => {
 
           switch (sortField) {
             case "designation":
-              aValue = a.designation.toLowerCase();
-              bValue = b.designation.toLowerCase();
+              aValue = (a.designation || "").toLowerCase();
+              bValue = (b.designation || "").toLowerCase();
               break;
             case "location":
-              aValue = a.location.toLowerCase();
-              bValue = b.location.toLowerCase();
+              aValue = (a.location || "").toLowerCase();
+              bValue = (b.location || "").toLowerCase();
               break;
             case "experience":
-              aValue = a.min_experience_reqyrs;
-              bValue = b.min_experience_reqyrs;
+              aValue = a.min_experience_reqyrs || 0;
+              bValue = b.min_experience_reqyrs || 0;
               break;
             case "vacancies":
-              aValue = a.vacancies;
-              bValue = b.vacancies;
+              aValue = a.vacancies || 0;
+              bValue = b.vacancies || 0;
               break;
             case "budget":
-              aValue = a.estimated_cost_per_position;
-              bValue = b.estimated_cost_per_position;
+              aValue = a.estimated_cost_per_position || 0;
+              bValue = b.estimated_cost_per_position || 0;
               break;
             case "company":
-              aValue = plan.company.toLowerCase();
-              bValue = plan.company.toLowerCase();
+              aValue = (plan.company || "").toLowerCase();
+              bValue = (plan.company || "").toLowerCase();
               break;
             default:
               return 0;
@@ -329,8 +341,8 @@ const StaffingPlansTable: React.FC = () => {
 
       if (sortField === "company") {
         sortedFiltered.sort((a, b) => {
-          const aValue = a.company.toLowerCase();
-          const bValue = b.company.toLowerCase();
+          const aValue = (a.company || "").toLowerCase();
+          const bValue = (b.company || "").toLowerCase();
           if (aValue < bValue) return sortDirection === "asc" ? -1 : 1;
           if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
           return 0;
@@ -340,6 +352,7 @@ const StaffingPlansTable: React.FC = () => {
       filtered = sortedFiltered;
     }
 
+    console.log("Filtered plans:", filtered);
     setFilteredPlans(filtered);
   };
 
@@ -539,27 +552,27 @@ const StaffingPlansTable: React.FC = () => {
                                     <div className="flex items-center">
                                       <Building className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0" />
                                       <span className="font-semibold text-gray-900 text-md leading-tight line-clamp-2">
-                                        {plan.company}
+                                        {plan.company || "-"}
                                       </span>
                                     </div>
                                     <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-gray-900 text-white text-md rounded py-1 px-2 z-10 whitespace-nowrap">
-                                      {plan.company}
+                                      {plan.company || "-"}
                                     </div>
                                   </div>
                                   <div className="text-md text-gray-600 space-y-0.5">
                                     <div
                                       className="flex items-center truncate"
-                                      title={plan.custom_contact_name}
+                                      title={plan.custom_contact_name || "-"}
                                     >
                                       <User className="h-3 w-3 text-gray-400 mr-1 flex-shrink-0" />
                                       <span className="truncate">
-                                        {plan.custom_contact_name}
+                                        {plan.custom_contact_name || "-"}
                                       </span>
                                     </div>
                                     <div className="flex items-center truncate">
                                       <Phone className="h-3 w-3 text-gray-400 mr-1 flex-shrink-0" />
                                       <span className="truncate">
-                                        {plan.custom_contact_phone}
+                                        {plan.custom_contact_phone || "-"}
                                       </span>
                                     </div>
                                   </div>
@@ -570,7 +583,7 @@ const StaffingPlansTable: React.FC = () => {
                             <td className="px-4 py-4 capitalize">
                               <div className="flex flex-col">
                                 <span className="font-medium text-gray-900 text-md">
-                                  {detail.designation}
+                                  {detail.designation || "-"}
                                 </span>
                                 <div className="text-md text-gray-500 mt-1">
                                   <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-800">
@@ -587,12 +600,12 @@ const StaffingPlansTable: React.FC = () => {
                               <div className="flex flex-col space-y-2">
                                 <div className="flex items-center text-md text-gray-600">
                                   <MapPin className="h-4 w-4 text-gray-400 mr-1" />
-                                  <span>{detail.location}</span>
+                                  <span>{detail.location || "-"}</span>
                                 </div>
                                 <div className="flex items-center text-md text-gray-600">
                                   <Clock className="h-4 w-4 text-gray-400 mr-1" />
                                   <span>
-                                    {detail.min_experience_reqyrs}+ years exp
+                                    {detail.min_experience_reqyrs || 0}+ years exp
                                   </span>
                                 </div>
                               </div>
@@ -644,7 +657,7 @@ const StaffingPlansTable: React.FC = () => {
                                 <div className="flex items-center">
                                   <IndianRupee className="h-4 w-4 text-purple-500 mr-1" />
                                   <span className="font-medium text-gray-900">
-                                    {detail.estimated_cost_per_position}L
+                                    {detail.estimated_cost_per_position || 0}L
                                   </span>
                                 </div>
                               </div>
