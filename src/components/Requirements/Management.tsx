@@ -1,5 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-/*eslint-disable  @typescript-eslint/no-explicit-any*/
 import { frappeAPI } from "@/lib/api/frappeClient";
 import {
   AlertCircle,
@@ -118,7 +118,6 @@ const validateStaffingItem = (
     min_experience_reqyrs,
     location,
     employment_type,
-    job_description
   } = item;
 
   if (!designation?.trim()) {
@@ -145,7 +144,7 @@ const validateStaffingItem = (
     showToast.error(`Row ${index + 1}: Experience must be 0 or greater`);
     return false;
   }
- 
+
   if (!location?.trim()) {
     showToast.error(`Row ${index + 1}: Location is required`);
     return false;
@@ -155,10 +154,7 @@ const validateStaffingItem = (
     showToast.error(`Row ${index + 1}: Employment type is required`);
     return false;
   }
-   if (!job_description?.trim()) {
-    showToast.error(`Row ${index + 1}: Job Description is required`);
-    return false;
-  }
+
   return true;
 };
 
@@ -985,16 +981,6 @@ const StaffingPlanCreator: React.FC = () => {
                 <h1 className="text-2xl font-bold text-gray-900">
                   {isEditMode ? "Edit Requirements" : "Create Requirements"}
                 </h1>
-                {/* {selectedLead?.company_name && (
-                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-sm text-md">
-                    {selectedLead.company_name}
-                  </span>
-                )}
-                {selectedLead?.custom_full_name && (
-                  <span className="px-2 py-1 rounded text-md">
-                    {selectedLead.custom_full_name}
-                  </span>
-                )} */}
                 {isLoadingLead && (
                   <div className="flex items-center text-md text-blue-600">
                     <Loader2 className="h-4 w-4 animate-spin mr-1" />
@@ -1028,14 +1014,14 @@ const StaffingPlanCreator: React.FC = () => {
               )}
               {selectedLead && (
                 <div className="bg-green-50 border border-green-200 rounded p-2 pl-5 text-sm text-green-800">
-                  <span className="font-medium">Selected Customer:</span>{" "}
+                  <span className="font-medium">Selected Lead:</span>{" "}
                   {selectedLead.custom_full_name} - {selectedLead.company_name}
                   {!isEditMode && (
                     <button
                       onClick={() => setSelectedLead(null)}
                       className="ml-2 text-green-600 hover:text-green-800 underline"
                     >
-                      Change Customer
+                      Change Lead
                     </button>
                   )}
                 </div>
@@ -1138,22 +1124,25 @@ const StaffingPlanCreator: React.FC = () => {
 
                                   <div className="w-[45%]">
                                     <input
-                                      type="text"
-                                      value={item.estimated_cost_per_position}
-                                      onChange={(e) =>
+                                      type="number"
+                                      value={
+                                        item.estimated_cost_per_position === 0 ||
+                                        item.estimated_cost_per_position === undefined
+                                          ? ""
+                                          : item.estimated_cost_per_position
+                                      }
+                                      onChange={(e) => {
+                                        const value = e.target.value;
                                         updateStaffingItem(
                                           index,
                                           "estimated_cost_per_position",
-                                          parseFloat(
-                                            e.target.value.replace(
-                                              /[^\d.]/g,
-                                              ""
-                                            )
-                                          ) || 0
-                                        )
-                                      }
+                                          value === "" ? 0 : parseFloat(value) || 0
+                                        );
+                                      }}
                                       className="w-full text-end px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm border-0"
-                                      placeholder="Enter salary"
+                                      placeholder="0"
+                                      min="0"
+                                      step="0.01"
                                     />
                                   </div>
                                   <div className="w-[25%] ">LPA</div>
@@ -1331,7 +1320,6 @@ const StaffingPlanCreator: React.FC = () => {
                                     )}
                                   </div>
                                 </td>
-
                               </tr>
                             )}
                           </React.Fragment>
@@ -1361,8 +1349,8 @@ const StaffingPlanCreator: React.FC = () => {
                             ? "Updating..."
                             : "Creating..."
                           : isEditMode
-                          ? "Save"
-                          : "Create"}
+                          ? "Save Requirement(s)"
+                          : "Create Requirement(s)"}
                       </span>
                     </button>
                   </div>
@@ -1433,14 +1421,6 @@ const StaffingPlanCreator: React.FC = () => {
                                       <span className="font-medium text-gray-900 text-md">
                                         {detail.designation}
                                       </span>
-                                      {/* <div className="text-md text-gray-500 mt-1">
-                                        <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-800">
-                                          {detail.number_of_positions}{" "}
-                                          {detail.number_of_positions === 1
-                                            ? "Position"
-                                            : "Positions"}
-                                        </span>
-                                      </div> */}
                                     </div>
                                   </td>
                                   <td className="px-4 py-4">
@@ -1453,7 +1433,6 @@ const StaffingPlanCreator: React.FC = () => {
                                         <Clock className="h-4 w-4 text-gray-400 mr-1" />
                                         <span>
                                           {detail.min_experience_reqyrs}+ years
-                                          
                                         </span>
                                       </div>
                                     </div>
@@ -1507,9 +1486,8 @@ const StaffingPlanCreator: React.FC = () => {
                                         );
                                       })()}
                                       <div className="flex items-center">
-                                        {/* <IndianRupee className="h-4 w-4 text-purple-500 mr-1" /> */}
                                         <span className="font-medium text-gray-900">
-                                         {formatToIndianCurrency(Number(detail.estimated_cost_per_position), detail.currency || "")}L
+                                          {formatToIndianCurrency(Number(detail.estimated_cost_per_position), detail.currency || "")}L
                                         </span>
                                       </div>
                                     </div>

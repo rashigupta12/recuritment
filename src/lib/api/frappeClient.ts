@@ -641,7 +641,7 @@ export const frappeAPI = {
 
     return await frappeAPI.makeAuthenticatedRequest(
       'GET',
-      `/resource/ToDo?fields=${JSON.stringify(fields)}&filters=${filters}&limit_page_length=0&order_by=creation desc`
+      `/resource/ToDo?fields=${JSON.stringify(fields)}&filters=${filters}&limit_page_length=0&limit_start=0&order_by=creation desc`
     );
   },
   searchApplicants:async (email:string)=>{
@@ -739,6 +739,13 @@ getApplicantById: async (applicantId: string) => {
 
   getFeedbackById: async (feedbackId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Issue/${feedbackId}`);
+  },
+
+  getStaffingPlans: async (email: string, limitStart: number = 0, limitPageLength: number = 10) => {
+    return await frappeAPI.makeAuthenticatedRequest(
+      'GET',
+      `/method/recruitment_app.get_staffing_plan.get_staffing_plans_with_children?limit_start=${limitStart}&limit_page_length=${limitPageLength}`
+    );
   },
 
   upload: async (file: File, options: {
