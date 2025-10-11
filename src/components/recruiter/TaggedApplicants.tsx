@@ -298,23 +298,6 @@ export default function TaggedApplicants({
       setModalError("Please select a status.");
       return;
     }
-    if (selectedStatus === "Assessment") {
-      const allShortlisted = selectedApplicants.every(
-        (applicant) => applicant.status?.toLowerCase() === "shortlisted"
-      );
-      if (!allShortlisted) {
-        setModalError('Assessment can only be created for applicants with "Shortlisted" status.');
-        return;
-      }
-      setIsStatusModalOpen(false);
-      setIsAssessmentModalOpen(true);
-      return;
-    }
-    if (selectedStatus === "Offered") {
-      setIsStatusModalOpen(false);
-      setIsOfferModalOpen(true); // Open Offer Details Modal
-      return;
-    }
     const downgrades = selectedApplicants.filter(
       (applicant) => applicant.status && isStatusDowngrade(applicant.status, selectedStatus)
     );
@@ -748,7 +731,24 @@ export default function TaggedApplicants({
               <select
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition-all bg-gray-50 text-gray-900 text-md"
                 value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
+                onChange={(e) => {
+                  const newStatus = e.target.value;
+                  setSelectedStatus(newStatus);
+                  if (newStatus === "Assessment") {
+                    const allShortlisted = selectedApplicants.every(
+                      (applicant) => applicant.status?.toLowerCase() === "shortlisted"
+                    );
+                    if (!allShortlisted) {
+                      setModalError('Assessment can only be created for applicants with "Shortlisted" status.');
+                      return;
+                    }
+                    setIsStatusModalOpen(false);
+                    setIsAssessmentModalOpen(true);
+                  } else if (newStatus === "Offered") {
+                    setIsStatusModalOpen(false);
+                    setIsOfferModalOpen(true);
+                  }
+                }}
                 aria-label="Select status"
               >
                 <option value="" disabled className="text-gray-500 text-md">
@@ -806,7 +806,7 @@ export default function TaggedApplicants({
               </button>
               <button
                 onClick={handleStatusChangeRequest}
-                disabled={!selectedStatus}
+                disabled={!selectedStatus || selectedStatus === "Assessment" || selectedStatus === "Offered"}
                 className="px-5 py-2.5 text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-lg transition-all font-medium shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed text-md"
                 aria-label="Confirm status change"
               >
