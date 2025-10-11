@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Search, RefreshCw, Filter, X, ChevronDown, ChevronUp, Download } from "lucide-react";
+import { Search, RefreshCw, Filter, X, ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -25,13 +25,13 @@ export interface FilterState {
   clients: string[];
   locations: string[];
   jobTitles: string[];
-  status: string;
+  status: string[];
   contacts: string[];
   dateRange: "all" | "today" | "week" | "month";
   vacancies: "all" | "single" | "multiple";
 }
 
-interface TodosHeaderProps {
+interface TodoFilterProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   onRefresh: () => Promise<void>;
@@ -49,7 +49,7 @@ interface TodosHeaderProps {
   title?: string;
 }
 
-export const TodosHeader = ({
+export const TodoFilter = ({
   searchQuery,
   onSearchChange,
   onRefresh,
@@ -65,14 +65,14 @@ export const TodosHeader = ({
   onFilterChange,
   filterConfig = [],
   title = "My Jobs",
-}: TodosHeaderProps) => {
+}: TodoFilterProps) => {
   const [filters, setFilters] = useState<FilterState>({
     departments: [],
     assignedBy: [],
     clients: [],
     locations: [],
     jobTitles: [],
-    status: "",
+    status: [],
     contacts: [],
     dateRange: "all",
     vacancies: "all",
@@ -90,8 +90,8 @@ export const TodosHeader = ({
   const [openSection, setOpenSection] = useState<string | null>(null);
 
   const toggleFilter = (type: keyof FilterState, value: string) => {
-    if (type === "status" || type === "dateRange" || type === "vacancies") {
-      const newFilters = { ...filters, [type]: filters[type] === value ? "" : value };
+    if (type === "dateRange" || type === "vacancies") {
+      const newFilters = { ...filters, [type]: filters[type] === value ? "all" : value };
       setFilters(newFilters);
       onFilterChange?.(newFilters);
     } else {
@@ -114,7 +114,7 @@ export const TodosHeader = ({
       clients: [],
       locations: [],
       jobTitles: [],
-      status: "",
+      status: [],
       contacts: [],
       dateRange: "all",
       vacancies: "all",
@@ -159,7 +159,7 @@ export const TodosHeader = ({
 
   const activeFilterCount = Object.entries(filters).reduce(
     (count, [key, value]) => {
-      if ((key === "status" || key === "dateRange" || key === "vacancies") && typeof value === "string" && value !== "" && value !== "all") {
+      if ((key === "dateRange" || key === "vacancies") && typeof value === "string" && value !== "all") {
         return count + 1;
       } else if (Array.isArray(value) && value.length > 0) {
         return count + value.length;
@@ -229,6 +229,36 @@ export const TodosHeader = ({
                           Active Filters
                         </h4>
                         <div className="flex flex-wrap gap-2">
+                          {filters.departments.map((dept) => (
+                            <Badge
+                              key={dept}
+                              variant="secondary"
+                              className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                            >
+                              {dept}
+                              <button
+                                onClick={() => toggleFilter("departments", dept)}
+                                className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </Badge>
+                          ))}
+                          {filters.assignedBy.map((assigner) => (
+                            <Badge
+                              key={assigner}
+                              variant="secondary"
+                              className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                            >
+                              {assigner}
+                              <button
+                                onClick={() => toggleFilter("assignedBy", assigner)}
+                                className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </Badge>
+                          ))}
                           {filters.clients.map((client) => (
                             <Badge
                               key={client}
@@ -238,6 +268,21 @@ export const TodosHeader = ({
                               Client: {client}
                               <button
                                 onClick={() => toggleFilter("clients", client)}
+                                className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </Badge>
+                          ))}
+                          {filters.locations.map((location) => (
+                            <Badge
+                              key={location}
+                              variant="secondary"
+                              className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+                            >
+                              {location}
+                              <button
+                                onClick={() => toggleFilter("locations", location)}
                                 className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
                               >
                                 <X className="w-3 h-3" />
@@ -259,21 +304,21 @@ export const TodosHeader = ({
                               </button>
                             </Badge>
                           ))}
-                          {filters.status !== "" && (
+                          {filters.status.map((status) => (
                             <Badge
-                              key={filters.status}
+                              key={status}
                               variant="secondary"
                               className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
                             >
-                              Status: {filters.status}
+                              Status: {status}
                               <button
-                                onClick={() => toggleFilter("status", filters.status)}
+                                onClick={() => toggleFilter("status", status)}
                                 className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
                               >
                                 <X className="w-3 h-3" />
                               </button>
                             </Badge>
-                          )}
+                          ))}
                           {filters.contacts.map((contact) => (
                             <Badge
                               key={contact}
@@ -536,21 +581,21 @@ export const TodosHeader = ({
               </button>
             </Badge>
           ))}
-          {filters.status !== "" && (
+          {filters.status.map((status) => (
             <Badge
-              key={filters.status}
+              key={status}
               variant="secondary"
               className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
             >
-              Status: {filters.status}
+              Status: {status}
               <button
-                onClick={() => toggleFilter("status", filters.status)}
+                onClick={() => toggleFilter("status", status)}
                 className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
               >
                 <X className="w-3 h-3" />
               </button>
             </Badge>
-          )}
+          ))}
           {filters.contacts.map((contact) => (
             <Badge
               key={contact}

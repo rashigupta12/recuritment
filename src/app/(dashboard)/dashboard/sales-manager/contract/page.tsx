@@ -49,7 +49,7 @@ const ContractLeads = () => {
     clients: [],
     locations: [],
     jobTitles: [],
-    status: [],
+    status: "",
     contacts: [],
     dateRange: "all",
     vacancies: "all",
@@ -74,6 +74,7 @@ const ContractLeads = () => {
         options: Array.from(new Set(leads.map((lead) => lead.company_name || ""))).filter(Boolean),
         searchKey: "company_name",
         showInitialOptions: false,
+        type: "checkbox"as const,
       },
       {
         id: "contacts",
@@ -82,12 +83,15 @@ const ContractLeads = () => {
         options: Array.from(new Set(leads.map((lead) => lead.custom_full_name || ""))).filter(Boolean),
         searchKey: "custom_full_name",
         showInitialOptions: false,
+        type: "checkbox"as const,
       },
       {
         id: "status",
         title: "Stage",
         icon: Tag,
-        options: Object.keys(stageMapping), // Use full names
+        options: Object.keys(stageMapping), // Use full names as options
+        type: "radio"as const, // Explicitly set to radio for single selection
+        showInitialOptions: true,
       },
     ],
     [leads, stageMapping]
@@ -134,9 +138,11 @@ const ContractLeads = () => {
   const handleFilterChange = useCallback(
     (newFilters: FilterState) => {
       const updatedFilters = { ...newFilters };
-      // Map full names to abbreviations for status
-      if (updatedFilters.status.length > 0) {
-        updatedFilters.status = updatedFilters.status.map((status) => stageMapping[status] || status);
+      // Map full name to abbreviation for status
+      if (updatedFilters.status) {
+        updatedFilters.status = stageMapping[updatedFilters.status] || updatedFilters.status;
+      } else {
+        updatedFilters.status = "";
       }
       setFilters(updatedFilters);
       setCurrentPage(1); // Reset to first page when filters change
@@ -174,8 +180,8 @@ const ContractLeads = () => {
     if (filters.contacts.length > 0) {
       result = result.filter((lead) => filters.contacts.includes(lead.custom_full_name || ""));
     }
-    if (filters.status.length > 0) {
-      result = result.filter((lead) => filters.status.includes(lead.status || ""));
+    if (filters.status) {
+      result = result.filter((lead) => (lead.status || "") === filters.status);
     }
 
     return result;
@@ -287,12 +293,12 @@ const ContractLeads = () => {
         ) : (
           <div className="text-center py-12">
             <div className="text-gray-500 text-lg">
-              {searchQuery || filters.clients.length > 0 || filters.contacts.length > 0 || filters.status.length > 0
+              {searchQuery || filters.clients.length > 0 || filters.contacts.length > 0 || filters.status
                 ? "No matching customers found"
                 : "No customers found"}
             </div>
             <div className="text-gray-400 text-sm mt-2">
-              {searchQuery || filters.clients.length > 0 || filters.contacts.length > 0 || filters.status.length > 0
+              {searchQuery || filters.clients.length > 0 || filters.contacts.length > 0 || filters.status
                 ? "Try adjusting your search or filter terms"
                 : "No contract-ready leads are available at the moment."}
             </div>

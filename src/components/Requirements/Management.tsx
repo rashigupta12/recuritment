@@ -118,6 +118,7 @@ const validateStaffingItem = (
     min_experience_reqyrs,
     location,
     employment_type,
+    job_description
   } = item;
 
   if (!designation?.trim()) {
@@ -144,7 +145,7 @@ const validateStaffingItem = (
     showToast.error(`Row ${index + 1}: Experience must be 0 or greater`);
     return false;
   }
-
+ 
   if (!location?.trim()) {
     showToast.error(`Row ${index + 1}: Location is required`);
     return false;
@@ -154,7 +155,10 @@ const validateStaffingItem = (
     showToast.error(`Row ${index + 1}: Employment type is required`);
     return false;
   }
-
+   if (!job_description?.trim()) {
+    showToast.error(`Row ${index + 1}: Job Description is required`);
+    return false;
+  }
   return true;
 };
 
@@ -1024,14 +1028,14 @@ const StaffingPlanCreator: React.FC = () => {
               )}
               {selectedLead && (
                 <div className="bg-green-50 border border-green-200 rounded p-2 pl-5 text-sm text-green-800">
-                  <span className="font-medium">Selected Lead:</span>{" "}
+                  <span className="font-medium">Selected Customer:</span>{" "}
                   {selectedLead.custom_full_name} - {selectedLead.company_name}
                   {!isEditMode && (
                     <button
                       onClick={() => setSelectedLead(null)}
                       className="ml-2 text-green-600 hover:text-green-800 underline"
                     >
-                      Change Lead
+                      Change Customer
                     </button>
                   )}
                 </div>
@@ -1327,6 +1331,7 @@ const StaffingPlanCreator: React.FC = () => {
                                     )}
                                   </div>
                                 </td>
+
                               </tr>
                             )}
                           </React.Fragment>
@@ -1356,8 +1361,8 @@ const StaffingPlanCreator: React.FC = () => {
                             ? "Updating..."
                             : "Creating..."
                           : isEditMode
-                          ? "Save Requirement(s)"
-                          : "Create Requirement(s)"}
+                          ? "Save"
+                          : "Create"}
                       </span>
                     </button>
                   </div>

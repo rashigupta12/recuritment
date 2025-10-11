@@ -27,7 +27,7 @@ const LeadsManagement = () => {
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10; // Number of leads per page
+  const itemsPerPage = 10;
 
   // Define all possible stages (excluding Onboarded)
   const allStages = useMemo(
@@ -58,7 +58,6 @@ const LeadsManagement = () => {
     async (email: string) => {
       try {
         setLoading(true);
-        // Fetch all leads with necessary fields in single request
         const response = await frappeAPI.getAllLeadsDetailed(email);
         if (response.data && Array.isArray(response.data)) {
           setLeads(response.data);
@@ -134,7 +133,7 @@ const LeadsManagement = () => {
   // Event handlers
   const handleFormClose = useCallback(() => {
     setCurrentView("list");
-    setCurrentPage(1); // Reset to first page on form close
+    setCurrentPage(1);
     if (user?.email) {
       fetchLeads(user.email);
     }
@@ -162,7 +161,7 @@ const LeadsManagement = () => {
   // Handle filter change
   const handleFilterChange = useCallback((newFilters: FilterState) => {
     setFilters(newFilters);
-    setCurrentPage(1); // Reset to first page when filters change
+    setCurrentPage(1);
   }, []);
 
   // Define filter configuration
@@ -190,6 +189,8 @@ const LeadsManagement = () => {
         icon: Tag,
         options: allStages,
         alwaysShowOptions: true,
+        type: "radio"as const,
+        showInitialOptions: true,
       },
     ],
     [leads, allStages]
@@ -250,7 +251,6 @@ const LeadsManagement = () => {
               isRestrictedUser={isRestrictedUser} // Pass isRestrictedUser
             />
 
-            {/* Add Pagination Component */}
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}

@@ -125,7 +125,7 @@ export const TodosHeader = ({
   };
 
   const updateRadioFilter = (type: keyof FilterState, value: string) => {
-    const newFilters = { ...filters, [type]: value };
+    const newFilters = { ...filters, [type]: [value] };
     setFilters(newFilters);
     onFilterChange?.(newFilters);
   };
@@ -317,7 +317,7 @@ export const TodosHeader = ({
                             >
                               Status: {status}
                               <button
-                                onClick={() => toggleFilter("status", status)}
+                                onClick={() => updateRadioFilter("status", "")}
                                 className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
                               >
                                 <X className="w-3 h-3" />
@@ -371,8 +371,7 @@ export const TodosHeader = ({
                                   type="radio"
                                   name={section.id}
                                   checked={
-                                    filters[section.id as keyof FilterState] ===
-                                    option
+                                    filters[section.id as keyof FilterState].includes(option)
                                   }
                                   onChange={() =>
                                     updateRadioFilter(
@@ -505,7 +504,7 @@ export const TodosHeader = ({
             {showExportButton && onexportcsv && (
               <Button
                 onClick={onexportcsv}
-                className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2 flex-shrink-0"
+                className="bg-blue-600 hover:bg-blue-800 text-white flex items-center gap-2 flex-shrink-0"
               >
                 <Download className="h-4 w-4" />
                 <span className="hidden sm:inline">Export</span>
@@ -514,12 +513,11 @@ export const TodosHeader = ({
 
             {showAddLeadButton && onAddLead && (
               <Button
-  onClick={onAddLead}
-  className="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-2 w-10 h-10 flex items-center justify-center"
->
-  <Plus className="h-5 w-5" />
-</Button>
-
+                onClick={onAddLead}
+                className="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-2 w-10 h-10 flex items-center justify-center"
+              >
+                <Plus className="h-5 w-5" />
+              </Button>
             )}
           </div>
         </div>
@@ -629,7 +627,7 @@ export const TodosHeader = ({
             >
               Status: {status}
               <button
-                onClick={() => toggleFilter("status", status)}
+                onClick={() => updateRadioFilter("status", "")}
                 className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
               >
                 <X className="w-3 h-3" />
