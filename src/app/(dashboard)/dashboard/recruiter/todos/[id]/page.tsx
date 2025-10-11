@@ -10,6 +10,7 @@ import MultipleApplicantsForm from "@/components/recruiter/MultipleApplicantsFor
 import { Plus } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
+import ApplicantSearchAndTag from "@/components/recruiter/ApplicantSearchAndTag";
 
 interface TodoData {
   name: string;
@@ -28,7 +29,7 @@ export default function TodoDetailPage() {
   const [loading, setLoading] = useState(true);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
-  const {user } = useAuth()
+  const { user } = useAuth()
   const userEmail = user?.email
 
   const handleClose = () => {
@@ -151,14 +152,20 @@ export default function TodoDetailPage() {
                       </SheetTitle>
                     </SheetHeader>
                     <div className="mt-0">
-                      <MultipleApplicantsForm
+                      {/* <MultipleApplicantsForm
                         initialJobId={jobId}
                         onFormSubmitSuccess={handleFormSubmitSuccess}
+                      /> */}
+                      <ApplicantSearchAndTag
+                        initialJobId={jobId}
+                        onFormSubmitSuccess={() => {
+                          // Refresh data or show success message
+                        }}
                       />
                     </div>
                   </SheetContent>
                 </Sheet>
-                
+
                 <TaggedApplicants
                   key={`tagged-applicants-${refreshKey}`}
                   jobId={jobId}

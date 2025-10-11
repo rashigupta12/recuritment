@@ -39,13 +39,49 @@ interface ApplicantRow {
 
 interface BulkApplicantFormProps {
   initialJobId?: string;
+  prefilledData?: any[]; // Add this line
+
   onFormSubmitSuccess?: () => void;
 }
 
-export default function BulkApplicantForm({ initialJobId, onFormSubmitSuccess }: BulkApplicantFormProps) {
-  const [applicantRows, setApplicantRows] = useState<ApplicantRow[]>([
-    createEmptyRow(initialJobId || '')
-  ]);
+export default function BulkApplicantForm({ initialJobId,prefilledData, onFormSubmitSuccess }: BulkApplicantFormProps) {
+  // const [applicantRows, setApplicantRows] = useState<ApplicantRow[]>([
+  //   createEmptyRow(initialJobId || '')
+  // ]);
+
+
+  const [applicantRows, setApplicantRows] = useState<ApplicantRow[]>(() => {
+    if (prefilledData && prefilledData.length > 0) {
+      return prefilledData.map((data, index) => ({
+        id: `prefilled_${index}_${Date.now()}`,
+        applicant_name: data.applicant_name || '',
+        email_id: data.email_id || '',
+        phone_number: data.phone_number || '',
+        country: data.country || 'India',
+        job_title: data.job_title || initialJobId || '',
+        designation: data.designation || '',
+        resume_attachment: data.resume_attachment || '',
+        custom_experience: data.custom_experience?.[0] || {
+          company_name: '',
+          designation: '',
+          start_date: '',
+          end_date: '',
+          current_company: 0
+        },
+        custom_education: data.custom_education?.[0] || {
+          degree: '',
+          specialization: '',
+          institution: '',
+          year_of_passing: '',
+          percentagecgpa: ''
+        },
+        isAutofilling: false,
+        autofillError: '',
+        errors: {}
+      }));
+    }
+    return [createEmptyRow(initialJobId || '')];
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submissionResult, setSubmissionResult] = useState<{ success: number; failed: number }>({ success: 0, failed: 0 });
@@ -243,12 +279,12 @@ export default function BulkApplicantForm({ initialJobId, onFormSubmitSuccess }:
       setApplicantRows(rows =>
         rows.map(row =>
           row.id === rowId
-            ? { 
-                ...row, 
-                isAutofilling: false, 
-                autofillError: `Failed to process resume: ${error.message}`,
-                resume_attachment: row.resume_attachment || currentRow?.resume_attachment || ''
-              }
+            ? {
+              ...row,
+              isAutofilling: false,
+              autofillError: `Failed to process resume: ${error.message}`,
+              resume_attachment: row.resume_attachment || currentRow?.resume_attachment || ''
+            }
             : row
         )
       );
@@ -334,7 +370,7 @@ export default function BulkApplicantForm({ initialJobId, onFormSubmitSuccess }:
       }));
 
       console.log('Submitting bulk applicants:', payload);
-      
+
       // Wait for the API call to complete
       const response = await frappeAPI.createBulkApplicants(payload);
 
@@ -398,9 +434,8 @@ export default function BulkApplicantForm({ initialJobId, onFormSubmitSuccess }:
                       Upload Resume *
                     </label>
                     <div
-                      className={`relative w-full border-2 border-dashed rounded-md p-3 flex items-center justify-center cursor-pointer ${
-                        row.errors.resume_attachment ? 'border-red-300' : 'border-gray-300'
-                      }`}
+                      className={`relative w-full border-2 border-dashed rounded-md p-3 flex items-center justify-center cursor-pointer ${row.errors.resume_attachment ? 'border-red-300' : 'border-gray-300'
+                        }`}
                     >
                       <input
                         type="file"
@@ -440,9 +475,8 @@ export default function BulkApplicantForm({ initialJobId, onFormSubmitSuccess }:
                       type="text"
                       value={row.applicant_name}
                       onChange={(e) => handleFieldChange(row.id, 'applicant_name', e.target.value)}
-                      className={`w-full px-3 py-2 border rounded-md ${
-                        row.errors.applicant_name ? 'border-red-300' : 'border-gray-300'
-                      }`}
+                      className={`w-full px-3 py-2 border rounded-md ${row.errors.applicant_name ? 'border-red-300' : 'border-gray-300'
+                        }`}
                       placeholder="Enter name"
                       disabled={row.isAutofilling}
                     />
