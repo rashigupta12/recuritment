@@ -5,11 +5,14 @@ import { Lead, useLeadStore } from "@/stores/leadStore";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import LeadDetailModal from "./Details";
 import { LoadingState } from "./LoadingState";
-import { LeadsHeader } from "./Header";
 import { LeadsFormView } from "./FormView";
 import { LeadsStats } from "./Stats";
 import { LeadsTable } from "./Table";
 import { LeadsEmptyState, LeadsMobileView } from "./MobileView";
+import { FilterState, TodosHeader } from "../recruiter/Header";
+import { Building, Tag, Users } from "lucide-react";
+import Pagination from "../comman/Pagination";
+
 
 const LeadsManagement = () => {
   const { leads, setLeads, loading, setLoading } = useLeadStore();
@@ -17,30 +20,65 @@ const LeadsManagement = () => {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [currentView, setCurrentView] = useState<"list" | "add" | "edit">("list");
-  
   const { user } = useAuth();
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10; // Number of leads per page
+
+  // Define all possible stages (excluding Onboarded)
+  const allStages = useMemo(
+    () => [
+      "Prospecting",
+      "Lead Qualification",
+      "Needs Analysis / Discovery",
+      "Presentation / Proposal",
+    ],
+    []
+  );
+
+  // State for filters
+  const [filters, setFilters] = useState<FilterState>({
+    departments: [],
+    assignedBy: [],
+    clients: [],
+    locations: [],
+    jobTitles: [],
+    status: [],
+    contacts: [],
+    dateRange: "all",
+    vacancies: "all",
+  });
+
   // Optimized function to fetch leads with batch processing
-  const fetchLeads = useCallback(async (email: string) => {
-    try {
-      setLoading(true);
-      
-      // Fetch all leads with necessary fields in single request
-      const response = await frappeAPI.getAllLeadsDetailed(email);
-      
-      if (response.data && Array.isArray(response.data)) {
-        setLeads(response.data);
-      } else {
-        console.error("Unexpected response format:", response);
+  const fetchLeads = useCallback(
+    async (email: string) => {
+      try {
+        setLoading(true);
+        // Fetch all leads with necessary fields in single request
+        const response = await frappeAPI.getAllLeadsDetailed(email);
+        if (response.data && Array.isArray(response.data)) {
+          setLeads(response.data);
+        } else {
+          console.error("Unexpected response format:", response);
+          setLeads([]);
+        }
+      } catch (error) {
+        console.error("Error fetching leads:", error);
         setLeads([]);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Error fetching leads:", error);
-      setLeads([]);
-    } finally {
-      setLoading(false);
+    },
+    [setLeads, setLoading]
+  );
+
+  // Wrapper function for refresh that doesn't require parameters
+  const handleRefresh = useCallback(async () => {
+    if (user?.email) {
+      await fetchLeads(user.email);
     }
-  }, [setLeads, setLoading]);
+  }, [user?.email, fetchLeads]);
 
   useEffect(() => {
     if (!user?.email) return;
@@ -49,23 +87,51 @@ const LeadsManagement = () => {
 
   // Memoized filtered leads for better performance
   const filteredLeads = useMemo(() => {
-    if (!searchQuery) return leads;
-    
-    const searchLower = searchQuery.toLowerCase();
-    return leads.filter((lead) => {
-      return (
-        (lead.custom_full_name || "").toLowerCase().includes(searchLower) ||
-        (lead.company_name || "").toLowerCase().includes(searchLower) ||
-        (lead.custom_email_address || "").toLowerCase().includes(searchLower) ||
-        (lead.industry || "").toLowerCase().includes(searchLower) ||
-        (lead.city || "").toLowerCase().includes(searchLower)
-      );
-    });
-  }, [leads, searchQuery]);
+    let result = leads;
+
+    if (searchQuery) {
+      const searchLower = searchQuery.toLowerCase();
+      result = result.filter((lead) => {
+        return (
+          (lead.custom_full_name || "").toLowerCase().includes(searchLower) ||
+          (lead.company_name || "").toLowerCase().includes(searchLower) ||
+          (lead.custom_email_address || "").toLowerCase().includes(searchLower) ||
+          (lead.industry || "").toLowerCase().includes(searchLower) ||
+          (lead.city || "").toLowerCase().includes(searchLower)
+        );
+      });
+    }
+
+    // Apply filters
+    if (filters.clients.length > 0) {
+      result = result.filter((lead) => filters.clients.includes(lead.company_name || ""));
+    }
+    if (filters.contacts.length > 0) {
+      result = result.filter((lead) => filters.contacts.includes(lead.custom_full_name || ""));
+    }
+    if (filters.status.length > 0) {
+      result = result.filter((lead) => filters.status.includes(lead.custom_stage || ""));
+    }
+
+    return result;
+  }, [leads, searchQuery, filters]);
+
+  // Pagination calculations
+  const totalCount = filteredLeads.length;
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedLeads = filteredLeads.slice(startIndex, endIndex);
+
+  // Handle page change
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(page);
+  }, []);
 
   // Event handlers
   const handleFormClose = useCallback(() => {
     setCurrentView("list");
+    setCurrentPage(1); // Reset to first page on form close
     if (user?.email) {
       fetchLeads(user.email);
     }
@@ -90,6 +156,42 @@ const LeadsManagement = () => {
     setCurrentView("edit");
   }, []);
 
+  // Handle filter change
+  const handleFilterChange = useCallback((newFilters: FilterState) => {
+    setFilters(newFilters);
+    setCurrentPage(1); // Reset to first page when filters change
+  }, []);
+
+  // Define filter configuration
+  const filterConfig = useMemo(
+    () => [
+      {
+        id: "clients",
+        title: "Company",
+        icon: Building,
+        options: Array.from(new Set(leads.map((lead) => lead.company_name || ""))).filter(Boolean),
+        searchKey: "company_name",
+        showInitialOptions: false,
+      },
+      {
+        id: "contacts",
+        title: "Contact",
+        icon: Users,
+        options: Array.from(new Set(leads.map((lead) => lead.custom_full_name || ""))).filter(Boolean),
+        searchKey: "custom_full_name",
+        showInitialOptions: false,
+      },
+      {
+        id: "status",
+        title: "Stage",
+        icon: Tag,
+        options: allStages,
+        alwaysShowOptions: true,
+      },
+    ],
+    [leads, allStages]
+  );
+
   // Render loading state
   if (loading) {
     return <LoadingState />;
@@ -110,29 +212,48 @@ const LeadsManagement = () => {
   // Render list view
   return (
     <div className="min-h-screen bg-gray-50">
-      <LeadsHeader
+      <TodosHeader
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        onRefresh={handleRefresh}
+        totalJobs={leads.length}
+        filteredJobs={filteredLeads.length}
+        uniqueClients={Array.from(new Set(leads.map((lead) => lead.company_name || ""))).filter(Boolean)}
+        uniqueContacts={Array.from(new Set(leads.map((lead) => lead.custom_full_name || ""))).filter(Boolean)}
+        uniqueStatus={allStages}
+        onFilterChange={handleFilterChange}
+        filterConfig={filterConfig}
+        title="Leads"
         onAddLead={handleAddLead}
+        showExportButton={false}
+        showAddLeadButton={true}
       />
-
-      {/* <LeadsStats leads={leads} /> */}
 
       <div className="w-full mx-auto py-2">
         {filteredLeads.length > 0 ? (
           <>
             <div className="hidden lg:block">
               <LeadsTable
-                leads={filteredLeads}
+                leads={paginatedLeads} // Use paginatedLeads instead of filteredLeads
                 onViewLead={handleViewLead}
                 onEditLead={handleEditLead}
               />
             </div>
 
             <LeadsMobileView
-              leads={filteredLeads}
+              leads={paginatedLeads} // Use paginatedLeads instead of filteredLeads
               onViewLead={handleViewLead}
               onEditLead={handleEditLead}
+            />
+
+            {/* Add Pagination Component */}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalCount={totalCount}
+              itemsPerPage={itemsPerPage}
+              onPageChange={handlePageChange}
+              maxPagesToShow={5}
             />
           </>
         ) : (

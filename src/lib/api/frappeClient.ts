@@ -32,8 +32,8 @@ frappeFileClient.interceptors.request.use(
 
     // For development, add CORS headers
 
-      config.headers['Access-Control-Allow-Origin'] = 'http://localhost:3000';
-      config.headers['Access-Control-Allow-Credentials'] = 'true';
+    config.headers['Access-Control-Allow-Origin'] = 'http://localhost:3000';
+    config.headers['Access-Control-Allow-Credentials'] = 'true';
 
     // Don't manually set browser-controlled headers
     delete config.headers['Origin'];
@@ -55,7 +55,7 @@ frappeFileClient.interceptors.response.use(
       status: response.status,
       url: response.config.url
     });
-    
+
     if (response.headers['set-cookie']) {
       console.log('Cookies received:', response.headers['set-cookie']);
     }
@@ -85,8 +85,8 @@ frappeFileClient.interceptors.response.use(
       error.response?.data?.message?.includes('pymysql.err.OperationalError') ||
       error.response?.data?.message?.includes('Database connection failed') ||
       // Check for HTML error pages (Werkzeug debugger)
-      (error.response?.data && typeof error.response.data === 'string' && 
-       error.response.data.includes('Werkzeug Debugger')) ||
+      (error.response?.data && typeof error.response.data === 'string' &&
+        error.response.data.includes('Werkzeug Debugger')) ||
       // Exception patterns
       error.response?.data?.exc?.includes('OperationalError') ||
       error.response?.data?.exc?.includes('Can\'t connect to MySQL');
@@ -149,7 +149,7 @@ export const frappeAPI = {
       if (response.data.message === 'Logged In') {
         // Get user details after login
         const userDetails = await frappeAPI.getUserDetails(username);
-        
+
         const userData = {
           username,
           full_name: userDetails.data?.full_name || username,
@@ -178,8 +178,8 @@ export const frappeAPI = {
       console.error('Login error:', error);
       return {
         success: false,
-        error: axios.isAxiosError(error) ? 
-          (error.response?.data?.message || error.message) : 
+        error: axios.isAxiosError(error) ?
+          (error.response?.data?.message || error.message) :
           'Login failed'
       };
     }
@@ -188,13 +188,13 @@ export const frappeAPI = {
   checkSession: async () => {
     try {
       const response = await frappeClient.get('method/frappe.auth.get_logged_user');
-      
+
       if (response.data && response.data.message && response.data.message !== 'Guest') {
         const username = response.data.message;
-        
+
         // Get fresh user details
         const userDetails = await frappeAPI.getUserDetails(username);
-        
+
         const userData = {
           username,
           full_name: userDetails.data?.full_name || username,
@@ -232,164 +232,164 @@ export const frappeAPI = {
       console.error('Error fetching user details:', error);
       return {
         success: false,
-        error: axios.isAxiosError(error) ? 
-          (error.response?.data?.message || error.message) : 
+        error: axios.isAxiosError(error) ?
+          (error.response?.data?.message || error.message) :
           'Failed to fetch user details'
       };
     }
   },
 
-checkFirstLogin: async (username: string) => {
+  checkFirstLogin: async (username: string) => {
 
-  
-  try {
-    // First check User Settings
- 
-    const response = await frappeClient.get(
-      `/resource/User Setting/${encodeURIComponent(username)}`
-    );
-  
-    
-    if (response.data && response.data.data) {
-      
-      
-      // Handle both array and object responses
-      const userSettings = Array.isArray(response.data.data) ? response.data.data[0] : response.data.data;
-      
-      if (userSettings) {
-        
-        
-        const requiresPasswordReset = userSettings.first_password === 1 || userSettings.first_password === '1';
-        
 
-        
+    try {
+      // First check User Settings
+
+      const response = await frappeClient.get(
+        `/resource/User Setting/${encodeURIComponent(username)}`
+      );
+
+
+      if (response.data && response.data.data) {
+
+
+        // Handle both array and object responses
+        const userSettings = Array.isArray(response.data.data) ? response.data.data[0] : response.data.data;
+
+        if (userSettings) {
+
+
+          const requiresPasswordReset = userSettings.first_password === 1 || userSettings.first_password === '1';
+
+
+
+          return {
+            success: true,
+            requiresPasswordReset,
+            userSettings
+          };
+        }
+      }
+
+
+
+      // Fallback: check User table
+      const userResponse = await frappeClient.get(
+        `/resource/User/${username}?fields=["last_login"]`
+      );
+
+
+
+      if (userResponse.data && userResponse.data.data) {
+        const requiresPasswordReset = !userResponse.data.data.last_login;
+
+
         return {
           success: true,
           requiresPasswordReset,
-          userSettings
+          lastLogin: userResponse.data.data.last_login
         };
       }
-    }
-    
-    
-    
-    // Fallback: check User table
-    const userResponse = await frappeClient.get(
-      `/resource/User/${username}?fields=["last_login"]`
-    );
-    
-    
-    
-    if (userResponse.data && userResponse.data.data) {
-      const requiresPasswordReset = !userResponse.data.data.last_login;
- 
-      
+
+
       return {
         success: true,
-        requiresPasswordReset,
-        lastLogin: userResponse.data.data.last_login
+        requiresPasswordReset: false
+      };
+
+    } catch (error) {
+
+
+      // Enhanced error logging
+      if (axios.isAxiosError(error)) {
+        console.error('🌐 Axios error details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          url: error.config?.url,
+          method: error.config?.method
+        });
+      }
+
+      let errorMessage = 'Error checking first login status';
+      if (axios.isAxiosError(error)) {
+        errorMessage = error.response?.data?.message || error.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
+      return {
+        success: false,
+        requiresPasswordReset: false,
+        error: errorMessage
       };
     }
-    
-   
-    return {
-      success: true,
-      requiresPasswordReset: false
-    };
-    
-  } catch (error) {
+  },
 
-    
-    // Enhanced error logging
-    if (axios.isAxiosError(error)) {
-      console.error('🌐 Axios error details:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        url: error.config?.url,
-        method: error.config?.method
-      });
-    }
-    
-    let errorMessage = 'Error checking first login status';
-    if (axios.isAxiosError(error)) {
-      errorMessage = error.response?.data?.message || error.message;
-    } else if (error instanceof Error) {
-      errorMessage = error.message;
-    }
-    
-    return {
-      success: false,
-      requiresPasswordReset: false,
-      error: errorMessage
-    };
-  }
-},
-
- resetFirstTimePassword: async (username: string, newPassword: string) => {
-  try {
-    // Validate password strength
-    if (!newPassword || newPassword.length < 8) {
-      throw new Error('Password must be at least 8 characters long');
-    }
-
-    // Step 1: Update the user's password
-    const passwordUpdateResponse = await frappeClient.put(
-      `/resource/User/${encodeURIComponent(username)}`,
-      {
-        new_password: newPassword
-      }
-    );
-
-    if (passwordUpdateResponse.status !== 200) {
-      throw new Error('Failed to update password');
-    }
-
-    // Step 2: Update the first_password flag to 0
+  resetFirstTimePassword: async (username: string, newPassword: string) => {
     try {
-      const flagUpdateResponse = await frappeClient.put(
-        `/resource/User Setting/${encodeURIComponent(username)}`,
+      // Validate password strength
+      if (!newPassword || newPassword.length < 8) {
+        throw new Error('Password must be at least 8 characters long');
+      }
+
+      // Step 1: Update the user's password
+      const passwordUpdateResponse = await frappeClient.put(
+        `/resource/User/${encodeURIComponent(username)}`,
         {
-          first_password: 0
+          new_password: newPassword
         }
       );
 
-      console.log('Password reset successful:', {
-        username,
-        passwordUpdate: passwordUpdateResponse.status,
-        flagUpdate: flagUpdateResponse.status
-      });
+      if (passwordUpdateResponse.status !== 200) {
+        throw new Error('Failed to update password');
+      }
+
+      // Step 2: Update the first_password flag to 0
+      try {
+        const flagUpdateResponse = await frappeClient.put(
+          `/resource/User Setting/${encodeURIComponent(username)}`,
+          {
+            first_password: 0
+          }
+        );
+
+        console.log('Password reset successful:', {
+          username,
+          passwordUpdate: passwordUpdateResponse.status,
+          flagUpdate: flagUpdateResponse.status
+        });
+
+        return {
+          success: true,
+          message: 'Password updated successfully'
+        };
+      } catch (flagError) {
+        console.warn('Password updated but failed to update flag:', flagError);
+        // Password was updated successfully, but flag update failed
+        // This is still considered a success since the password was changed
+        return {
+          success: true,
+          message: 'Password updated successfully',
+          warning: 'Flag update failed but password was changed'
+        };
+      }
+    } catch (error) {
+      console.error('Password reset error:', error);
+
+      let errorMessage = 'Password reset failed';
+      if (axios.isAxiosError(error)) {
+        errorMessage = error.response?.data?.message || error.message;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
 
       return {
-        success: true,
-        message: 'Password updated successfully'
-      };
-    } catch (flagError) {
-      console.warn('Password updated but failed to update flag:', flagError);
-      // Password was updated successfully, but flag update failed
-      // This is still considered a success since the password was changed
-      return {
-        success: true,
-        message: 'Password updated successfully',
-        warning: 'Flag update failed but password was changed'
+        success: false,
+        error: errorMessage
       };
     }
-  } catch (error) {
-    console.error('Password reset error:', error);
-    
-    let errorMessage = 'Password reset failed';
-    if (axios.isAxiosError(error)) {
-      errorMessage = error.response?.data?.message || error.message;
-    } else if (error instanceof Error) {
-      errorMessage = error.message;
-    }
-    
-    return {
-      success: false,
-      error: errorMessage
-    };
-  }
-},
+  },
 
   logout: async () => {
     try {
@@ -441,182 +441,29 @@ checkFirstLogin: async (username: string) => {
   //   return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Lead`);
   // },
 
-   getAllLeadsDetailed: async (email: string) => {
-    const fields = [
-      "name",
-      "custom_full_name",
-      "custom_phone_number", 
-      "custom_email_address",
-      "status",
-      "company_name",
-      "custom_expected_hiring_volume",
-      "industry",
-      "city",
-      "custom_budgetinr",
-      "website",
-      "state",
-      "country",
-      "creation",
-      "lead_name",
-      "email_id",
-      "custom_stage",
-      "custom_offerings",
-      "custom_estimated_hiring_",
-      "custom_average_salary",
-      "custom_fee",
-      "custom_deal_value",
-      "custom_expected_close_date",
-      "custom_fixed_charges",
-      "owner",
-      "lead_owner",
-      "custom_lead_owner_name",
-      "mobile_no"
-    ];
+  getAllLeadsDetailed: async (email: string) => {
 
-   return await frappeAPI.makeAuthenticatedRequest(
-  'GET', 
-  `/resource/Lead?fields=${JSON.stringify(fields)}&filters=[["lead_owner", "=", "${email}"]]&order_by=modified%20desc&limit_page_length=0`
-);
-
+    return await frappeAPI.makeAuthenticatedRequest(
+      'GET',
+      `/resource/Lead?fields=["name","custom_full_name","custom_phone_number","custom_email_address","status","company_name","custom_expected_hiring_volume","industry","city","custom_budgetinr","website","state","country","creation","lead_name","email_id","custom_stage","custom_offerings","custom_estimated_hiring_","custom_average_salary","custom_fee","custom_deal_value","custom_expected_close_date","custom_fixed_charges","owner","lead_owner","custom_lead_owner_name","mobile_no" , "custom_currency"]&filters=[["owner","=","${email}"],["custom_stage","in",["Prospecting","Lead Qualification","Needs Analysis / Discovery","Presentation / Proposal"]]]&limit_page_length=0&limit_start=0&order_by=modified desc`
+    );
   },
 
- getContractReadyLeads: async (email: string) => {
-  const fields = [
-    "name",
-    "custom_full_name",
-    "custom_phone_number", 
-    "custom_email_address",
-    "status",
-    "company_name",
-    "custom_expected_hiring_volume",
-    "industry",
-    "city",
-    "custom_budgetinr",
-    "website",
-    "state",
-    "country",
-    "creation",
-    "lead_name",
-    "email_id",
-    "custom_stage",
-    "custom_offerings",
-    "custom_estimated_hiring_",
-    "custom_average_salary",
-    "custom_fee",
-    "custom_deal_value",
-    "custom_expected_close_date",
-    "custom_fixed_charges",
-    "owner",
-    "lead_owner",
-    "custom_lead_owner_name",
-    "mobile_no"
-  ];
-
-  // Get customers that have been converted from leads (contract-ready)
-  return await frappeAPI.makeAuthenticatedRequest(
-    'GET', 
-    `/resource/Customer?fields=${JSON.stringify([
-      "name",
-      "customer_name", 
-      "lead_name",
-      "email_id",
-      "mobile_no",
-      "industry",
-      "website"
-    ])}&filters=[["owner", "=", "${email}"],["lead_name", "!=", ""]]&order_by=modified%20desc&limit_page_length=0`
-  ).then(async (customersResponse) => {
-    const customers = customersResponse.data || [];
-    
-    if (customers.length === 0) {
-      return { data: [] };
-    }
-
-    // Get all lead IDs from customers
-    const leadIds = customers
-      .map((customer: any) => customer.lead_name)
-      .filter(Boolean);
-
-    if (leadIds.length === 0) {
-      return { data: [] };
-    }
-
-    // Fetch all leads in a single batch request, ordered by last modified
-    const leadFilters = JSON.stringify([["name", "in", leadIds]]);
+  getContractReadyLeads: async (email: string) => {
     return await frappeAPI.makeAuthenticatedRequest(
       'GET',
-      `/resource/Lead?fields=${JSON.stringify(fields)}&filters=${leadFilters}&order_by=modified%20desc&limit_page_length=0`
+      `/resource/Lead?fields=["name","custom_full_name","custom_phone_number","custom_email_address","status","company_name","custom_expected_hiring_volume","industry","city","custom_budgetinr","website","state","country","creation","lead_name","email_id","custom_stage","custom_offerings","custom_estimated_hiring_","custom_average_salary","custom_fee","custom_deal_value","custom_expected_close_date","custom_fixed_charges","owner","lead_owner","custom_lead_owner_name","mobile_no","custom_currency"]&filters=[["owner","=","${email}"],["custom_stage","in",["Contract","Onboarded"]]]&limit_page_length=0&limit_start=0&order_by=modified desc`
     );
-  });
-},
+  },
 
- getContractReadyLeadsRecuiter: async (email: string) => {
-  const fields = [
-    "name",
-    "custom_full_name",
-    "custom_phone_number", 
-    "custom_email_address",
-    "status",
-    "company_name",
-    "custom_expected_hiring_volume",
-    "industry",
-    "city",
-    "custom_budgetinr",
-    "website",
-    "state",
-    "country",
-    "creation",
-    "lead_name",
-    "email_id",
-    "custom_stage",
-    "custom_offerings",
-    "custom_estimated_hiring_",
-    "custom_average_salary",
-    "custom_fee",
-    "custom_deal_value",
-    "custom_expected_close_date",
-    "custom_fixed_charges",
-    "owner",
-    "lead_owner",
-    "custom_lead_owner_name",
-    "mobile_no"
-  ];
+  getContractReadyLeadsRecuiter: async (email: string) => {
 
-  // Get customers that have been converted from leads (contract-ready)
-  return await frappeAPI.makeAuthenticatedRequest(
-    'GET', 
-    `/resource/Customer?fields=${JSON.stringify([
-      "name",
-      "customer_name", 
-      "lead_name",
-      "email_id",
-      "mobile_no",
-      "industry",
-      "website"
-    ])}&filters=[["lead_name", "!=", ""]]&order_by=modified%20desc&limit_page_length=0`
-  ).then(async (customersResponse) => {
-    const customers = customersResponse.data || [];
-    
-    if (customers.length === 0) {
-      return { data: [] };
-    }
-
-    // Get all lead IDs from customers
-    const leadIds = customers
-      .map((customer: any) => customer.lead_name)
-      .filter(Boolean);
-
-    if (leadIds.length === 0) {
-      return { data: [] };
-    }
-
-    // Fetch all leads in a single batch request, ordered by last modified
-    const leadFilters = JSON.stringify([["name", "in", leadIds]]);
     return await frappeAPI.makeAuthenticatedRequest(
       'GET',
-      `/resource/Lead?fields=${JSON.stringify(fields)}&filters=${leadFilters}&order_by=modified%20desc&limit_page_length=0`
+      `/resource/Lead?fields=["name","custom_full_name","custom_phone_number","custom_email_address","status","company_name","custom_expected_hiring_volume","industry","city","custom_budgetinr","website","state","country","creation","lead_name","email_id","custom_stage","custom_offerings","custom_estimated_hiring_","custom_average_salary","custom_fee","custom_deal_value","custom_expected_close_date","custom_fixed_charges","owner","lead_owner","custom_lead_owner_name","mobile_no","custom_currency"]&filters=[["custom_stage","in",["Contract","Onboarded"]]]&limit_page_length=0&limit_start=0&order_by=modified desc`
     );
-  });
-},
+
+  },
 
 
 
@@ -626,7 +473,7 @@ checkFirstLogin: async (username: string) => {
     const fields = [
       "name",
       "custom_full_name",
-      "custom_phone_number", 
+      "custom_phone_number",
       "custom_email_address",
       "status",
       "company_name",
@@ -654,7 +501,7 @@ checkFirstLogin: async (username: string) => {
 
     // Single query to get leads that have associated customers
     return await frappeAPI.makeAuthenticatedRequest(
-      'GET', 
+      'GET',
       `/resource/Lead?fields=${JSON.stringify(fields)}&filters=[["lead_owner", "=", "${email}"],["custom_stage", "=", "onboarded"]]&order_by=creation desc&limit_page_length=0`
     );
   },
@@ -663,8 +510,8 @@ checkFirstLogin: async (username: string) => {
   getLeadById: async (leadId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Lead/${leadId}`);
   },
-  getAllInsdustryType:async()=>{
-    return await frappeAPI.makeAuthenticatedRequest('GET','/resource/Industry Type')
+  getAllInsdustryType: async () => {
+    return await frappeAPI.makeAuthenticatedRequest('GET', '/resource/Industry Type')
   },
 
   createLead: async (leadData: Record<string, unknown>) => {
@@ -677,23 +524,23 @@ checkFirstLogin: async (username: string) => {
   updateLeadStatus: async (LeaId: string, status: string) => {
     return await frappeAPI.makeAuthenticatedRequest('PUT', `/resource/Lead/${LeaId}`, { status });
   },
-   createContact: async (contactData: Record<string, unknown>) => {
+  createContact: async (contactData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('POST', '/resource/Contact', contactData);
   },
-   updateContact: async (contactId: string, contactData: Record<string, unknown>) => {
+  updateContact: async (contactId: string, contactData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('PUT', `/resource/Contact/${contactId}`, contactData);
   },
-   createCompany: async (companyData: Record<string, unknown>) => {
+  createCompany: async (companyData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('POST', '/resource/Company', companyData);
   },
-   updateCompany: async (companyId: string, companyData: Record<string, unknown>) => {
+  updateCompany: async (companyId: string, companyData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('PUT', `/resource/Company/${companyId}`, companyData);
   },
-    getAllLeadsbyContract: async (email:string) => {
+  getAllLeadsbyContract: async (email: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Lead?filters=[["custom_stage", "=", "onboarded"] , ["lead_owner", "=", "${email}"]]`);
   },
 
- 
+
 
 
   getAllOpportunity: async (email: string) => {
@@ -703,11 +550,11 @@ checkFirstLogin: async (username: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Opportunity/${TodoId}`);
   },
 
-  
 
-  createStaffingPlan: async(StaffingData :Record<string, unknown>)=>{
- return await frappeAPI.makeAuthenticatedRequest('POST', '/resource/Staffing Plan', StaffingData);
-  }, 
+
+  createStaffingPlan: async (StaffingData: Record<string, unknown>) => {
+    return await frappeAPI.makeAuthenticatedRequest('POST', '/resource/Staffing Plan', StaffingData);
+  },
   updateStaffingPLan: async (StaffingId: string, StaffingData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('PUT', `/resource/Company/${StaffingId}`, StaffingData);
   },
@@ -719,7 +566,7 @@ checkFirstLogin: async (username: string) => {
   getAllTodos: async (email: string) => {
     const fields = [
       "name",
-      "description", 
+      "description",
       "status",
       "priority",
       "date",
@@ -731,14 +578,14 @@ checkFirstLogin: async (username: string) => {
       "role",
       "sender",
       "assignment_rule",
-      "custom_date_assigned","custom_job_title" , "custom_department"
+      "custom_date_assigned", "custom_job_title", "custom_department"
       // Add any other fields you need
     ];
 
     const filters = JSON.stringify([["allocated_to", "=", email]]);
 
     return await frappeAPI.makeAuthenticatedRequest(
-      'GET', 
+      'GET',
       `/resource/ToDo?fields=${JSON.stringify(fields)}&filters=${filters}&limit_page_length=0&order_by=creation desc`
     );
   },
@@ -756,86 +603,86 @@ checkFirstLogin: async (username: string) => {
   getTodoBYId: async (TodoId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/ToDo/${TodoId}`);
   },
-   getStaffingPlanById: async (PlanId: string) => {
+  getStaffingPlanById: async (PlanId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Staffing Plan/${PlanId}`);
   },
-  getAllCustomers: async(email:string)=>{
+  getAllCustomers: async (email: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Customer?filters=[["owner" ,"=","${email}"]]&order_by=creation desc`);
   },
   getCustomerBYId: async (CustomerId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Customer/${CustomerId}`);
   },
-  
-createBulkApplicants: async (applicantsData: Array<Record<string, unknown>>) => {
-  return await frappeAPI.makeAuthenticatedRequest(
-    'POST', 
-    '/method/recruitment_app.create_bulk_applicants.create_bulk_applicants',
-    applicantsData
-  );
-},
+
+  createBulkApplicants: async (applicantsData: Array<Record<string, unknown>>) => {
+    return await frappeAPI.makeAuthenticatedRequest(
+      'POST',
+      '/method/recruitment_app.create_bulk_applicants.create_bulk_applicants',
+      applicantsData
+    );
+  },
 
 
-  createApplicants: async(ApplicantData :Record<string, unknown>)=>{
- return await frappeAPI.makeAuthenticatedRequest('POST', '/resource/Job Applicant', ApplicantData);
+  createApplicants: async (ApplicantData: Record<string, unknown>) => {
+    return await frappeAPI.makeAuthenticatedRequest('POST', '/resource/Job Applicant', ApplicantData);
   },
   
   // getAllApplicants: async (email: string) => {
   //   return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Job Applicant?limit_page_length=0&order_by=creation desc`);
   // },
 
-   getAllApplicants: async (email: string) => {
-    const fields = [
-      "name",
-      "applicant_name", 
-      "email_id",
-      "phone_number",
-      "country",
-      "job_title",
-      "designation", 
-      "status",
-      "resume_attachment",
-      "custom_experience",
-      "custom_education",
-      "creation",
-      "custom_company_name",
-      "owner"
-    ];
+  getAllApplicants: async (email: string, limitStart = 0, limitPageLength = 10) => {
+  const fields = [
+    "name",
+    "applicant_name",
+    "email_id",
+    "phone_number",
+    "country",
+    "job_title",
+    "designation",
+    "status",
+    "resume_attachment",
+    "custom_experience",
+    "custom_education",
+    "creation",
+    "custom_company_name",
+    "owner"
+  ];
 
-    return await frappeAPI.makeAuthenticatedRequest(
-      'GET', 
-      `/resource/Job Applicant?fields=${JSON.stringify(fields)}&limit_page_length=0&order_by=creation desc`
-    );
-  },
+  const url = `/method/recruitment_app.get_all_applicants.get_all_applicants?limit_start=${limitStart}&limit_page_length=${limitPageLength}&owner=${email}`;
+
+  return await frappeAPI.makeAuthenticatedRequest('GET', url);
+},
+
   getApplicantBYId: async (name:string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Job Applicant/${name}`);
   },
 
-  createbulkAssessment:async(assessment:Record<string,unknown>)=>{
- return await frappeAPI.makeAuthenticatedRequest('POST', '/method/recruitment_app.bulk_create_assessment.bulk_create_assessments',assessment);
+  createbulkAssessment: async (assessment: Record<string, unknown>) => {
+    return await frappeAPI.makeAuthenticatedRequest('POST', '/method/recruitment_app.bulk_create_assessment.bulk_create_assessments', assessment);
   },
-  getAllShortlistedCandidates: async (email: string , status:string) => {
+  getAllShortlistedCandidates: async (email: string, status: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Job Applicant?filters=[["owner","=","${email}"],["status","=","${status}"]]&order_by=creation desc`);
   },
-   getJobOpeningById: async (jobopeningId: string) => {
+  getJobOpeningById: async (jobopeningId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Job Opening/${jobopeningId}`);
   },
   getTaggedApplicantsByJobId: async (jobId: string, email: string) => {
-  return await frappeAPI.makeAuthenticatedRequest(
-    'GET', 
-    `/resource/Job Applicant?filters=[["owner","=","${email}"],["job_title","=","${jobId}"]]&order_by=creation desc`
-  );
-},
+    return await frappeAPI.makeAuthenticatedRequest(
+      'GET',
+      `/resource/Job Applicant?filters=[["owner","=","${email}"],["job_title","=","${jobId}"]]&order_by=creation desc`
+    );
+  },
 getApplicantById: async (applicantId: string) => {
   return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Job Applicant/${applicantId}`);
 },
-deleteApplicant: async (applicantName: string) => {
-  return await frappeAPI.makeAuthenticatedRequest('DELETE', `/resource/Job Applicant/${applicantName}`);
-},
-  updateApplicantStatus :async(name: string, data: { status: string }) => {
-  return await frappeAPI.makeAuthenticatedRequest('PUT', `/resource/Job Applicant/${encodeURIComponent(name)}`, data);
-},
+  deleteApplicant: async (applicantName: string) => {
+    return await frappeAPI.makeAuthenticatedRequest('DELETE', `/resource/Job Applicant/${applicantName}`);
+  },
+  updateApplicantStatus: async (name: string, data: { status: string }) => {
+    return await frappeAPI.makeAuthenticatedRequest('PUT', `/resource/Job Applicant/${encodeURIComponent(name)}`, data);
+  },
 
-createFeedback: async (feedbackData: Record<string, unknown>) => {
+  createFeedback: async (feedbackData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('POST', '/resource/Issue', feedbackData);
   },
   editFeedback: async (feedbackId: string, feedbackData: Record<string, unknown>) => {
@@ -848,8 +695,8 @@ createFeedback: async (feedbackData: Record<string, unknown>) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Issue/${feedbackId}`);
   },
 
-  
-   upload: async (file: File, options: {
+
+  upload: async (file: File, options: {
     is_private?: boolean;
     folder?: string;
     doctype?: string;
@@ -926,7 +773,7 @@ createFeedback: async (feedbackData: Record<string, unknown>) => {
     }
   }
 
-  
+
 
 };
 

@@ -150,6 +150,7 @@ const LeadForm: React.FC<LeadFormProps> = ({
       custom_fee,
       custom_fixed_charges,
     } = formData;
+    
     if (feeType === "fixed") {
       if (
         !custom_estimated_hiring_ ||
@@ -159,7 +160,9 @@ const LeadForm: React.FC<LeadFormProps> = ({
       ) {
         return 0;
       }
-      return custom_fixed_charges * custom_estimated_hiring_;
+      // Fixed charges are already in the selected currency (in lakhs)
+      // Return value in lakhs
+      return (custom_fixed_charges * custom_estimated_hiring_) / 100000;
     } else {
       if (
         !custom_estimated_hiring_ ||
@@ -171,9 +174,10 @@ const LeadForm: React.FC<LeadFormProps> = ({
       ) {
         return 0;
       }
-      return (
-        (custom_fee * custom_estimated_hiring_ * custom_average_salary) / 100
-      );
+      // Salary is in LPA (lakhs per annum)
+      // Formula: (Fee% × Annual Hires × Avg Salary in Lakhs) / 100
+      // Result will be in lakhs of selected currency
+      return (custom_fee * custom_estimated_hiring_ * custom_average_salary) / 100;
     }
   }, [
     formData.custom_estimated_hiring_,
@@ -185,7 +189,8 @@ const LeadForm: React.FC<LeadFormProps> = ({
 
   useEffect(() => {
     const dealValue = calculateDealValue();
-    if (Math.round(dealValue) !== Math.round(formData.custom_deal_value)) {
+    // Compare with precision up to 2 decimal places
+    if (Math.abs(dealValue - formData.custom_deal_value) > 0.01) {
       updateFormField("custom_deal_value", dealValue);
     }
   }, [calculateDealValue, formData.custom_deal_value, updateFormField]);
@@ -221,6 +226,7 @@ const LeadForm: React.FC<LeadFormProps> = ({
       const nextMonth = new Date(today.setMonth(today.getMonth() + 1));
       const defaultDate = nextMonth.toISOString().split("T")[0];
       updateFormField("custom_expected_close_date", defaultDate);
+      updateFormField("custom_currency", "INR"); // Default currency for new leads
     }
     if (editLead) {
       if (
@@ -290,6 +296,7 @@ const LeadForm: React.FC<LeadFormProps> = ({
         "custom_expected_close_date",
         editLead.custom_expected_close_date || ""
       );
+      updateFormField("custom_currency", editLead.custom_currency || "INR"); // Initialize custom_currency
 
       if (editLead.custom_fixed_charges && editLead.custom_fixed_charges > 0) {
         setFeeType("fixed");
@@ -328,12 +335,11 @@ const LeadForm: React.FC<LeadFormProps> = ({
   };
 
   const handleStageChange = (newStage: string) => {
-    console.log("Stage changed to:", newStage); // Debug log
+    console.log("Stage changed to:", newStage);
     updateFormField("custom_stage", newStage);
   };
 
   const handleConfirmSubmit = async () => {
-    console.log("Submitting lead with stage:", formData.custom_stage); // Debug log
     try {
       setIsSubmitting(true);
       const payload = buildLeadPayload();
@@ -374,14 +380,14 @@ const LeadForm: React.FC<LeadFormProps> = ({
   };
 
   const handleCancelSubmit = () => {
-    console.log("Submit confirmation cancelled"); // Debug log
+    console.log("Submit confirmation cancelled");
     setShowSubmitConfirmation(false);
   };
 
   const handleSubmit = () => {
-    console.log("Submit button clicked, stage:", formData.custom_stage); // Debug log
+    console.log("Submit button clicked, stage:", formData.custom_stage);
     if (formData.custom_stage === "Onboarded") {
-      console.log("Showing submit confirmation dialog"); // Debug log
+      console.log("Showing submit confirmation dialog");
       setShowSubmitConfirmation(true);
     } else {
       handleConfirmSubmit();
@@ -514,6 +520,26 @@ const LeadForm: React.FC<LeadFormProps> = ({
     };
   };
 
+  // Helper function to get currency symbol
+  const getCurrencySymbol = (currency: string) => {
+    const symbols: Record<string, string> = {
+      INR: "₹",
+      USD: "$",
+      EUR: "€",
+      GBP: "£",
+      AED: "د.إ",
+      SGD: "S$",
+    };
+    return symbols[currency] || currency;
+  };
+
+  // Format deal value with currency
+  const formatDealValue = (value: number) => {
+    if (value === 0) return "";
+    const currencySymbol = getCurrencySymbol(formData.custom_currency || "INR");
+    return `${currencySymbol} ${value.toFixed(2)} L`;
+  };
+
   return (
     <div className="w-full mx-auto bg-white">
       <ConfirmationDialog
@@ -533,15 +559,6 @@ const LeadForm: React.FC<LeadFormProps> = ({
       <div className="pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {/* <button
-              onClick={handleBackClick}
-              className="flex items-center gap-2 text-gray-500 hover:text-gray-900 transition-colors"
-            >
-              <span className="w-8 h-8 flex items-center justify-center rounded-full border border-primary">
-                <ArrowLeft className="h-4 w-4" />
-              </span>
-            </button> */}
-
             <h2 className="text-xl font-semibold text-gray-900">
               {editLead ? "Edit Lead" : "Create New Lead"}
             </h2>
@@ -722,27 +739,22 @@ const LeadForm: React.FC<LeadFormProps> = ({
                     />
                   </div>
 
-                  {/* Currency & Salary - Merged Input */}
-
                   <div>
                     <label className="block text-md font-medium text-gray-700 mb-1">
                       Annual Avg Salary
                     </label>
                     <div className="flex items-center border border-gray-300 rounded overflow-hidden">
-                      {/* Currency Dropdown - 25% width */}
                       <div className="w-[25%] border-r border-gray-300">
                         <CurrencyDropdown
-                          value={formData.currency}
-                          onChange={(val) => updateFormField("currency", val)}
+                          value={formData.custom_currency}
+                          onChange={(val) => updateFormField("custom_currency", val)}
                         />
                       </div>
 
-                      {/* Salary Input - 50% width */}
                       <div className="w-[50%]">
                         <input
                           type="text"
                           value={formData.custom_average_salary === 0 ? "" : formData.custom_average_salary}
-
                           onChange={(e) => {
                             const value = e.target.value.replace(/,/g, "");
                             updateFormField(
@@ -751,11 +763,10 @@ const LeadForm: React.FC<LeadFormProps> = ({
                             );
                           }}
                           className="w-full text-end px-2 py-2 text-md focus:outline-none focus:ring-1 focus:ring-green-500 border-0"
-                          placeholder="e.g., 12,00,000"
+                          placeholder="e.g., 12"
                         />
                       </div>
 
-                      {/* Suffix - 25% width */}
                       <div className="w-[25%] text-center text-md py-2">
                         LPA
                       </div>
@@ -795,7 +806,7 @@ const LeadForm: React.FC<LeadFormProps> = ({
                         className="mr-2"
                       />
                       <span className="text-md text-gray-700">
-                        Fixed Fee (INR)
+                        Fixed Fee ({getCurrencySymbol(formData.custom_currency || "INR")})
                       </span>
                     </label>
                   </div>
@@ -809,7 +820,7 @@ const LeadForm: React.FC<LeadFormProps> = ({
                       </label>
                       <input
                         type="number"
-                        step="0.1"
+                        step="0.01"
                         value={
                           formData.custom_fee === 0 ? "" : formData.custom_fee
                         }
@@ -821,14 +832,14 @@ const LeadForm: React.FC<LeadFormProps> = ({
                           );
                         }}
                         className="w-full px-3 py-2 text-md border border-gray-300 rounded-md focus:ring-1 focus:ring-green-500 focus:border-green-500"
-                        placeholder="e.g., 15.5"
+                        placeholder="e.g., 8.33"
                         min="0"
                       />
                     </div>
                   ) : (
                     <div>
                       <label className="block text-md font-medium text-gray-700 mb-1">
-                        Fixed Fee (INR)
+                        Fixed Fee ({getCurrencySymbol(formData.custom_currency || "INR")})
                       </label>
                       <input
                         type="text"
@@ -874,25 +885,19 @@ const LeadForm: React.FC<LeadFormProps> = ({
 
                 <div>
                   <label className="block text-md font-medium text-gray-700 mb-1">
-                    Deal Value (INR)
+                    Deal Value
                   </label>
                   <input
                     type="text"
-                    value={
-                      formData.custom_deal_value === 0
-                        ? ""
-                        : Math.round(formData.custom_deal_value).toLocaleString(
-                            "en-IN"
-                          )
-                    }
+                    value={formatDealValue(formData.custom_deal_value)}
                     readOnly
                     className="w-full px-3 py-2 text-md border border-gray-300 rounded-md bg-gray-50 text-gray-600"
                     placeholder="Auto-calculated"
                   />
                   <p className="text-xs text-gray-500 mt-1">
                     {feeType === "fixed"
-                      ? "(Fixed Fee × Estimated Hiring)"
-                      : "(Fee % × Estimated Hiring × Avg Salary) ÷ 100"}
+                      ? "(Fixed Fee × Estimated Hiring) ÷ 100,000 in Lakhs"
+                      : "(Fee % × Estimated Hiring × Avg Salary in LPA) ÷ 100 in Lakhs"}
                   </p>
                 </div>
               </div>

@@ -4,15 +4,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import { frappeAPI } from "@/lib/api/frappeClient";
 import { Lead, useLeadStore } from "@/stores/leadStore";
 import { useEffect, useState, useCallback, useMemo } from "react";
-
 import { useRouter } from "next/navigation";
 import { LoadingState } from "@/components/Leads/LoadingState";
 import { LeadsTable } from "@/components/Onboarded/Table";
 import { LeadsMobileView } from "@/components/Leads/MobileView";
 import LeadDetailModal from "@/components/Leads/Details";
 import { Button } from "@/components/ui/button";
-import { Filter, RefreshCw } from "lucide-react";
-
+import { Filter, RefreshCw, Users, Building, Tag } from "lucide-react";
+import { getStageAbbreviation } from "@/components/Onboarded/Table";
+import { FilterState, TodosHeader } from "@/components/recruiter/TodoHeader";
+import Pagination from "@/components/comman/Pagination";
 
 
 interface CustomerDetails {
@@ -34,71 +35,184 @@ const ContractLeads = () => {
   const { user } = useAuth();
   const router = useRouter();
 
-  // Optimized function to fetch contract leads
-  const fetchLeads = useCallback(async (email: string) => {
-    try {
-      setLoading(true);
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10; // Number of leads per page
 
-      // Single API call to get customers with contract-ready leads
-      const response = await frappeAPI.getContractReadyLeads(email);
+  // State for filters
+  const [filters, setFilters] = useState<FilterState>({
+    departments: [],
+    assignedBy: [],
+    clients: [],
+    locations: [],
+    jobTitles: [],
+    status: [],
+    contacts: [],
+    dateRange: "all",
+    vacancies: "all",
+  });
+
+  // Define stage mapping (full name to abbreviation)
+  const stageMapping: Record<string, string> = useMemo(
+    () => ({
+  
+      Contract: "Co",
+      Onboarded: "On",
       
-      if (response.data && Array.isArray(response.data)) {
-        setLeads(response.data);
-        console.log("Fetched contract leads:", response.data);
-      } else {
-        console.log("No contract-ready leads found");
+    }),
+    []
+  );
+
+  // Define filter configuration with full names as options
+  const filterConfig = useMemo(
+    () => [
+      {
+        id: "clients",
+        title: "Company",
+        icon: Building,
+        options: Array.from(new Set(leads.map((lead) => lead.company_name || ""))).filter(Boolean),
+        searchKey: "company_name",
+        showInitialOptions: false,
+      },
+      {
+        id: "contacts",
+        title: "Contact",
+        icon: Users,
+        options: Array.from(new Set(leads.map((lead) => lead.custom_full_name || ""))).filter(Boolean),
+        searchKey: "custom_full_name",
+        showInitialOptions: false,
+      },
+      {
+        id: "status",
+        title: "Stage",
+        icon: Tag,
+        options: Object.keys(stageMapping), // Use full names as options
+      },
+    ],
+    [leads, stageMapping]
+  );
+
+  // Optimized function to fetch contract leads
+  const fetchLeads = useCallback(
+    async (email: string) => {
+      try {
+        setLoading(true);
+        const response = await frappeAPI.getContractReadyLeads(email);
+
+        console.log(email);
+
+        if (response.data && Array.isArray(response.data)) {
+          const transformedLeads = response.data.map((lead: Lead) => ({
+            ...lead,
+            status: lead.custom_stage ? getStageAbbreviation(lead.custom_stage) : lead.status,
+          }));
+          setLeads(transformedLeads);
+          console.log("Fetched leads data:", transformedLeads);
+        } else {
+          console.log("No contract-ready leads found");
+          setLeads([]);
+        }
+      } catch (error) {
+        console.error("Error fetching contract leads:", error);
         setLeads([]);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Error fetching contract leads:", error);
-      setLeads([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [setLeads, setLoading]);
+    },
+    [setLeads, setLoading]
+  );
 
   useEffect(() => {
     if (!user?.email) return;
-    fetchLeads(user.email);
+    fetchLeads(user.email).then(() => {
+      console.log("Leads after fetch:", leads);
+    });
   }, [user, fetchLeads]);
 
-  // Memoized filtered leads for better performance
-  const filteredLeads = useMemo(() => {
-    if (!searchQuery) return leads;
-    
-    const searchLower = searchQuery.toLowerCase();
-    return leads.filter((lead) => {
-      return (
-        (lead.custom_full_name || "").toLowerCase().includes(searchLower) ||
-        (lead.company_name || "").toLowerCase().includes(searchLower) ||
-        (lead.custom_email_address || "").toLowerCase().includes(searchLower) ||
-        (lead.industry || "").toLowerCase().includes(searchLower) ||
-        (lead.city || "").toLowerCase().includes(searchLower)
-      );
-    });
-  }, [leads, searchQuery]);
+  // Handle filter change with mapping
+  const handleFilterChange = useCallback(
+    (newFilters: FilterState) => {
+      const updatedFilters = { ...newFilters };
+      // Map full names to abbreviations for status
+      if (updatedFilters.status.length > 0) {
+        updatedFilters.status = updatedFilters.status.map((status) => stageMapping[status] || status);
+      }
+      setFilters(updatedFilters);
+      setCurrentPage(1); // Reset to first page when filters change
+    },
+    [stageMapping]
+  );
 
- 
+  // Handle search query change
+  const handleSearchChange = useCallback((query: string) => {
+    setSearchQuery(query);
+    setCurrentPage(1); // Reset to first page when search query changes
+  }, []);
+
+  // Memoized filtered leads with filter application
+  const filteredLeads = useMemo(() => {
+    let result = leads;
+
+    if (searchQuery) {
+      const searchLower = searchQuery.toLowerCase();
+      result = result.filter((lead) => {
+        return (
+          (lead.custom_full_name || "").toLowerCase().includes(searchLower) ||
+          (lead.company_name || "").toLowerCase().includes(searchLower) ||
+          (lead.custom_email_address || "").toLowerCase().includes(searchLower) ||
+          (lead.industry || "").toLowerCase().includes(searchLower) ||
+          (lead.city || "").toLowerCase().includes(searchLower)
+        );
+      });
+    }
+
+    // Apply filters using status
+    if (filters.clients.length > 0) {
+      result = result.filter((lead) => filters.clients.includes(lead.company_name || ""));
+    }
+    if (filters.contacts.length > 0) {
+      result = result.filter((lead) => filters.contacts.includes(lead.custom_full_name || ""));
+    }
+    if (filters.status.length > 0) {
+      result = result.filter((lead) => filters.status.includes(lead.status || ""));
+    }
+
+    return result;
+  }, [leads, searchQuery, filters]);
+
+  // Pagination calculations
+  const totalCount = filteredLeads.length;
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedLeads = filteredLeads.slice(startIndex, endIndex);
+
+  // Handle page change
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(page);
+  }, []);
 
   const handleCloseModal = useCallback(() => {
     setShowModal(false);
     setSelectedLead(null);
   }, []);
 
+  const handleViewLead = useCallback((lead: any) => {
+    setSelectedLead(lead as Lead);
+    setShowModal(true);
+  }, []);
 
-const handleViewLead = useCallback((lead: any) => {
-  setSelectedLead(lead as Lead);
-  setShowModal(true);
-}, []);
+  const handleEditLead = useCallback((lead: any) => {
+    setSelectedLead(lead as Lead);
+    console.log("Edit lead:", lead);
+  }, []);
 
-const handleEditLead = useCallback((lead: any) => {
-  setSelectedLead(lead as Lead);
-  console.log("Edit lead:", lead);
-}, []);
-
-const handleCreateContract = useCallback(async (lead: any) => {
-  await router.push(`/dashboard/sales-manager/requirements/create?leadId=${lead.name}`);
-}, [router]);
+  const handleCreateContract = useCallback(
+    async (lead: any) => {
+      await router.push(`/dashboard/sales-manager/requirements/create?leadId=${lead.name}`);
+    },
+    [router]
+  );
 
   const handleConfirmBack = useCallback(() => {
     setShowConfirmation(false);
@@ -108,6 +222,13 @@ const handleCreateContract = useCallback(async (lead: any) => {
     setShowConfirmation(false);
   }, []);
 
+  const handleRefresh = useCallback(async () => {
+    if (user?.email) {
+      await fetchLeads(user.email);
+      console.log("Refreshed leads:", leads);
+    }
+  }, [user, fetchLeads]);
+
   // Render loading state
   if (loading) {
     return <LoadingState />;
@@ -116,62 +237,27 @@ const handleCreateContract = useCallback(async (lead: any) => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="w-full mx-auto py-2">
-
-      <div className="flex justify-between items-center mb-6">
-  <h1 className="text-2xl font-bold text-gray-900">Customers</h1>
-
-          {/* Right: Search + Filters + Refresh */}
-          <div className="flex items-center gap-3 flex-wrap justify-end">
-            {/* Search Bar */}
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search leads by name, company, email, industry, or city..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg
-                  className="h-5 w-5 text-gray-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
-              </div>
-            </div>
-
-            {/* Filters Button */}
-            {/* <Button className="flex items-center gap-2  transition-colors "  variant="outline"
-              size="icon">
-              <Filter className="w-5 h-5" />
-            </Button> */}
-
-            {/* Refresh Button */}
-            {/* <Button
-              variant="outline"
-              size="icon"
-              className="h-10 w-10 flex-shrink-0"
-            >
-              <RefreshCw className="w-4 h-4" />
-            </Button> */}
-          </div>
-</div>
-
+        {/* TodosHeader Component with custom filter config and onFilterChange */}
+        <TodosHeader
+          searchQuery={searchQuery}
+          onSearchChange={handleSearchChange}
+          onRefresh={handleRefresh}
+          totalJobs={leads.length}
+          filteredJobs={filteredLeads.length}
+          uniqueClients={Array.from(new Set(leads.map((lead) => lead.company_name || ""))).filter(Boolean)}
+          uniqueContacts={Array.from(new Set(leads.map((lead) => lead.custom_full_name || ""))).filter(Boolean)}
+          uniqueStatus={Object.keys(stageMapping)} // Use full names
+          onFilterChange={handleFilterChange}
+          filterConfig={filterConfig}
+          title="Customers"
+        />
 
         {/* Desktop Table View */}
         {filteredLeads.length > 0 ? (
           <>
             <div className="hidden lg:block">
               <LeadsTable
-                leads={filteredLeads}
+                leads={paginatedLeads} // Use paginatedLeads instead of filteredLeads
                 onViewLead={handleViewLead}
                 onEditLead={handleEditLead}
                 onCreateContract={handleCreateContract}
@@ -180,21 +266,32 @@ const handleCreateContract = useCallback(async (lead: any) => {
 
             {/* Mobile Card View */}
             <LeadsMobileView
-              leads={filteredLeads}
+              leads={paginatedLeads} // Use paginatedLeads instead of filteredLeads
               onViewLead={handleViewLead}
               onEditLead={handleEditLead}
+            />
+
+            {/* Pagination Component */}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalCount={totalCount}
+              itemsPerPage={itemsPerPage}
+              onPageChange={handlePageChange}
+              maxPagesToShow={5}
             />
           </>
         ) : (
           <div className="text-center py-12">
             <div className="text-gray-500 text-lg">
-              {searchQuery ? "No matching customers found" : "No customers found"}
+              {searchQuery || filters.clients.length > 0 || filters.contacts.length > 0 || filters.status.length > 0
+                ? "No matching customers found"
+                : "No customers found"}
             </div>
             <div className="text-gray-400 text-sm mt-2">
-              {searchQuery 
-                ? "Try adjusting your search terms" 
-                : "No contract-ready leads are available at the moment."
-              }
+              {searchQuery || filters.clients.length > 0 || filters.contacts.length > 0 || filters.status.length > 0
+                ? "Try adjusting your search or filter terms"
+                : "No contract-ready leads are available at the moment."}
             </div>
           </div>
         )}

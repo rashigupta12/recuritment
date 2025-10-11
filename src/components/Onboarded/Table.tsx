@@ -11,6 +11,7 @@ import { formatToIndianCurrency } from "../Leads/helper";
 
 // Lead type definition
 interface Lead {
+  custom_currency?: string;
   id?: string;
   name?: string;
   company_name?: string;
@@ -82,7 +83,7 @@ export const LeadsTable = ({
 
     const columns = useMemo(() => {
       const cols: Array<{ field: AllFields; label: string; sortable?: boolean }> = [
-        { field: 'company', label: 'Company Name',sortable: false },
+        { field: 'company', label: 'Company Name',sortable: true },
         { field: 'contact', label: 'Contact',sortable: false },
         { field: 'stage', label: 'Stage',sortable: false },
         { field: 'offering', label: 'Offering',sortable: false },
@@ -90,7 +91,7 @@ export const LeadsTable = ({
         { field: 'vacancies', label: 'No. Of Vac',sortable: false },
         { field: 'fee', label: 'Fee (%/K)',sortable: false },
         { field: 'dealValue', label: 'Deal Value(L)',sortable: false },
-        { field: 'createdOn', label: 'Created On',sortable: false },
+        { field: 'createdOn', label: 'Created On',sortable: true },
         // { field: 'actions', label: 'Actions', sortable: false },
       ];
       return cols;
@@ -160,7 +161,7 @@ export const LeadsTable = ({
   );
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+    <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mt-4">
       <div className="overflow-x-auto">
         <table className="w-full">
           <SortableTableHeader
@@ -215,7 +216,7 @@ const formatDateAndTime = (dateString?: string) => {
   return { date: formattedDate, time: formattedTime };
 };
 
-const getStageAbbreviation = (stage: string | null | undefined): string => {
+export const getStageAbbreviation = (stage: string | null | undefined): string => {
   if (!stage) return "-";
   
   const clean = stage.replace(/[^a-zA-Z\s]/g, "").trim();
@@ -229,6 +230,7 @@ const getStageAbbreviation = (stage: string | null | undefined): string => {
 };
 const LeadsTableRow = memo(
   ({ lead, onView, onEdit, onCreateContract, isLoading }: LeadsTableRowProps) => {
+    console.log(lead)
 
     return (
       <tr className="hover:bg-gray-50">
@@ -287,7 +289,7 @@ const LeadsTableRow = memo(
         <td className="px-4 py-2 whitespace-nowrap">
           {lead.custom_average_salary ? (
             <div className="text-md text-gray-900">
-              {formatToIndianCurrency(Number(lead.custom_average_salary))}
+              {formatToIndianCurrency(Number(lead.custom_average_salary) , lead.custom_currency||"")}
             </div>
           ) : (
             "-"
@@ -315,7 +317,7 @@ const LeadsTableRow = memo(
         <td className="px-4 py-2 whitespace-nowrap">
           {lead.custom_deal_value ? (
             <div className="text-md text-gray-900">
-              {formatToIndianCurrency(Number(lead.custom_deal_value))}
+              {formatToIndianCurrency(Number(lead.custom_deal_value) , lead.custom_currency ||"")}
             </div>
           ) : (
             "-"
