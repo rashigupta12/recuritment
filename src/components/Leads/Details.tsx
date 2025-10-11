@@ -1,33 +1,29 @@
 "use client";
 import { Lead } from "@/stores/leadStore";
-import {
-  Building2,
-  Factory,
-  IndianRupee,
-  Users,
-  Users2Icon,
-  X
-} from "lucide-react";
+import { Building2, Factory, IndianRupee, Users, Users2Icon, X } from "lucide-react";
+import { formatToIndianCurrency } from "./helper"; // Import formatToIndianCurrency
 
 // Lead Detail Modal Component Props Interface
 interface LeadDetailModalProps {
   lead: Lead | null;
   onClose: () => void;
+  isRestrictedUser: boolean; // Added prop for role-based restrictions
 }
 
 // Helper function to format text with proper capitalization
 const formatTextWithLines = (text: string | null | undefined) => {
   if (!text) return "N/A";
-  
-  const words = text.split(/[\-/]+/)
-    .filter(word => word.length > 0)
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
-  
+
+  const words = text
+    .split(/[\-/]+/)
+    .filter((word) => word.length > 0)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
+
   return words.join(" / ");
 };
 
 // Lead Detail Modal Component
-const LeadDetailModal = ({ lead, onClose }: LeadDetailModalProps) => {
+const LeadDetailModal = ({ lead, onClose, isRestrictedUser }: LeadDetailModalProps) => {
   if (!lead) return null;
 
   return (
@@ -38,7 +34,7 @@ const LeadDetailModal = ({ lead, onClose }: LeadDetailModalProps) => {
           <h2 className="text-xl font-semibold text-white">Lead Details</h2>
           <button
             onClick={onClose}
-            className="p-2  rounded-lg transition-colors"
+            className="p-2 rounded-lg transition-colors"
           >
             <X className="h-5 w-5 text-white" />
           </button>
@@ -57,18 +53,15 @@ const LeadDetailModal = ({ lead, onClose }: LeadDetailModalProps) => {
                 <label className="text-md font-medium text-black">Full Name</label>
                 <p className="text-gray-900">{lead.custom_full_name || lead.lead_name || "N/A"}</p>
               </div>
-              
               <div>
                 <label className="text-md font-medium text-black">Phone</label>
                 <p className="text-gray-900 flex items-center">
-                  {/* <Phone className="h-4 w-4 mr-2 text-gray-400" /> */}
                   {lead.custom_phone_number || "N/A"}
                 </p>
               </div>
               <div>
                 <label className="text-md font-medium text-black">Email</label>
                 <p className="text-gray-900 flex items-center">
-                  {/* <Mail className="h-4 w-4 mr-2 text-gray-400" /> */}
                   {lead.custom_email_address || "N/A"}
                 </p>
               </div>
@@ -93,7 +86,7 @@ const LeadDetailModal = ({ lead, onClose }: LeadDetailModalProps) => {
                   {lead.industry || "N/A"}
                 </p>
               </div>
-              <div className="">
+              <div>
                 <label className="text-md font-medium text-black">Website</label>
                 <p className="text-gray-900">{lead.website || "N/A"}</p>
               </div>
@@ -128,9 +121,8 @@ const LeadDetailModal = ({ lead, onClose }: LeadDetailModalProps) => {
               <div>
                 <label className="text-md font-medium text-black">Average Salary</label>
                 <p className="text-gray-900 flex items-center">
-                  {/* <IndianRupee className="h-4 w-4 mr-2 text-gray-400" /> */}
-                  {lead.custom_average_salary 
-                    ? `₹${Number(lead.custom_average_salary).toLocaleString("en-IN")}`
+                  {lead.custom_average_salary
+                    ? formatToIndianCurrency(Number(lead.custom_average_salary), lead.custom_currency || "")
                     : "N/A"}
                 </p>
               </div>
@@ -139,38 +131,36 @@ const LeadDetailModal = ({ lead, onClose }: LeadDetailModalProps) => {
                 <p className="text-gray-900">{lead.custom_estimated_hiring_ || "N/A"}</p>
               </div>
               <div>
-                <label className="text-md font-medium text-black"> {lead.custom_fee ?" Fee Percent %":"Fixed Fee"}</label>
-                <p className="text-gray-900">{lead.custom_fee ? `${lead.custom_fee}%` : `${lead.custom_fixed_charges}`}</p>
+                <label className="text-md font-medium text-black">
+                  {lead.custom_fee ? "Fee Percent %" : "Fixed Fee"}
+                </label>
+                {!isRestrictedUser && (
+                  <p className="text-gray-900">
+                    {lead.custom_fee
+                      ? `${lead.custom_fee}%`
+                      : lead.custom_fixed_charges
+                      ? `${(Number(lead.custom_fixed_charges) / 1000).toFixed(0)}K`
+                      : "N/A"}
+                  </p>
+                )}
               </div>
-                 <div>
+              <div>
                 <label className="text-md font-medium text-black">Deal Value</label>
-                <p className="text-gray-900 flex items-center">
-                  {/* <IndianRupee className="h-4 w-4 mr-2 text-gray-400" /> */}
-                  {lead.custom_deal_value 
-                    ? `₹${Number(lead.custom_deal_value).toLocaleString("en-IN")}`
-                    : "N/A"}
-                </p>
+                {!isRestrictedUser && (
+                  <p className="text-gray-900 flex items-center">
+                    {lead.custom_deal_value
+                      ? formatToIndianCurrency(Number(lead.custom_deal_value), lead.custom_currency || "")
+                      : "N/A"}
+                  </p>
+                )}
               </div>
               <div>
                 <label className="text-md font-medium text-black">Closing Date</label>
                 <p className="text-gray-900">{lead.custom_expected_close_date || "N/A"}</p>
               </div>
-
             </div>
           </div>
-
         </div>
-
-        {/* Modal Footer */}
-        {/* <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-          >
-            Close
-          </button>
-          
-        </div> */}
       </div>
     </div>
   );

@@ -6,13 +6,13 @@ import { Lead, useLeadStore } from "@/stores/leadStore";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import LeadDetailModal from "../Leads/Details";
 import { LoadingState } from "../Leads/LoadingState";
-import { LeadsMobileView } from "../Leads/MobileView";
+
 import { useRouter } from "next/navigation";
 import { LeadsTable } from "./Table";
 import { Building2, User, Bookmark } from "lucide-react";
 import { TodosHeader } from "../recruiter/TodoHeader";
 import Pagination from "../comman/Pagination";
-
+import { LeadsMobileView } from "../Leads/MobileView";
 
 interface CustomerDetails {
   name: string;
@@ -68,6 +68,10 @@ const ContractLeads = () => {
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10; // Number of leads per page
+
+  // Check if the user has a restricted role
+  const restrictedRoles = ["Recruiter", "Sales User"];
+  const isRestrictedUser = user?.roles?.some((role: string) => restrictedRoles.includes(role)) || false;
 
   // Optimized function to fetch contract leads
   const fetchLeads = useCallback(
@@ -216,7 +220,7 @@ const ContractLeads = () => {
     }
     if (filters.status.length > 0) {
       filtered = filtered.filter(
-        (lead) => lead.status && filters.status.includes(lead.status)
+        (lead) => lead.custom_stage && filters.status.includes(lead.custom_stage)
       );
     }
 
@@ -278,7 +282,7 @@ const ContractLeads = () => {
       <div className="w-full mx-auto py-2">
         <TodosHeader
           searchQuery={searchQuery}
-          onSearchChange={handleSearchChange} // Updated to use handleSearchChange
+          onSearchChange={handleSearchChange}
           onRefresh={() => fetchLeads(user?.email || "")}
           totalJobs={leads.length}
           filteredJobs={filteredLeads.length}
@@ -295,18 +299,20 @@ const ContractLeads = () => {
           <>
             <div className="hidden lg:block mt-4">
               <LeadsTable
-                leads={paginatedLeads} // Use paginatedLeads
+                leads={paginatedLeads}
                 onViewLead={handleViewLead}
                 onEditLead={handleEditLead}
                 onCreateContract={handleCreateContract}
+                isRestrictedUser={isRestrictedUser} // Pass isRestrictedUser
               />
             </div>
 
             {/* Mobile Card View */}
             <LeadsMobileView
-              leads={paginatedLeads} // Use paginatedLeads
+              leads={paginatedLeads}
               onViewLead={handleViewLead}
               onEditLead={handleEditLead}
+              isRestrictedUser={isRestrictedUser} // Pass isRestrictedUser
             />
 
             {/* Pagination Component */}
@@ -343,7 +349,7 @@ const ContractLeads = () => {
 
       {/* Lead Detail Modal */}
       {showModal && (
-        <LeadDetailModal lead={selectedLead} onClose={handleCloseModal} />
+        <LeadDetailModal lead={selectedLead} onClose={handleCloseModal} isRestrictedUser={isRestrictedUser} />
       )}
 
       {/* Confirmation Dialog */}

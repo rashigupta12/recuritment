@@ -15,7 +15,6 @@ import { getStageAbbreviation } from "@/components/Onboarded/Table";
 import { FilterState, TodosHeader } from "@/components/recruiter/TodoHeader";
 import Pagination from "@/components/comman/Pagination";
 
-
 interface CustomerDetails {
   name: string;
   customer_name: string;
@@ -34,6 +33,10 @@ const ContractLeads = () => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const { user } = useAuth();
   const router = useRouter();
+
+  // Check if the user has a restricted role
+  const restrictedRoles = ["Recruiter", "Sales User"];
+  const isRestrictedUser = user?.roles?.some((role: string) => restrictedRoles.includes(role)) || false;
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -55,10 +58,8 @@ const ContractLeads = () => {
   // Define stage mapping (full name to abbreviation)
   const stageMapping: Record<string, string> = useMemo(
     () => ({
-  
       Contract: "Co",
       Onboarded: "On",
-      
     }),
     []
   );
@@ -86,7 +87,7 @@ const ContractLeads = () => {
         id: "status",
         title: "Stage",
         icon: Tag,
-        options: Object.keys(stageMapping), // Use full names as options
+        options: Object.keys(stageMapping), // Use full names
       },
     ],
     [leads, stageMapping]
@@ -257,18 +258,20 @@ const ContractLeads = () => {
           <>
             <div className="hidden lg:block">
               <LeadsTable
-                leads={paginatedLeads} // Use paginatedLeads instead of filteredLeads
+                leads={paginatedLeads}
                 onViewLead={handleViewLead}
                 onEditLead={handleEditLead}
                 onCreateContract={handleCreateContract}
+                isRestrictedUser={isRestrictedUser} // Pass isRestrictedUser
               />
             </div>
 
             {/* Mobile Card View */}
             <LeadsMobileView
-              leads={paginatedLeads} // Use paginatedLeads instead of filteredLeads
+              leads={paginatedLeads}
               onViewLead={handleViewLead}
               onEditLead={handleEditLead}
+              isRestrictedUser={isRestrictedUser} // Pass isRestrictedUser
             />
 
             {/* Pagination Component */}
@@ -299,7 +302,11 @@ const ContractLeads = () => {
 
       {/* Lead Detail Modal */}
       {showModal && (
-        <LeadDetailModal lead={selectedLead} onClose={handleCloseModal} />
+        <LeadDetailModal
+          lead={selectedLead}
+          onClose={handleCloseModal}
+          isRestrictedUser={isRestrictedUser} // Pass isRestrictedUser
+        />
       )}
 
       {/* Confirmation Dialog */}

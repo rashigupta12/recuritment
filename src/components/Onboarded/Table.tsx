@@ -1,13 +1,9 @@
-// ============================================
-// LeadsTable.tsx (Updated)
-// ============================================
 /*eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 import React, { useState, useCallback, memo, useMemo } from "react";
 import { EditIcon, UsersIcon } from "lucide-react";
 import { SortableTableHeader } from "../recruiter/SortableTableHeader";
 import { formatToIndianCurrency } from "../Leads/helper";
-
 
 // Lead type definition
 interface Lead {
@@ -34,26 +30,25 @@ interface LeadsTableProps {
   onViewLead: (lead: Lead) => void;
   onEditLead: (lead: Lead) => void;
   onCreateContract: (lead: Lead) => Promise<void>;
+  isRestrictedUser: boolean; // Added prop for role-based restrictions
 }
 
-type SortField = "company" | "contact" | "offering" | "salary" | "vacancies" | "fee" | "dealValue" | "createdOn" |"stage";
-type AllFields = SortField ;
+type SortField = "company" | "contact" | "offering" | "salary" | "vacancies" | "fee" | "dealValue" | "createdOn" | "stage";
+type AllFields = SortField;
 type SortDirection = "asc" | "desc" | null;
-
 
 export const LeadsTable = ({
   leads,
   onViewLead,
   onEditLead,
   onCreateContract,
+  isRestrictedUser,
 }: LeadsTableProps) => {
   const [loadingLeadId, setLoadingLeadId] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
 
   const handleSort = (field: AllFields) => {
-    // if (field === 'actions') return;
-    
     if (sortField === field) {
       if (sortDirection === "asc") setSortDirection("desc");
       else if (sortDirection === "desc") {
@@ -66,36 +61,26 @@ export const LeadsTable = ({
     }
   };
 
-  // const columns = useMemo(() => {
-  //   const cols: Array<{ field: AllFields; label: string; sortable?: boolean }> = [
-  //     { field: 'company', label: 'Company' , sortable: false },
-  //     { field: 'contact', label: 'Contact' },
-  //     { field: 'offering', label: 'Offering' },
-  //     { field: 'salary', label: 'Salary (LPA)' },
-  //     { field: 'vacancies', label: 'No. Of Vac' },
-  //     { field: 'fee', label: 'Fee (%/K)' },
-  //     { field: 'dealValue', label: 'Deal Value(L)' },
-  //     { field: 'createdOn', label: 'Created On'  },
-  //     { field: 'actions', label: 'Actions', sortable: false },
-  //   ];
-  //   return cols;
-  // }, []);
+  const columns = useMemo(() => {
+    const baseColumns: Array<{ field: AllFields; label: string; sortable?: boolean }> = [
+      { field: "company", label: "Company Name", sortable: true },
+      { field: "contact", label: "Contact", sortable: false },
+      { field: "stage", label: "Stage", sortable: false },
+      { field: "offering", label: "Offering", sortable: false },
+      { field: "salary", label: "AVG.SAL (LPA)", sortable: false },
+      { field: "vacancies", label: "No. Of Vac", sortable: false },
+      { field: "fee", label: "Fee (%/K)", sortable: false },
+      { field: "dealValue", label: "Deal Value(L)", sortable: false },
+      { field: "createdOn", label: "Created On", sortable: true },
+    ];
 
-    const columns = useMemo(() => {
-      const cols: Array<{ field: AllFields; label: string; sortable?: boolean }> = [
-        { field: 'company', label: 'Company Name',sortable: true },
-        { field: 'contact', label: 'Contact',sortable: false },
-        { field: 'stage', label: 'Stage',sortable: false },
-        { field: 'offering', label: 'Offering',sortable: false },
-        { field: 'salary', label: 'AVG.SAL (LPA)',sortable: false },
-        { field: 'vacancies', label: 'No. Of Vac',sortable: false },
-        { field: 'fee', label: 'Fee (%/K)',sortable: false },
-        { field: 'dealValue', label: 'Deal Value(L)',sortable: false },
-        { field: 'createdOn', label: 'Created On',sortable: true },
-        // { field: 'actions', label: 'Actions', sortable: false },
-      ];
-      return cols;
-    }, []);
+    // Filter out "Fee" and "Deal Value" for restricted users
+    return isRestrictedUser
+      ? baseColumns.filter(
+          (col) => col.field !== "fee" && col.field !== "dealValue"
+        )
+      : baseColumns;
+  }, [isRestrictedUser]);
 
   const sortedLeads = useMemo(() => {
     if (!sortField || !sortDirection) return leads;
@@ -105,35 +90,35 @@ export const LeadsTable = ({
       let bValue: any;
 
       switch (sortField) {
-        case 'company':
-          aValue = (a.company_name || '').toLowerCase();
-          bValue = (b.company_name || '').toLowerCase();
+        case "company":
+          aValue = (a.company_name || "").toLowerCase();
+          bValue = (b.company_name || "").toLowerCase();
           break;
-        case 'contact':
-          aValue = (a.custom_full_name || a.lead_name || '').toLowerCase();
-          bValue = (b.custom_full_name || b.lead_name || '').toLowerCase();
+        case "contact":
+          aValue = (a.custom_full_name || a.lead_name || "").toLowerCase();
+          bValue = (b.custom_full_name || b.lead_name || "").toLowerCase();
           break;
-        case 'offering':
-          aValue = (a.custom_offerings || '').toLowerCase();
-          bValue = (b.custom_offerings || '').toLowerCase();
+        case "offering":
+          aValue = (a.custom_offerings || "").toLowerCase();
+          bValue = (b.custom_offerings || "").toLowerCase();
           break;
-        case 'salary':
+        case "salary":
           aValue = Number(a.custom_average_salary) || 0;
           bValue = Number(b.custom_average_salary) || 0;
           break;
-        case 'vacancies':
+        case "vacancies":
           aValue = Number(a.custom_estimated_hiring_) || 0;
           bValue = Number(b.custom_estimated_hiring_) || 0;
           break;
-        case 'fee':
+        case "fee":
           aValue = Number(a.custom_fee || a.custom_fixed_charges) || 0;
           bValue = Number(b.custom_fee || b.custom_fixed_charges) || 0;
           break;
-        case 'dealValue':
+        case "dealValue":
           aValue = Number(a.custom_deal_value) || 0;
           bValue = Number(b.custom_deal_value) || 0;
           break;
-        case 'createdOn':
+        case "createdOn":
           aValue = a.creation ? new Date(a.creation).getTime() : 0;
           bValue = b.creation ? new Date(b.creation).getTime() : 0;
           break;
@@ -180,6 +165,7 @@ export const LeadsTable = ({
                 onEdit={() => onEditLead(lead)}
                 onCreateContract={() => handleCreateContract(lead)}
                 isLoading={loadingLeadId === lead.id}
+                isRestrictedUser={isRestrictedUser}
               />
             ))}
           </tbody>
@@ -195,6 +181,7 @@ interface LeadsTableRowProps {
   onEdit: () => void;
   onCreateContract: () => void;
   isLoading: boolean;
+  isRestrictedUser: boolean;
 }
 
 const formatDateAndTime = (dateString?: string) => {
@@ -228,10 +215,9 @@ export const getStageAbbreviation = (stage: string | null | undefined): string =
   
   return words.map((w) => w.charAt(0)).join("");
 };
-const LeadsTableRow = memo(
-  ({ lead, onView, onEdit, onCreateContract, isLoading }: LeadsTableRowProps) => {
-    console.log(lead)
 
+const LeadsTableRow = memo(
+  ({ lead, onView, onEdit, onCreateContract, isLoading, isRestrictedUser }: LeadsTableRowProps) => {
     return (
       <tr className="hover:bg-gray-50">
         <td className="px-4 py-2 max-w-[230px]">
@@ -266,21 +252,20 @@ const LeadsTableRow = memo(
           </div>
         </td>
         <td className="px-4 py-2">
-        <div className="relative group">
-          <div className="text-md text-gray-900 uppercase cursor-default">
-            {getStageAbbreviation(lead.custom_stage)}
-          </div>
-          {lead.custom_stage && (
-            <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block z-10">
-              <div className="bg-gray-900 text-white text-xs font-medium px-2 py-1 rounded shadow-lg whitespace-nowrap">
-                {lead.custom_stage}
-                {/* Tooltip arrow */}
-                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
-              </div>
+          <div className="relative group">
+            <div className="text-md text-gray-900 uppercase cursor-default">
+              {getStageAbbreviation(lead.custom_stage)}
             </div>
-          )}
-        </div>
-      </td>
+            {lead.custom_stage && (
+              <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 hidden group-hover:block z-10">
+                <div className="bg-gray-900 text-white text-xs font-medium px-2 py-1 rounded shadow-lg whitespace-nowrap">
+                  {lead.custom_stage}
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                </div>
+              </div>
+            )}
+          </div>
+        </td>
         <td className="px-4 py-2">
           <div className="text-md text-gray-900">
             {lead.custom_offerings || "-"}
@@ -289,7 +274,7 @@ const LeadsTableRow = memo(
         <td className="px-4 py-2 whitespace-nowrap">
           {lead.custom_average_salary ? (
             <div className="text-md text-gray-900">
-              {formatToIndianCurrency(Number(lead.custom_average_salary) , lead.custom_currency||"")}
+              {formatToIndianCurrency(Number(lead.custom_average_salary), lead.custom_currency || "")}
             </div>
           ) : (
             "-"
@@ -305,24 +290,28 @@ const LeadsTableRow = memo(
             "-"
           )}
         </td>
-        <td className="px-4 py-2 whitespace-nowrap">
-          {lead.custom_fee ? (
-            <div className="text-md text-gray-900 flex items-center">{lead.custom_fee}%</div>
-          ) : lead.custom_fixed_charges ? (
-            <div className="text-md text-gray-900 flex items-center">{(Number(lead.custom_fixed_charges) / 1000).toFixed(0)}K</div>
-          ) : (
-            "-"
-          )}
-        </td>
-        <td className="px-4 py-2 whitespace-nowrap">
-          {lead.custom_deal_value ? (
-            <div className="text-md text-gray-900">
-              {formatToIndianCurrency(Number(lead.custom_deal_value) , lead.custom_currency ||"")}
-            </div>
-          ) : (
-            "-"
-          )}
-        </td>
+        {!isRestrictedUser && (
+          <>
+            <td className="px-4 py-2 whitespace-nowrap">
+              {lead.custom_fee ? (
+                <div className="text-md text-gray-900 flex items-center">{lead.custom_fee}%</div>
+              ) : lead.custom_fixed_charges ? (
+                <div className="text-md text-gray-900 flex items-center">{(Number(lead.custom_fixed_charges) / 1000).toFixed(0)}K</div>
+              ) : (
+                "-"
+              )}
+            </td>
+            <td className="px-4 py-2 whitespace-nowrap">
+              {lead.custom_deal_value ? (
+                <div className="text-md text-gray-900">
+                  {formatToIndianCurrency(Number(lead.custom_deal_value), lead.custom_currency || "")}
+                </div>
+              ) : (
+                "-"
+              )}
+            </td>
+          </>
+        )}
         <td className="px-4 py-2 whitespace-nowrap text-md text-gray-900">
           {(() => {
             const { date, time } = formatDateAndTime(lead.creation);
@@ -334,31 +323,6 @@ const LeadsTableRow = memo(
             );
           })()}
         </td>
-        {/* <td className="px-6 py-2 whitespace-nowrap">
-          <div className="flex items-center gap-2">
-            {canCreateContract && (
-              <button
-                onClick={onCreateContract}
-                className={`flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-md transition-colors whitespace-nowrap ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
-                title="Create Staffing Plan"
-                disabled={isLoading}
-              >
-                {isLoading ? "Processing..." : "Create "}
-              </button>
-            )}
-            {canEdit ? (
-              <button
-                onClick={onEdit}
-                className="p-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors"
-                title="Edit Lead"
-              >
-                <EditIcon className="h-4 w-4" />
-              </button>
-            ) : (
-              <div className="w-4 h-4" />
-            )}
-          </div>
-        </td> */}
       </tr>
     );
   }

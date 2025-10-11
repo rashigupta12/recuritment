@@ -13,7 +13,6 @@ import { FilterState, TodosHeader } from "../recruiter/Header";
 import { Building, Tag, Users } from "lucide-react";
 import Pagination from "../comman/Pagination";
 
-
 const LeadsManagement = () => {
   const { leads, setLeads, loading, setLoading } = useLeadStore();
   const [searchQuery, setSearchQuery] = useState("");
@@ -21,6 +20,10 @@ const LeadsManagement = () => {
   const [showModal, setShowModal] = useState(false);
   const [currentView, setCurrentView] = useState<"list" | "add" | "edit">("list");
   const { user } = useAuth();
+
+  // Check if the user has a restricted role
+  const restrictedRoles = ["Recruiter", "Sales User"];
+  const isRestrictedUser = user?.roles?.some((role: string) => restrictedRoles.includes(role)) || false;
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -234,16 +237,17 @@ const LeadsManagement = () => {
           <>
             <div className="hidden lg:block">
               <LeadsTable
-                leads={paginatedLeads} // Use paginatedLeads instead of filteredLeads
+                leads={paginatedLeads}
                 onViewLead={handleViewLead}
                 onEditLead={handleEditLead}
               />
             </div>
 
             <LeadsMobileView
-              leads={paginatedLeads} // Use paginatedLeads instead of filteredLeads
+              leads={paginatedLeads}
               onViewLead={handleViewLead}
               onEditLead={handleEditLead}
+              isRestrictedUser={isRestrictedUser} // Pass isRestrictedUser
             />
 
             {/* Add Pagination Component */}
@@ -273,7 +277,11 @@ const LeadsManagement = () => {
       </div>
 
       {showModal && (
-        <LeadDetailModal lead={selectedLead} onClose={handleCloseModal} />
+        <LeadDetailModal
+          lead={selectedLead}
+          onClose={handleCloseModal}
+          isRestrictedUser={isRestrictedUser} // Pass isRestrictedUser
+        />
       )}
     </div>
   );

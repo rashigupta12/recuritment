@@ -1,6 +1,3 @@
-
-
-// components/Leads/LeadsMobileView.tsx
 import LeadCard from "@/components/Leads/Card";
 import { Lead } from "@/stores/leadStore";
 
@@ -8,17 +5,19 @@ interface LeadsMobileViewProps {
   leads: Lead[];
   onViewLead: (lead: Lead) => void;
   onEditLead: (lead: Lead) => void;
+  isRestrictedUser: boolean; // Added prop for role-based restrictions
 }
 
-export const LeadsMobileView = ({ leads, onViewLead, onEditLead }: LeadsMobileViewProps) => {
+export const LeadsMobileView = ({ leads, onViewLead, onEditLead, isRestrictedUser }: LeadsMobileViewProps) => {
   return (
     <div className="lg:hidden space-y-4">
       {leads.map((lead) => (
-        <LeadCard 
-          key={lead.name || lead.id} 
-          lead={lead} 
+        <LeadCard
+          key={lead.name || lead.id}
+          lead={lead}
           onView={() => onViewLead(lead)}
           onEdit={() => onEditLead(lead)}
+          isRestrictedUser={isRestrictedUser}
         />
       ))}
     </div>

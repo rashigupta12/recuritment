@@ -8,14 +8,16 @@ import {
   IndianRupee,
   UsersIcon
 } from "lucide-react";
+import { formatToIndianCurrency } from "./helper";
 
 interface LeadCardProps {
   lead: Lead;
   onView?: () => void;
   onEdit?: () => void;
+  isRestrictedUser: boolean;
 }
 
-const LeadCard = ({ lead, onView, onEdit }: LeadCardProps) => {
+const LeadCard = ({ lead, onView, onEdit , isRestrictedUser }: LeadCardProps) => {
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow">
       {/* Header with name and actions */}
@@ -121,27 +123,35 @@ const LeadCard = ({ lead, onView, onEdit }: LeadCardProps) => {
       )}
 
       {/* Fee and Deal Value */}
-      <div className="grid grid-cols-2 gap-4 py-3 border-t border-gray-100">
-        <div>
-          <div className="text-xs text-gray-500 uppercase font-medium">Fee</div>
-          <div className="text-sm text-gray-900">
-            {lead.custom_fee ? `${lead.custom_fee}%` : "-"}
-          </div>
-        </div>
-        <div>
-          <div className="text-xs text-gray-500 uppercase font-medium">Deal Value</div>
-          <div className="flex items-center text-sm text-gray-900">
-            {lead.custom_deal_value ? (
-              <>
-                <IndianRupee className="h-4 w-4 mr-1 text-gray-400" />
-                <span>{lead.custom_deal_value}</span>
-              </>
-            ) : (
-              "-"
-            )}
-          </div>
-        </div>
+   {!isRestrictedUser && (
+  <div className="grid grid-cols-2 gap-4 py-3 border-t border-gray-100">
+    <div>
+      <div className="text-xs text-gray-500 uppercase font-medium">Fee</div>
+      <div className="text-sm text-gray-900">
+        {lead.custom_fee ? (
+          `${lead.custom_fee}%`
+        ) : lead.custom_fixed_charges ? (
+          `${(Number(lead.custom_fixed_charges) / 1000).toFixed(0)}K`
+        ) : (
+          "-"
+        )}
       </div>
+    </div>
+    <div>
+      <div className="text-xs text-gray-500 uppercase font-medium">Deal Value</div>
+      <div className="flex items-center text-sm text-gray-900">
+        {lead.custom_deal_value ? (
+          <>
+            <IndianRupee className="h-4 w-4 mr-1 text-gray-400" />
+            <span>{formatToIndianCurrency(Number(lead.custom_deal_value), lead.custom_currency || "")}</span>
+          </>
+        ) : (
+          "-"
+        )}
+      </div>
+    </div>
+  </div>
+)}
 
       {/* Lead Owner */}
       <div className="mt-3 pt-3 border-t border-gray-100">
