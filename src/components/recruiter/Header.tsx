@@ -505,7 +505,7 @@ export const TodosHeader = ({
             {showExportButton && onexportcsv && (
               <Button
                 onClick={onexportcsv}
-                className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2 flex-shrink-0"
+                className="bg-blue-600 hover:bg-blue-800 text-white flex items-center gap-2 flex-shrink-0"
               >
                 <Download className="h-4 w-4" />
                 <span className="hidden sm:inline">Export</span>
