@@ -19,9 +19,10 @@ import {
 import { useRouter } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
 import { SortableTableHeader } from "../recruiter/SortableTableHeader";
-import { FilterState, TodosHeader } from "../recruiter/TodoHeader";
+import { FilterState } from "../recruiter/TodoHeader";
 import { JobOpeningModal } from "./requirement-view/JobopeningModal";
 import Pagination from "../comman/Pagination";
+import { TodosHeader } from "./Header";
 
 // Type definitions
 type StaffingPlanItem = {
@@ -394,6 +395,10 @@ const StaffingPlansTable: React.FC = () => {
     );
   };
 
+ const handleCreate = async () => {
+  await router.push(`/dashboard/recruiter/requirements/create`);
+};
+
   const handlePublish = async (
     jobId: string,
     planIndex: number,
@@ -440,6 +445,7 @@ const StaffingPlansTable: React.FC = () => {
     setIsModalOpen(false);
   };
 
+
   const formatDateAndTimeV2 = (dateString?: string) => {
     if (!dateString) return { date: "-", time: "-" };
     const date = new Date(dateString);
@@ -476,6 +482,7 @@ const StaffingPlansTable: React.FC = () => {
           onFilterChange={handleFilterChange}
           filterConfig={filterConfig}
           title="Customers Requirements"
+          oncreateButton ={handleCreate}
         />
 
         {/* Main Table */}
@@ -685,7 +692,7 @@ const StaffingPlansTable: React.FC = () => {
                                   )
                                 ) : (
                                   <>
-                                    <div className="relative group">
+                                    {/* <div className="relative group">
                                       <button
                                         onClick={() =>
                                           handleViewDetails(
@@ -706,7 +713,7 @@ const StaffingPlansTable: React.FC = () => {
                                       >
                                         View Details
                                       </span>
-                                    </div>
+                                    </div> */}
 
                                     <div className="relative group">
                                       <button

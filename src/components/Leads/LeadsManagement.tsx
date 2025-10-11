@@ -11,6 +11,8 @@ import { LeadsTable } from "./Table";
 import { LeadsEmptyState, LeadsMobileView } from "./MobileView";
 import { FilterState, TodosHeader } from "../recruiter/Header";
 import { Building, Tag, Users } from "lucide-react";
+import Pagination from "../comman/Pagination";
+
 
 const LeadsManagement = () => {
   const { leads, setLeads, loading, setLoading } = useLeadStore();
@@ -18,19 +20,22 @@ const LeadsManagement = () => {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [currentView, setCurrentView] = useState<"list" | "add" | "edit">("list");
-  
   const { user } = useAuth();
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10; // Number of leads per page
+
   // Define all possible stages (excluding Onboarded)
-  const allStages = useMemo(() => [
-    "Prospecting",
-    "Lead Qualification",
-    "Needs Analysis / Discovery",
-    "Presentation / Proposal",
-    "Contract",
-    "Follow-Up / Relationship Management",
-    "Converted",
-  ], []);
+  const allStages = useMemo(
+    () => [
+      "Prospecting",
+      "Lead Qualification",
+      "Needs Analysis / Discovery",
+      "Presentation / Proposal",
+    ],
+    []
+  );
 
   // State for filters
   const [filters, setFilters] = useState<FilterState>({
@@ -46,26 +51,27 @@ const LeadsManagement = () => {
   });
 
   // Optimized function to fetch leads with batch processing
-  const fetchLeads = useCallback(async (email: string) => {
-    try {
-      setLoading(true);
-      
-      // Fetch all leads with necessary fields in single request
-      const response = await frappeAPI.getAllLeadsDetailed(email);
-      
-      if (response.data && Array.isArray(response.data)) {
-        setLeads(response.data);
-      } else {
-        console.error("Unexpected response format:", response);
+  const fetchLeads = useCallback(
+    async (email: string) => {
+      try {
+        setLoading(true);
+        // Fetch all leads with necessary fields in single request
+        const response = await frappeAPI.getAllLeadsDetailed(email);
+        if (response.data && Array.isArray(response.data)) {
+          setLeads(response.data);
+        } else {
+          console.error("Unexpected response format:", response);
+          setLeads([]);
+        }
+      } catch (error) {
+        console.error("Error fetching leads:", error);
         setLeads([]);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Error fetching leads:", error);
-      setLeads([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [setLeads, setLoading]);
+    },
+    [setLeads, setLoading]
+  );
 
   // Wrapper function for refresh that doesn't require parameters
   const handleRefresh = useCallback(async () => {
@@ -110,9 +116,22 @@ const LeadsManagement = () => {
     return result;
   }, [leads, searchQuery, filters]);
 
+  // Pagination calculations
+  const totalCount = filteredLeads.length;
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedLeads = filteredLeads.slice(startIndex, endIndex);
+
+  // Handle page change
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(page);
+  }, []);
+
   // Event handlers
   const handleFormClose = useCallback(() => {
     setCurrentView("list");
+    setCurrentPage(1); // Reset to first page on form close
     if (user?.email) {
       fetchLeads(user.email);
     }
@@ -140,6 +159,7 @@ const LeadsManagement = () => {
   // Handle filter change
   const handleFilterChange = useCallback((newFilters: FilterState) => {
     setFilters(newFilters);
+    setCurrentPage(1); // Reset to first page when filters change
   }, []);
 
   // Define filter configuration
@@ -165,7 +185,7 @@ const LeadsManagement = () => {
         id: "status",
         title: "Stage",
         icon: Tag,
-        options: allStages, // Use predefined stages
+        options: allStages,
         alwaysShowOptions: true,
       },
     ],
@@ -200,7 +220,7 @@ const LeadsManagement = () => {
         filteredJobs={filteredLeads.length}
         uniqueClients={Array.from(new Set(leads.map((lead) => lead.company_name || ""))).filter(Boolean)}
         uniqueContacts={Array.from(new Set(leads.map((lead) => lead.custom_full_name || ""))).filter(Boolean)}
-        uniqueStatus={allStages} // Use predefined stages
+        uniqueStatus={allStages}
         onFilterChange={handleFilterChange}
         filterConfig={filterConfig}
         title="Leads"
@@ -209,23 +229,31 @@ const LeadsManagement = () => {
         showAddLeadButton={true}
       />
 
-      {/* <LeadsStats leads={leads} /> */}
-
       <div className="w-full mx-auto py-2">
         {filteredLeads.length > 0 ? (
           <>
             <div className="hidden lg:block">
               <LeadsTable
-                leads={filteredLeads}
+                leads={paginatedLeads} // Use paginatedLeads instead of filteredLeads
                 onViewLead={handleViewLead}
                 onEditLead={handleEditLead}
               />
             </div>
 
             <LeadsMobileView
-              leads={filteredLeads}
+              leads={paginatedLeads} // Use paginatedLeads instead of filteredLeads
               onViewLead={handleViewLead}
               onEditLead={handleEditLead}
+            />
+
+            {/* Add Pagination Component */}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalCount={totalCount}
+              itemsPerPage={itemsPerPage}
+              onPageChange={handlePageChange}
+              maxPagesToShow={5}
             />
           </>
         ) : (

@@ -226,6 +226,7 @@ const LeadForm: React.FC<LeadFormProps> = ({
       const nextMonth = new Date(today.setMonth(today.getMonth() + 1));
       const defaultDate = nextMonth.toISOString().split("T")[0];
       updateFormField("custom_expected_close_date", defaultDate);
+      updateFormField("custom_currency", "INR"); // Default currency for new leads
     }
     if (editLead) {
       if (
@@ -295,6 +296,7 @@ const LeadForm: React.FC<LeadFormProps> = ({
         "custom_expected_close_date",
         editLead.custom_expected_close_date || ""
       );
+      updateFormField("custom_currency", editLead.custom_currency || "INR"); // Initialize custom_currency
 
       if (editLead.custom_fixed_charges && editLead.custom_fixed_charges > 0) {
         setFeeType("fixed");
@@ -338,7 +340,6 @@ const LeadForm: React.FC<LeadFormProps> = ({
   };
 
   const handleConfirmSubmit = async () => {
-    console.log("Submitting lead with stage:", formData.custom_stage);
     try {
       setIsSubmitting(true);
       const payload = buildLeadPayload();
@@ -535,7 +536,7 @@ const LeadForm: React.FC<LeadFormProps> = ({
   // Format deal value with currency
   const formatDealValue = (value: number) => {
     if (value === 0) return "";
-    const currencySymbol = getCurrencySymbol(formData.currency || "INR");
+    const currencySymbol = getCurrencySymbol(formData.custom_currency || "INR");
     return `${currencySymbol} ${value.toFixed(2)} L`;
   };
 
@@ -745,8 +746,8 @@ const LeadForm: React.FC<LeadFormProps> = ({
                     <div className="flex items-center border border-gray-300 rounded overflow-hidden">
                       <div className="w-[25%] border-r border-gray-300">
                         <CurrencyDropdown
-                          value={formData.currency}
-                          onChange={(val) => updateFormField("currency", val)}
+                          value={formData.custom_currency}
+                          onChange={(val) => updateFormField("custom_currency", val)}
                         />
                       </div>
 
@@ -805,7 +806,7 @@ const LeadForm: React.FC<LeadFormProps> = ({
                         className="mr-2"
                       />
                       <span className="text-md text-gray-700">
-                        Fixed Fee ({getCurrencySymbol(formData.currency || "INR")})
+                        Fixed Fee ({getCurrencySymbol(formData.custom_currency || "INR")})
                       </span>
                     </label>
                   </div>
@@ -838,7 +839,7 @@ const LeadForm: React.FC<LeadFormProps> = ({
                   ) : (
                     <div>
                       <label className="block text-md font-medium text-gray-700 mb-1">
-                        Fixed Fee ({getCurrencySymbol(formData.currency || "INR")})
+                        Fixed Fee ({getCurrencySymbol(formData.custom_currency || "INR")})
                       </label>
                       <input
                         type="text"

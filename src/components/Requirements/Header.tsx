@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Search, RefreshCw, Filter, X, ChevronDown, ChevronUp, Download } from "lucide-react";
+import { Search, RefreshCw, Filter, X, ChevronDown, ChevronUp, Download, Plus } from "lucide-react";
 import { useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ interface FilterConfig {
   type?: "checkbox" | "radio";
   optionLabels?: Record<string, string>;
   showInitialOptions?: boolean;
+
 }
 
 export interface FilterState {
@@ -47,6 +48,7 @@ interface TodosHeaderProps {
   onFilterChange?: (filters: FilterState) => void;
   filterConfig?: FilterConfig[];
   title?: string;
+   oncreateButton: () => Promise<void>;
 }
 
 export const TodosHeader = ({
@@ -65,6 +67,7 @@ export const TodosHeader = ({
   onFilterChange,
   filterConfig = [],
   title = "My Jobs",
+  oncreateButton
 }: TodosHeaderProps) => {
   const [filters, setFilters] = useState<FilterState>({
     departments: [],
@@ -181,7 +184,7 @@ export const TodosHeader = ({
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search..."
+              placeholder="Search jobs..."
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -461,6 +464,13 @@ export const TodosHeader = ({
             >
               <RefreshCw className="w-4 h-4" />
             </Button>
+              <Button
+    onClick={oncreateButton}
+    className="bg-primary text-white rounded-full h-10 w-10 flex items-center justify-center hover:bg-primary/90 transition-colors shadow-md"
+    variant="outline"
+  >
+    <Plus className="h-4 w-4 stroke-[3]" /> {/* precise balanced size */}
+  </Button>
           </div>
         </div>
       </div>
