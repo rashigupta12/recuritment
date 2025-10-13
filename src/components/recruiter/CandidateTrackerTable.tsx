@@ -198,7 +198,7 @@ export function ApplicantsTable({
                     key={representative.email_id || `grouped-${index}`}
                     className={`${
                       index % 2 === 0 ? "bg-white" : "bg-blue-50"
-                    } hover:bg-blue-100 transition duration-100 cursor-help`}
+                    } hover:bg-blue-100 transition duration-100`}
                     
                     
                   >
