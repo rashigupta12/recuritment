@@ -16,7 +16,7 @@ interface EmailSendingPopupProps {
     jobId: string;
     onEmailSent: () => void;
     jobTitle: string;
-    user: { username: string } | null; // Add user prop to access username
+    user: { username: string } | null;
 }
 
 export default function EmailSendingPopup({
@@ -27,15 +27,25 @@ export default function EmailSendingPopup({
     jobId,
     onEmailSent,
     jobTitle,
-    user, // Add user prop
+    user,
 }: EmailSendingPopupProps) {
     const [clientEmail, setClientEmail] = useState('');
+    const [ccEmails, setCcEmails] = useState('');
+    const [bccEmails, setBccEmails] = useState('');
     const [subject, setSubject] = useState(`Applicants for ${jobTitle}`);
     const [message, setMessage] = useState('');
     const [sending, setSending] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [emailConfigured, setEmailConfigured] = useState<boolean>(false);
     const [fetchingEmailConfig, setFetchingEmailConfig] = useState<boolean>(false);
+
+    // Helper function to validate email addresses
+    const validateEmails = (emails: string): string[] => {
+        if (!emails.trim()) return [];
+        const emailArray = emails.split(',').map(email => email.trim()).filter(email => email);
+        const invalidEmails = emailArray.filter(email => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
+        return invalidEmails.length > 0 ? [] : emailArray;
+    };
 
     // 🧠 Helper function to extract name from email and return the default message
     function getDefaultTemplate(applicants: any[], jobId: string, clientEmail?: string): string {
@@ -113,12 +123,17 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || ''}`;
         }
 
         if (!clientEmail.trim()) {
-            setError('Please enter client email address');
+            setError('Please enter at least one recipient email address');
             return;
         }
 
-        if (!clientEmail.includes('@')) {
-            setError('Please enter a valid email address');
+        // Validate email addresses
+        const toEmailsArray = validateEmails(clientEmail);
+        const ccEmailsArray = validateEmails(ccEmails);
+        const bccEmailsArray = validateEmails(bccEmails);
+
+        if (toEmailsArray.length === 0 && ccEmailsArray.length === 0 && bccEmailsArray.length === 0) {
+            setError('Please enter at least one valid email address in To, CC, or BCC');
             return;
         }
 
@@ -128,7 +143,9 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || ''}`;
         try {
             const emailData = {
                 from_email: currentUserEmail,
-                to_email: clientEmail,
+                to_email: toEmailsArray.join(','), // Convert array to comma-separated string
+                cc: ccEmailsArray.join(','), // Add CC emails
+                bcc: bccEmailsArray.join(','), // Add BCC emails
                 subject: subject,
                 message: message,
                 job_id: jobId,
@@ -157,6 +174,8 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || ''}`;
             }
 
             setClientEmail('');
+            setCcEmails('');
+            setBccEmails('');
             setSubject(`Applicants for Job Title ${jobTitle}`);
             setMessage(getDefaultTemplate(selectedApplicants, jobId));
 
@@ -253,16 +272,55 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || ''}`;
                             {/* To Email */}
                             <div className="mb-4">
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Client Email *
+                                    To Email *
                                 </label>
                                 <input
-                                    type="email"
+                                    type="text"
                                     value={clientEmail}
                                     onChange={(e) => setClientEmail(e.target.value)}
-                                    placeholder="Enter client email address"
+                                    placeholder="Enter recipient email addresses (comma-separated)"
                                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                                     disabled={sending}
                                 />
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Enter multiple emails separated by commas
+                                </p>
+                            </div>
+
+                            {/* CC Emails */}
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    CC
+                                </label>
+                                <input
+                                    type="text"
+                                    value={ccEmails}
+                                    onChange={(e) => setCcEmails(e.target.value)}
+                                    placeholder="Enter CC email addresses (comma-separated)"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                    disabled={sending}
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Enter multiple CC emails separated by commas
+                                </p>
+                            </div>
+
+                            {/* BCC Emails */}
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    BCC
+                                </label>
+                                <input
+                                    type="text"
+                                    value={bccEmails}
+                                    onChange={(e) => setBccEmails(e.target.value)}
+                                    placeholder="Enter BCC email addresses (comma-separated)"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                    disabled={sending}
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Enter multiple BCC emails separated by commas
+                                </p>
                             </div>
 
                             {/* Subject */}
@@ -334,7 +392,7 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || ''}`;
                         {emailConfigured && (
                             <button
                                 onClick={handleSendEmail}
-                                disabled={sending || !clientEmail}
+                                disabled={sending || (!clientEmail && !ccEmails && !bccEmails)}
                                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                             >
                                 {sending ? (

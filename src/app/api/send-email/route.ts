@@ -8,11 +8,13 @@ import { decrypt } from '@/lib/crypto';
 interface EmailRequest {
     from_email: string;
     to_email: string;
+    cc?: string; // Add optional CC field
+    bcc?: string; // Add optional BCC field
     subject: string;
     designation?: string;
     message: string;
     job_id: string;
-    username?: string; // Add username to identify the logged-in user
+    username?: string;
     applicants: Array<{
         name: string;
         applicant_name: string;
@@ -27,9 +29,31 @@ export async function POST(request: NextRequest) {
         const emailData: EmailRequest = await request.json();
 
         // Validate required fields
-        if (!emailData.to_email || !emailData.subject || !emailData.message) {
+        if (!emailData.to_email && !emailData.cc && !emailData.bcc) {
             return NextResponse.json(
-                { error: 'Missing required fields' },
+                { error: 'At least one recipient (To, CC, or BCC) is required' },
+                { status: 400 }
+            );
+        }
+
+        // Validate email addresses
+        const validateEmails = (emails?: string): string[] => {
+            if (!emails) return [];
+            const emailArray = emails.split(',').map(email => email.trim()).filter(email => email);
+            const invalidEmails = emailArray.filter(email => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
+            if (invalidEmails.length > 0) {
+                throw new Error(`Invalid email addresses: ${invalidEmails.join(', ')}`);
+            }
+            return emailArray;
+        };
+
+        const toEmails = validateEmails(emailData.to_email);
+        const ccEmails = validateEmails(emailData.cc);
+        const bccEmails = validateEmails(emailData.bcc);
+
+        if (toEmails.length === 0 && ccEmails.length === 0 && bccEmails.length === 0) {
+            return NextResponse.json(
+                { error: 'No valid recipient email addresses provided' },
                 { status: 400 }
             );
         }
@@ -38,7 +62,7 @@ export async function POST(request: NextRequest) {
         let userSmtpPassword = null;
         let senderName = process.env.COMPANY_NAME || 'HevHire';
 
-        // Try to fetch user's SMTP credentials if username is provided
+        // Fetch user's SMTP credentials if username is provided
         if (emailData.username) {
             console.log('🔍 Fetching SMTP credentials for user:', emailData.username);
             
@@ -46,7 +70,7 @@ export async function POST(request: NextRequest) {
                 const cookies = request.headers.get('cookie') || '';
                 const FRAPPE_BASE_URL = process.env.NEXT_PUBLIC_dev_prod_FRAPPE_BASE_URL;
 
-                // First, get the encrypted password from User Setting
+                // Fetch encrypted password from User Setting
                 const userSettingResponse = await fetch(
                     `${FRAPPE_BASE_URL}/resource/User%20Setting/${encodeURIComponent(emailData.username)}?fields=["custom_mailp","full_name"]`,
                     {
@@ -72,7 +96,7 @@ export async function POST(request: NextRequest) {
                     console.warn('⚠️ Could not fetch User Setting:', await userSettingResponse.text());
                 }
 
-                // Then, get the SMTP email from User doctype
+                // Fetch SMTP email from User doctype
                 const userResponse = await fetch(
                     `${FRAPPE_BASE_URL}/resource/User/${encodeURIComponent(emailData.username)}?fields=["custom_smtp_email","full_name","email"]`,
                     {
@@ -91,7 +115,6 @@ export async function POST(request: NextRequest) {
                     
                     userSmtpEmail = userData.data?.custom_smtp_email || userData.data?.email;
                     
-                    // Use full name from User if not found in User Setting
                     if (!fullName) {
                         fullName = userData.data?.full_name;
                     }
@@ -101,7 +124,6 @@ export async function POST(request: NextRequest) {
                         console.log('SMTP Email:', userSmtpEmail);
                         console.log('Has encrypted password:', !!encryptedPassword);
                         
-                        // Decrypt the password
                         try {
                             userSmtpPassword = decrypt(encryptedPassword);
                             console.log('🔓 Password decrypted successfully');
@@ -110,7 +132,6 @@ export async function POST(request: NextRequest) {
                             userSmtpPassword = null;
                         }
 
-                        // Use user's full name if available
                         if (fullName) {
                             senderName = fullName;
                         }
@@ -158,7 +179,9 @@ export async function POST(request: NextRequest) {
         // Email options
         const mailOptions = {
             from: `"${senderName}" <${useUserCredentials ? userSmtpEmail : process.env.COMPANY_EMAIL}>`,
-            to: emailData.to_email,
+            to: toEmails.length > 0 ? toEmails.join(',') : undefined,
+            cc: ccEmails.length > 0 ? ccEmails.join(',') : undefined,
+            bcc: bccEmails.length > 0 ? bccEmails.join(',') : undefined,
             subject: emailData.subject,
             text: emailData.message,
             html: `
@@ -211,6 +234,9 @@ export async function POST(request: NextRequest) {
         };
 
         console.log(`📧 Preparing to send email with ${attachments.length} attachments`);
+        console.log(`To: ${toEmails.join(',') || 'none'}`);
+        console.log(`CC: ${ccEmails.join(',') || 'none'}`);
+        console.log(`BCC: ${bccEmails.join(',') || 'none'}`);
 
         // Send email
         const result = await transporter.sendMail(mailOptions);
