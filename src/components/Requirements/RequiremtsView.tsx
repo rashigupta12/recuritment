@@ -726,8 +726,8 @@ const StaffingPlansTable: React.FC = () => {
                                           )}
                                           <span>
                                             {detail.publish === 1
-                                              ? "Unpublish"
-                                              : "Publish"}
+                                              ? ""
+                                              : ""}
                                           </span>
                                         </button>
                                         <span
