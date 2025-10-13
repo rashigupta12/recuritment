@@ -19,9 +19,9 @@ interface ImageItem {
   type: "image" | "pdf" | "doc";
 }
 
-// Define Zod schema for validation
+// Define Zod schema for validation - FIXED: Removed trailing comma
 const feedbackSchema = z.object({
-  module: z.enum(["Dashboard", "Customers","Requirements","Jobs Assigned", "Candidate Tracker",]),
+  module: z.enum(["Dashboard", "Customers", "Requirements", "Jobs Assigned", "Candidate Tracker"]),
   description: z.string().min(1, "Description is required"),
   issue_type: z.enum(["General Feedback", "Bug Report", "Feature Request"]),
   type: z.enum(["Incident", "Feedback"]),
@@ -41,6 +41,7 @@ const FeedbackForm: React.FC<{
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<FeedbackFormData>({
     resolver: zodResolver(feedbackSchema),
@@ -52,15 +53,24 @@ const FeedbackForm: React.FC<{
     },
   });
 
+  // Watch form values to debug
+  const formValues = watch();
+
   useEffect(() => {
-    reset({
-      module: "Dashboard",
-      description: "",
-      issue_type: "General Feedback",
-      type: "Feedback",
-    });
-    setImages([]);
-  }, [user, reset]);
+    console.log("Form values:", formValues);
+  }, [formValues]);
+
+  useEffect(() => {
+    if (isOpen) {
+      reset({
+        module: "Dashboard",
+        description: "",
+        issue_type: "General Feedback",
+        type: "Feedback",
+      });
+      setImages([]);
+    }
+  }, [isOpen, user, reset]);
 
   const handleImageUpload = async (file: File): Promise<string> => {
     setIsUploading(true);
@@ -95,8 +105,10 @@ const FeedbackForm: React.FC<{
         opening_time: currentDate.toTimeString().split(' ')[0],
         status: "Open",
         raised_by: user?.email || "",
+        custom_module: data.module, // Make sure this matches your backend field
       };
-      console.log("Feedback data sent to backend:", feedbackData);
+      
+      console.log("Feedback data being submitted:", feedbackData);
       await onSubmit(feedbackData);
       showToast.success("Feedback submitted successfully!");
       reset();
@@ -122,11 +134,11 @@ const FeedbackForm: React.FC<{
       onClick={handleBackdropClick}
     >
       <div
-        className="bg-white rounded-lg shadow-lg w-full max-w-2xl  flex flex-col"
+        className="bg-white rounded-lg shadow-lg w-full max-w-2xl flex flex-col max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-primary px-6 py-4 border-b rounded-t-lg">
+        <div className="bg-primary px-6 py-4 border-b rounded-t-lg flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <MessageCircle className="w-5 h-5 text-white" />
@@ -134,7 +146,7 @@ const FeedbackForm: React.FC<{
             </div>
             <button
               onClick={onClose}
-              className="p-1 hover:bg-gray-200 rounded transition-colors"
+              className="p-1 hover:bg-white/20 rounded transition-colors"
               aria-label="Close feedback form"
             >
               <X className="h-4 w-4 text-white" />
@@ -144,35 +156,41 @@ const FeedbackForm: React.FC<{
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
-          <form id="feedback-form" onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
-            {/* Module */}
+          <form 
+            id="feedback-form" 
+            onSubmit={handleSubmit(onFormSubmit)} 
+            className="space-y-4"
+          >
+            {/* Module Dropdown - FIXED */}
             <div className="space-y-2">
               <label htmlFor="module" className="block text-md font-medium text-gray-700">
-                Module
+                Module *
               </label>
               <select
                 id="module"
                 {...register("module")}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                 disabled={isSubmitting}
               >
                 <option value="Dashboard">Dashboard</option>
+                <option value="Customers">Customers</option>
+                <option value="Requirements">Requirements</option>
                 <option value="Jobs Assigned">Jobs Assigned</option>
                 <option value="Candidate Tracker">Candidate Tracker</option>
-                <option value="Requirements">Requirements</option>
               </select>
               {errors.module && (
-                <p className="text-red-600 text-xs">{errors.module.message}</p>
+                <p className="text-red-600 text-sm mt-1">{errors.module.message}</p>
               )}
             </div>
 
-            {/* Type */}
+
+            {/* Type (Incident/Feedback) */}
             <div className="space-y-2">
               <label className="block text-md font-medium text-gray-700">
-                Type
+                Type *
               </label>
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2">
+              <div className="flex gap-6">
+                <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="radio"
                     value="Incident"
@@ -182,7 +200,7 @@ const FeedbackForm: React.FC<{
                   />
                   <span className="text-md text-gray-700">Incident</span>
                 </label>
-                <label className="flex items-center gap-2">
+                <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="radio"
                     value="Feedback"
@@ -194,25 +212,25 @@ const FeedbackForm: React.FC<{
                 </label>
               </div>
               {errors.type && (
-                <p className="text-red-600 text-xs">{errors.type.message}</p>
+                <p className="text-red-600 text-sm mt-1">{errors.type.message}</p>
               )}
             </div>
 
             {/* Description */}
             <div className="space-y-2">
               <label htmlFor="description" className="block text-md font-medium text-gray-700">
-                Description
+                Description *
               </label>
               <textarea
                 id="description"
                 {...register("description")}
                 rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                placeholder="Describe your issue or feedback..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                placeholder="Describe your issue or feedback in detail..."
                 disabled={isSubmitting}
               />
               {errors.description && (
-                <p className="text-red-600 text-xs">{errors.description.message}</p>
+                <p className="text-red-600 text-sm mt-1">{errors.description.message}</p>
               )}
             </div>
 
@@ -233,7 +251,7 @@ const FeedbackForm: React.FC<{
                   maxSizeMB={10}
                 />
                 {isUploading && (
-                  <div className="flex items-center gap-2 mt-2 text-md text-blue-600">
+                  <div className="flex items-center gap-2 mt-2 text-sm text-blue-600">
                     <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
                     Uploading...
                   </div>
@@ -242,20 +260,20 @@ const FeedbackForm: React.FC<{
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3 pt-2">
+            <div className="flex gap-3 pt-4">
               <Button
                 type="button"
                 variant="outline"
                 onClick={onClose}
                 disabled={isSubmitting || isUploading}
-                className="flex-1"
+                className="flex-1 border-gray-300"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={isSubmitting || isUploading}
-                className="flex-1 bg-blue-600 hover:bg-blue-700"
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
               >
                 {isSubmitting || isUploading ? (
                   <div className="flex items-center gap-2">
@@ -265,7 +283,7 @@ const FeedbackForm: React.FC<{
                 ) : (
                   <div className="flex items-center gap-2">
                     <Send className="h-4 w-4" />
-                    Submit
+                    Submit Issue
                   </div>
                 )}
               </Button>
