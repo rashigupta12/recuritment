@@ -263,7 +263,7 @@ export default function TaggedApplicants({
       }
     };
     fetchApplicants();
-  }, [jobId, ownerEmail, refreshTrigger]);
+  }, [jobId, ownerEmail, refreshTrigger,refreshKey]);
 
   const handleOpenStatusModal = () => {
     if (selectedApplicants.length === 0) {

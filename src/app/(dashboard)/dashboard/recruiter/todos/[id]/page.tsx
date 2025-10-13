@@ -160,12 +160,13 @@ export default function TodoDetailPage() {
                         initialJobId={jobId}
                         onFormSubmitSuccess={handleFormSubmitSuccess}
                       /> */}
-                      <ApplicantSearchAndTag
-                        initialJobId={jobId}
-                        onFormSubmitSuccess={() => {
-                          // Refresh data or show success message
-                        }}
-                      />
+         <ApplicantSearchAndTag
+  initialJobId={jobId}
+  onFormSubmitSuccess={() => {
+    setRefreshKey(prev => prev + 1);
+  }}
+/>
+                      
                     </div>
                   </SheetContent>
                 </Sheet>

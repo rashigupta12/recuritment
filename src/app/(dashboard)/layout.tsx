@@ -640,7 +640,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           }}
         >
           {/* Header */}
-          <header className="bg-white/95 backdrop-blur-sm border-b border-gray-200/60 px-4 py-2.5 shadow-sm flex-shrink-0">
+          <header className="bg-white/95 backdrop-blur-sm border-b border-gray-200/60 px-4 py-3 shadow-sm flex-shrink-0">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <Button
