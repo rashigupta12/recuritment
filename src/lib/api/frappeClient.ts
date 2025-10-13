@@ -687,10 +687,16 @@ export const frappeAPI = {
   },
   
 
+  // getAllApplicants: async (email: string, limitStart = 0, limitPageLength = 10) => {
+  //   const url = `/method/recruitment_app.get_all_applicants.get_all_applicants?limit_start=${limitStart}&limit_page_length=${limitPageLength}&owner=${email}`;
+  //   return await frappeAPI.makeAuthenticatedRequest('GET', url);
+  // },
+
   getAllApplicants: async (email: string, limitStart = 0, limitPageLength = 10) => {
-    const url = `/method/recruitment_app.get_all_applicants.get_all_applicants?limit_start=${limitStart}&limit_page_length=${limitPageLength}&owner=${email}`;
-    return await frappeAPI.makeAuthenticatedRequest('GET', url);
-  },
+  const url = `/method/recruitment_app.get_all_applicants.get_unique_candidates?limit_start=${limitStart}&limit_page_length=${limitPageLength}&owner=${email}`;
+  return await frappeAPI.makeAuthenticatedRequest('GET', url);
+},
+
 
   getApplicantBYId: async (name: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/Job Applicant/${name}`);
