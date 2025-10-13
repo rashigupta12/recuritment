@@ -10,6 +10,7 @@ import { Calendar, Briefcase, MapPin, Award } from "lucide-react";
 import { Pagination } from "@/components/comman/Pagination";
 import { toast } from "sonner";
 import { TodosHeader } from "@/components/recruiter/Header";
+import { showToast } from "@/lib/toast/showToast";
 
 interface ToDo {
   name: string;
@@ -73,7 +74,7 @@ const TodosManagement = () => {
       setCurrentPage(1);
     } catch (error) {
       console.error("Error fetching todos:", error);
-      toast.error("Failed to fetch todos.");
+      showToast.error("Failed to fetch todos.");
     } finally {
       setLoading(false);
     }
