@@ -227,17 +227,19 @@ export function ApplicantsTable({
                     <td className="px-2 sm:px-4 py-4 truncate">
                       {representative.phone_number || "N/A"}
                     </td>
-                    <td className="px-2 sm:px-4 py-4 truncate capitalize" title={isMultiple ? `Designations: ${designations}` : ''}>
-                      {isMultiple ? `${group.length}` : representative.designation || 'N/A'}
-                    </td>
-                    <td className="px-2 sm:px-4 py-4 truncate capitalize" title={isMultiple ? `Clients: ${clients}` : ''}>
-                      {isMultiple ? ` ${group.length}` : representative.custom_company_name || 'N/A'}
-                    </td>
-                    {showStatus && (
-                      <td className="px-2 sm:px-4 py-4 truncate font-medium text-blue-700" title={isMultiple ? `Statuses: ${statuses}` : ''}>
-                        {isMultiple ? ` ${group.length}` : representative.status || "N/A"}
-                      </td>
-                    )}
+                   <td className="px-2 sm:px-4 py-4 truncate capitalize">
+  {isMultiple ? `${group.length}` : representative.designation || 'N/A'}
+</td>
+
+  
+<td className="px-2 sm:px-4 py-4 truncate capitalize">
+  {isMultiple ? ` ${group.length}` : representative.custom_company_name || 'N/A'}
+</td>
+                   {showStatus && (
+  <td className="px-2 sm:px-4 py-4 truncate font-medium text-blue-700">
+    {isMultiple ? ` ${group.length}` : representative.status || "N/A"}
+  </td>
+)}
                     {(showDeleteButton || onViewDetails) && (
                       <td className="px-2 sm:px-4 py-4">
                         <div className="flex items-center gap-2">
