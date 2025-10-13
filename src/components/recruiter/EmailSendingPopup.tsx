@@ -5,6 +5,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { frappeAPI } from '@/lib/api/frappeClient';
 
 interface EmailSendingPopupProps {
     isOpen: boolean;
@@ -14,6 +16,7 @@ interface EmailSendingPopupProps {
     jobId: string;
     onEmailSent: () => void;
     jobTitle: string;
+    user: { username: string } | null; // Add user prop to access username
 }
 
 export default function EmailSendingPopup({
@@ -24,31 +27,27 @@ export default function EmailSendingPopup({
     jobId,
     onEmailSent,
     jobTitle,
+    user, // Add user prop
 }: EmailSendingPopupProps) {
     const [clientEmail, setClientEmail] = useState('');
-
-    console.log(jobTitle)
-    const [subject, setSubject] = useState(`Applicants for  ${jobTitle}`);
+    const [subject, setSubject] = useState(`Applicants for ${jobTitle}`);
     const [message, setMessage] = useState('');
     const [sending, setSending] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [emailConfigured, setEmailConfigured] = useState<boolean>(false);
+    const [fetchingEmailConfig, setFetchingEmailConfig] = useState<boolean>(false);
 
     // 🧠 Helper function to extract name from email and return the default message
     function getDefaultTemplate(applicants: any[], jobId: string, clientEmail?: string): string {
-        // Extract first name from client email
         let clientName = 'Client';
         if (clientEmail) {
-        const localPart = clientEmail.split('@')[0];
-        // Split by common separators and pick the first part
-        let firstName = localPart.split(/[.\-_]/)[0];
-        // Remove any trailing numbers
-        firstName = firstName.replace(/\d+$/, '');
-        // Capitalize first letter
-        if (firstName) {
-            clientName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
+            const localPart = clientEmail.split('@')[0];
+            let firstName = localPart.split(/[.\-_]/)[0];
+            firstName = firstName.replace(/\d+$/, '');
+            if (firstName) {
+                clientName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
+            }
         }
-    }
-
 
         return `Dear ${clientName},
 I am pleased to share with you ${applicants.length} candidate ${
@@ -77,7 +76,42 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || ''}`;
         setMessage(getDefaultTemplate(selectedApplicants, jobId, clientEmail));
     }, [clientEmail, selectedApplicants, jobId]);
 
+    // Fetch email configuration
+    useEffect(() => {
+        const fetchEmailConfig = async () => {
+            if (user?.username) {
+                try {
+                    setFetchingEmailConfig(true);
+                    const response = await frappeAPI.makeAuthenticatedRequest(
+                        'GET',
+                        `/resource/User Setting/${user.username}`
+                    );
+                    console.log('EmailSendingPopup Email Config Response:', response);
+
+                    if (response.data) {
+                        setEmailConfigured(response.data.custom_email_configured === 1);
+                    }
+                } catch (error) {
+                    console.error('Error fetching email configuration:', error);
+                    setEmailConfigured(false);
+                } finally {
+                    setFetchingEmailConfig(false);
+                }
+            } else {
+                setFetchingEmailConfig(false);
+                setEmailConfigured(false);
+            }
+        };
+
+        fetchEmailConfig();
+    }, [user]);
+
     const handleSendEmail = async () => {
+        if (!emailConfigured) {
+            setError('Please configure your email settings before sending emails.');
+            return;
+        }
+
         if (!clientEmail.trim()) {
             setError('Please enter client email address');
             return;
@@ -98,7 +132,7 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || ''}`;
                 subject: subject,
                 message: message,
                 job_id: jobId,
-                username :currentUserEmail,
+                username: currentUserEmail,
                 applicants: selectedApplicants.map((applicant) => ({
                     name: applicant.name,
                     applicant_name: applicant.applicant_name,
@@ -174,95 +208,117 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || ''}`;
 
                 {/* Content */}
                 <div className="p-6 overflow-y-auto flex-1">
-                    {error && (
-                        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                            <p className="text-red-800 text-sm">{error}</p>
+                    {fetchingEmailConfig ? (
+                        <div className="flex items-center justify-center p-4">
+                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                            <span className="ml-2 text-sm text-gray-600">Checking email configuration...</span>
                         </div>
-                    )}
-
-                    {/* From Email */}
-                    <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            From Email (Company)
-                        </label>
-                        <input
-                            type="email"
-                            value={`${process.env.NEXT_PUBLIC_COMPANY_NAME} <${currentUserEmail}>`}
-                            disabled
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 text-sm"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">
-                            Emails are sent through company SMTP server
-                        </p>
-                    </div>
-
-                    {/* To Email */}
-                    <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Client Email *
-                        </label>
-                        <input
-                            type="email"
-                            value={clientEmail}
-                            onChange={(e) => setClientEmail(e.target.value)}
-                            placeholder="Enter client email address"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                            disabled={sending}
-                        />
-                    </div>
-
-                    {/* Subject */}
-                    <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Subject
-                        </label>
-                        <input
-                            type="text"
-                            value={subject}
-                            onChange={(e) => setSubject(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                            disabled={sending}
-                        />
-                    </div>
-
-                    {/* Message */}
-                    <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Message
-                        </label>
-                        <textarea
-                            value={message}
-                            onChange={(e) => setMessage(e.target.value)}
-                            rows={6}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-sm"
-                            disabled={sending}
-                        />
-                    </div>
-
-                    {/* Selected Applicants */}
-                    <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Selected Applicants ({selectedApplicants.length})
-                        </label>
-                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 max-h-24 overflow-y-auto">
-                            {selectedApplicants.map((applicant, index) => (
-                                <div
-                                    key={applicant.name || index}
-                                    className="flex items-center justify-between py-1"
+                    ) : !emailConfigured ? (
+                        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <p className="text-yellow-800 text-sm">
+                                Email configuration is required to send emails. Please{' '}
+                                <Link
+                                    href="/dashboard/settings/email"
+                                    className="text-blue-600 hover:underline"
                                 >
-                                    <span className="text-sm text-gray-700">
-                                        {index + 1}. {applicant.applicant_name || 'N/A'} -{' '}
-                                        {applicant.designation || 'N/A'}
-                                    </span>
-                                    {applicant.resume_attachment && (
-                                        <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded whitespace-nowrap ml-2">
-                                            📎 Resume
-                                        </span>
-                                    )}
-                                </div>
-                            ))}
+                                    configure your email settings
+                                </Link>{' '}
+                                to proceed.
+                            </p>
                         </div>
-                    </div>
+                    ) : (
+                        <>
+                            {error && (
+                                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                                    <p className="text-red-800 text-sm">{error}</p>
+                                </div>
+                            )}
+
+                            {/* From Email */}
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    From Email (Company)
+                                </label>
+                                <input
+                                    type="email"
+                                    value={`${process.env.NEXT_PUBLIC_COMPANY_NAME} <${currentUserEmail}>`}
+                                    disabled
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 text-sm"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Emails are sent through company SMTP server
+                                </p>
+                            </div>
+
+                            {/* To Email */}
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Client Email *
+                                </label>
+                                <input
+                                    type="email"
+                                    value={clientEmail}
+                                    onChange={(e) => setClientEmail(e.target.value)}
+                                    placeholder="Enter client email address"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                    disabled={sending}
+                                />
+                            </div>
+
+                            {/* Subject */}
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Subject
+                                </label>
+                                <input
+                                    type="text"
+                                    value={subject}
+                                    onChange={(e) => setSubject(e.target.value)}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                                    disabled={sending}
+                                />
+                            </div>
+
+                            {/* Message */}
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Message
+                                </label>
+                                <textarea
+                                    value={message}
+                                    onChange={(e) => setMessage(e.target.value)}
+                                    rows={6}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-sm"
+                                    disabled={sending}
+                                />
+                            </div>
+
+                            {/* Selected Applicants */}
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Selected Applicants ({selectedApplicants.length})
+                                </label>
+                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 max-h-24 overflow-y-auto">
+                                    {selectedApplicants.map((applicant, index) => (
+                                        <div
+                                            key={applicant.name || index}
+                                            className="flex items-center justify-between py-1"
+                                        >
+                                            <span className="text-sm text-gray-700">
+                                                {index + 1}. {applicant.applicant_name || 'N/A'} -{' '}
+                                                {applicant.designation || 'N/A'}
+                                            </span>
+                                            {applicant.resume_attachment && (
+                                                <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded whitespace-nowrap ml-2">
+                                                    📎 Resume
+                                                </span>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </>
+                    )}
                 </div>
 
                 {/* Footer */}
@@ -275,20 +331,22 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || ''}`;
                         >
                             Cancel
                         </button>
-                        <button
-                            onClick={handleSendEmail}
-                            disabled={sending || !clientEmail}
-                            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                            {sending ? (
-                                <div className="flex items-center">
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                    Sending...
-                                </div>
-                            ) : (
-                                'Send Email'
-                            )}
-                        </button>
+                        {emailConfigured && (
+                            <button
+                                onClick={handleSendEmail}
+                                disabled={sending || !clientEmail}
+                                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                {sending ? (
+                                    <div className="flex items-center">
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                        Sending...
+                                    </div>
+                                ) : (
+                                    'Send Email'
+                                )}
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
