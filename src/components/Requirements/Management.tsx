@@ -915,7 +915,7 @@ const StaffingPlanCreator: React.FC = () => {
     if (hasFormChanges(formData, initialFormData, pendingJDFiles)) {
       setShowBackConfirm(true);
     } else {
-      router.push("/dashboard/recruiter/requirements");
+      router.push("/dashboard/recruiter/contract");
     }
   };
 
