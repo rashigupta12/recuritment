@@ -1,28 +1,30 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import {
-  X
-} from "lucide-react";
+// src/components/feedback/AttachmentPreviewModal.tsx
 import React from "react";
-// import { showToast } from "react-hot-showToast";
+import { X } from "lucide-react";
+import { ImageAttachment } from "@/types/feedback";
 
-
-
-
-// Image Preview Modal Component
-const AttachmentPreviewModal: React.FC<{
+interface AttachmentPreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
-  attachments: any[];
+  attachments: ImageAttachment[];
   currentIndex: number;
   onIndexChange: (index: number) => void;
-}> = ({ isOpen, onClose, attachments, currentIndex, onIndexChange }) => {
-  const imageurl =process.env.NEXT_PUBLIC_FRAPPE_BASE_URL;
+}
+
+const AttachmentPreviewModal: React.FC<AttachmentPreviewModalProps> = ({
+  isOpen,
+  onClose,
+  attachments,
+  currentIndex,
+  onIndexChange,
+}) => {
+  const imageurl = process.env.NEXT_PUBLIC_FRAPPE_BASE_URL;
 
   if (!isOpen || attachments.length === 0) return null;
 
   const currentAttachment = attachments[currentIndex];
 
-  const getImageUrl = (attachment: any) => {
+  const getImageUrl = (attachment: ImageAttachment) => {
     const url = attachment.image;
 
     if (!url) return "";

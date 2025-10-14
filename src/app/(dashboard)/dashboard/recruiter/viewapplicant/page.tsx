@@ -1,11 +1,10 @@
-  /* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { frappeAPI } from "@/lib/api/frappeClient";
-import { ApplicantsTable } from "@/components/recruiter/ApplicantsTable";
 import {
   Search,
   X,
@@ -23,6 +22,7 @@ import {
 } from "lucide-react";
 import { TodosHeader } from "@/components/recruiter/Header";
 import Pagination from "@/components/comman/Pagination";
+import { ApplicantsTable } from "@/components/recruiter/CandidateTrackerTable";
 
 export interface JobApplicant {
   name: string;
@@ -46,16 +46,36 @@ export interface JobApplicant {
 
 interface ApiResponse {
   message: {
-    data: JobApplicant[];
+    data: Array<{
+      applicant_name: string;
+      email_id: string;
+      phone_number: string;
+      country: string;
+      applications: Array<{
+        job_title: string;
+        designation: string;
+        status: string;
+        custom_company_name: string;
+        resume_attachment?: string;
+        custom_experience?: Array<{
+          company_name: string;
+          designation: string;
+          start_date: string;
+          end_date: string;
+          current_company: number;
+        }>;
+        creation: string;
+        owner: string;
+      }>;
+    }>;
     total: number;
-    page: number;
-    page_size: number;
-    total_pages: number;
-    has_next: boolean;
-    has_prev: boolean;
+    page?: number;
+    page_size?: number;
+    total_pages?: number;
+    has_next?: boolean;
+    has_prev?: boolean;
   };
 }
-
 interface SessionData {
   authenticated: boolean;
   user?: {
@@ -86,7 +106,7 @@ export default function ViewApplicantPage() {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [modalError, setModalError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [selectedApplicant, setSelectedApplicant] = useState<JobApplicant | null>(null);
+  const [selectedApplicantGroup, setSelectedApplicantGroup] = useState<JobApplicant[] | null>(null);
   const [showDowngradeWarning, setShowDowngradeWarning] = useState<boolean>(false);
   const [downgradeInfo, setDowngradeInfo] = useState<{ from: string; to: string } | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -107,20 +127,28 @@ export default function ViewApplicantPage() {
   const statusParam = searchParams.get("status") || "all";
   const router = useRouter();
 
-  const fetchApplicantsData = async (email: string, limitStart = 0, limitPageLength = itemsPerPage): Promise<{ data: JobApplicant[], total: number }> => {
-    try {
-      const response = await frappeAPI.getAllApplicants(email, limitStart, limitPageLength);
-      const result: ApiResponse = response;
-      console.log("All applicants with full details:", result.message);
-      return {
-        data: result.message.data || [],
-        total: result.message.total || 0,
-      };
-    } catch (error) {
-      console.error("Error fetching applicants:", error);
-      throw error;
-    }
-  };
+const fetchApplicantsData = async (
+  email: string,
+  limitStart = 0,
+  limitPageLength = itemsPerPage
+): Promise<{ data: JobApplicant[]; total: number }> => {
+  try {
+    const response = await frappeAPI.getAllApplicants(email, limitStart, limitPageLength);
+    const result: ApiResponse = response;
+    console.log("API response:", result.message);
+    
+    // Transform the nested structure to flat array
+    const flattenedData = transformApplicantsData(result.message.data || []);
+    
+    return {
+      data: flattenedData,
+      total: result.message.total || 0,
+    };
+  } catch (error) {
+    console.error("Error fetching applicants:", error);
+    throw error;
+  }
+};
 
   // Export applicants to CSV
   const handleExport = () => {
@@ -182,6 +210,49 @@ export default function ViewApplicantPage() {
     return Promise.resolve();
   };
 
+
+  
+const transformApplicantsData = (apiResponse: any[]): JobApplicant[] => {
+  const flattened: JobApplicant[] = [];
+  
+  apiResponse.forEach((applicant: any) => {
+    if (applicant.applications && applicant.applications.length > 0) {
+      // Create a row for each application
+      applicant.applications.forEach((app: any, index: number) => {
+        flattened.push({
+          name: `${applicant.email_id}_${index}`, // Unique identifier
+          applicant_name: applicant.applicant_name,
+          email_id: applicant.email_id,
+          phone_number: applicant.phone_number,
+          country: applicant.country,
+          job_title: app.job_title,
+          designation: app.designation,
+          status: app.status,
+          custom_company_name: app.custom_company_name,
+          resume_attachment: app.resume_attachment || "",
+          custom_experience: [],
+        });
+      });
+    } else {
+      // Applicant with no applications (shouldn't happen but handle it)
+      flattened.push({
+        name: applicant.email_id,
+        applicant_name: applicant.applicant_name,
+        email_id: applicant.email_id,
+        phone_number: applicant.phone_number,
+        country: applicant.country,
+        job_title: "",
+        designation: "",
+        status: "",
+        custom_company_name: "",
+        resume_attachment: "",
+        custom_experience: [],
+      });
+    }
+  });
+  
+  return flattened;
+};
   useEffect(() => {
     const checkAuthAndFetchApplicants = async () => {
       try {
@@ -481,12 +552,12 @@ const handleRefresh = async () => {
     setModalError(null);
   };
 
-  const handleOpenDetailsModal = (applicant: JobApplicant) => {
-    setSelectedApplicant(applicant);
+  const handleOpenDetailsModal = (applicants: JobApplicant[]) => {
+    setSelectedApplicantGroup(applicants);
   };
 
   const handleCloseDetailsModal = () => {
-    setSelectedApplicant(null);
+    setSelectedApplicantGroup(null);
   };
 
   const getStatusColor = (status?: string) => {
@@ -605,7 +676,7 @@ const handleRefresh = async () => {
     <ApplicantsTable
       key={Date.now()} // Force re-render on refresh
       applicants={filteredApplicants}
-      // selectedApplicants={selectedApplicants}
+      selectedApplicants={selectedApplicants}
       onSelectApplicant={handleSelectApplicant}
       onViewDetails={handleOpenDetailsModal}
       // showCheckboxes={true}
@@ -618,6 +689,7 @@ const handleRefresh = async () => {
       itemsPerPage={itemsPerPage}
       onPageChange={setCurrentPage}
     />
+    
   </div>
 )}
         {isModalOpen && (
@@ -797,7 +869,7 @@ const handleRefresh = async () => {
             </div>
           </div>
         )}
-        {selectedApplicant && (
+        {selectedApplicantGroup && (
           <div
             className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
             role="dialog"
@@ -824,70 +896,121 @@ const handleRefresh = async () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-xl font-bold text-gray-900 truncate">
-                      {selectedApplicant.applicant_name || "N/A"}
+                      {selectedApplicantGroup[0].applicant_name || "N/A"}
                     </h3>
-                    <p className="text-gray-600">
-                      {selectedApplicant.job_title || selectedApplicant.designation || "N/A"}
-                    </p>
+                    {/* <p className="text-gray-600">
+                      {selectedApplicantGroup[0].job_title || selectedApplicantGroup[0].designation || "N/A"}
+                    </p> */}
+
+<p className="text-gray-900 text-md">
+  {selectedApplicantGroup[0].email_id || "N/A"} |{" "}
+  {selectedApplicantGroup[0].phone_number || "N/A"} |{" "}
+  {selectedApplicantGroup[0].country || "N/A"}
+</p>
+
+
+
+
                   </div>
-                  <span
+                  {/* <span
                     className={`px-3 py-1 rounded-full text-sm font-semibold border ${getStatusColor(
-                      selectedApplicant.status
+                      selectedApplicantGroup[0].status
                     )}`}
                   >
-                    {selectedApplicant.status || "N/A"}
-                  </span>
+                    {selectedApplicantGroup[0].status || "N/A"}
+                  </span> */}
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
                   <Mail className="h-5 w-5 text-gray-500 flex-shrink-0" />
                   <div>
                     <p className="text-sm font-medium text-gray-700">Email</p>
-                    <p className="text-gray-900">{selectedApplicant.email_id || "N/A"}</p>
+                    <p className="text-gray-900">{selectedApplicantGroup[0].email_id || "N/A"}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
                   <Phone className="h-5 w-5 text-gray-500 flex-shrink-0" />
                   <div>
                     <p className="text-sm font-medium text-gray-700">Phone</p>
-                    <p className="text-gray-900">{selectedApplicant.phone_number || "N/A"}</p>
+                    <p className="text-gray-900">{selectedApplicantGroup[0].phone_number || "N/A"}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
                   <MapPin className="h-5 w-5 text-gray-500 flex-shrink-0" />
                   <div>
                     <p className="text-sm font-medium text-gray-700">Country</p>
-                    <p className="text-gray-900">{selectedApplicant.country || "N/A"}</p>
+                    <p className="text-gray-900">{selectedApplicantGroup[0].country || "N/A"}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <FileText className="h-5 w-5 text-gray-500 flex-shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-700">Resume</p>
-                    {selectedApplicant.resume_attachment ? (
-                      <a
-                        href={`https://recruiter.gennextit.com${selectedApplicant.resume_attachment}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800 underline text-sm"
-                      >
-                        View Resume
-                      </a>
-                    ) : (
-                      <p className="text-gray-500 text-sm">No resume attached</p>
-                    )}
+              </div> */}
+              <div className="mb-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <Building2 className="h-5 w-5 text-gray-600" />
+                  Applications
+                </h4>
+                {selectedApplicantGroup.length > 0 ? (
+                  <div className="space-y-3">
+                    {selectedApplicantGroup.map((app, index) => (
+                      <div key={index} className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-2 gap-2">
+                          <h5 className="text-md font-semibold text-gray-900">{app.custom_company_name || "N/A"}</h5>
+                          <span
+                            className={`px-2 py-1 rounded-full text-md font-medium ${getStatusColor(app.status)}`}
+                          >
+                            {app.status || "N/A"}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                        <p className="text-gray-700 mb-2">Designation: {app.designation || "N/A"}</p>
+                          <div className="flex items-center gap-2 text-md text-gray-500">
+                          {app.resume_attachment ? (
+                            <a
+                              href={`https://recruiter.gennextit.com${app.resume_attachment}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 underline"
+                            >
+                              View Resume
+                            </a>
+                          ) : (
+                            <span>N/A</span>
+                          )}
+                        </div>
+                        </div>
+                        {/* <div className="flex items-center gap-2 text-sm text-gray-500">
+                          <FileText className="h-4 w-4" />
+                          <span>Resume: </span>
+                          {app.resume_attachment ? (
+                            <a
+                              href={`https://recruiter.gennextit.com${app.resume_attachment}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 underline"
+                            >
+                              View Resume
+                            </a>
+                          ) : (
+                            <span>N/A</span>
+                          )}
+                        </div> */}
+                      </div>
+                    ))}
                   </div>
-                </div>
+                ) : (
+                  <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 text-center">
+                    <p className="text-gray-500">No application information available</p>
+                  </div>
+                )}
               </div>
               <div className="mb-6">
                 <h4 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
                   <Briefcase className="h-5 w-5 text-gray-600" />
                   Experience
                 </h4>
-                {selectedApplicant.custom_experience && selectedApplicant.custom_experience.length > 0 ? (
+                {selectedApplicantGroup[0].custom_experience && selectedApplicantGroup[0].custom_experience.length > 0 ? (
                   <div className="space-y-3">
-                    {selectedApplicant.custom_experience.map((exp, index) => (
+                    {selectedApplicantGroup[0].custom_experience.map((exp, index) => (
                       <div key={index} className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
                         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-2 gap-2">
                           <h5 className="text-md font-semibold text-gray-900">{exp.company_name}</h5>
@@ -902,7 +1025,7 @@ const handleRefresh = async () => {
                           </span>
                         </div>
                         <p className="text-gray-700 mb-2">{exp.designation}</p>
-                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <div className="flex items-center gap-2 text-md text-gray-500">
                           <Calendar className="h-4 w-4" />
                           <span>
                             {exp.start_date} - {exp.current_company ? "Present" : exp.end_date}
@@ -932,3 +1055,11 @@ const handleRefresh = async () => {
     </div>
   );
 }
+
+
+
+
+
+
+
+

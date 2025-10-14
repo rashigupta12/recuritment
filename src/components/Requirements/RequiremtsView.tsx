@@ -7,19 +7,19 @@ import {
   Building,
   Clock,
   Edit,
-  Eye,
   IndianRupee,
   Loader2,
   MapPin,
   Phone,
-  Upload,
   User,
   Users,
+  Upload,
+  Download, // Used for Unpublish icon (can be replaced with a more suitable icon)
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
 import { SortableTableHeader } from "../recruiter/SortableTableHeader";
-import { FilterState } from "../recruiter/TodoHeader"; // Import FilterState from TodoHeader
+import { FilterState } from "../recruiter/TodoHeader";
 import { JobOpeningModal } from "./requirement-view/JobopeningModal";
 import Pagination from "../comman/Pagination";
 import { TodosHeader } from "./Header";
@@ -40,6 +40,7 @@ type StaffingPlanItem = {
   assign_to?: string;
   job_id?: string;
   employment_type?: string;
+  publish?: number; // Added to track publish status
 };
 
 type StaffingPlan = {
@@ -97,7 +98,6 @@ const StaffingPlansTable: React.FC = () => {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
-  const [totalCount, setTotalCount] = useState(0);
 
   const { user } = useAuth();
 
@@ -111,7 +111,7 @@ const StaffingPlansTable: React.FC = () => {
     clients: [],
     locations: [],
     jobTitles: [],
-    status: "", // Use empty array to match TodosHeader
+    status: "",
     contacts: [],
     dateRange: "all",
     vacancies: "all",
@@ -207,39 +207,36 @@ const StaffingPlansTable: React.FC = () => {
       align?: "left" | "center" | "right";
       width?: string;
     }> = [
-        { field: "datetime", label: "Date", align: "center" },
-        {
-          field: "company",
-          label: "Company & Contact",
-          width: "200px",
-          align: "center",
-        },
-        { field: "designation", label: "Position Details", align: "center" },
-        { field: "location", label: "Location & Experience", align: "center" },
-        { field: "vacancies", label: "Vacancies & Budget", align: "center" },
-        { field: "actions", label: "Action", sortable: false, align: "center" },
-      ];
+      { field: "datetime", label: "Date", sortable: true, align: "center" },
+      {
+        field: "company",
+        label: "Company & Contact",
+        sortable: true,
+        width: "200px",
+        align: "center",
+      },
+      { field: "designation", label: "Position Details", sortable: true, align: "center" },
+      { field: "location", label: "Location & Experience", sortable: true, align: "center" },
+      { field: "vacancies", label: "Vacancies & Budget", sortable: true, align: "center" },
+      { field: "actions", label: "Action", sortable: false, align: "center" },
+    ];
     return cols;
   }, []);
 
-  const fetchStaffingPlans = async (page: number = 1) => {
+  const fetchStaffingPlans = async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const limitStart = (page - 1) * itemsPerPage;
       const response = await frappeAPI.makeAuthenticatedRequest(
         "GET",
-        `/method/recruitment_app.get_staffing_plan.get_staffing_plans_with_children?limit_start=${limitStart}&limit_page_length=${itemsPerPage}`
+        `/method/recruitment_app.get_staffing_plan.get_staffing_plans_with_children?owner=${user?.email}`
       );
 
       const plansData = response.message?.data || [];
-      const total = response.message?.total || 0;
-
       console.log("Fetched plans:", plansData);
       setPlans(plansData);
       setFilteredPlans(plansData);
-      setTotalCount(total);
     } catch (error) {
       console.error("Error fetching staffing plans:", error);
       setError("Failed to load staffing plans. Please try again.");
@@ -248,17 +245,8 @@ const StaffingPlansTable: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    fetchStaffingPlans(currentPage);
-  }, [currentPage]);
-
-  // Calculate total pages
-  const totalPages = Math.ceil(totalCount / itemsPerPage);
-
-  // Handle filter changes from TodosHeader
-  const handleFilterChange = (newFilters: FilterState) => {
-    console.log("Applying filters:", newFilters);
-    setFilterState(newFilters);
+  // Combined filtering and sorting logic with frontend pagination
+  const paginatedPlans = useMemo(() => {
     let filtered = [...plans];
 
     // Apply search term filter
@@ -276,43 +264,97 @@ const StaffingPlansTable: React.FC = () => {
     }
 
     // Apply filters from TodosHeader
-    if (newFilters.clients.length > 0) {
+    if (filterState.clients.length > 0) {
       filtered = filtered.filter((plan) =>
-        newFilters.clients.includes(plan.company || "")
+        filterState.clients.includes(plan.company || "")
       );
     }
-    if (newFilters.contacts.length > 0) {
+    if (filterState.contacts.length > 0) {
       filtered = filtered.filter((plan) =>
-        plan.custom_contact_name && newFilters.contacts.includes(plan.custom_contact_name)
+        plan.custom_contact_name && filterState.contacts.includes(plan.custom_contact_name)
       );
     }
-    if (newFilters.jobTitles.length > 0) {
+    if (filterState.jobTitles.length > 0) {
       filtered = filtered.filter((plan) =>
         plan.staffing_details.some((detail) =>
-          newFilters.jobTitles.includes(detail.designation || "")
+          filterState.jobTitles.includes(detail.designation || "")
         )
       );
     }
-    // No status filtering needed
 
-    console.log("Filtered plans:", filtered);
+    // Apply sorting
+    if (sortField && sortDirection) {
+      filtered.sort((a, b) => {
+        const aDetail = a.staffing_details[0] || {};
+        const bDetail = b.staffing_details[0] || {};
+
+        let valueA: any;
+        let valueB: any;
+
+        switch (sortField) {
+          case "company":
+            valueA = (a.company || "").toLowerCase();
+            valueB = (b.company || "").toLowerCase();
+            break;
+          case "designation":
+            valueA = (aDetail.designation || "").toLowerCase();
+            valueB = (bDetail.designation || "").toLowerCase();
+            break;
+          case "location":
+            valueA = (aDetail.location || "").toLowerCase();
+            valueB = (bDetail.location || "").toLowerCase();
+            break;
+          case "experience":
+            valueA = aDetail.min_experience_reqyrs || 0;
+            valueB = bDetail.min_experience_reqyrs || 0;
+            break;
+          case "vacancies":
+            valueA = aDetail.vacancies || 0;
+            valueB = bDetail.vacancies || 0;
+            break;
+          case "budget":
+            valueA = aDetail.estimated_cost_per_position || 0;
+            valueB = bDetail.estimated_cost_per_position || 0;
+            break;
+          case "datetime":
+            valueA = new Date(a.creation || "").getTime();
+            valueB = new Date(b.creation || "").getTime();
+            break;
+          default:
+            return 0;
+        }
+
+        if (valueA < valueB) return sortDirection === "asc" ? -1 : 1;
+        if (valueA > valueB) return sortDirection === "asc" ? 1 : -1;
+        return 0;
+      });
+    }
+
+    // Update filtered plans for rendering filter counts
     setFilteredPlans(filtered);
-  };
 
-  const handleViewDetails = (
-    plan: StaffingPlan,
-    detail: StaffingPlanItem,
-    planIndex: number,
-    detailIndex: number
-  ) => {
-    setSelectedJob({
-      staffingPlan: plan,
-      staffingDetail: detail,
-      planIndex,
-      detailIndex,
-      mode: "view",
-    });
-    setIsModalOpen(true);
+    // Apply frontend pagination
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return filtered.slice(startIndex, endIndex);
+  }, [plans, searchTerm, filterState, sortField, sortDirection, currentPage, itemsPerPage]);
+
+  // Calculate total pages based on filtered data
+  const totalPages = Math.ceil(filteredPlans.length / itemsPerPage);
+
+  useEffect(() => {
+    fetchStaffingPlans();
+  }, []);
+
+  // Reset to first page when filters or search term change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterState]);
+
+  // Handle filter changes from TodosHeader
+  const handleFilterChange = (newFilters: FilterState) => {
+    console.log("Applying filters:", newFilters);
+    setFilterState(newFilters);
   };
 
   const handleAllocation = (
@@ -344,7 +386,8 @@ const StaffingPlansTable: React.FC = () => {
   const handlePublish = async (
     jobId: string,
     planIndex: number,
-    detailIndex: number
+    detailIndex: number,
+    isPublished: boolean
   ) => {
     setPublishingJobs((prev) => new Set(prev).add(jobId));
 
@@ -352,13 +395,26 @@ const StaffingPlansTable: React.FC = () => {
       await frappeAPI.makeAuthenticatedRequest(
         "PUT",
         `/resource/Job Opening/${jobId}`,
-        { publish: 1 }
+        { publish: isPublished ? 0 : 1 }
       );
 
-      alert("Job opening published successfully!");
+      // Update the local state to reflect the new publish status
+      setPlans((prevPlans) => {
+        const newPlans = [...prevPlans];
+        newPlans[planIndex] = {
+          ...newPlans[planIndex],
+          staffing_details: newPlans[planIndex].staffing_details.map(
+            (detail, idx) =>
+              idx === detailIndex ? { ...detail, publish: isPublished ? 0 : 1 } : detail
+          ),
+        };
+        return newPlans;
+      });
+
+      alert(isPublished ? "Job opening unpublished successfully!" : "Job opening published successfully!");
     } catch (error) {
-      console.error("Error publishing job:", error);
-      alert("Failed to publish job opening. Please try again.");
+      console.error(`Error ${isPublished ? "unpublishing" : "publishing"} job:`, error);
+      alert(`Failed to ${isPublished ? "unpublish" : "publish"} job opening. Please try again.`);
     } finally {
       setPublishingJobs((prev) => {
         const newSet = new Set(prev);
@@ -413,13 +469,13 @@ const StaffingPlansTable: React.FC = () => {
         <TodosHeader
           searchQuery={searchTerm}
           onSearchChange={setSearchTerm}
-          onRefresh={() => fetchStaffingPlans(currentPage)}
-          totalJobs={totalCount}
+          onRefresh={() => fetchStaffingPlans()}
+          totalJobs={plans.length}
           filteredJobs={filteredPlans.length}
           uniqueClients={uniqueCompanies}
           uniqueContacts={uniqueContacts}
           uniqueJobTitles={uniquePositions}
-          uniqueStatus={[]} // No status options
+          uniqueStatus={[] as string[]}
           onFilterChange={handleFilterChange}
           filterConfig={filterConfig}
           title="Customers Requirements"
@@ -445,13 +501,13 @@ const StaffingPlansTable: React.FC = () => {
             </h3>
             <p className="text-gray-600 mb-6">{error}</p>
             <button
-              onClick={() => fetchStaffingPlans(currentPage)}
+              onClick={() => fetchStaffingPlans()}
               className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg mx-auto transition-colors"
             >
               <span>Try Again</span>
             </button>
           </div>
-        ) : filteredPlans.length > 0 ? (
+        ) : paginatedPlans.length > 0 ? (
           <>
             <div className="bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden mt-4">
               <div className="overflow-x-auto">
@@ -464,7 +520,7 @@ const StaffingPlansTable: React.FC = () => {
                     className="bg-blue-500 text-white"
                   />
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredPlans.map((plan, planIndex) => (
+                    {paginatedPlans.map((plan, planIndex) => (
                       <React.Fragment key={plan.name}>
                         {plan.staffing_details.map((detail, detailIndex) => (
                           <tr
@@ -533,14 +589,6 @@ const StaffingPlansTable: React.FC = () => {
                                 <span className="font-medium text-gray-900 text-md">
                                   {detail.designation || "-"}
                                 </span>
-                                {/* <div className="text-md text-gray-500 mt-1">
-                                  <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-800">
-                                    {detail.number_of_positions}{" "}
-                                    {detail.number_of_positions === 1
-                                      ? "Position"
-                                      : "Positions"}
-                                  </span>
-                                </div> */}
                               </div>
                             </td>
 
@@ -603,8 +651,8 @@ const StaffingPlansTable: React.FC = () => {
                                   );
                                 })()}
                                 <div className="flex items-center">
-                                  {formatToIndianCurrency(Number(detail.estimated_cost_per_position), detail.currency || "")}L                                  <span className="font-medium text-gray-900">
-                                    {/* {detail.estimated_cost_per_position || 0}L */}
+                                  <span className="font-medium text-gray-900">
+                                    {formatToIndianCurrency(Number(detail.estimated_cost_per_position), detail.currency || "")}L
                                   </span>
                                 </div>
                               </div>
@@ -634,29 +682,6 @@ const StaffingPlansTable: React.FC = () => {
                                   <>
                                     <div className="relative group">
                                       <button
-                                        onClick={() =>
-                                          handleViewDetails(
-                                            plan,
-                                            detail,
-                                            planIndex,
-                                            detailIndex
-                                          )
-                                        }
-                                        className="flex items-center px-1 py-1.5 text-blue-500 rounded text-md transition-colors"
-                                      >
-                                        <Eye className="h-4 w-4" />
-                                      </button>
-                                      <span
-                                        className="absolute left-1/2 -translate-x-1/2 -top-7 
-                                          px-2 py-1 text-xs text-white bg-gray-800 rounded opacity-0 
-                                          group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap"
-                                      >
-                                        View Details
-                                      </span>
-                                    </div>
-
-                                    <div className="relative group">
-                                      <button
                                         onClick={() => handleEdit(plan.name)}
                                         className="flex items-center px-1 py-1.5 text-blue-500 rounded text-md transition-colors"
                                       >
@@ -679,19 +704,31 @@ const StaffingPlansTable: React.FC = () => {
                                             handlePublish(
                                               detail.job_id!,
                                               planIndex,
-                                              detailIndex
+                                              detailIndex,
+                                              detail.publish === 1
                                             )
                                           }
                                           disabled={publishingJobs.has(
                                             detail.job_id
                                           )}
-                                          className="flex items-center px-1 py-1.5 text-blue-500 rounded text-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                          className={`flex items-center px-3 py-1.5 rounded text-md transition-colors ${
+                                            detail.publish === 1
+                                              ? "text-red-500 hover:text-red-600"
+                                              : "text-blue-600 hover:text-blue-700"
+                                          } disabled:opacity-50 disabled:cursor-not-allowed`}
                                         >
                                           {publishingJobs.has(detail.job_id) ? (
                                             <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                          ) : detail.publish === 1 ? (
+                                            <Download className="h-4 w-4 mr-1" />
                                           ) : (
                                             <Upload className="h-4 w-4 mr-1" />
                                           )}
+                                          <span>
+                                            {detail.publish === 1
+                                              ? ""
+                                              : ""}
+                                          </span>
                                         </button>
                                         <span
                                           className="absolute left-1/2 -translate-x-1/2 -top-7 
@@ -700,7 +737,11 @@ const StaffingPlansTable: React.FC = () => {
                                             group-hover:-translate-y-2 transition-all duration-200 pointer-events-none whitespace-nowrap"
                                         >
                                           {publishingJobs.has(detail.job_id)
-                                            ? "Publishing..."
+                                            ? detail.publish === 1
+                                              ? "Unpublishing..."
+                                              : "Publishing..."
+                                            : detail.publish === 1
+                                            ? "Unpublish"
                                             : "Publish"}
                                         </span>
                                       </div>
@@ -722,7 +763,7 @@ const StaffingPlansTable: React.FC = () => {
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
-              totalCount={totalCount}
+              totalCount={filteredPlans.length}
               itemsPerPage={itemsPerPage}
               onPageChange={setCurrentPage}
             />

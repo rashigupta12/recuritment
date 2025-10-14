@@ -179,6 +179,7 @@
 
 import { useState } from "react";
 import { ChevronUp, ChevronDown, Eye, Edit2, Share2, PinIcon, Clock, MapPin, User, Users, Building, Phone } from "lucide-react";
+import { showToast } from "../Requirements/Management";
 
 interface ToDo {
   custom_department?: string;
@@ -312,6 +313,10 @@ export default function TodosTable({ todos, onViewTodo, onEditTodo }: TodosTable
 
   const handleRowClick = (todo: ToDo, event: React.MouseEvent) => {
     if ((event.target as HTMLElement).closest('button')) return;
+    if (todo.status?.toLowerCase() === 'cancelled') {
+      showToast.error("This job is cancelled ");
+      return;
+    }
     onViewTodo(todo);
   };
 

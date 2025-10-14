@@ -2,14 +2,19 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
+import type SMTPTransport from 'nodemailer/lib/smtp-transport';
+import { decrypt } from '@/lib/crypto';
 
 interface EmailRequest {
     from_email: string;
     to_email: string;
+    cc?: string; // Add optional CC field
+    bcc?: string; // Add optional BCC field
     subject: string;
     designation?: string;
     message: string;
     job_id: string;
+    username?: string;
     applicants: Array<{
         name: string;
         applicant_name: string;
@@ -24,37 +29,162 @@ export async function POST(request: NextRequest) {
         const emailData: EmailRequest = await request.json();
 
         // Validate required fields
-        if (!emailData.to_email || !emailData.subject || !emailData.message) {
+        if (!emailData.to_email && !emailData.cc && !emailData.bcc) {
             return NextResponse.json(
-                { error: 'Missing required fields' },
+                { error: 'At least one recipient (To, CC, or BCC) is required' },
                 { status: 400 }
             );
         }
+
+        // Validate email addresses
+        const validateEmails = (emails?: string): string[] => {
+            if (!emails) return [];
+            const emailArray = emails.split(',').map(email => email.trim()).filter(email => email);
+            const invalidEmails = emailArray.filter(email => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
+            if (invalidEmails.length > 0) {
+                throw new Error(`Invalid email addresses: ${invalidEmails.join(', ')}`);
+            }
+            return emailArray;
+        };
+
+        const toEmails = validateEmails(emailData.to_email);
+        const ccEmails = validateEmails(emailData.cc);
+        const bccEmails = validateEmails(emailData.bcc);
+
+        if (toEmails.length === 0 && ccEmails.length === 0 && bccEmails.length === 0) {
+            return NextResponse.json(
+                { error: 'No valid recipient email addresses provided' },
+                { status: 400 }
+            );
+        }
+
+        let userSmtpEmail = null;
+        let userSmtpPassword = null;
+        let senderName = process.env.COMPANY_NAME || 'HevHire';
+
+        // Fetch user's SMTP credentials if username is provided
+        if (emailData.username) {
+            console.log('🔍 Fetching SMTP credentials for user:', emailData.username);
+            
+            try {
+                const cookies = request.headers.get('cookie') || '';
+                const FRAPPE_BASE_URL = process.env.NEXT_PUBLIC_dev_prod_FRAPPE_BASE_URL;
+
+                // Fetch encrypted password from User Setting
+                const userSettingResponse = await fetch(
+                    `${FRAPPE_BASE_URL}/resource/User%20Setting/${encodeURIComponent(emailData.username)}?fields=["custom_mailp","full_name"]`,
+                    {
+                        method: 'GET',
+                        headers: {
+                            'Cookie': cookies,
+                        },
+                    }
+                );
+
+                console.log('User Setting Response Status:', userSettingResponse.status);
+
+                let encryptedPassword = null;
+                let fullName = null;
+
+                if (userSettingResponse.ok) {
+                    const userSettingData = await userSettingResponse.json();
+                    console.log('User Setting Data:', JSON.stringify(userSettingData, null, 2));
+                    
+                    encryptedPassword = userSettingData.data?.custom_mailp;
+                    fullName = userSettingData.data?.full_name;
+                } else {
+                    console.warn('⚠️ Could not fetch User Setting:', await userSettingResponse.text());
+                }
+
+                // Fetch SMTP email from User doctype
+                const userResponse = await fetch(
+                    `${FRAPPE_BASE_URL}/resource/User/${encodeURIComponent(emailData.username)}?fields=["custom_smtp_email","full_name","email"]`,
+                    {
+                        method: 'GET',
+                        headers: {
+                            'Cookie': cookies,
+                        },
+                    }
+                );
+
+                console.log('User Response Status:', userResponse.status);
+
+                if (userResponse.ok) {
+                    const userData = await userResponse.json();
+                    console.log('User Data:', JSON.stringify(userData, null, 2));
+                    
+                    userSmtpEmail = userData.data?.custom_smtp_email || userData.data?.email;
+                    
+                    if (!fullName) {
+                        fullName = userData.data?.full_name;
+                    }
+
+                    if (userSmtpEmail && encryptedPassword) {
+                        console.log('✅ Found user SMTP credentials');
+                        console.log('SMTP Email:', userSmtpEmail);
+                        console.log('Has encrypted password:', !!encryptedPassword);
+                        
+                        try {
+                            userSmtpPassword = decrypt(encryptedPassword);
+                            console.log('🔓 Password decrypted successfully');
+                        } catch (decryptError) {
+                            console.error('❌ Failed to decrypt password:', decryptError);
+                            userSmtpPassword = null;
+                        }
+
+                        if (fullName) {
+                            senderName = fullName;
+                        }
+                    } else {
+                        console.log('ℹ️ No complete SMTP credentials found, using company credentials');
+                        console.log('- SMTP Email:', userSmtpEmail ? 'Found' : 'Missing');
+                        console.log('- Encrypted Password:', encryptedPassword ? 'Found' : 'Missing');
+                    }
+                } else {
+                    console.warn('⚠️ Could not fetch User:', await userResponse.text());
+                }
+            } catch (fetchError) {
+                console.error('⚠️ Error fetching user SMTP credentials:', fetchError);
+                console.log('ℹ️ Falling back to company credentials');
+            }
+        }
+
+        // Determine which credentials to use
+        const useUserCredentials = !!(userSmtpEmail && userSmtpPassword);
         
-        // Create transporter using company SMTP configuration
-        const transporter = nodemailer.createTransport({
-            host: process.env.SMTP_SERVER,
-            port: parseInt(process.env.SMTP_PORT || '587'),
-            secure: parseInt(process.env.SMTP_PORT || '587') === 465,
+        console.log(`📧 Sending email using ${useUserCredentials ? 'USER' : 'COMPANY'} credentials`);
+        if (useUserCredentials) {
+            console.log('Using email:', userSmtpEmail);
+        }
+
+        // Create transporter with appropriate credentials
+        const transportOptions: SMTPTransport.Options = {
+            host: process.env.SMTP_SERVER || 'crystal.herosite.pro',
+            port: parseInt(process.env.SMTP_PORT || '465'),
+            secure: true,
             auth: {
-                user: process.env.COMPANY_EMAIL,
-                pass: process.env.COMPANY_EMAIL_PASSWORD,
+                user: (useUserCredentials ? userSmtpEmail : process.env.COMPANY_EMAIL) || '',
+                pass: (useUserCredentials ? userSmtpPassword : process.env.COMPANY_EMAIL_PASSWORD) || '',
             },
             tls: {
                 rejectUnauthorized: false
             }
-        });
+        };
+
+        const transporter = nodemailer.createTransport(transportOptions);
 
         // Get resume attachments
         const attachments = await getResumeAttachments(emailData.applicants);
 
         // Email options
         const mailOptions = {
-            from: `"${process.env.COMPANY_NAME}" <${process.env.COMPANY_EMAIL}>`,
-            to: emailData.to_email,
+            from: `"${senderName}" <${useUserCredentials ? userSmtpEmail : process.env.COMPANY_EMAIL}>`,
+            to: toEmails.length > 0 ? toEmails.join(',') : undefined,
+            cc: ccEmails.length > 0 ? ccEmails.join(',') : undefined,
+            bcc: bccEmails.length > 0 ? bccEmails.join(',') : undefined,
             subject: emailData.subject,
             text: emailData.message,
-html: `
+            html: `
   <div style="font-family: Arial, sans-serif; max-width: 650px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden;">
       
       <!-- Header with White Background for Logo -->
@@ -96,14 +226,17 @@ html: `
       <!-- Footer -->
       <div style="padding: 20px; background: #1e3a8a; text-align: center; color: #f8fafc;">
           <p style="margin: 0; font-size: 14px;">This email was sent from <strong style="color: #ffffff;">HevHire</strong></p>
+          ${useUserCredentials ? `<p style="margin: 5px 0 0 0; font-size: 12px; opacity: 0.8;">Sent by ${senderName}</p>` : ''}
       </div>
   </div>
 `,
-
             attachments: attachments
         };
 
         console.log(`📧 Preparing to send email with ${attachments.length} attachments`);
+        console.log(`To: ${toEmails.join(',') || 'none'}`);
+        console.log(`CC: ${ccEmails.join(',') || 'none'}`);
+        console.log(`BCC: ${bccEmails.join(',') || 'none'}`);
 
         // Send email
         const result = await transporter.sendMail(mailOptions);
@@ -115,7 +248,8 @@ html: `
             success: true,
             messageId: result.messageId,
             attachmentsSent: attachments.length,
-            message: 'Email sent successfully'
+            message: 'Email sent successfully',
+            sentFrom: useUserCredentials ? userSmtpEmail : process.env.COMPANY_EMAIL
         });
 
     } catch (error: any) {
@@ -161,7 +295,7 @@ async function downloadFileFromUrl(fileUrl: string): Promise<Buffer | null> {
 // Improved helper function to handle resume attachments
 async function getResumeAttachments(applicants: any[]) {
     const attachments = [];
-        const baseUrl = process.env.NEXT_PUBLIC_FRAPPE_BASE_URL;
+    const baseUrl = process.env.NEXT_PUBLIC_FRAPPE_BASE_URL;
 
     console.log('🔍 API - Processing applicants for attachments:');
     applicants.forEach((applicant, index) => {
@@ -256,7 +390,6 @@ async function getResumeAttachments(applicants: any[]) {
                     console.log(`✅ Resume attached: ${filename} (${fileBuffer.length} bytes)`);
                 } else {
                     console.warn(`❌ No file buffer created for ${applicant.applicant_name || applicant.name}`);
-                    // Don't create placeholder files - we want to know which resumes failed
                 }
 
             } catch (error) {

@@ -47,8 +47,7 @@ interface TodosHeaderProps {
   onFilterChange?: (filters: FilterState) => void;
   filterConfig?: FilterConfig[];
   title?: string;
-  oncreateButton: () => Promise<void>;
-}
+ oncreateButton?: (() => Promise<void>) | undefined;}
 
 export const TodosHeader = ({
   searchQuery,
@@ -442,13 +441,15 @@ export const TodosHeader = ({
             >
               <RefreshCw className="w-4 h-4" />
             </Button>
-            <Button
-              onClick={oncreateButton}
-              className="bg-primary text-white rounded-full h-10 w-10 flex items-center justify-center hover:bg-primary/90 transition-colors shadow-md"
-              variant="outline"
-            >
-              <Plus className="h-4 w-4 stroke-[3]" />
-            </Button>
+            {oncreateButton && (
+  <button
+    onClick={oncreateButton}
+   className="bg-primary text-white rounded-full h-10 w-10 flex items-center justify-center hover:bg-primary/90 transition-colors shadow-md"
+              
+  >
+    <Plus/>
+  </button>
+)}
           </div>
         </div>
       </div>

@@ -29,7 +29,8 @@ export default function TodoDetailPage() {
   const [loading, setLoading] = useState(true);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
-  const { user } = useAuth()
+  const[jobTiitle , setJobTitle] = useState<string>('')
+  const {user } = useAuth()
   const userEmail = user?.email
 
   const handleClose = () => {
@@ -63,6 +64,7 @@ export default function TodoDetailPage() {
         setTodoData(todo);
         if (todo.custom_job_id) {
           setJobId(todo.custom_job_id);
+          setJobTitle(todo.custom_job_title)
         } else {
           console.warn('No job ID found for this todo');
           setJobId('');
@@ -79,6 +81,8 @@ export default function TodoDetailPage() {
       fetchTodoDetails();
     }
   }, [todoId]);
+
+  console.log(todoData)
 
   if (loading) {
     return (
@@ -156,12 +160,13 @@ export default function TodoDetailPage() {
                         initialJobId={jobId}
                         onFormSubmitSuccess={handleFormSubmitSuccess}
                       /> */}
-                      <ApplicantSearchAndTag
-                        initialJobId={jobId}
-                        onFormSubmitSuccess={() => {
-                          // Refresh data or show success message
-                        }}
-                      />
+         <ApplicantSearchAndTag
+  initialJobId={jobId}
+  onFormSubmitSuccess={() => {
+    setRefreshKey(prev => prev + 1);
+  }}
+/>
+                      
                     </div>
                   </SheetContent>
                 </Sheet>
@@ -173,6 +178,7 @@ export default function TodoDetailPage() {
                   todoData={todoData}
                   refreshTrigger={refreshKey}
                   onRefresh={() => setRefreshKey(prev => prev + 1)}
+                  job_title={jobTiitle}
                 />
               </>
             ) : (

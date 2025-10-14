@@ -6,12 +6,13 @@ import { Lead, useLeadStore } from "@/stores/leadStore";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import LeadDetailModal from "../Leads/Details";
 import { LoadingState } from "../Leads/LoadingState";
-import { LeadsMobileView } from "../Leads/MobileView";
+
 import { useRouter } from "next/navigation";
 import { LeadsTable } from "./Table";
 import { Building2, User, Bookmark, Tag } from "lucide-react";
 import { TodosHeader } from "../recruiter/TodoHeader";
 import Pagination from "../comman/Pagination";
+import { LeadsMobileView } from "../Leads/MobileView";
 
 interface CustomerDetails {
   name: string;
@@ -80,6 +81,11 @@ const ContractLeads = () => {
     []
   );
 
+  // Check if the user has a restricted role
+  const restrictedRoles = ["Recruiter", "Sales User"];
+  const isRestrictedUser = user?.roles?.some((role: string) => restrictedRoles.includes(role)) || false;
+
+  // Optimized function to fetch contract leads
   const fetchLeads = useCallback(
     async (email: string) => {
       try {
@@ -290,12 +296,14 @@ const ContractLeads = () => {
                 onViewLead={handleViewLead}
                 onEditLead={handleEditLead}
                 onCreateContract={handleCreateContract}
+                isRestrictedUser={isRestrictedUser} // Pass isRestrictedUser
               />
             </div>
             <LeadsMobileView
               leads={paginatedLeads}
               onViewLead={handleViewLead}
               onEditLead={handleEditLead}
+              isRestrictedUser={isRestrictedUser} // Pass isRestrictedUser
             />
             <Pagination
               currentPage={currentPage}
@@ -329,7 +337,7 @@ const ContractLeads = () => {
       </div>
 
       {showModal && (
-        <LeadDetailModal lead={selectedLead} onClose={handleCloseModal} />
+        <LeadDetailModal lead={selectedLead} onClose={handleCloseModal} isRestrictedUser={isRestrictedUser} />
       )}
 
       {showConfirmation && (

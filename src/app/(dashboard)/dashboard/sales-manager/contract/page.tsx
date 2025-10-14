@@ -34,6 +34,10 @@ const ContractLeads = () => {
   const { user } = useAuth();
   const router = useRouter();
 
+  // Check if the user has a restricted role
+  const restrictedRoles = ["Recruiter", "Sales User"];
+  const isRestrictedUser = user?.roles?.some((role: string) => restrictedRoles.includes(role)) || false;
+
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10; // Number of leads per page
@@ -260,18 +264,20 @@ const ContractLeads = () => {
           <>
             <div className="hidden lg:block">
               <LeadsTable
-                leads={paginatedLeads} // Use paginatedLeads instead of filteredLeads
+                leads={paginatedLeads}
                 onViewLead={handleViewLead}
                 onEditLead={handleEditLead}
                 onCreateContract={handleCreateContract}
+                isRestrictedUser={isRestrictedUser} // Pass isRestrictedUser
               />
             </div>
 
             {/* Mobile Card View */}
             <LeadsMobileView
-              leads={paginatedLeads} // Use paginatedLeads instead of filteredLeads
+              leads={paginatedLeads}
               onViewLead={handleViewLead}
               onEditLead={handleEditLead}
+              isRestrictedUser={isRestrictedUser} // Pass isRestrictedUser
             />
 
             {/* Pagination Component */}
@@ -302,7 +308,11 @@ const ContractLeads = () => {
 
       {/* Lead Detail Modal */}
       {showModal && (
-        <LeadDetailModal lead={selectedLead} onClose={handleCloseModal} />
+        <LeadDetailModal
+          lead={selectedLead}
+          onClose={handleCloseModal}
+          isRestrictedUser={isRestrictedUser} // Pass isRestrictedUser
+        />
       )}
 
       {/* Confirmation Dialog */}

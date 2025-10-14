@@ -96,6 +96,9 @@ export default function TaggedApplicants({
   const [targetStartDate, setTargetStartDate] = useState<string>("");
   const router = useRouter();
   const [expiryDate, setExpiryDate] = useState<string>("");
+  const user = { username: ownerEmail };
+
+  console.log(job_title)
 
   // Auto-dismiss error messages after 3 seconds
   useEffect(() => {
@@ -261,7 +264,7 @@ export default function TaggedApplicants({
       }
     };
     fetchApplicants();
-  }, [jobId, ownerEmail, refreshTrigger]);
+  }, [jobId, ownerEmail, refreshTrigger,refreshKey]);
 
   const handleOpenStatusModal = () => {
     if (selectedApplicants.length === 0) {
@@ -677,21 +680,24 @@ export default function TaggedApplicants({
         onDeleteApplicant={handleDeleteApplicant}
       />
 
+    
+
       {showEmailPopup && (
-        <EmailSendingPopup
-          isOpen={showEmailPopup}
-          onClose={() => setShowEmailPopup(false)}
-          selectedApplicants={selectedApplicants}
-          currentUserEmail={ownerEmail}
-          jobId={jobId}
-          jobTitle={job_title || ""}
-          onEmailSent={() => {
-            setSelectedApplicants([]);
-            setShowEmailPopup(false);
-            toast.success("Email sent successfully!");
-          }}
-        />
-      )}
+  <EmailSendingPopup
+    isOpen={showEmailPopup}
+    onClose={() => setShowEmailPopup(false)}
+    selectedApplicants={selectedApplicants}
+    currentUserEmail={ownerEmail}
+    jobId={jobId}
+    jobTitle={job_title || ""}
+    onEmailSent={() => {
+      setSelectedApplicants([]);
+      setShowEmailPopup(false);
+      toast.success("Email sent successfully!");
+    }}
+    user={user} // Pass the user prop
+  />
+)}
 
       {/* Status Update Modal */}
       {isStatusModalOpen && (

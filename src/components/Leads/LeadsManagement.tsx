@@ -21,6 +21,10 @@ const LeadsManagement = () => {
   const [currentView, setCurrentView] = useState<"list" | "add" | "edit">("list");
   const { user } = useAuth();
 
+  // Check if the user has a restricted role
+  const restrictedRoles = ["Recruiter", "Sales User"];
+  const isRestrictedUser = user?.roles?.some((role: string) => restrictedRoles.includes(role)) || false;
+
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -244,6 +248,7 @@ const LeadsManagement = () => {
               leads={paginatedLeads}
               onViewLead={handleViewLead}
               onEditLead={handleEditLead}
+              isRestrictedUser={isRestrictedUser} // Pass isRestrictedUser
             />
 
             <Pagination
@@ -272,7 +277,11 @@ const LeadsManagement = () => {
       </div>
 
       {showModal && (
-        <LeadDetailModal lead={selectedLead} onClose={handleCloseModal} />
+        <LeadDetailModal
+          lead={selectedLead}
+          onClose={handleCloseModal}
+          isRestrictedUser={isRestrictedUser} // Pass isRestrictedUser
+        />
       )}
     </div>
   );
