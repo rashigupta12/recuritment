@@ -103,6 +103,7 @@ const StaffingPlansTable: React.FC = () => {
 
   // Check if user is project manager
   const isProjectManager = user?.roles?.includes("Projects Manager") || false;
+  const isRecruiter = user?.roles?.includes("Recruiter") || false;
 
   // Filter state for TodosHeader
   const [filterState, setFilterState] = useState<FilterState>({
@@ -479,7 +480,7 @@ const StaffingPlansTable: React.FC = () => {
           onFilterChange={handleFilterChange}
           filterConfig={filterConfig}
           title="Customers Requirements"
-          oncreateButton={handleCreate}
+          oncreateButton={isRecruiter ? handleCreate : undefined}
         />
 
         {/* Main Table */}
