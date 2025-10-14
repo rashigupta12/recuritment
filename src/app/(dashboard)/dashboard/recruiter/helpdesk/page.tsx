@@ -5,13 +5,14 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { frappeAPI } from "@/lib/api/frappeClient";
 import { showToast } from "@/lib/toast/showToast";
-import { FeedbackItem } from "@/types/feedback";
+import { format } from "date-fns";
+import { Plus } from "lucide-react";
 import FeedbackList from "@/components/feedback/FeedBackList";
 import FeedbackForm from "@/components/feedback/FeedbackForm";
 import FeedbackDetails from "@/components/feedback/FeedBackDetails";
 import { SortableTableHeader } from "@/components/recruiter/SortableTableHeader";
-import { format } from "date-fns";
-import { Plus } from "lucide-react";
+import { FeedbackItem } from "@/types/feedback";
+
 
 type ViewType = "list" | "form" | "details";
 
@@ -28,29 +29,23 @@ export default function HelpdeskPage() {
 
     setLoading(true);
     try {
-      const listResponse = await frappeAPI.getFeedbackByUserId(user.email);
+      const listResponse = await frappeAPI.makeAuthenticatedRequest(
+        `GET`,
+        `/method/recruitment_app.get_issues.get_issues_with_attachments?owner=${user?.email}`
+      );
 
-      if (!listResponse.data) {
+      if (!listResponse.message.data) {
         throw new Error("No feedback data received");
       }
 
-      const feedbackPromises = listResponse.data.map(
-        async (issue: { name: string }) => {
-          const detailResponse = await frappeAPI.getFeedbackById(issue.name);
-          return detailResponse.data;
-        }
-      );
-
-      const feedbacksData = await Promise.all(feedbackPromises);
-      
-      const transformedFeedbacks: FeedbackItem[] = feedbacksData.map((feedback: any) => ({
-        ...feedback,
-        custom_image_attachements: feedback.custom_image_attachements || feedback.custom_images || [],
-        raised_by: feedback.raised_by || user.email || '',
-        issue_type: feedback.issue_type || 'General Feedback'
+      // Map API response to match FeedbackItem type
+      const mappedFeedbacks: FeedbackItem[] = listResponse.message.data.map((item: any) => ({
+        ...item,
+        doctype: "Issue", // Assuming doctype is "Issue" based on context
+        custom_images: item.custom_image_attachements || [], // Map custom_image_attachements to custom_images
       }));
-      
-      setFeedbacks(transformedFeedbacks);
+
+      setFeedbacks(mappedFeedbacks);
     } catch (error) {
       console.error("Error fetching feedbacks:", error);
       showToast.error("Failed to load feedbacks. Please try again.");
@@ -72,6 +67,8 @@ export default function HelpdeskPage() {
         raised_by: user?.email,
         status: "Open",
         issue_type: "Query",
+        doctype: "Issue", // Added to match API expectations
+        custom_images: feedbackData.custom_images || [], // Ensure custom_images is included
       };
 
       Object.keys(apiData).forEach(
@@ -155,7 +152,7 @@ function FeedbackListPage({
   onNewFeedback,
 }: FeedbackListPageProps) {
   const [sortField, setSortField] = useState<keyof FeedbackItem | null>(null);
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc' | null>(null);
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc" | null>(null);
   const [sortedFeedbacks, setSortedFeedbacks] = useState<FeedbackItem[]>(feedbacks);
 
   useEffect(() => {
@@ -163,31 +160,31 @@ function FeedbackListPage({
   }, [feedbacks]);
 
   const columns: Array<Column<keyof FeedbackItem>> = [
-    { field: 'opening_date', label: 'Date', sortable: false, align: 'left' },
-    { field: 'subject', label: 'Module', sortable: false, align: 'left' },
-    { field: 'description', label: 'Description', sortable: false, align: 'left' },
-    { field: 'status', label: 'Status', sortable: false, align: 'left' },
+    { field: "opening_date", label: "Date", sortable: true, align: "left" },
+    { field: "custom_module", label: "Module", sortable: true, align: "left" },
+    { field: "description", label: "Description", sortable: true, align: "left" },
+    { field: "status", label: "Status", sortable: true, align: "left" },
   ];
 
   const handleSort = (field: keyof FeedbackItem) => {
-    const newDirection = sortField === field && sortDirection === 'asc' ? 'desc' : 'asc';
-    
+    const newDirection = sortField === field && sortDirection === "asc" ? "desc" : "asc";
+
     const sorted = [...feedbacks].sort((a, b) => {
       const aValue = a[field];
       const bValue = b[field];
-      
-      if (field === 'opening_date') {
-        const aDate = aValue && typeof aValue === 'string' ? new Date(aValue).getTime() : 0;
-        const bDate = bValue && typeof bValue === 'string' ? new Date(bValue).getTime() : 0;
-        return newDirection === 'asc' ? aDate - bDate : bDate - aDate;
+
+      if (field === "opening_date") {
+        const aDate = aValue && typeof aValue === "string" ? new Date(aValue).getTime() : 0;
+        const bDate = bValue && typeof bValue === "string" ? new Date(bValue).getTime() : 0;
+        return newDirection === "asc" ? aDate - bDate : bDate - aDate;
       }
-      
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        return newDirection === 'asc'
+
+      if (typeof aValue === "string" && typeof bValue === "string") {
+        return newDirection === "asc"
           ? aValue.localeCompare(bValue)
           : bValue.localeCompare(aValue);
       }
-      
+
       return 0;
     });
 
@@ -199,19 +196,18 @@ function FeedbackListPage({
   return (
     <div>
       <div className="p-2 flex-shrink-0">
-      <div className="flex items-center justify-between">
-  <div className="flex items-center gap-3">
-    <h1 className="text-2xl font-bold">Helpdesk</h1>
-  </div>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold">Helpdesk</h1>
+          </div>
 
-  <button
-    onClick={onNewFeedback}
-    className="bg-primary text-white rounded-full h-10 w-10 flex items-center justify-center hover:bg-primary/90 transition-colors shadow-md"
-  >
-    <Plus className="h-4 w-4 stroke-[3]" /> {/* precise balanced size */}
-  </button>
-</div>
-
+          <button
+            onClick={onNewFeedback}
+            className="bg-primary text-white rounded-full h-10 w-10 flex items-center justify-center hover:bg-primary/90 transition-colors shadow-md"
+          >
+            <Plus className="h-4 w-4 stroke-[3]" />
+          </button>
+        </div>
       </div>
       <div className="bg-white shadow-md rounded-lg border border-blue-100 overflow-hidden w-full">
         <div className="overflow-x-auto">
@@ -236,7 +232,6 @@ function FeedbackListPage({
                 sortField={sortField}
                 sortDirection={sortDirection}
                 onSort={handleSort}
-                
               />
               <tbody className="divide-y divide-gray-100">
                 {sortedFeedbacks.map((feedback, index) => (
@@ -260,7 +255,7 @@ interface Column<T> {
   field: T;
   label: string;
   sortable: boolean;
-  align: 'left' | 'center' | 'right';
+  align: "left" | "center" | "right";
 }
 
 interface FeedbackRowProps {
@@ -278,9 +273,7 @@ function FeedbackRow({ feedback, onView, index }: FeedbackRowProps) {
 
   return (
     <tr
-      className={`${
-        index % 2 === 0 ? "bg-white" : "bg-blue-50"
-      } hover:bg-blue-100 transition duration-100 cursor-pointer`}
+      className={`${index % 2 === 0 ? "bg-white" : "bg-blue-50"} hover:bg-blue-100 transition duration-100 cursor-pointer`}
       onClick={() => onView(feedback)}
       role="button"
       tabIndex={0}
@@ -299,7 +292,7 @@ function FeedbackRow({ feedback, onView, index }: FeedbackRowProps) {
       </td>
       <td className="px-2 sm:px-4 py-4">
         <h3 className="font-semibold text-md text-blue-900 truncate max-w-xs">
-          {feedback.subject}
+          {feedback.subject || "N/A"}
         </h3>
       </td>
       <td className="px-2 sm:px-4 py-4">

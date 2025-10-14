@@ -1,12 +1,11 @@
-// ============================================
-// TodosTable.tsx (Updated)
-// ============================================
-/*eslint-disable @typescript-eslint/no-explicit-any*/
+// TodosTable.tsx
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 'use client';
 
 import { useState } from "react";
 import { SortableTableHeader } from "./SortableTableHeader";
+import { showToast } from "@/lib/toast/showToast";
 
 interface ToDo {
   custom_department?: string;
@@ -74,14 +73,15 @@ export const TodosTable = ({ todos, onViewTodo }: TodosTableProps) => {
     const diffDays = Math.floor((now.getTime() - assigned.getTime()) / (1000 * 60 * 60 * 24));
     return diffDays;
   };
+
   const columns = [
     { field: 'date' as const, label: 'Date Assigned' },
     { field: 'aging' as const, label: 'Aging (Days)', align: 'center' as const },
-    { field: 'company' as const, label: 'Company Name' , sortable: false },
-    { field: 'title' as const, label: 'Job Title',sortable: false },
+    { field: 'company' as const, label: 'Company Name', sortable: false },
+    { field: 'title' as const, label: 'Job Title', sortable: false },
     { field: 'location' as const, label: 'Location' },
     { field: 'vacancies' as const, label: 'Vacancies', align: 'center' as const },
-    { field: 'status' as const, label: 'Status' ,sortable: false },
+    { field: 'status' as const, label: 'Status', sortable: false },
   ];
 
   // Sorting logic based on selected column
@@ -122,10 +122,12 @@ export const TodosTable = ({ todos, onViewTodo }: TodosTableProps) => {
     return 0;
   });
 
-  
-
   const handleRowClick = (todo: ToDo, event: React.MouseEvent) => {
     if ((event.target as HTMLElement).closest('button')) return;
+    if (todo.status?.toLowerCase() === 'cancelled') {
+      showToast.error("This job is cancelled ");
+      return;
+    }
     onViewTodo(todo);
   };
 
@@ -143,13 +145,19 @@ export const TodosTable = ({ todos, onViewTodo }: TodosTableProps) => {
             sortedTodos.map((todo, index) => (
               <tr
                 key={todo.name}
-                className={`cursor-pointer transition-all ${index % 2 === 0 ? 'bg-white hover:bg-blue-50' : 'bg-blue-50 hover:bg-white'}`}
+                className={`transition-all ${index % 2 === 0 ? 'bg-white hover:bg-blue-50' : 'bg-blue-50 hover:bg-white'} ${
+                  todo.status?.toLowerCase() === 'cancelled' ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+                }`}
                 onClick={(e) => handleRowClick(todo, e)}
               >
                 {/* Date Assigned */}
                 <td className="px-2 sm:px-4 py-4 whitespace-nowrap">
                   {todo.custom_date_assigned
-                    ? new Date(todo.custom_date_assigned).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                    ? new Date(todo.custom_date_assigned).toLocaleDateString('en-GB', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                      })
                     : <span className="text-gray-400">Not set</span>}
                 </td>
                 {/* Aging - Centered */}
@@ -168,7 +176,9 @@ export const TodosTable = ({ todos, onViewTodo }: TodosTableProps) => {
             ))
           ) : (
             <tr>
-              <td colSpan={7} className="text-center py-4 text-gray-500">No jobs found</td>
+              <td colSpan={7} className="text-center py-4 text-gray-500">
+                No jobs found
+              </td>
             </tr>
           )}
         </tbody>

@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+// src/components/feedback/FeedbackDetails.tsx
 import {
   Bug,
   Calendar,
@@ -7,16 +7,18 @@ import {
   MessageCircle,
   Paperclip,
   PlusCircle,
-  X
+  X,
 } from "lucide-react";
 import React, { useState } from "react";
-import AttachmentPreviewModal from "./AttachmentperviewModal";
+
 import { Button } from "../ui/button";
 import { createPortal } from "react-dom";
 import { FeedbackItem, ImageAttachment } from "@/types/feedback";
+import AttachmentPreviewModal from "./AttachmentperviewModal";
 
 // Helper function to strip HTML tags
 const stripHtml = (html: string): string => {
+  if (typeof document === 'undefined') return html.replace(/<[^>]*>/g, '');
   const tmp = document.createElement("div");
   tmp.innerHTML = html;
   return tmp.textContent || tmp.innerText || "";
@@ -47,7 +49,6 @@ const isImageFile = (attachment: ImageAttachment): boolean => {
   return imageExtensions.includes(extension);
 };
 
-// Feedback Details Component with createPortal
 const FeedbackDetails: React.FC<{
   feedback: FeedbackItem;
   onClose: () => void;
@@ -159,7 +160,7 @@ const FeedbackDetails: React.FC<{
   };
 
   return createPortal(
-    <div 
+    <div
       className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 sm:p-6"
       onClick={handleBackdropClick}
     >
@@ -211,7 +212,7 @@ const FeedbackDetails: React.FC<{
             {/* Subject */}
             <div className="bg-gray-50 rounded-lg p-4 shadow-sm">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Module</h3>
-              <p className="text-gray-700 text-base">{feedback.subject}</p>
+              <p className="text-gray-700 text-base">{feedback.custom_module || "N/A"}</p>
             </div>
 
             {/* Description */}
@@ -254,14 +255,14 @@ const FeedbackDetails: React.FC<{
             </div>
 
             {/* Attachments */}
-            {feedback.custom_image_attachements && feedback.custom_image_attachements.length > 0 && (
+            {feedback.custom_images && feedback.custom_images.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
                   <Paperclip className="h-5 w-5" />
-                  Attachments ({feedback.custom_image_attachements.length})
+                  Attachments ({feedback.custom_images.length})
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {feedback.custom_image_attachements.map((attachment, index) => {
+                  {feedback.custom_images.map((attachment, index) => {
                     const isImage = isImageFile(attachment);
                     const fileName =
                       attachment.image?.split("/").pop() ||
@@ -320,7 +321,6 @@ const FeedbackDetails: React.FC<{
                         </Button>
                       </div>
                     );
-                  
                   })}
                 </div>
               </div>
@@ -341,11 +341,11 @@ const FeedbackDetails: React.FC<{
         </div>
 
         {/* Attachment Preview Modal */}
-        {feedback.custom_image_attachements && feedback.custom_image_attachements.length > 0 && (
+        {feedback.custom_images && feedback.custom_images.length > 0 && (
           <AttachmentPreviewModal
             isOpen={showAttachmentPreview}
             onClose={() => setShowAttachmentPreview(false)}
-            attachments={feedback.custom_image_attachements}
+            attachments={feedback.custom_images}
             currentIndex={currentAttachmentIndex}
             onIndexChange={setCurrentAttachmentIndex}
           />

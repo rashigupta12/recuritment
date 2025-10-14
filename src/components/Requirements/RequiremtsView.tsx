@@ -230,7 +230,7 @@ const StaffingPlansTable: React.FC = () => {
     try {
       const response = await frappeAPI.makeAuthenticatedRequest(
         "GET",
-        `/method/recruitment_app.get_staffing_plan.get_staffing_plans_with_children`
+        `/method/recruitment_app.get_staffing_plan.get_staffing_plans_with_children?owner=${user?.email}`
       );
 
       const plansData = response.message?.data || [];
