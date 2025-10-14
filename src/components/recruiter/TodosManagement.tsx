@@ -5,11 +5,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { frappeAPI } from "@/lib/api/frappeClient";
 import { useEffect, useState, useMemo, useRef } from "react";
 import { LoadingState } from "./LoadingState";
-import { TodosTable } from "./TodosTable";
+// import { TodosTable } from "./TodosTable";
 import { Calendar, Briefcase, MapPin, Award } from "lucide-react";
 import { Pagination } from "@/components/comman/Pagination";
 import { toast } from "sonner";
 import { TodosHeader } from "@/components/recruiter/Header";
+import TodosTable from "./TodosTable";
 
 interface ToDo {
   name: string;
