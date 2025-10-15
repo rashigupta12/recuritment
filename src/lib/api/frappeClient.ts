@@ -765,7 +765,7 @@ createInterview: async (interviewData: Record<string, unknown>) => {
 getInterviewsByApplicant: async (applicantId: string) => {
   return await frappeAPI.makeAuthenticatedRequest(
     'GET',
-    `/resource/Interview?fields=${encodeURIComponent(JSON.stringify(["name","interview_round","job_applicant","job_opening","status","scheduled_on","from_time","to_time","custom_mode_"," custom_link"]))}&filters=${encodeURIComponent(JSON.stringify([["job_applicant", "=", applicantId]]))}`
+    `/resource/Interview?fields=${encodeURIComponent(JSON.stringify(["name","interview_round","job_applicant","job_opening","status","scheduled_on","from_time","to_time","custom_mode_"]))}&filters=${encodeURIComponent(JSON.stringify([["job_applicant", "=", applicantId]]))}`
   );
 },
 
