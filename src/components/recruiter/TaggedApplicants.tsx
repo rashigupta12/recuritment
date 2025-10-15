@@ -997,6 +997,7 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
       <option value="Tagged" className="text-md">Tagged</option>
       <option value="Shortlisted" className="text-md">Shortlisted</option>
       <option value="Assessment" className="text-md">Assessment</option>
+      <option value="Interview to be Scheduled"className="text-md">Interview to be Scheduled</option>
       <option value="Interview" className="text-md">Interview</option>
       <option value="Offered" className="text-md">Offered</option>
       <option value="Offer Drop" className="text-md">Offer Drop</option>
