@@ -3,7 +3,7 @@
 
 import { frappeAPI } from "@/lib/api/frappeClient";
 import { AlertTriangle, CheckCircle, Mail, Search, Upload } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import BulkApplicantForm from "./MultipleApplicantsForm";
 
 interface ExistingApplicant {
@@ -39,20 +39,25 @@ export default function ApplicantSearchAndTag({
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [searchError, setSearchError] = useState("");
   const [showWarning, setShowWarning] = useState(false);
-  const [existingApplicants, setExistingApplicants] = useState<
-    ExistingApplicant[]
-  >([]);
+  const [existingApplicants, setExistingApplicants] = useState<ExistingApplicant[]>([]);
   const [alreadyTaggedJob, setAlreadyTaggedJob] = useState<string | null>(null);
-  const [prefilledApplicantData, setPrefilledApplicantData] = useState<any[]>(
-    []
-  );
+  const [prefilledApplicantData, setPrefilledApplicantData] = useState<any[]>([]);
   const [showBulkForm, setShowBulkForm] = useState(false);
-  const [latestCVTimestamp, setLatestCVTimestamp] = useState<string | null>(
-    null
-  );
+  const [latestCVTimestamp, setLatestCVTimestamp] = useState<string | null>(null);
   const [showCVUpdateForm, setShowCVUpdateForm] = useState(false);
-  console.log(initialJobTitle, initialJobId);
+  const [triggerCVUpdateScroll, setTriggerCVUpdateScroll] = useState(false); // New state for CV update scroll
+  const formRef = useRef<HTMLDivElement>(null); // Ref for the form container
+
   const currentJobTitle = initialJobTitle || initialJobId || "";
+
+  // Scroll to form when triggered by Update CV
+  useEffect(() => {
+    if (triggerCVUpdateScroll && showBulkForm && formRef.current) {
+      console.log('Scrolling to form due to Update CV');
+      formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setTriggerCVUpdateScroll(false); // Reset to prevent re-scrolling
+    }
+  }, [triggerCVUpdateScroll, showBulkForm]);
 
   const handleRequestCVUpdate = async () => {
     if (!prefilledApplicantData || prefilledApplicantData.length === 0) return;
@@ -119,8 +124,10 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
   };
 
   const handleUpdateCV = () => {
+    console.log('handleUpdateCV: Setting showBulkForm and showCVUpdateForm to true');
     setShowCVUpdateForm(true);
     setShowBulkForm(true);
+    setTriggerCVUpdateScroll(true); // Trigger scroll for Update CV
   };
 
   const handleSubmit = async (overrideWarning = false) => {
@@ -134,7 +141,7 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
         email_id: prefilledApplicantData[0].email_id,
         phone_number: prefilledApplicantData[0].phone_number,
         country: prefilledApplicantData[0].country,
-        job_title: currentJobTitle,
+        job_title: initialJobId,
         designation: prefilledApplicantData[0].designation,
         status: "Tagged",
         resume_attachment: prefilledApplicantData[0].resume_attachment,
@@ -182,10 +189,12 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
     setExistingApplicants([]);
     setPrefilledApplicantData([]);
     setAlreadyTaggedJob(null);
-    setShowBulkForm(false);
-    setShowWarning(false);
     setLatestCVTimestamp(null);
     setShowCVUpdateForm(false);
+    // Only reset showBulkForm if not updating CV
+    if (!showCVUpdateForm) {
+      setShowBulkForm(false);
+    }
 
     try {
       console.log("Searching for email:", searchEmail);
@@ -255,7 +264,15 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
           ];
 
           setPrefilledApplicantData(prefilledData);
-          // Don't show form automatically for existing applicants
+          // Only show form for new CV update if explicitly requested
+          if (showCVUpdateForm) {
+            setShowBulkForm(true);
+            // Scroll to form when showing for CV update
+            if (formRef.current) {
+              console.log('Scrolling to form from searchApplicant');
+              formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }
         } else {
           // No existing applicant found - create new one
           const emptyData = [
@@ -273,7 +290,12 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
           ];
 
           setPrefilledApplicantData(emptyData);
-          setShowBulkForm(true); // Show form for new applicant
+          setShowBulkForm(true);
+          // Scroll to form for new applicant
+          if (formRef.current) {
+            console.log('Scrolling to form for new applicant');
+            formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
         }
       } else {
         // No data returned - create new applicant
@@ -292,7 +314,12 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
         ];
 
         setPrefilledApplicantData(emptyData);
-        setShowBulkForm(true); // Show form for new applicant
+        setShowBulkForm(true);
+        // Scroll to form for new applicant
+        if (formRef.current) {
+          console.log('Scrolling to form for new applicant');
+          formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
       }
     } catch (error: any) {
       console.error("Search error:", error);
@@ -314,7 +341,12 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
       ];
 
       setPrefilledApplicantData(emptyData);
-      setShowBulkForm(true); // Show form for new applicant
+      setShowBulkForm(true);
+      // Scroll to form on error
+      if (formRef.current) {
+        console.log('Scrolling to form on search error');
+        formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     } finally {
       setIsSearching(false);
     }
@@ -326,6 +358,7 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
     setSearchEmail("");
     setExistingApplicants([]);
     setShowCVUpdateForm(false);
+    setTriggerCVUpdateScroll(false); // Reset scroll trigger
 
     if (onFormSubmitSuccess) {
       onFormSubmitSuccess();
@@ -333,12 +366,12 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
   };
 
   return (
-    <div className="space-y-6 p-2">
+    <div className="space-y-6 p-2 py-0">
       <div className="bg-white rounded-lg shadow-md px-6 pb-2">
-        <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+        {/* <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
           <Search className="w-5 h-5" />
           Search Applicant
-        </h2>
+        </h2> */}
 
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -429,7 +462,7 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
                 className={`px-4 py-2 text-white rounded-md flex gap-2 items-center ${
                   isSendingEmail
                     ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-orange-600 hover:bg-orange-700"
+                    : "bg-blue-600 hover:bg-blue-700"
                 }`}
               >
                 {isSendingEmail ? (
@@ -520,7 +553,7 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
       )}
 
       {showBulkForm && (
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div ref={formRef} className="bg-white rounded-lg shadow-md p-6">
           <h3 className="text-lg font-semibold mb-4">
             {existingApplicants.length > 0 && showCVUpdateForm
               ? "Update Applicant CV"

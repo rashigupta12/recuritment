@@ -38,6 +38,7 @@ export default function TodoDetailPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [jobTiitle, setJobTitle] = useState<string>("");
   const { user } = useAuth();
+  const [companyName , setCompanyName]= useState<string>("");
   const userEmail = user?.email;
 
   const handleClose = () => {
@@ -67,11 +68,13 @@ export default function TodoDetailPage() {
         setLoading(true);
         const todoDetails = await frappeAPI.getTodoBYId(todoId);
         const todo = todoDetails.data;
+        console.log(todo)
 
         setTodoData(todo);
         if (todo.custom_job_id) {
           setJobId(todo.custom_job_id);
           setJobTitle(todo.custom_job_title);
+          setCompanyName(todo.custom_company)
         } else {
           console.warn("No job ID found for this todo");
           setJobId("");
@@ -89,7 +92,7 @@ export default function TodoDetailPage() {
     }
   }, [todoId]);
 
-  console.log(todoData);
+  console.log("tododata",todoData);
 
   if (loading) {
     return (
@@ -160,7 +163,7 @@ export default function TodoDetailPage() {
                 <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                   <SheetContent
                     side="right"
-                    className="w-full sm:max-w-md overflow-y-auto"
+                    className="w-full sm:max-w-lg overflow-y-auto"
                   >
                     <SheetHeader>
                       <SheetTitle className="text-2xl font-bold text-gray-900">
@@ -193,6 +196,7 @@ initialJobTitle={jobTiitle}
                   refreshTrigger={refreshKey}
                   onRefresh={() => setRefreshKey((prev) => prev + 1)}
                   job_title={jobTiitle}
+                  companyname = {companyName}
                 />
               </>
             ) : (

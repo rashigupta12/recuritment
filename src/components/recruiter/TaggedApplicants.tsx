@@ -45,6 +45,7 @@ interface Props {
   refreshTrigger?: number;
   onRefresh?: () => void;
   jobTitle?: string;
+  companyname?:string
 }
 
 interface AssessmentResponse {
@@ -73,6 +74,7 @@ export default function TaggedApplicants({
   todoData,
   refreshTrigger,
   onRefresh,
+  companyname
 }: Props) {
   const [applicants, setApplicants] = useState<JobApplicant[]>([]);
   const [filteredApplicants, setFilteredApplicants] = useState<JobApplicant[]>([]);
@@ -82,7 +84,7 @@ export default function TaggedApplicants({
   const [showEmailPopup, setShowEmailPopup] = useState<boolean>(false);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState<boolean>(false);
   const [isAssessmentModalOpen, setIsAssessmentModalOpen] = useState<boolean>(false);
-  const [isOfferModalOpen, setIsOfferModalOpen] = useState<boolean>(false); // New state for Offer modal
+  const [isOfferModalOpen, setIsOfferModalOpen] = useState<boolean>(false);
   const [selectedStatus, setSelectedStatus] = useState<string>("");
   const [modalError, setModalError] = useState<string | null>(null);
   const [assessmentError, setAssessmentError] = useState<string | null>(null);
@@ -91,14 +93,15 @@ export default function TaggedApplicants({
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [refreshKey, setRefreshKey] = useState<number>(0);
   const [showDowngradeWarning, setShowDowngradeWarning] = useState<boolean>(false);
-  const [downgradeInfo, setDowngradeInfo] = useState<{ from: string; to: string } | null>(null);
+  const [downgradeInfo, setDowngradeInfo] = useState<{
+    from: string;
+    to: string;
+  } | null>(null);
   const [offeredSalary, setOfferedSalary] = useState<string>("");
   const [targetStartDate, setTargetStartDate] = useState<string>("");
   const router = useRouter();
   const [expiryDate, setExpiryDate] = useState<string>("");
   const user = { username: ownerEmail };
-
-  console.log(job_title)
 
   // Auto-dismiss error messages after 3 seconds
   useEffect(() => {
@@ -182,7 +185,6 @@ export default function TaggedApplicants({
       setSelectedApplicants((prev) => prev.filter((app) => app.name !== applicant.name));
       setRefreshKey((prev) => prev + 1);
       if (onRefresh) onRefresh();
-      toast.success(`${applicant.applicant_name || applicant.name} deleted successfully`);
     } catch (err: any) {
       console.error("Delete error:", err);
       let errorMessage = "Failed to delete applicant";
@@ -264,7 +266,7 @@ export default function TaggedApplicants({
       }
     };
     fetchApplicants();
-  }, [jobId, ownerEmail, refreshTrigger,refreshKey]);
+  }, [jobId, ownerEmail, refreshTrigger, refreshKey]);
 
   const handleOpenStatusModal = () => {
     if (selectedApplicants.length === 0) {
@@ -306,7 +308,10 @@ export default function TaggedApplicants({
     );
     if (downgrades.length > 0) {
       const firstDowngrade = downgrades[0];
-      setDowngradeInfo({ from: firstDowngrade.status || "", to: selectedStatus });
+      setDowngradeInfo({
+        from: firstDowngrade.status || "",
+        to: selectedStatus,
+      });
       setShowDowngradeWarning(true);
     } else {
       handleConfirmStatusChange();
@@ -321,6 +326,8 @@ export default function TaggedApplicants({
     try {
       setLoading(true);
       const failedUpdates: string[] = [];
+      const failedEmails: string[] = [];
+
       for (const applicant of selectedApplicants) {
         const name = applicant.name;
         if (!name) {
@@ -329,21 +336,69 @@ export default function TaggedApplicants({
           continue;
         }
         try {
+          // Update applicant status to "Offered"
           const updateData: UpdateData = {
             status: "Offered",
             custom_offered_salary: offeredSalary,
             custom_target_start_date: targetStartDate,
           };
           await frappeAPI.updateApplicantStatus(name, updateData);
+
+          // Send offer email
+          const candidateName = applicant.applicant_name || "Candidate";
+          const firstName = candidateName.split(" ")[0];
+          const emailData = {
+            from_email: ownerEmail || "",
+            to_email: applicant.email_id || "",
+            subject: `Congratulations on Your Offer!`,
+            message: `Dear ${candidateName},
+
+Congratulations! We are delighted to inform you that you have been selected for the ${job_title || "position"} position at ${companyname}. Your skills, experience, and dedication truly impressed our team, and we are excited to welcome you aboard.
+
+We believe you will make a valuable contribution to our organization, and we look forward to seeing you thrive in your new role. Please let us know if you have any questions regarding the next steps or the onboarding process.
+
+Once again, congratulations and best wishes for this exciting new chapter in your career!
+
+Warm regards,
+${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
+            job_id: jobId,
+            username: ownerEmail,
+            applicants: [
+              {
+                name: applicant.name,
+                applicant_name: applicant.applicant_name,
+                email_id: applicant.email_id,
+                designation: applicant.designation,
+                resume_attachment: applicant.resume_attachment,
+              },
+            ],
+          };
+
+          const emailResponse = await fetch("/api/mails", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(emailData),
+          });
+
+          const emailResult = await emailResponse.json();
+          if (!emailResponse.ok) {
+            throw new Error(emailResult.error || "Failed to send email");
+          }
         } catch (err: any) {
-          console.error(`Failed to update status for ${name}:`, err);
+          console.error(`Failed to process for ${name}:`, err);
           if (err?.exc_type === "DoesNotExistError" || err.response?.status === 404) {
             failedUpdates.push(name);
+          } else if (err.message.includes("Failed to send email")) {
+            failedEmails.push(applicant.applicant_name || name);
           } else {
             throw err;
           }
         }
       }
+
+      // Refresh applicants list
       const response: any = await frappeAPI.getTaggedApplicantsByJobId(jobId, ownerEmail);
       const applicantNames = response.data || [];
       const applicantsPromises = applicantNames.map(async (applicant: any) => {
@@ -352,7 +407,10 @@ export default function TaggedApplicants({
           return applicantDetail.data;
         } catch (err) {
           console.error(`Error fetching details for ${applicant.name}:`, err);
-          return { name: applicant.name, email_id: applicant.email_id || "Not available" };
+          return {
+            name: applicant.name,
+            email_id: applicant.email_id || "Not available",
+          };
         }
       });
       const applicantsData = await Promise.all(applicantsPromises);
@@ -363,16 +421,22 @@ export default function TaggedApplicants({
       setTargetStartDate("");
       setIsOfferModalOpen(false);
       setRefreshKey((prev) => prev + 1);
-      if (failedUpdates.length > 0) {
-        toast.warning(
-          `Status updated for some applicants. Failed for: ${failedUpdates.join(", ")}. Applicant records may not exist or the endpoint may be incorrect.`
-        );
+
+      if (failedUpdates.length > 0 || failedEmails.length > 0) {
+        let warningMessage = "";
+        if (failedUpdates.length > 0) {
+          warningMessage += `Status update failed for: ${failedUpdates.join(", ")}. Applicant records may not exist or the endpoint may be incorrect. `;
+        }
+        if (failedEmails.length > 0) {
+          warningMessage += `Email sending failed for: ${failedEmails.join(", ")}.`;
+        }
+        toast.warning(warningMessage);
       } else {
-        toast.success("Applicant status updated successfully.");
+        toast.success("Applicant status updated to 'Offered' and emails sent successfully.");
       }
     } catch (err: any) {
-      console.error("Status update error:", err);
-      let errorMessage = "Failed to update applicant statuses.";
+      console.error("Offer update error:", err);
+      let errorMessage = "Failed to update applicant statuses or send emails.";
       if (err.response?.status === 401 || err.response?.status === 403) {
         errorMessage = "Session expired or insufficient permissions. Please try again.";
         router.push("/login");
@@ -422,7 +486,9 @@ export default function TaggedApplicants({
       }
       const statusUpdatePromises = selectedApplicants.map(async (applicant) => {
         try {
-          await frappeAPI.updateApplicantStatus(applicant.name, { status: "Assessment" });
+          await frappeAPI.updateApplicantStatus(applicant.name, {
+            status: "Assessment",
+          });
           console.log(`✅ Status updated to "Assessment" for ${applicant.name}`);
         } catch (err: any) {
           console.error(`❌ Failed to update status for ${applicant.name}:`, err);
@@ -438,7 +504,10 @@ export default function TaggedApplicants({
           return applicantDetail.data;
         } catch (err) {
           console.error(`Error fetching details for ${applicant.name}:`, err);
-          return { name: applicant.name, email_id: applicant.email_id || "Not available" };
+          return {
+            name: applicant.name,
+            email_id: applicant.email_id || "Not available",
+          };
         }
       });
       const applicantsData = await Promise.all(applicantsPromises);
@@ -481,6 +550,147 @@ export default function TaggedApplicants({
     }
   };
 
+  const handleConfirmStatusChange = async () => {
+    if (!selectedStatus) {
+      setModalError("Please select a status.");
+      return;
+    }
+    if (!ownerEmail) {
+      toast.error("Owner email not found. Please try again.");
+      setIsStatusModalOpen(false);
+      return;
+    }
+    try {
+      setLoading(true);
+      console.log("Selected applicants for status update:", selectedApplicants);
+      const failedUpdates: string[] = [];
+      const failedEmails: string[] = [];
+
+      for (const applicant of selectedApplicants) {
+        const name = applicant.name;
+        if (!name) {
+          console.warn("Skipping update: name is undefined or empty");
+          failedUpdates.push("Unknown (missing name)");
+          continue;
+        }
+        try {
+          // Update applicant status
+          const updateData: UpdateData = { status: selectedStatus };
+          await frappeAPI.updateApplicantStatus(name, updateData);
+
+          // Send email if status is "Joined"
+          if (selectedStatus.toLowerCase() === "joined") {
+            const candidateName = applicant.applicant_name || "Candidate";
+            const firstName = candidateName.split(" ")[0];
+            const emailData = {
+              from_email: ownerEmail || "",
+              to_email: applicant.email_id || "",
+              subject: `Congratulations on Your New Role at ${companyname}!`,
+              message: `Hi ${firstName},
+
+Congratulations on joining ${companyname} as ${job_title || "the position"}! We are thrilled to see you take this next step in your career and are confident that you will make a remarkable impact in your new role.
+
+We would also love to hear about your overall experience with HEVHire. Your feedback is valuable to us and helps us improve our support for candidates like you.
+
+Wishing you all the best in your new journey, and looking forward to your thoughts!
+
+Warm regards,
+${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
+              job_id: jobId,
+              username: ownerEmail,
+              applicants: [
+                {
+                  name: applicant.name,
+                  applicant_name: applicant.applicant_name,
+                  email_id: applicant.email_id,
+                  designation: applicant.designation,
+                  resume_attachment: applicant.resume_attachment,
+                },
+              ],
+            };
+
+            const emailResponse = await fetch("/api/mails", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(emailData),
+            });
+
+            const emailResult = await emailResponse.json();
+            if (!emailResponse.ok) {
+              throw new Error(emailResult.error || "Failed to send email");
+            }
+          }
+        } catch (err: any) {
+          console.error(`Failed to process for ${name}:`, err);
+          if (err?.exc_type === "DoesNotExistError" || err.response?.status === 404) {
+            failedUpdates.push(name);
+          } else if (err.message.includes("Failed to send email")) {
+            failedEmails.push(applicant.applicant_name || name);
+          } else {
+            throw err;
+          }
+        }
+      }
+
+      // Refresh applicants list
+      const response: any = await frappeAPI.getTaggedApplicantsByJobId(jobId, ownerEmail);
+      const applicantNames = response.data || [];
+      const applicantsPromises = applicantNames.map(async (applicant: any) => {
+        try {
+          const applicantDetail = await frappeAPI.getApplicantBYId(applicant.name);
+          return applicantDetail.data;
+        } catch (err) {
+          console.error(`Error fetching details for ${applicant.name}:`, err);
+          return {
+            name: applicant.name,
+            email_id: applicant.email_id || "Not available",
+          };
+        }
+      });
+      const applicantsData = await Promise.all(applicantsPromises);
+      setApplicants(applicantsData.filter((applicant) => applicant !== null));
+      setFilteredApplicants(applicantsData.filter((applicant) => applicant !== null));
+      setSelectedApplicants([]);
+      setSelectedStatus("");
+      setIsStatusModalOpen(false);
+      setRefreshKey((prev) => prev + 1);
+
+      if (failedUpdates.length > 0 || failedEmails.length > 0) {
+        let warningMessage = "";
+        if (failedUpdates.length > 0) {
+          warningMessage += `Status update failed for: ${failedUpdates.join(", ")}. Applicant records may not exist or the endpoint may be incorrect. `;
+        }
+        if (failedEmails.length > 0) {
+          warningMessage += `Email sending failed for: ${failedEmails.join(", ")}.`;
+        }
+        toast.warning(warningMessage);
+      } else {
+        toast.success(
+          selectedStatus.toLowerCase() === "joined"
+            ? "Applicant status updated to 'Joined' and emails sent successfully."
+            : "Applicant status updated successfully."
+        );
+      }
+    } catch (err: any) {
+      console.error("Status update error:", err);
+      let errorMessage = "Failed to update applicant statuses or send emails.";
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        errorMessage = "Session expired or insufficient permissions. Please try again.";
+        router.push("/login");
+      } else if (err.response?.status === 404 || err?.exc_type === "DoesNotExistError") {
+        errorMessage = "Job Applicant resource not found. Please verify the API endpoint or contact support.";
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      }
+      toast.error(errorMessage);
+      setIsStatusModalOpen(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getStatusColor = (status?: string) => {
     switch (status?.toLowerCase()) {
       case "open":
@@ -500,88 +710,13 @@ export default function TaggedApplicants({
     }
   };
 
-  const handleConfirmStatusChange = async () => {
-    if (!selectedStatus) {
-      setModalError("Please select a status.");
-      return;
-    }
-    if (!ownerEmail) {
-      toast.error("Owner email not found. Please try again.");
-      setIsStatusModalOpen(false);
-      return;
-    }
-    try {
-      setLoading(true);
-      console.log("Selected applicants for status update:", selectedApplicants);
-      const failedUpdates: string[] = [];
-      for (const applicant of selectedApplicants) {
-        const name = applicant.name;
-        if (!name) {
-          console.warn("Skipping update: name is undefined or empty");
-          failedUpdates.push("Unknown (missing name)");
-          continue;
-        }
-        try {
-          console.log(`Sending PUT request to update status for ${name} to ${selectedStatus}`);
-          const updateData: UpdateData = { status: selectedStatus };
-          await frappeAPI.updateApplicantStatus(name, updateData);
-        } catch (err: any) {
-          console.error(`Failed to update status for ${name}:`, err);
-          if (err?.exc_type === "DoesNotExistError" || err.response?.status === 404) {
-            failedUpdates.push(name);
-          } else {
-            throw err;
-          }
-        }
-      }
-      const response: any = await frappeAPI.getTaggedApplicantsByJobId(jobId, ownerEmail);
-      const applicantNames = response.data || [];
-      const applicantsPromises = applicantNames.map(async (applicant: any) => {
-        try {
-          const applicantDetail = await frappeAPI.getApplicantBYId(applicant.name);
-          return applicantDetail.data;
-        } catch (err) {
-          console.error(`Error fetching details for ${applicant.name}:`, err);
-          return { name: applicant.name, email_id: applicant.email_id || "Not available" };
-        }
-      });
-      const applicantsData = await Promise.all(applicantsPromises);
-      setApplicants(applicantsData.filter((applicant) => applicant !== null));
-      setFilteredApplicants(applicantsData.filter((applicant) => applicant !== null));
-      setSelectedApplicants([]);
-      setSelectedStatus("");
-      setIsStatusModalOpen(false);
-      setRefreshKey((prev) => prev + 1);
-      if (failedUpdates.length > 0) {
-        toast.warning(
-          `Status updated for some applicants. Failed for: ${failedUpdates.join(", ")}. Applicant records may not exist or the endpoint may be incorrect.`
-        );
-      } else {
-        toast.success("Applicant status updated successfully.");
-      }
-    } catch (err: any) {
-      console.error("Status update error:", err);
-      let errorMessage = "Failed to update applicant statuses.";
-      if (err.response?.status === 401 || err.response?.status === 403) {
-        errorMessage = "Session expired or insufficient permissions. Please try again.";
-        router.push("/login");
-      } else if (err.response?.status === 404 || err?.exc_type === "DoesNotExistError") {
-        errorMessage = "Job Applicant resource not found. Please verify the API endpoint or contact support.";
-      } else if (err.response?.data?.message) {
-        errorMessage = err.response.data.message;
-      }
-      toast.error(errorMessage);
-      setIsStatusModalOpen(false);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex justify-center items-center py-8 bg-gray-50 min-h-[200px] rounded-lg">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-        <span className="ml-3 text-gray-700 font-medium text-lg">Loading applicants...</span>
+        <span className="ml-3 text-gray-700 font-medium text-lg">
+          Loading applicants...
+        </span>
       </div>
     );
   }
@@ -601,7 +736,9 @@ export default function TaggedApplicants({
   if (!applicants.length) {
     return (
       <div className="bg-yellow-50 border pt-4 border-yellow-200 rounded-lg p-6 text-center shadow-sm">
-        <p className="text-yellow-800 font-semibold text-lg">No applicants found for this job.</p>
+        <p className="text-yellow-800 font-semibold text-lg">
+          No applicants found for this job.
+        </p>
       </div>
     );
   }
@@ -626,13 +763,13 @@ export default function TaggedApplicants({
               <div className="flex justify-between gap-3 items-center flex-nowrap">
                 <button
                   onClick={() => setShowEmailPopup(true)}
-                  className="px-3 py-3 text-white bg-blue-600 hover:bg-blue-700  rounded-lg text-md font-medium transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 whitespace-nowrap w-[120px]"
+                  className="px-3 py-3 text-white bg-blue-600 hover:bg-blue-700 rounded-lg text-md font-medium transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 whitespace-nowrap w-[120px]"
                 >
                   📧 Send ({selectedApplicants.length})
                 </button>
                 <button
                   onClick={handleOpenStatusModal}
-                  className="px-2 py-3 text-white bg-blue-600 hover:bg-blue-700  rounded-lg text-md font-medium transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 whitespace-nowrap w-[160px]"
+                  className="px-2 py-3 text-white bg-blue-600 hover:bg-blue-700 rounded-lg text-md font-medium transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 whitespace-nowrap w-[160px]"
                 >
                   Update Status ({selectedApplicants.length})
                 </button>
@@ -655,7 +792,9 @@ export default function TaggedApplicants({
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg shadow-sm flex items-center gap-2">
           <AlertCircle className="h-5 w-5 text-red-600" />
           <div>
-            <p className="text-red-800 font-semibold text-lg">Assessment Error</p>
+            <p className="text-red-800 font-semibold text-lg">
+              Assessment Error
+            </p>
             <p className="text-red-600 text-md mt-1">{assessmentError}</p>
           </div>
         </div>
@@ -680,24 +819,22 @@ export default function TaggedApplicants({
         onDeleteApplicant={handleDeleteApplicant}
       />
 
-    
-
       {showEmailPopup && (
-  <EmailSendingPopup
-    isOpen={showEmailPopup}
-    onClose={() => setShowEmailPopup(false)}
-    selectedApplicants={selectedApplicants}
-    currentUserEmail={ownerEmail}
-    jobId={jobId}
-    jobTitle={job_title || ""}
-    onEmailSent={() => {
-      setSelectedApplicants([]);
-      setShowEmailPopup(false);
-      toast.success("Email sent successfully!");
-    }}
-    user={user} // Pass the user prop
-  />
-)}
+        <EmailSendingPopup
+          isOpen={showEmailPopup}
+          onClose={() => setShowEmailPopup(false)}
+          selectedApplicants={selectedApplicants}
+          currentUserEmail={ownerEmail}
+          jobId={jobId}
+          jobTitle={job_title || ""}
+          onEmailSent={() => {
+            setSelectedApplicants([]);
+            setShowEmailPopup(false);
+            toast.success("Email sent successfully!");
+          }}
+          user={user}
+        />
+      )}
 
       {/* Status Update Modal */}
       {isStatusModalOpen && (
@@ -745,7 +882,9 @@ export default function TaggedApplicants({
                       (applicant) => applicant.status?.toLowerCase() === "shortlisted"
                     );
                     if (!allShortlisted) {
-                      setModalError('Assessment can only be created for applicants with "Shortlisted" status.');
+                      setModalError(
+                        'Assessment can only be created for applicants with "Shortlisted" status.'
+                      );
                       return;
                     }
                     setIsStatusModalOpen(false);
@@ -760,14 +899,30 @@ export default function TaggedApplicants({
                 <option value="" disabled className="text-gray-500 text-md">
                   Select a status...
                 </option>
-                <option value="Tagged" className="text-md">Tagged</option>
-                <option value="Shortlisted" className="text-md">Shortlisted</option>
-                <option value="Assessment" className="text-md">Assessment</option>
-                <option value="Interview" className="text-md">Interview</option>
-                <option value="Interview Reject" className="text-md">Interview Reject</option>
-                <option value="Offered" className="text-md">Offered</option>
-                <option value="Offer Drop" className="text-md">Offer Drop</option>
-                <option value="Joined" className="text-md">Joined</option>
+                <option value="Tagged" className="text-md">
+                  Tagged
+                </option>
+                <option value="Shortlisted" className="text-md">
+                  Shortlisted
+                </option>
+                <option value="Assessment" className="text-md">
+                  Assessment
+                </option>
+                <option value="Interview" className="text-md">
+                  Interview
+                </option>
+                <option value="Interview Reject" className="text-md">
+                  Interview Reject
+                </option>
+                <option value="Offered" className="text-md">
+                  Offered
+                </option>
+                <option value="Offer Drop" className="text-md">
+                  Offer Drop
+                </option>
+                <option value="Joined" className="text-md">
+                  Joined
+                </option>
               </select>
             </div>
             <div className="mb-6">
@@ -788,7 +943,9 @@ export default function TaggedApplicants({
                         <p className="font-semibold text-gray-900 text-md">
                           {applicant.applicant_name || applicant.name}
                         </p>
-                        <p className="text-sm text-gray-500">{applicant.email_id}</p>
+                        <p className="text-sm text-gray-500">
+                          {applicant.email_id}
+                        </p>
                       </div>
                     </div>
                     {selectedStatus && (
@@ -836,7 +993,8 @@ export default function TaggedApplicants({
               <h2
                 id="assessment-modal-title"
                 className="text-xl font-bold text-gray-900 flex items-center gap-2"
-              ><Award className="h-6 w-6 text-blue-600" />
+              >
+                <Award className="h-6 w-6 text-blue-600" />
                 Create Assessment
               </h2>
               <button
@@ -887,7 +1045,7 @@ export default function TaggedApplicants({
               </button>
               <button
                 onClick={handleStartAssessment}
-                className="px-5 py-2.5 text-white bg-blue-600 hover:bg-blue-700  rounded-lg transition-all font-medium shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-md"
+                className="px-5 py-2.5 text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all font-medium shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-md"
                 aria-label="Confirm assessment creation"
               >
                 Create Assessment
@@ -965,7 +1123,7 @@ export default function TaggedApplicants({
               </button>
               <button
                 onClick={handleConfirmOfferDetails}
-                className="px-5 py-2.5 text-white bg-blue-600 hover:bg-blue-700  rounded-lg transition-all font-medium shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-md"
+                className="px-5 py-2.5 text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all font-medium shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-md"
                 aria-label="Confirm offer details"
               >
                 Confirm Offer
