@@ -17,6 +17,8 @@ interface ExistingApplicant {
   applicant_name: string;
   country: string;
   resume_attachment: string;
+    custom_latest_cv_timestamp?: string; // Add this line
+
 }
 
 interface ApplicantSearchAndTagProps {
@@ -39,6 +41,7 @@ export default function ApplicantSearchAndTag({
   const [alreadyTaggedJob, setAlreadyTaggedJob] = useState<string | null>(null);
   const [prefilledApplicantData, setPrefilledApplicantData] = useState<any[]>([]);
   const [showBulkForm, setShowBulkForm] = useState(false);
+  const [latestCVTimestamp, setLatestCVTimestamp] = useState<string | null>(null);
 
   const currentJobTitle = initialJobTitle || initialJobId || '';
 
@@ -102,6 +105,8 @@ export default function ApplicantSearchAndTag({
     setAlreadyTaggedJob(null);
     setShowBulkForm(false);
     setShowWarning(false);
+      setLatestCVTimestamp(null); // Reset timestamp
+
 
     try {
       console.log('Searching for email:', searchEmail);
@@ -120,11 +125,20 @@ export default function ApplicantSearchAndTag({
           phone_number: item.phone_number,
           applicant_name: item.applicant_name,
           country: item.country,
-          resume_attachment: item.resume_attachment
+          resume_attachment: item.resume_attachment,
+                  custom_latest_cv_timestamp: item.custom_latest_cv_timestamp // Add this
+
         }));
 
         setExistingApplicants(applicants);
-
+        try {
+        const timestampResponse = await frappeAPI.getlatestCVTimestamp(searchEmail);
+        if (timestampResponse?.data && timestampResponse.data.length > 0) {
+          setLatestCVTimestamp(timestampResponse.data[0].custom_latest_cv_timestamp);
+        }
+      } catch (error) {
+        console.error('Error fetching latest CV timestamp:', error);
+      }
         if (currentJobTitle) {
           const alreadyTagged = applicants.find(app => app.job_title === currentJobTitle);
           if (alreadyTagged) {
@@ -303,6 +317,20 @@ export default function ApplicantSearchAndTag({
 
       {existingApplicants.length > 0 && (
         <div >
+          {latestCVTimestamp && (
+      <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-md">
+        <div className="flex items-center gap-2 text-green-800">
+          <CheckCircle className="w-4 h-4" />
+          <span className="font-medium">Latest CV Uploaded:</span>
+          <span className="text-sm">
+            {new Date(latestCVTimestamp).toLocaleString('en-IN', {
+              dateStyle: 'medium',
+              timeStyle: 'short'
+            })}
+          </span>
+        </div>
+      </div>
+    )}
   {!alreadyTaggedJob && (
     <div className="flex justify-end mb-2">
           <button

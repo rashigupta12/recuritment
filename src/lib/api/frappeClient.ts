@@ -646,16 +646,21 @@ export const frappeAPI = {
   },
   searchApplicants:async (email:string)=>{
     const fields =  ["name", "job_title", "designation", "custom_company_name", "status", "email_id", "phone_number", "applicant_name", "country", "resume_attachment"];
-    const filters= JSON.stringify([["email_id","=",email]]
-
-    );
+    const filters= JSON.stringify([["email_id","=",email]]);
     
     return await frappeAPI.makeAuthenticatedRequest(
       'GET', 
       `/resource/Job Applicant?fields=${JSON.stringify(fields)}&filters=${filters}&limit_page_length=0&order_by=creation desc`
     );
   },
-
+getlatestCVTimestamp:async(email:string)=>{
+const fields=["custom_latest_cv_timestamp"]
+const filters= JSON.stringify([["email_id","=",email]]);
+ return await frappeAPI.makeAuthenticatedRequest(
+      'GET', 
+      `/resource/Job Applicant?fields=${JSON.stringify(fields)}&filters=${filters}&order_by=custom_latest_cv_timestamp desc&limit=1`
+    );
+},
   getTodoBYId: async (TodoId: string) => {
     return await frappeAPI.makeAuthenticatedRequest('GET', `/resource/ToDo/${TodoId}`);
   },
