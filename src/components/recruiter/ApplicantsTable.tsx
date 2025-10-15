@@ -15,6 +15,7 @@ interface ApplicantsTableProps {
   onDeleteApplicant?: (applicant: JobApplicant) => void;
   showDeleteButton?: boolean;
   onViewDetails?: (applicant: JobApplicant) => void;
+  onInterviewRowClick?: (applicant: JobApplicant) => void;
 }
 
 type SortField = "name" | "email" | "job_title" | "status" | "designation";
@@ -30,6 +31,7 @@ export function ApplicantsTable({
   onDeleteApplicant,
   showDeleteButton = false,
   onViewDetails,
+  onInterviewRowClick, 
 }: ApplicantsTableProps) {
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
@@ -49,6 +51,11 @@ export function ApplicantsTable({
       setSortDirection("asc");
     }
   };
+const handleRowClick = (applicant: JobApplicant) => {
+  if (applicant.status?.toLowerCase() === "interview") {
+    onInterviewRowClick?.(applicant);
+  }
+};
 
   const columns = useMemo(() => {
     const cols: Array<{ field: AllFields; label: string; sortable?: boolean; align?: 'left' | 'center' | 'right'; width?: string }> = [];
@@ -130,12 +137,13 @@ export function ApplicantsTable({
               const canDelete = ['tagged', 'open'].includes(applicant.status?.toLowerCase() || '');
               
               return (
-                <tr
-                  key={applicant.name || `applicant-${index}`}
-                  className={`${
-                    index % 2 === 0 ? "bg-white" : "bg-blue-50"
-                  } hover:bg-blue-100 transition duration-100`}
-                >
+               <tr
+  key={applicant.name || `applicant-${index}`}
+  onClick={() => handleRowClick(applicant)}
+  className={`${
+    index % 2 === 0 ? "bg-white" : "bg-blue-50"
+  } hover:bg-blue-100 transition duration-100 cursor-pointer`}
+>
                   {showCheckboxes && (
                     <td className="px-2 sm:px-4 py-4">
                       <input
