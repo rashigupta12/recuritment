@@ -8,6 +8,8 @@ import { frappeAPI } from "@/lib/api/frappeClient";
 import { ApplicantsTable } from "@/components/recruiter/ApplicantsTable";
 import EmailSendingPopup from "./EmailSendingPopup";
 import { Award, User, X, Search, AlertCircle, CheckCircle } from "lucide-react";
+import { InterviewScheduleModal } from "./InterviewSchedule";
+import { InterviewDetailsModal } from "./InterviewDetailsModal";
 
 interface JobApplicant {
   name: string;
@@ -35,6 +37,11 @@ interface JobApplicant {
   }>;
   custom_offered_salary?: string;
   custom_target_start_date?: string;
+  custom_interview_status?: string;        
+  custom_interview_round?: string;         
+  custom_interview_panel_name?: string;    
+  custom_schedule_date?: string; 
+  
 }
 
 interface Props {
@@ -60,10 +67,16 @@ interface AssessmentResponse {
   };
 }
 
+
+
 interface UpdateData {
   status: string;
   custom_offered_salary?: string;
   custom_target_start_date?: string;
+  custom_interview_status?: string;
+  custom_interview_round?: string;
+  custom_interview_panel_name?: string;
+  custom_schedule_date?: string;
 }
 
 export default function TaggedApplicants({
@@ -94,6 +107,11 @@ export default function TaggedApplicants({
   const [downgradeInfo, setDowngradeInfo] = useState<{ from: string; to: string } | null>(null);
   const [offeredSalary, setOfferedSalary] = useState<string>("");
   const [targetStartDate, setTargetStartDate] = useState<string>("");
+  const [isInterviewDetailsModalOpen, setIsInterviewDetailsModalOpen] = useState(false);
+const [selectedInterviewApplicant, setSelectedInterviewApplicant] = useState<JobApplicant | null>(null);
+
+  const [isInterviewScheduleModalOpen, setIsInterviewScheduleModalOpen] = useState(false);
+const [interviewScheduleLoading, setInterviewScheduleLoading] = useState(false);
   const router = useRouter();
   const [expiryDate, setExpiryDate] = useState<string>("");
   const user = { username: ownerEmail };
@@ -207,6 +225,68 @@ export default function TaggedApplicants({
     }
   };
 
+  const handleConfirmStatusChangeForInterview = async (status: string) => {
+  if (!ownerEmail) {
+    toast.error("Owner email not found. Please try again.");
+    return;
+  }
+  try {
+    setLoading(true);
+    const failedUpdates: string[] = [];
+    
+    for (const applicant of selectedApplicants) {
+      const name = applicant.name;
+      if (!name) {
+        failedUpdates.push("Unknown (missing name)");
+        continue;
+      }
+      try {
+        const updateData: UpdateData = { status: status };
+        await frappeAPI.updateApplicantStatus(name, updateData);
+      } catch (err: any) {
+        console.error(`Failed to update status for ${name}:`, err);
+        if (err?.exc_type === "DoesNotExistError" || err.response?.status === 404) {
+          failedUpdates.push(name);
+        } else {
+          throw err;
+        }
+      }
+    }
+    
+    const response: any = await frappeAPI.getTaggedApplicantsByJobId(jobId, ownerEmail);
+    const applicantNames = response.data || [];
+    const applicantsPromises = applicantNames.map(async (applicant: any) => {
+      try {
+        const applicantDetail = await frappeAPI.getApplicantBYId(applicant.name);
+        return applicantDetail.data;
+      } catch (err) {
+        return { name: applicant.name, email_id: applicant.email_id || "Not available" };
+      }
+    });
+    
+    const applicantsData = await Promise.all(applicantsPromises);
+    setApplicants(applicantsData.filter((applicant) => applicant !== null));
+    setFilteredApplicants(applicantsData.filter((applicant) => applicant !== null));
+    setSelectedApplicants([]);
+    setSelectedStatus("");
+    setIsStatusModalOpen(false);
+    setRefreshKey((prev) => prev + 1);
+    
+    if (failedUpdates.length > 0) {
+      toast.warning(`Status updated for some applicants. Failed for: ${failedUpdates.join(", ")}`);
+    } else {
+      toast.success("Applicant status updated successfully.");
+    }
+  } catch (err: any) {
+    console.error("Status update error:", err);
+    toast.error("Failed to update applicant statuses.");
+    setIsStatusModalOpen(false);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
   useEffect(() => {
     let filtered = applicants;
     if (searchQuery) {
@@ -265,6 +345,10 @@ export default function TaggedApplicants({
     };
     fetchApplicants();
   }, [jobId, ownerEmail, refreshTrigger,refreshKey]);
+
+  const handleInterviewStatusUpdate = () => {
+  setRefreshKey(prev => prev + 1); // This should trigger a re-fetch of applicants
+};
 
   const handleOpenStatusModal = () => {
     if (selectedApplicants.length === 0) {
@@ -678,6 +762,10 @@ export default function TaggedApplicants({
         showStatus={true}
         showDeleteButton={true}
         onDeleteApplicant={handleDeleteApplicant}
+         onInterviewRowClick={(applicant) => {
+    setSelectedInterviewApplicant(applicant);
+    setIsInterviewDetailsModalOpen(true);
+  }}
       />
 
     
@@ -730,46 +818,114 @@ export default function TaggedApplicants({
                 <p className="text-md">{modalError}</p>
               </div>
             )}
-            <div className="mb-4 text-md">
-              <label className="block text-gray-700 font-semibold mb-2 text-md">
-                Select New Status
-              </label>
-              <select
-                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition-all bg-gray-50 text-gray-900 text-md"
-                value={selectedStatus}
-                onChange={(e) => {
-                  const newStatus = e.target.value;
-                  setSelectedStatus(newStatus);
-                  if (newStatus === "Assessment") {
-                    const allShortlisted = selectedApplicants.every(
-                      (applicant) => applicant.status?.toLowerCase() === "shortlisted"
-                    );
-                    if (!allShortlisted) {
-                      setModalError('Assessment can only be created for applicants with "Shortlisted" status.');
-                      return;
-                    }
-                    setIsStatusModalOpen(false);
-                    setIsAssessmentModalOpen(true);
-                  } else if (newStatus === "Offered") {
-                    setIsStatusModalOpen(false);
-                    setIsOfferModalOpen(true);
-                  }
-                }}
-                aria-label="Select status"
-              >
-                <option value="" disabled className="text-gray-500 text-md">
-                  Select a status...
-                </option>
-                <option value="Tagged" className="text-md">Tagged</option>
-                <option value="Shortlisted" className="text-md">Shortlisted</option>
-                <option value="Assessment" className="text-md">Assessment</option>
-                <option value="Interview" className="text-md">Interview</option>
-                <option value="Interview Reject" className="text-md">Interview Reject</option>
-                <option value="Offered" className="text-md">Offered</option>
-                <option value="Offer Drop" className="text-md">Offer Drop</option>
-                <option value="Joined" className="text-md">Joined</option>
-              </select>
-            </div>
+           <div className="mb-4 text-md">
+  <label className="block text-gray-700 font-semibold mb-2 text-md">
+    Select New Status
+  </label>
+  
+  {/* First Level - Main Status */}
+  {!selectedStatus || !["Interview To Be Scheduled", "Interview Scheduled", "Interview Reject", "Cleared"].includes(selectedStatus) ? (
+    <select
+      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition-all bg-gray-50 text-gray-900 text-md"
+      value={selectedStatus}
+      onChange={(e) => {
+        const newStatus = e.target.value;
+        setSelectedStatus(newStatus);
+        
+        if (newStatus === "Assessment") {
+          const allShortlisted = selectedApplicants.every(
+            (applicant) => applicant.status?.toLowerCase() === "shortlisted"
+          );
+          if (!allShortlisted) {
+            setModalError('Assessment can only be created for applicants with "Shortlisted" status.');
+            return;
+          }
+          setIsStatusModalOpen(false);
+          setIsAssessmentModalOpen(true);
+        } 
+        else if (newStatus === "Offered") {
+          setIsStatusModalOpen(false);
+          setIsOfferModalOpen(true);
+        }
+        // else if (newStatus === "Interview") {
+        //   setSelectedStatus("Interview");
+        //   // Will show interview sub-options
+        // }
+      }}
+      aria-label="Select status"
+    >
+      <option value="" disabled className="text-gray-500 text-md">
+        Select a status...
+      </option>
+      <option value="Tagged" className="text-md">Tagged</option>
+      <option value="Shortlisted" className="text-md">Shortlisted</option>
+      <option value="Assessment" className="text-md">Assessment</option>
+      <option value="Interview" className="text-md">Interview</option>
+      <option value="Offered" className="text-md">Offered</option>
+      <option value="Offer Drop" className="text-md">Offer Drop</option>
+      <option value="Joined" className="text-md">Joined</option>
+    </select>
+  ) : null}
+
+  {/* Second Level - Interview Sub-options */}
+  {/* {selectedStatus === "Interview" && (
+    <div className="mt-4 space-y-3">
+      <div className="flex items-center gap-2 mb-2">
+        <button
+          onClick={() => setSelectedStatus("")}
+          className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+        >
+          ← Back
+        </button>
+        <span className="text-gray-600 text-sm">Interview Status</span>
+      </div>
+      
+      <button
+        onClick={() => {
+          setSelectedStatus("Interview To Be Scheduled");
+          // Direct status update without modal
+          handleConfirmStatusChangeForInterview("Interview To Be Scheduled");
+        }}
+        className="w-full px-4 py-3 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-all text-left font-medium text-gray-900 text-md"
+      >
+        Interview To Be Scheduled
+      </button>
+
+      <button
+        onClick={() => {
+          setSelectedStatus("Interview Scheduled");
+          setIsStatusModalOpen(false);
+          setIsInterviewScheduleModalOpen(true);
+        }}
+        className="w-full px-4 py-3 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-all text-left font-medium text-gray-900 text-md"
+      >
+        Interview Scheduled
+      </button>
+
+      <button
+        onClick={() => {
+          setSelectedStatus("Interview Reject");
+          handleConfirmStatusChangeForInterview("Interview Reject");
+        }}
+        className="w-full px-4 py-3 border border-red-200 rounded-lg hover:bg-red-50 hover:border-red-300 transition-all text-left font-medium text-red-900 text-md"
+      >
+        Interview Reject
+      </button>
+
+      <button
+        onClick={() => {
+          setSelectedStatus("Offered");
+          // When "Cleared" is selected, update status to "Offered"
+          handleConfirmStatusChangeForInterview("Offered");
+        }}
+        className="w-full px-4 py-3 border border-green-200 rounded-lg hover:bg-green-50 hover:border-green-300 transition-all text-left font-medium text-green-900 text-md"
+      >
+        Cleared (Mark as Offered)
+      </button>
+    </div>
+  )} */}
+</div>
+
             <div className="mb-6">
               <p className="text-gray-600 font-medium mb-2 text-md">
                 Selected Applicants ({selectedApplicants.length})
@@ -1044,6 +1200,32 @@ export default function TaggedApplicants({
           </div>
         </div>
       )}
+
+     {/* {isInterviewScheduleModalOpen && selectedApplicants.length > 0 && (
+  <InterviewScheduleModal
+    isOpen={isInterviewScheduleModalOpen}
+    onClose={() => setIsInterviewScheduleModalOpen(false)}
+    applicantName={selectedApplicants[0]?.applicant_name || selectedApplicants[0]?.name || ""}
+    applicantId={selectedApplicants[0]?.name || ""}
+    selectedApplicants={selectedApplicants}
+    jobTitle={jobId}
+    selectedStatus={selectedStatus}
+    onSuccess={() => {
+      setRefreshKey((prev) => prev + 1);
+    }}
+    error={modalError}
+  />
+)} */}
+
+{isInterviewDetailsModalOpen && selectedInterviewApplicant && (
+  <InterviewDetailsModal
+    isOpen={isInterviewDetailsModalOpen}
+    onClose={() => setIsInterviewDetailsModalOpen(false)}
+    applicant={selectedInterviewApplicant}
+    jobId={jobId}
+    onStatusUpdate={handleInterviewStatusUpdate}
+  />
+)}
     </div>
   );
 }
