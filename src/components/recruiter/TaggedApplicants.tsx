@@ -96,6 +96,7 @@ export default function TaggedApplicants({
   const [targetStartDate, setTargetStartDate] = useState<string>("");
   const router = useRouter();
   const [expiryDate, setExpiryDate] = useState<string>("");
+  const user = { username: ownerEmail };
 
   console.log(job_title)
 
@@ -682,20 +683,21 @@ export default function TaggedApplicants({
     
 
       {showEmailPopup && (
-        <EmailSendingPopup
-          isOpen={showEmailPopup}
-          onClose={() => setShowEmailPopup(false)}
-          selectedApplicants={selectedApplicants}
-          currentUserEmail={ownerEmail}
-          jobId={jobId}
-          jobTitle={job_title || ""}
-          onEmailSent={() => {
-            setSelectedApplicants([]);
-            setShowEmailPopup(false);
-            toast.success("Email sent successfully!");
-          }}
-        />
-      )}
+  <EmailSendingPopup
+    isOpen={showEmailPopup}
+    onClose={() => setShowEmailPopup(false)}
+    selectedApplicants={selectedApplicants}
+    currentUserEmail={ownerEmail}
+    jobId={jobId}
+    jobTitle={job_title || ""}
+    onEmailSent={() => {
+      setSelectedApplicants([]);
+      setShowEmailPopup(false);
+      toast.success("Email sent successfully!");
+    }}
+    user={user} // Pass the user prop
+  />
+)}
 
       {/* Status Update Modal */}
       {isStatusModalOpen && (

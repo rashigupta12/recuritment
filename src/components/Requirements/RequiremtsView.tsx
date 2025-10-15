@@ -25,6 +25,14 @@ import Pagination from "../comman/Pagination";
 import { TodosHeader } from "./Header";
 import { formatToIndianCurrency } from "../Leads/helper";
 
+
+interface StaffingPlansTableProps {
+  selectedLead: {
+    name: string;
+    company_name: string;
+  } | null;
+}
+
 // Type definitions
 type StaffingPlanItem = {
   location: string;
@@ -82,7 +90,7 @@ type AllFields = SortField | "contact" | "status" | "actions";
 type SortDirection = "asc" | "desc" | null;
 
 // Main Staffing Plans Table Component
-const StaffingPlansTable: React.FC = () => {
+const StaffingPlansTable: React.FC<StaffingPlansTableProps> = ({ selectedLead }) => {
   const router = useRouter();
   const [plans, setPlans] = useState<StaffingPlan[]>([]);
   const [filteredPlans, setFilteredPlans] = useState<StaffingPlan[]>([]);
@@ -208,13 +216,13 @@ const StaffingPlansTable: React.FC = () => {
       width?: string;
     }> = [
       { field: "datetime", label: "Date", sortable: true, align: "center" },
-      {
-        field: "company",
-        label: "Company & Contact",
-        sortable: true,
-        width: "200px",
-        align: "center",
-      },
+      // {
+      //   field: "company",
+      //   label: "Company & Contact",
+      //   sortable: true,
+      //   width: "200px",
+      //   align: "center",
+      // },
       { field: "designation", label: "Position Details", sortable: true, align: "center" },
       { field: "location", label: "Location & Experience", sortable: true, align: "center" },
       { field: "vacancies", label: "Vacancies & Budget", sortable: true, align: "center" },
@@ -223,27 +231,44 @@ const StaffingPlansTable: React.FC = () => {
     return cols;
   }, []);
 
-  const fetchStaffingPlans = async () => {
-    setIsLoading(true);
-    setError(null);
+ const fetchStaffingPlans = async () => {
+  setIsLoading(true);
+  setError(null);
 
-    try {
-      const response = await frappeAPI.makeAuthenticatedRequest(
-        "GET",
-        `/method/recruitment_app.get_staffing_plan.get_staffing_plans_with_children?owner=${user?.email}`
-      );
+  try {
+    const response = await frappeAPI.makeAuthenticatedRequest(
+      "GET",
+      `/method/recruitment_app.get_staffing_plan.get_staffing_plans_with_children?owner=${user?.email}`
+    );
 
-      const plansData = response.message?.data || [];
-      console.log("Fetched plans:", plansData);
-      setPlans(plansData);
-      setFilteredPlans(plansData);
-    } catch (error) {
-      console.error("Error fetching staffing plans:", error);
-      setError("Failed to load staffing plans. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    const plansData = response.message?.data || [];
+    
+    // Filter plans to show only those for the selected lead's company
+    const filteredPlans = selectedLead 
+      ? plansData.filter((plan: StaffingPlan) => plan.company === selectedLead.company_name)
+      : [];
+    
+    console.log("Filtered plans for selected company:", filteredPlans);
+    setPlans(filteredPlans);
+    setFilteredPlans(filteredPlans);
+  } catch (error) {
+    console.error("Error fetching staffing plans:", error);
+    setError("Failed to load staffing plans. Please try again.");
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+// Add useEffect to refetch when selectedLead changes
+useEffect(() => {
+  if (selectedLead) {
+    fetchStaffingPlans();
+  } else {
+    // Clear plans if no lead is selected
+    setPlans([]);
+    setFilteredPlans([]);
+  }
+}, [selectedLead]);
 
   // Combined filtering and sorting logic with frontend pagination
   const paginatedPlans = useMemo(() => {
@@ -375,7 +400,7 @@ const StaffingPlansTable: React.FC = () => {
 
   const handleEdit = (planName: string) => {
     router.push(
-      `/dashboard/recruiter/requirements/create?planId=${planName}&mode=edit`
+      `/dashboard/recruiter/contract/create?planId=${planName}&mode=edit`
     );
   };
 
@@ -466,7 +491,7 @@ const StaffingPlansTable: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       <div className="w-full mx-auto">
         {/* Header with filters */}
-        <TodosHeader
+        {/* <TodosHeader
           searchQuery={searchTerm}
           onSearchChange={setSearchTerm}
           onRefresh={() => fetchStaffingPlans()}
@@ -480,7 +505,7 @@ const StaffingPlansTable: React.FC = () => {
           filterConfig={filterConfig}
           title="Customers Requirements"
           oncreateButton={handleCreate}
-        />
+        /> */}
 
         {/* Main Table */}
         {isLoading ? (
@@ -545,7 +570,7 @@ const StaffingPlansTable: React.FC = () => {
                               </td>
                             )}
 
-                            {detailIndex === 0 && (
+                            {/* {detailIndex === 0 && (
                               <td
                                 className="px-4 py-3 align-top"
                                 rowSpan={plan.staffing_details.length}
@@ -582,7 +607,7 @@ const StaffingPlansTable: React.FC = () => {
                                   </div>
                                 </div>
                               </td>
-                            )}
+                            )} */}
 
                             <td className="px-4 py-4 capitalize">
                               <div className="flex flex-col">

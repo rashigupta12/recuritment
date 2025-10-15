@@ -2,6 +2,7 @@
 'use client'
 import React, { useState, useCallback, memo, useMemo } from "react";
 import { EditIcon, UsersIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { SortableTableHeader } from "../recruiter/SortableTableHeader";
 import { formatToIndianCurrency } from "../Leads/helper";
 
@@ -23,6 +24,7 @@ interface Lead {
   custom_deal_value?: string | number;
   creation?: string;
   custom_stage?: string;
+  custom_expected_close_date?: string;
 }
 
 interface LeadsTableProps {
@@ -30,7 +32,7 @@ interface LeadsTableProps {
   onViewLead: (lead: Lead) => void;
   onEditLead: (lead: Lead) => void;
   onCreateContract: (lead: Lead) => Promise<void>;
-  isRestrictedUser: boolean; // Added prop for role-based restrictions
+  isRestrictedUser: boolean;
 }
 
 type SortField = "company" | "contact" | "offering" | "salary" | "vacancies" | "fee" | "dealValue" | "createdOn" | "stage";
@@ -44,6 +46,7 @@ export const LeadsTable = ({
   onCreateContract,
   isRestrictedUser,
 }: LeadsTableProps) => {
+  const router = useRouter();
   const [loadingLeadId, setLoadingLeadId] = useState<string | null>(null);
   const [sortField, setSortField] = useState<SortField | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
@@ -63,6 +66,7 @@ export const LeadsTable = ({
 
   const columns = useMemo(() => {
     const baseColumns: Array<{ field: AllFields; label: string; sortable?: boolean }> = [
+      { field: "createdOn", label: "Created On", sortable: true },
       { field: "company", label: "Company Name", sortable: true },
       { field: "contact", label: "Contact", sortable: false },
       { field: "stage", label: "Stage", sortable: false },
@@ -71,10 +75,8 @@ export const LeadsTable = ({
       { field: "vacancies", label: "No. Of Vac", sortable: false },
       { field: "fee", label: "Fee (%/K)", sortable: false },
       { field: "dealValue", label: "Deal Value(L)", sortable: false },
-      { field: "createdOn", label: "Created On", sortable: true },
     ];
 
-    // Filter out "Fee" and "Deal Value" for restricted users
     return isRestrictedUser
       ? baseColumns.filter(
           (col) => col.field !== "fee" && col.field !== "dealValue"
@@ -145,6 +147,51 @@ export const LeadsTable = ({
     [loadingLeadId, onCreateContract]
   );
 
+  const handleRowClick = useCallback(
+    (lead: Lead) => {
+      // Create a minimal staffing item from lead data
+      const newItem = {
+        currency: lead.custom_currency || "INR",
+        designation: "",
+        vacancies: Number(lead.custom_estimated_hiring_) || 0,
+        estimated_cost_per_position: Number(lead.custom_average_salary) || 0,
+        number_of_positions: 1,
+        min_experience_reqyrs: 0,
+        job_description: "",
+        attachmentsoptional: "",
+        assign_to: "",
+        location: "",
+        employment_type: "",
+      };
+
+      // Create form data to prefill
+      const prefillData = {
+        name: `Staffing Plan - ${lead.custom_full_name || lead.lead_name || ""}`,
+        custom_lead: lead.name || "",
+        from_date: new Date().toISOString().split("T")[0],
+        to_date:
+          lead.custom_expected_close_date ||
+          new Date(Date.now() + 60 * 24 * 60 * 60 * 1000)
+            .toISOString()
+            .split("T")[0],
+        custom_assign_to: "",
+        assigned_to_full_name: "",
+        staffing_details: [newItem],
+      };
+
+      // Store in sessionStorage
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("prefillStaffingData", JSON.stringify(prefillData));
+      }
+
+      // Navigate to create requirements page
+      router.push(
+        `/dashboard/recruiter/contract/create?leadId=${lead.name}`
+      );
+    },
+    [router]
+  );
+
   return (
     <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mt-4">
       <div className="overflow-x-auto">
@@ -164,6 +211,7 @@ export const LeadsTable = ({
                 onView={() => onViewLead(lead)}
                 onEdit={() => onEditLead(lead)}
                 onCreateContract={() => handleCreateContract(lead)}
+                onRowClick={() => handleRowClick(lead)}
                 isLoading={loadingLeadId === lead.id}
                 isRestrictedUser={isRestrictedUser}
               />
@@ -180,6 +228,7 @@ interface LeadsTableRowProps {
   onView: () => void;
   onEdit: () => void;
   onCreateContract: () => void;
+  onRowClick: () => void;
   isLoading: boolean;
   isRestrictedUser: boolean;
 }
@@ -217,9 +266,23 @@ export const getStageAbbreviation = (stage: string | null | undefined): string =
 };
 
 const LeadsTableRow = memo(
-  ({ lead, onView, onEdit, onCreateContract, isLoading, isRestrictedUser }: LeadsTableRowProps) => {
+  ({ lead, onView, onEdit, onCreateContract, onRowClick, isLoading, isRestrictedUser }: LeadsTableRowProps) => {
     return (
-      <tr className="hover:bg-gray-50">
+      <tr 
+        onClick={onRowClick}
+        className="hover:bg-blue-50 transition-colors cursor-pointer"
+      >
+        <td className="px-4 py-2 whitespace-nowrap text-md text-gray-900">
+          {(() => {
+            const { date, time } = formatDateAndTime(lead.creation);
+            return (
+              <div className="flex flex-col leading-tight">
+                <span>{date}</span>
+                <span className="text-md text-gray-500">{time}</span>
+              </div>
+            );
+          })()}
+        </td>
         <td className="px-4 py-2 max-w-[230px]">
           <div className="text-md text-gray-900 break-all whitespace-normal">
             {lead.company_name || "-"}
@@ -234,6 +297,7 @@ const LeadsTableRow = memo(
               target="_blank"
               rel="noopener noreferrer"
               className="text-md text-blue-500 hover:underline normal-case p-0 m-0 pt-10"
+              onClick={(e) => e.stopPropagation()}
             >
               {lead.website}
             </a>
@@ -312,17 +376,6 @@ const LeadsTableRow = memo(
             </td>
           </>
         )}
-        <td className="px-4 py-2 whitespace-nowrap text-md text-gray-900">
-          {(() => {
-            const { date, time } = formatDateAndTime(lead.creation);
-            return (
-              <div className="flex flex-col leading-tight">
-                <span>{date}</span>
-                <span className="text-md text-gray-500">{time}</span>
-              </div>
-            );
-          })()}
-        </td>
       </tr>
     );
   }

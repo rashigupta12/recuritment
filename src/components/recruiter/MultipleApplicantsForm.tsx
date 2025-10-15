@@ -35,21 +35,17 @@ interface ApplicantRow {
   isAutofilling: boolean;
   autofillError: string;
   errors: Record<string, string>;
+  resumeChanged?: boolean; // New field to track resume change
 }
 
 interface BulkApplicantFormProps {
   initialJobId?: string;
-  prefilledData?: any[]; // Add this line
-
+  prefilledData?: any[];
+  isExistingApplicant?: boolean; // New prop to indicate if applicant is existing
   onFormSubmitSuccess?: () => void;
 }
 
-export default function BulkApplicantForm({ initialJobId,prefilledData, onFormSubmitSuccess }: BulkApplicantFormProps) {
-  // const [applicantRows, setApplicantRows] = useState<ApplicantRow[]>([
-  //   createEmptyRow(initialJobId || '')
-  // ]);
-
-
+export default function BulkApplicantForm({ initialJobId, prefilledData, isExistingApplicant, onFormSubmitSuccess }: BulkApplicantFormProps) {
   const [applicantRows, setApplicantRows] = useState<ApplicantRow[]>(() => {
     if (prefilledData && prefilledData.length > 0) {
       return prefilledData.map((data, index) => ({
@@ -77,7 +73,8 @@ export default function BulkApplicantForm({ initialJobId,prefilledData, onFormSu
         },
         isAutofilling: false,
         autofillError: '',
-        errors: {}
+        errors: {},
+        resumeChanged: false // Initialize resumeChanged
       }));
     }
     return [createEmptyRow(initialJobId || '')];
@@ -114,7 +111,8 @@ export default function BulkApplicantForm({ initialJobId,prefilledData, onFormSu
       },
       isAutofilling: false,
       autofillError: '',
-      errors: {}
+      errors: {},
+      resumeChanged: false
     };
   }
 
@@ -133,7 +131,6 @@ export default function BulkApplicantForm({ initialJobId,prefilledData, onFormSu
       rows.map(row => {
         if (row.id === rowId) {
           const updatedRow = { ...row, [field]: value };
-          // Clear error for this field
           if (row.errors[field]) {
             updatedRow.errors = { ...row.errors, [field]: '' };
           }
@@ -181,14 +178,13 @@ export default function BulkApplicantForm({ initialJobId,prefilledData, onFormSu
   const handleResumeUpload = async (rowId: string, file: File) => {
     setApplicantRows(rows =>
       rows.map(row =>
-        row.id === rowId ? { ...row, isAutofilling: true, autofillError: '' } : row
+        row.id === rowId ? { ...row, isAutofilling: true, autofillError: '', resumeChanged: true } : row
       )
     );
 
     try {
       console.log('Starting resume upload for row:', rowId);
 
-      // Step 1: Upload file to Frappe server
       const uploadResponse = await frappeAPI.upload(file, {
         is_private: false,
         folder: 'Home',
@@ -201,14 +197,12 @@ export default function BulkApplicantForm({ initialJobId,prefilledData, onFormSu
       const fileUrl = uploadResponse.file_url;
       console.log('File uploaded successfully, URL:', fileUrl);
 
-      // Immediately update the resume_attachment field with the uploaded file URL
       setApplicantRows(rows =>
         rows.map(row =>
-          row.id === rowId ? { ...row, resume_attachment: fileUrl } : row
+          row.id === rowId ? { ...row, resume_attachment: fileUrl, resumeChanged: true } : row
         )
       );
 
-      // Step 2: Call autofill API
       const uploadFormData = new FormData();
       uploadFormData.append('file', file);
       uploadFormData.append('fileName', file.name);
@@ -234,7 +228,6 @@ export default function BulkApplicantForm({ initialJobId,prefilledData, onFormSu
 
       const { data } = result;
 
-      // Update the specific row with autofilled data
       setApplicantRows(rows =>
         rows.map(row => {
           if (row.id === rowId) {
@@ -245,7 +238,7 @@ export default function BulkApplicantForm({ initialJobId,prefilledData, onFormSu
               phone_number: data.phone_number || '',
               country: data.country || 'India',
               job_title: data.job_title || row.job_title,
-              resume_attachment: fileUrl, // Ensure file URL is preserved
+              resume_attachment: fileUrl,
               custom_experience: data.custom_experience && data.custom_experience.length > 0
                 ? {
                   company_name: data.custom_experience[0].company_name || '',
@@ -265,7 +258,8 @@ export default function BulkApplicantForm({ initialJobId,prefilledData, onFormSu
                 }
                 : row.custom_education,
               isAutofilling: false,
-              autofillError: ''
+              autofillError: '',
+              resumeChanged: true
             };
           }
           return row;
@@ -274,7 +268,6 @@ export default function BulkApplicantForm({ initialJobId,prefilledData, onFormSu
 
     } catch (error: any) {
       console.error('Autofill error:', error);
-      // Make sure resume_attachment is preserved even if autofill fails
       const currentRow = applicantRows.find(r => r.id === rowId);
       setApplicantRows(rows =>
         rows.map(row =>
@@ -283,7 +276,8 @@ export default function BulkApplicantForm({ initialJobId,prefilledData, onFormSu
               ...row,
               isAutofilling: false,
               autofillError: `Failed to process resume: ${error.message}`,
-              resume_attachment: row.resume_attachment || currentRow?.resume_attachment || ''
+              resume_attachment: row.resume_attachment || currentRow?.resume_attachment || '',
+              resumeChanged: row.resumeChanged || false
             }
             : row
         )
@@ -301,14 +295,12 @@ export default function BulkApplicantForm({ initialJobId,prefilledData, onFormSu
 
     if (!row.resume_attachment) errors.resume_attachment = 'Resume is required';
 
-    // Experience validation
     if (!row.custom_experience.company_name.trim()) errors.exp_company = 'Company name is required';
     if (!row.custom_experience.start_date) errors.exp_start = 'Start date is required';
     if (!row.custom_experience.current_company && !row.custom_experience.end_date) {
       errors.exp_end = 'End date is required';
     }
 
-    // Education validation
     if (!row.custom_education.degree.trim()) errors.edu_degree = 'Degree is required';
     if (!row.custom_education.institution.trim()) errors.edu_institution = 'Institution is required';
     if (!row.custom_education.year_of_passing) errors.edu_year = 'Year of passing is required';
@@ -317,7 +309,6 @@ export default function BulkApplicantForm({ initialJobId,prefilledData, onFormSu
   };
 
   const handleSubmit = async () => {
-    // Validate all rows
     let hasErrors = false;
     const updatedRows = applicantRows.map(row => {
       const errors = validateRow(row);
@@ -331,14 +322,12 @@ export default function BulkApplicantForm({ initialJobId,prefilledData, onFormSu
     setApplicantRows(updatedRows);
 
     if (hasErrors) {
-      // alert('Please fix all validation errors before submitting');
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      // Prepare payload
       const payload = applicantRows.map(row => ({
         applicant_name: row.applicant_name,
         email_id: row.email_id,
@@ -371,23 +360,19 @@ export default function BulkApplicantForm({ initialJobId,prefilledData, onFormSu
 
       console.log('Submitting bulk applicants:', payload);
 
-      // Wait for the API call to complete
       const response = await frappeAPI.createBulkApplicants(payload);
 
-      // Calculate success/failed counts
       const successCount = response.results?.filter((r: any) => r.success).length || applicantRows.length;
       const failedCount = applicantRows.length - successCount;
 
       setSubmissionResult({ success: successCount, failed: failedCount });
       setSubmitted(true);
 
-      // Call onFormSubmitSuccess only after successful API call
       if (onFormSubmitSuccess && successCount > 0) {
         console.log('Submission successful, triggering refresh...');
         onFormSubmitSuccess();
       }
 
-      // Reset form if all successful
       if (failedCount === 0) {
         setApplicantRows([createEmptyRow(initialJobId || '')]);
       }
@@ -411,7 +396,6 @@ export default function BulkApplicantForm({ initialJobId,prefilledData, onFormSu
         <div className="space-y-4">
           {applicantRows.map((row, index) => (
             <div key={row.id} className="">
-              {/* Row Header */}
               <div className="flex justify-between items-center mb-6">
                 {applicantRows.length > 1 && (
                   <button
@@ -428,7 +412,6 @@ export default function BulkApplicantForm({ initialJobId,prefilledData, onFormSu
 
               <div className="mb-6">
                 <div className="grid md:grid-cols-1 px-4 gap-6 items-start">
-                  {/* Upload Resume */}
                   <div>
                     <label className="block text-md font-medium text-gray-700 mb-1">
                       Upload Resume *
@@ -452,6 +435,9 @@ export default function BulkApplicantForm({ initialJobId,prefilledData, onFormSu
                     {row.resume_attachment && (
                       <p className="text-sm text-green-600 mt-1">✓ Resume uploaded</p>
                     )}
+                    {isExistingApplicant && !row.resumeChanged && (
+                      <p className="text-sm text-blue-600 mt-2">Please update the resume</p>
+                    )}
                     {row.isAutofilling && (
                       <p className="text-sm text-blue-600 mt-2 flex items-center justify-center gap-2">
                         <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
@@ -466,7 +452,6 @@ export default function BulkApplicantForm({ initialJobId,prefilledData, onFormSu
                     )}
                   </div>
 
-                  {/* Full Name */}
                   <div>
                     <label className="block text-md font-medium text-gray-700 mb-1">
                       Full Name *
@@ -488,7 +473,6 @@ export default function BulkApplicantForm({ initialJobId,prefilledData, onFormSu
                   </div>
                 </div>
 
-                {/* Personal Information */}
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-1 px-4 pt-2 gap-4">
                   <div>
                     <label className="block text-md font-medium text-gray-700 mb-1">Email *</label>
@@ -522,35 +506,36 @@ export default function BulkApplicantForm({ initialJobId,prefilledData, onFormSu
                   </div>
                 </div>
 
-                <div className='pt-6 items-end flex justify-end'>
-                  <button
-                    type="button"
-                    onClick={handleSubmit}
-                    disabled={isSubmitting || applicantRows.some(row => row.isAutofilling)}
-                    className={`py-2 px-8 rounded-md text-white font-medium flex items-center gap-2 ${isSubmitting || applicantRows.some(row => row.isAutofilling)
-                      ? 'bg-gray-400 cursor-not-allowed'
-                      : 'bg-blue-600 hover:bg-blue-700'
-                      } transition-colors`}
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <div className="w-2 h-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>Submitting {applicantRows.length} Applications...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Send className="w-4 h-4" />
-                        <span>Submit</span>
-                      </>
-                    )}
-                  </button>
-                </div>
+                {(!isExistingApplicant || (isExistingApplicant && row.resumeChanged)) && (
+                  <div className='pt-6 items-end flex justify-end'>
+                    <button
+                      type="button"
+                      onClick={handleSubmit}
+                      disabled={isSubmitting || applicantRows.some(row => row.isAutofilling)}
+                      className={`py-2 px-8 rounded-md text-white font-medium flex items-center gap-2 ${isSubmitting || applicantRows.some(row => row.isAutofilling)
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : 'bg-blue-600 hover:bg-blue-700'
+                        } transition-colors`}
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <div className="w-2 h-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          <span>Submitting {applicantRows.length} Applications...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-4 h-4" />
+                          <span>Submit</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           ))}
         </div>
 
-        {/* Success Modal */}
         {submitted && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">

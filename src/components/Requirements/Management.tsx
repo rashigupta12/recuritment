@@ -41,6 +41,7 @@ import toast from "react-hot-toast";
 import { SortableTableHeader } from "../recruiter/SortableTableHeader";
 import { TooltipProvider } from "../ui/tooltip";
 import { formatToIndianCurrency } from "../Leads/helper";
+import StaffingPlansTable from "./RequiremtsView";
 
 const TOAST_ID = "global-toast";
 
@@ -915,7 +916,7 @@ const StaffingPlanCreator: React.FC = () => {
     if (hasFormChanges(formData, initialFormData, pendingJDFiles)) {
       setShowBackConfirm(true);
     } else {
-      router.push("/dashboard/recruiter/requirements");
+      router.push("/dashboard/recruiter/contract");
     }
   };
 
@@ -1374,7 +1375,7 @@ const StaffingPlanCreator: React.FC = () => {
               ) : previousPlans.length > 0 ? (
                 <div className="bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden">
                   <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
+                    {/* <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-blue-500 text-white">
                         <tr>
                           <th className="px-4 py-3 text-left text-sm font-semibold">
@@ -1498,7 +1499,8 @@ const StaffingPlanCreator: React.FC = () => {
                           </React.Fragment>
                         ))}
                       </tbody>
-                    </table>
+                    </table> */}
+                    <StaffingPlansTable selectedLead={selectedLead}/>
                   </div>
                 </div>
               ) : (
