@@ -1359,12 +1359,16 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
 
 {isInterviewDetailsModalOpen && selectedInterviewApplicant && (
   <InterviewDetailsModal
-          isOpen={isInterviewDetailsModalOpen}
-          onClose={() => setIsInterviewDetailsModalOpen(false)}
-          applicant={selectedInterviewApplicant}
-          jobId={jobId}
-          onStatusUpdate={handleInterviewStatusUpdate}  />
+    isOpen={isInterviewDetailsModalOpen}
+    onClose={() => setIsInterviewDetailsModalOpen(false)}
+    applicant={selectedInterviewApplicant}
+    jobId={jobId}
+    onStatusUpdate={handleInterviewStatusUpdate}
+    currentUserEmail={ownerEmail}
+  />
 )}
+
+
     </div>
   );
 }
