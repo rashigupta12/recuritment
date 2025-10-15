@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { TodoDetailModal } from "@/components/recruiter/TodoDetailModal";
 import ApplicantForm from "@/components/recruiter/ApplicantForm";
@@ -8,7 +8,12 @@ import { frappeAPI } from "@/lib/api/frappeClient";
 import TaggedApplicants from "@/components/recruiter/TaggedApplicants";
 import MultipleApplicantsForm from "@/components/recruiter/MultipleApplicantsForm";
 import { Plus } from "lucide-react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
 import ApplicantSearchAndTag from "@/components/recruiter/ApplicantSearchAndTag";
 
@@ -23,34 +28,36 @@ export default function TodoDetailPage() {
   const params = useParams();
   const router = useRouter();
   const todoId = params.id as string;
-  const [activeTab, setActiveTab] = useState<'details' | 'applicants' | 'resume'>('details');
-  const [jobId, setJobId] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<
+    "details" | "applicants" | "resume"
+  >("details");
+  const [jobId, setJobId] = useState<string>("");
   const [todoData, setTodoData] = useState<TodoData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
-  const[jobTiitle , setJobTitle] = useState<string>('')
-  const {user } = useAuth()
-  const userEmail = user?.email
+  const [jobTiitle, setJobTitle] = useState<string>("");
+  const { user } = useAuth();
+  const userEmail = user?.email;
 
   const handleClose = () => {
     router.back();
   };
 
   const handleFormSubmitSuccess = () => {
-    console.log('🔄 Refreshing applicants list...');
+    console.log("🔄 Refreshing applicants list...");
     setIsSheetOpen(false);
-    setRefreshKey(prev => prev + 1);
+    setRefreshKey((prev) => prev + 1);
   };
 
   const refreshApplicants = () => {
-    console.log('🔄 Manual refresh triggered');
-    setRefreshKey(prev => prev + 1);
+    console.log("🔄 Manual refresh triggered");
+    setRefreshKey((prev) => prev + 1);
   };
 
   // ✅ New function to handle opening sheet from detail modal
   const handleOpenApplicantForm = () => {
-    setActiveTab('applicants');
+    setActiveTab("applicants");
     setIsSheetOpen(true);
   };
 
@@ -64,14 +71,14 @@ export default function TodoDetailPage() {
         setTodoData(todo);
         if (todo.custom_job_id) {
           setJobId(todo.custom_job_id);
-          setJobTitle(todo.custom_job_title)
+          setJobTitle(todo.custom_job_title);
         } else {
-          console.warn('No job ID found for this todo');
-          setJobId('');
+          console.warn("No job ID found for this todo");
+          setJobId("");
         }
       } catch (error) {
-        console.error('Error fetching todo details:', error);
-        setJobId('');
+        console.error("Error fetching todo details:", error);
+        setJobId("");
       } finally {
         setLoading(false);
       }
@@ -82,7 +89,7 @@ export default function TodoDetailPage() {
     }
   }, [todoId]);
 
-  console.log(todoData)
+  console.log(todoData);
 
   if (loading) {
     return (
@@ -102,20 +109,22 @@ export default function TodoDetailPage() {
         <div className="w-full ">
           <div className="flex justify-center space-x-4 ">
             <button
-              onClick={() => setActiveTab('details')}
-              className={`px-4 py-1 rounded-full text-lg font-bold transition ${activeTab === 'details'
-                ? "bg-blue-100 text-primary border border-primary"
-                : "text-gray-500 hover:text-gray-700"
-                }`}
+              onClick={() => setActiveTab("details")}
+              className={`px-4 py-1 rounded-full text-lg font-bold transition ${
+                activeTab === "details"
+                  ? "bg-blue-100 text-primary border border-primary"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
             >
               Job Details
             </button>
             <button
-              onClick={() => setActiveTab('applicants')}
-              className={`px-4 py-1 rounded-full text-lg font-bold transition ${activeTab === 'applicants'
-                ? "bg-blue-100 text-primary border border-primary"
-                : "text-gray-500 hover:text-gray-700"
-                }`}
+              onClick={() => setActiveTab("applicants")}
+              className={`px-4 py-1 rounded-full text-lg font-bold transition ${
+                activeTab === "applicants"
+                  ? "bg-blue-100 text-primary border border-primary"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
             >
               Tagged Applicants
             </button>
@@ -125,7 +134,7 @@ export default function TodoDetailPage() {
 
       {/* Tab Content */}
       <div className="">
-        {activeTab === 'details' && (
+        {activeTab === "details" && (
           <TodoDetailModal
             todoId={todoId}
             onClose={handleClose}
@@ -134,7 +143,7 @@ export default function TodoDetailPage() {
           />
         )}
 
-        {activeTab === 'applicants' && (
+        {activeTab === "applicants" && (
           <div className="space-y-0 relative">
             {/* ✅ Big Plus Button - Floating Action Button */}
             <button
@@ -149,7 +158,10 @@ export default function TodoDetailPage() {
             {jobId && todoData ? (
               <>
                 <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-                  <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto">
+                  <SheetContent
+                    side="right"
+                    className="w-full sm:max-w-md overflow-y-auto"
+                  >
                     <SheetHeader>
                       <SheetTitle className="text-2xl font-bold text-gray-900">
                         Add Applicants
@@ -160,13 +172,15 @@ export default function TodoDetailPage() {
                         initialJobId={jobId}
                         onFormSubmitSuccess={handleFormSubmitSuccess}
                       /> */}
-         <ApplicantSearchAndTag
-  initialJobId={jobId}
-  onFormSubmitSuccess={() => {
-    setRefreshKey(prev => prev + 1);
-  }}
-/>
-                      
+                      <ApplicantSearchAndTag
+                        initialJobId={jobId}
+                        onFormSubmitSuccess={() => {
+                          setRefreshKey((prev) => prev + 1);
+                        }}
+initialJobTitle={jobTiitle}
+                        currentUserEmail={userEmail}
+                        
+                      />
                     </div>
                   </SheetContent>
                 </Sheet>
@@ -174,10 +188,10 @@ export default function TodoDetailPage() {
                 <TaggedApplicants
                   key={`tagged-applicants-${refreshKey}`}
                   jobId={jobId}
-                  ownerEmail={userEmail || ''}
+                  ownerEmail={userEmail || ""}
                   todoData={todoData}
                   refreshTrigger={refreshKey}
-                  onRefresh={() => setRefreshKey(prev => prev + 1)}
+                  onRefresh={() => setRefreshKey((prev) => prev + 1)}
                   job_title={jobTiitle}
                 />
               </>
