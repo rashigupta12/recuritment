@@ -758,6 +758,27 @@ getApplicantById: async (applicantId: string) => {
       `/method/recruitment_app.get_staffing_plan.get_staffing_plans_with_children?limit_start=${limitStart}&limit_page_length=${limitPageLength}`
     );
   },
+createInterview: async (interviewData: Record<string, unknown>) => {
+  return await frappeAPI.makeAuthenticatedRequest('POST', '/resource/Interview', interviewData);
+},
+
+getInterviewsByApplicant: async (applicantId: string) => {
+  return await frappeAPI.makeAuthenticatedRequest(
+    'GET',
+    `/resource/Interview?fields=${encodeURIComponent(JSON.stringify(["name","interview_round","job_applicant","job_opening","status","scheduled_on","from_time","to_time"]))}&filters=${encodeURIComponent(JSON.stringify([["job_applicant", "=", applicantId]]))}`
+  );
+},
+
+updateInterviewStatus: async (interviewName: string, updateData: Record<string, unknown>) => {
+  return await frappeAPI.makeAuthenticatedRequest('PUT', `/resource/Interview/${interviewName}`, updateData);
+},
+
+
+
+  
+
+
+
 
   upload: async (file: File, options: {
     is_private?: boolean;

@@ -542,7 +542,7 @@ useEffect(() => {
                     sortField={sortField}
                     sortDirection={sortDirection}
                     onSort={handleSort}
-                    className="bg-blue-500 text-white"
+                    className="bg-blue-500 text-white text-start"
                   />
                   <tbody className="bg-white divide-y divide-gray-200">
                     {paginatedPlans.map((plan, planIndex) => (
