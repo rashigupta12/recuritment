@@ -903,7 +903,7 @@ const StaffingPlanCreator: React.FC = () => {
       }
 
       setSuccessMessage("");
-      router.push("/dashboard/recruiter/requirements");
+      router.push("/dashboard/recruiter/contract");
     } catch (error) {
       console.error("Error:", error);
       setError(isEditMode ? "Failed to update plan" : "Failed to create plan");
@@ -922,7 +922,7 @@ const StaffingPlanCreator: React.FC = () => {
 
   const confirmBack = () => {
     setShowBackConfirm(false);
-    router.push("/dashboard/recruiter/requirements");
+    router.push("/dashboard/recruiter/contract");
   };
 
   const cancelBack = () => {
