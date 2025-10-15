@@ -3,8 +3,8 @@ import StaffingPlansList from '@/components/Requirements/RequiremtsView'
 
 const Requirements = () => {
   return (
-    <StaffingPlansList />
-  )
+    <StaffingPlansList selectedLead={null} />
+  ) 
 }
 
 export default Requirements

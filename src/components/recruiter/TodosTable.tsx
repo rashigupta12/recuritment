@@ -177,6 +177,8 @@
 //   );
 // };
 
+/*eslint-disable @typescript-eslint/no-explicit-any*/
+
 import { useState } from "react";
 import { ChevronUp, ChevronDown, Eye, Edit2, Share2, PinIcon, Clock, MapPin, User, Users, Building, Phone } from "lucide-react";
 import { showToast } from "../Requirements/Management";
