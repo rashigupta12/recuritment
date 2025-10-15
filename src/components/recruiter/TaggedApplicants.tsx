@@ -8,7 +8,7 @@ import { frappeAPI } from "@/lib/api/frappeClient";
 import { ApplicantsTable } from "@/components/recruiter/ApplicantsTable";
 import EmailSendingPopup from "./EmailSendingPopup";
 import { Award, User, X, Search, AlertCircle, CheckCircle } from "lucide-react";
-import { InterviewScheduleModal } from "./InterviewSchedule";
+// import { InterviewScheduleModal } from "./InterviewSchedule";
 import { InterviewDetailsModal } from "./InterviewDetailsModal";
 
 interface JobApplicant {
@@ -1219,12 +1219,11 @@ const [interviewScheduleLoading, setInterviewScheduleLoading] = useState(false);
 
 {isInterviewDetailsModalOpen && selectedInterviewApplicant && (
   <InterviewDetailsModal
-    isOpen={isInterviewDetailsModalOpen}
-    onClose={() => setIsInterviewDetailsModalOpen(false)}
-    applicant={selectedInterviewApplicant}
-    jobId={jobId}
-    onStatusUpdate={handleInterviewStatusUpdate}
-  />
+          isOpen={isInterviewDetailsModalOpen}
+          onClose={() => setIsInterviewDetailsModalOpen(false)}
+          applicant={selectedInterviewApplicant}
+          jobId={jobId}
+          onStatusUpdate={handleInterviewStatusUpdate}  />
 )}
     </div>
   );

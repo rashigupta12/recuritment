@@ -29,8 +29,8 @@ export default function TodoDetailPage() {
   const [loading, setLoading] = useState(true);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
-  const[jobTiitle , setJobTitle] = useState<string>('')
-  const {user } = useAuth()
+  const [jobTiitle, setJobTitle] = useState<string>('')
+  const { user } = useAuth()
   const userEmail = user?.email
 
   const handleClose = () => {
@@ -160,13 +160,13 @@ export default function TodoDetailPage() {
                         initialJobId={jobId}
                         onFormSubmitSuccess={handleFormSubmitSuccess}
                       /> */}
-         <ApplicantSearchAndTag
-  initialJobId={jobId}
-  onFormSubmitSuccess={() => {
-    setRefreshKey(prev => prev + 1);
-  }}
-/>
-                      
+                      <ApplicantSearchAndTag
+                        initialJobId={jobId}
+                        onFormSubmitSuccess={() => {
+                          setRefreshKey(prev => prev + 1);
+                        }}
+                      />
+
                     </div>
                   </SheetContent>
                 </Sheet>
