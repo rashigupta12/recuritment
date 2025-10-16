@@ -1,11 +1,10 @@
-/*eslint-disable @typescript-eslint/no-explicit-any*/
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { frappeAPI } from "@/lib/api/frappeClient";
 import { Building, Edit, Loader2, Mail, Phone, Plus, User, X } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import ConfirmationDialog from "./ConfirmationDialogcontact";
-
 
 // -------- Type Definitions --------
 type Email = { email_id: string; is_primary: number };
@@ -108,7 +107,7 @@ const DesignationDropdown: React.FC<{
     }
   }, []);
 
-  const calculatePos = () => {
+  const calculatePos = useCallback(() => {
     if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
       setPos({
@@ -117,7 +116,7 @@ const DesignationDropdown: React.FC<{
         width: rect.width,
       });
     }
-  };
+  }, []);
 
   useEffect(() => {
     setSearchQuery(value || "");
@@ -126,7 +125,14 @@ const DesignationDropdown: React.FC<{
   useEffect(() => {
     if (isOpen) {
       calculatePos();
-      const handle = (e: MouseEvent) => {
+      let scrollTimeout: NodeJS.Timeout;
+      const handleScroll = () => {
+        clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(() => {
+          calculatePos();
+        }, 50);
+      };
+      document.addEventListener("mousedown", (e) => {
         if (
           dropdownRef.current &&
           !dropdownRef.current.contains(e.target as Node) &&
@@ -134,17 +140,17 @@ const DesignationDropdown: React.FC<{
         ) {
           setIsOpen(false);
         }
-      };
-      document.addEventListener("mousedown", handle);
-      window.addEventListener("scroll", calculatePos, true);
+      });
+      window.addEventListener("scroll", handleScroll, true);
       window.addEventListener("resize", calculatePos);
       return () => {
-        document.removeEventListener("mousedown", handle);
-        window.removeEventListener("scroll", calculatePos, true);
+        document.removeEventListener("mousedown", (e) => {});
+        window.removeEventListener("scroll", handleScroll, true);
         window.removeEventListener("resize", calculatePos);
+        clearTimeout(scrollTimeout);
       };
     }
-  }, [isOpen]);
+  }, [isOpen, calculatePos]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -163,12 +169,11 @@ const DesignationDropdown: React.FC<{
         value={searchQuery}
         onChange={(e) => {
           const value = e.target.value;
-          const formattedValue =
-            value.charAt(0).toUpperCase() + value.slice(1);
-          setSearchQuery(formattedValue);
+          setSearchQuery(value); // Use value as-is
           setIsOpen(true);
         }}
         onFocus={() => {
+          calculatePos(); // Recalculate position on focus
           if (searchQuery) {
             setIsOpen(true);
           }
@@ -276,12 +281,9 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
   const calculateDropdownPosition = useCallback(() => {
     if (!inputRef.current) return;
     const inputRect = inputRef.current.getBoundingClientRect();
-    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-    const scrollLeft =
-      window.pageXOffset || document.documentElement.scrollLeft;
     setDropdownPosition({
-      top: inputRect.bottom + scrollTop,
-      left: inputRect.left + scrollLeft,
+      top: inputRect.bottom + window.scrollY,
+      left: inputRect.left + window.scrollX,
       width: inputRect.width,
     });
   }, []);
@@ -289,12 +291,19 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
   useEffect(() => {
     if (showDropdown) {
       calculateDropdownPosition();
-      const handleResize = () => calculateDropdownPosition();
-      window.addEventListener("resize", handleResize);
-      window.addEventListener("scroll", handleResize);
+      let scrollTimeout: NodeJS.Timeout;
+      const handleScroll = () => {
+        clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(() => {
+          calculateDropdownPosition();
+        }, 50);
+      };
+      window.addEventListener("scroll", handleScroll, true);
+      window.addEventListener("resize", calculateDropdownPosition);
       return () => {
-        window.removeEventListener("resize", handleResize);
-        window.removeEventListener("scroll", handleResize);
+        window.removeEventListener("scroll", handleScroll, true);
+        window.removeEventListener("resize", calculateDropdownPosition);
+        clearTimeout(scrollTimeout);
       };
     }
   }, [showDropdown, calculateDropdownPosition]);
@@ -311,8 +320,7 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
     };
     if (showDropdown) {
       document.addEventListener("mousedown", handleClickOutside);
-      return () =>
-        document.removeEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
     }
   }, [showDropdown]);
 
@@ -425,6 +433,7 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
   };
 
   const handleInputFocus = () => {
+    calculateDropdownPosition(); // Recalculate position on focus
     if (searchQuery.trim() && !isSearching) {
       setShowDropdown(true);
     } else if (searchQuery.trim()) {
@@ -512,13 +521,11 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
         : [],
     };
 
-    // Show confirmation dialog only for UPDATE
     if (selectedContact?.contactId) {
       setPendingContactData(contactData);
       setConfirmMessage("Are you sure you want to update this contact?");
       setShowConfirmDialog(true);
     } else {
-      // For CREATE, directly call the save function
       await handleDirectSave(contactData);
     }
   };
@@ -528,11 +535,6 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
 
     try {
       setIsSaving(true);
-
-      // let contactId: string;
-      // let contactName: string;
-
-      // This function is only called for UPDATE now
       await frappeAPI.updateContact(selectedContact!.contactId!, pendingContactData);
       const contactId = selectedContact!.contactId!;
       const contactName = `${contactForm.first_name} ${contactForm.last_name}`.trim();
@@ -556,14 +558,10 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
         onOrganizationAutoFetch(contactForm.organization.trim());
       }
 
-      // Close dialogs and reset
       setShowConfirmDialog(false);
       setShowContactDialog(false);
       setContactForm(initialContactFormState);
       setPendingContactData(null);
-      
-
-      
     } catch (error) {
       console.error(error);
       alert("Failed to update contact. Please try again.");
@@ -576,11 +574,6 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
   const handleDirectSave = async (contactData: any) => {
     try {
       setIsSaving(true);
-
-      // let contactId: string;
-      // let contactName: string;
-
-      // This function is only for CREATE
       const response = await frappeAPI.createContact(contactData);
       const contactId = response.data.name;
       const contactName = `${contactForm.first_name} ${contactForm.last_name}`.trim();
@@ -604,12 +597,8 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
         onOrganizationAutoFetch(contactForm.organization.trim());
       }
 
-      // Close dialog and reset
       setShowContactDialog(false);
       setContactForm(initialContactFormState);
-      
-     
-      
     } catch (error) {
       console.error(error);
       alert("Failed to create contact. Please try again.");
@@ -629,7 +618,7 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
     <div
       ref={dropdownRef}
       className={`fixed bg-white shadow-lg rounded-md max-h-60 overflow-y-auto ${
-        selectedContact ? '' : 'border border-gray-200'
+        selectedContact ? "" : "border border-gray-200"
       }`}
       style={{
         top: dropdownPosition.top,
@@ -714,24 +703,6 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
           Start typing to search contacts...
         </div>
       ) : null}
-      {/* {(contactMeta.uniqueDesignations.length > 0 ||
-        contactMeta.uniqueGenders.length > 0 ||
-        contactMeta.uniqueOrganizations.length > 0) && (
-        <div className="px-4 py-2 border-t text-sm text-gray-400 bg-gray-50">
-          <div>
-            <span className="font-medium">Designations:</span>{" "}
-            {contactMeta.uniqueDesignations.join(", ")}
-          </div>
-          <div>
-            <span className="font-medium">Genders:</span>{" "}
-            {contactMeta.uniqueGenders.join(", ")}
-          </div>
-          <div>
-            <span className="font-medium">Organizations:</span>{" "}
-            {contactMeta.uniqueOrganizations.join(", ")}
-          </div>
-        </div>
-      )} */}
     </div>
   );
 
@@ -785,11 +756,9 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
                     value={contactForm.first_name}
                     onChange={(e) => {
                       const value = e.target.value;
-                      const formattedValue =
-                        value.charAt(0).toUpperCase() + value.slice(1);
                       setContactForm((prev) => ({
                         ...prev,
-                        first_name: formattedValue,
+                        first_name: value, // Preserve case
                       }));
                     }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
@@ -805,11 +774,9 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
                     value={contactForm.last_name}
                     onChange={(e) => {
                       const value = e.target.value;
-                      const formattedValue =
-                        value.charAt(0).toUpperCase() + value.slice(1);
                       setContactForm((prev) => ({
                         ...prev,
-                        last_name: formattedValue,
+                        last_name: value, // Preserve case
                       }));
                     }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
@@ -892,24 +859,6 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
                 />
               </div>
-              
-              {/* <div>
-                <label className="block text-md font-medium text-gray-700 mb-1">
-                  Organization
-                </label>
-                <input
-                  type="text"
-                  value={contactForm.organization}
-                  onChange={(e) => {
-                    setContactForm((prev) => ({
-                      ...prev,
-                      organization: e.target.value,
-                    }));
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none"
-                  placeholder="e.g., ABC Company"
-                />
-              </div> */}
             </div>
             <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-end space-x-3 sticky bottom-0 bg-white">
               <button
@@ -951,7 +900,7 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
               value={searchQuery}
               onChange={handleSearchChange}
               onFocus={handleInputFocus}
-              className="w-full pl-10 pr-20 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors capitalize"
+              className="w-full pl-10 pr-20 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-colors"
             />
 
             <div className="absolute right-2 flex items-center space-x-1 z-10">
@@ -989,7 +938,7 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
       </div>
 
       {selectedContact && (
-        <div className="border  rounded-lg p-4 py-2  animate-in fade-in-50">
+        <div className="border rounded-lg p-4 py-2 animate-in fade-in-50">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div>
