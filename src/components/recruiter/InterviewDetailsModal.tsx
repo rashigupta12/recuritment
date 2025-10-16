@@ -64,10 +64,8 @@ interface InterviewDetailsModalProps {
   applicant: JobApplicant;
   jobId: string;
   onStatusUpdate: () => void;
-  currentUserEmail? :string
+  currentUserEmail?: string;
 }
-
-
 
 export const InterviewDetailsModal: React.FC<InterviewDetailsModalProps> = ({
   isOpen,
@@ -75,7 +73,7 @@ export const InterviewDetailsModal: React.FC<InterviewDetailsModalProps> = ({
   applicant,
   jobId,
   onStatusUpdate,
-  currentUserEmail
+  currentUserEmail,
 }) => {
   const [scheduledInterviews, setScheduledInterviews] = useState<any[]>([]);
   const [loadingInterviews, setLoadingInterviews] = useState(false);
@@ -83,7 +81,7 @@ export const InterviewDetailsModal: React.FC<InterviewDetailsModalProps> = ({
     [key: string]: string;
   }>({});
   const [formData, setFormData] = useState<InterviewScheduleData>({
-    schedule_date: "2025-10-31",
+    schedule_date: "",
     interview_round: "",
     interview_panel_name: "aditya@hevhire.com",
     mode_of_interview: "Virtual",
@@ -91,9 +89,7 @@ export const InterviewDetailsModal: React.FC<InterviewDetailsModalProps> = ({
     custom_link: "",
     custom_remarks: "this is remarks field",
   });
-  
 
- 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
@@ -125,7 +121,7 @@ export const InterviewDetailsModal: React.FC<InterviewDetailsModalProps> = ({
       fetchScheduledInterviews();
       setShowCreateForm(false);
       setFormData({
-        schedule_date: "2025-10-31",
+        schedule_date: "",
         interview_round: "",
         interview_panel_name: "aditya@hevhire.com",
         mode_of_interview: "Virtual",
@@ -243,30 +239,32 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
     }
   };
 
-  const [interviewRounds, setInterviewRounds] = useState<Array<{ name: string}>>([]);
-const [loadingRounds, setLoadingRounds] = useState(false);
+  const [interviewRounds, setInterviewRounds] = useState<
+    Array<{ name: string }>
+  >([]);
+  const [loadingRounds, setLoadingRounds] = useState(false);
 
-useEffect(() => {
-  if (isOpen) {
-    fetchInterviewRounds();
-  }
-}, [isOpen]);
+  useEffect(() => {
+    if (isOpen) {
+      fetchInterviewRounds();
+    }
+  }, [isOpen]);
 
- const fetchInterviewRounds = async () => {
-  setLoadingRounds(true);
-  try {
-    const response = await frappeAPI.getInterviewRounds();
-    const roundsData = Array.isArray(response.data) ? response.data : [];
-    setInterviewRounds(roundsData);
-    console.log("Fetched interview rounds:", roundsData); // Debug log
-  } catch (err) {
-    console.error("Error fetching interview rounds:", err);
-    setInterviewRounds([]);
-    toast.error("Failed to load interview rounds");
-  } finally {
-    setLoadingRounds(false);
-  }
-};
+  const fetchInterviewRounds = async () => {
+    setLoadingRounds(true);
+    try {
+      const response = await frappeAPI.getInterviewRounds();
+      const roundsData = Array.isArray(response.data) ? response.data : [];
+      setInterviewRounds(roundsData);
+      console.log("Fetched interview rounds:", roundsData); // Debug log
+    } catch (err) {
+      console.error("Error fetching interview rounds:", err);
+      setInterviewRounds([]);
+      toast.error("Failed to load interview rounds");
+    } finally {
+      setLoadingRounds(false);
+    }
+  };
 
   const handleUpdateInterviewStatus = async (interviewName: string) => {
     const newStatus = interviewStatuses[interviewName];
@@ -288,7 +286,7 @@ useEffect(() => {
       await frappeAPI.updateApplicantStatus(applicant.name, updateData);
 
       toast.success("Interview status updated successfully!");
-      
+
       // Fetch interviews again to get updated status from backend
       await fetchScheduledInterviews();
       onStatusUpdate();
@@ -300,16 +298,16 @@ useEffect(() => {
     }
   };
 
-
   const formatDateDDMMYYYY = (dateString: string): string => {
-  if (!dateString) return "N/A";
-  const date = new Date(dateString);
-  return date.toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-};
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
+
   const handleCreateInterview = async () => {
     // Validate required fields
     if (
@@ -336,6 +334,27 @@ useEffect(() => {
       return;
     }
 
+    // Validate time conflicts for all scheduled interviews on the same day
+    if (scheduledInterviews.length > 0) {
+      const selectedDateTruncated = new Date(formData.schedule_date);
+      selectedDateTruncated.setHours(0, 0, 0, 0);
+      const conflictingInterview = scheduledInterviews.find((interview) => {
+        const interviewDate = new Date(interview.scheduled_on);
+        interviewDate.setHours(0, 0, 0, 0);
+        return (
+          selectedDateTruncated.getTime() === interviewDate.getTime() &&
+          formData.from_time === interview.from_time
+        );
+      });
+
+      if (conflictingInterview) {
+        setLocalError(
+          "Cannot schedule a new interview at the same time as another interview on the same day"
+        );
+        return;
+      }
+    }
+
     // Validate URL format for virtual interviews
     if (formData.mode_of_interview === "Virtual") {
       try {
@@ -358,9 +377,11 @@ useEffect(() => {
         from_time: formData.from_time,
         custom_mode_: formData.mode_of_interview,
         custom_link:
-          formData.mode_of_interview === "Virtual" ? formData.custom_link : undefined,
+          formData.mode_of_interview === "Virtual"
+            ? formData.custom_link
+            : undefined,
         custom_remarks: formData.custom_remarks,
-        status: "Pending",
+        status: "Scheduled",
       };
 
       await frappeAPI.createInterview(interviewPayload);
@@ -469,103 +490,103 @@ useEffect(() => {
         </div>
 
         {/* Scheduled Interviews Section */}
-    {!loadingInterviews && scheduledInterviews.length > 0 && (
-  <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-    <div className="flex items-center gap-2 mb-3">
-      <CheckCircle className="h-5 w-5 text-green-600" />
-      <h3 className="font-semibold text-green-900">Scheduled Interviews</h3>
-    </div>
-    <div className="space-y-3">
-      {scheduledInterviews.map((interview) => (
-        <div
-          key={interview.name}
-          className="p-3 bg-white border border-green-100 rounded-lg"
-        >
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-row items-center gap-2">
-              <span className="font-semibold text-gray-600 text-sm">Round:</span>
-              <span className="text-sm">{interview.interview_round || "N/A"}</span>
+        {!loadingInterviews && scheduledInterviews.length > 0 && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-center gap-2 mb-3">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              <h3 className="font-semibold text-green-900">Scheduled Interviews</h3>
             </div>
-            <div className="flex flex-row items-center gap-2">
-              <span className="font-semibold text-gray-600 text-sm">Date:</span>
-              <span className="text-sm">{formatDateDDMMYYYY(interview.scheduled_on) || "N/A"}</span>
-            </div>
-            <div className="flex flex-row items-center gap-2">
-              <span className="font-semibold text-gray-600 text-sm">Time:</span>
-              <span className="text-sm">{interview.from_time}</span>
-            </div>
-            <div className="flex flex-row items-center gap-2">
-              <span className="font-semibold text-gray-600 text-sm">Mode:</span>
-              <span className="text-sm">{interview.custom_mode_ || "N/A"}</span>
-            </div>
-            {interview.custom_mode_ === "Virtual" && (
-              <div className="flex flex-row items-center gap-2 col-span-2">
-                <span className="font-semibold text-gray-600 text-sm">Link:</span>
-                <a
-                  href={interview.custom_link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-blue-600 hover:underline truncate"
+            <div className="space-y-3">
+              {scheduledInterviews.map((interview) => (
+                <div
+                  key={interview.name}
+                  className="p-3 bg-white border border-green-100 rounded-lg"
                 >
-                  {interview.custom_link || "N/A"}
-                </a>
-              </div>
-            )}
-            <div className="flex flex-row items-center gap-2">
-              <span className="font-semibold text-gray-600 text-sm">Status:</span>
-              <span
-                className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  interview.status === "Cleared"
-                    ? "bg-green-100 text-green-800"
-                    : interview.status === "Rejected"
-                    ? "bg-red-100 text-red-800"
-                    : interview.status === "Under Review"
-                    ? "bg-yellow-100 text-yellow-800"
-                    : interview.status === "Pending"
-                    ? "bg-blue-100 text-blue-800"
-                    : interview.status === "Scheduled"
-                    ? "bg-purple-100 text-purple-800"
-                    : "bg-gray-100 text-gray-800"
-                }`}
-              >
-                {interview.status || "Not Set"}
-              </span>
-            </div>
-            <div className="flex flex-row items-center gap-2">
-              <select
-                value={interviewStatuses[interview.name] || ""}
-                onChange={(e) =>
-                  setInterviewStatuses({
-                    ...interviewStatuses,
-                    [interview.name]: e.target.value,
-                  })
-                }
-                className="px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-sm"
-                disabled={isSubmitting || interview.status?.toLowerCase() === "cleared"}
-              >
-                <option value="">Update status...</option>
-                <option value="Scheduled">Scheduled</option>
-                <option value="Pending">Pending</option>
-                <option value="Under Review">Under Review</option>
-                <option value="Cleared">Cleared</option>
-                <option value="Rejected">Rejected</option>
-              </select>
-              {interview.status?.toLowerCase() !== "cleared" && (
-                <button
-                  onClick={() => handleUpdateInterviewStatus(interview.name)}
-                  disabled={isSubmitting || !interviewStatuses[interview.name]}
-                  className="px-3 py-1.5 text-white bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
-                >
-                  {isSubmitting ? "Updating..." : "Update"}
-                </button>
-              )}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex flex-row items-center gap-2">
+                      <span className="font-semibold text-gray-600 text-sm">Round:</span>
+                      <span className="text-sm">{interview.interview_round || "N/A"}</span>
+                    </div>
+                    <div className="flex flex-row items-center gap-2">
+                      <span className="font-semibold text-gray-600 text-sm">Date:</span>
+                      <span className="text-sm">{formatDateDDMMYYYY(interview.scheduled_on) || "N/A"}</span>
+                    </div>
+                    <div className="flex flex-row items-center gap-2">
+                      <span className="font-semibold text-gray-600 text-sm">Time:</span>
+                      <span className="text-sm">{interview.from_time}</span>
+                    </div>
+                    <div className="flex flex-row items-center gap-2">
+                      <span className="font-semibold text-gray-600 text-sm">Mode:</span>
+                      <span className="text-sm">{interview.custom_mode_ || "N/A"}</span>
+                    </div>
+                    {interview.custom_mode_ === "Virtual" && (
+                      <div className="flex flex-row items-center gap-2 col-span-2">
+                        <span className="font-semibold text-gray-600 text-sm">Link:</span>
+                        <a
+                          href={interview.custom_link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-600 hover:underline truncate"
+                        >
+                          {interview.custom_link || "N/A"}
+                        </a>
+                      </div>
+                    )}
+                    <div className="flex flex-row items-center gap-2">
+                      <span className="font-semibold text-gray-600 text-sm">Status:</span>
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          interview.status === "Cleared"
+                            ? "bg-green-100 text-green-800"
+                            : interview.status === "Rejected"
+                            ? "bg-red-100 text-red-800"
+                            : interview.status === "Under Review"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : interview.status === "Pending"
+                            ? "bg-blue-100 text-blue-800"
+                            : interview.status === "Scheduled"
+                            ? "bg-purple-100 text-purple-800"
+                            : "bg-gray-100 text-gray-800"
+                        }`}
+                      >
+                        {interview.status || "Not Set"}
+                      </span>
+                    </div>
+                    <div className="flex flex-row items-center gap-2">
+                      <select
+                        value={interviewStatuses[interview.name] || ""}
+                        onChange={(e) =>
+                          setInterviewStatuses({
+                            ...interviewStatuses,
+                            [interview.name]: e.target.value,
+                          })
+                        }
+                        className="px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-sm"
+                        disabled={isSubmitting || interview.status?.toLowerCase() === "cleared"}
+                      >
+                        <option value="">Update status...</option>
+                        <option value="Scheduled">Scheduled</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Under Review">Under Review</option>
+                        <option value="Cleared">Cleared</option>
+                        <option value="Rejected">Rejected</option>
+                      </select>
+                      {interview.status?.toLowerCase() !== "cleared" && (
+                        <button
+                          onClick={() => handleUpdateInterviewStatus(interview.name)}
+                          disabled={isSubmitting || !interviewStatuses[interview.name]}
+                          className="px-3 py-1.5 text-white bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+                        >
+                          {isSubmitting ? "Updating..." : "Update"}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-        </div>
-      ))}
-    </div>
-  </div>
-)}
+        )}
 
         {/* Alert when latest interview is not cleared */}
         {hasInterviews && !isLatestInterviewCleared && !showCreateForm && (
@@ -584,7 +605,6 @@ useEffect(() => {
           <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                {/* <CheckCircle className="h-5 w-5 text-green-600" /> */}
                 <p className="text-sm text-green-800">
                   Latest interview cleared! You can now schedule the next round.
                 </p>
@@ -678,11 +698,15 @@ useEffect(() => {
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          mode_of_interview: e.target.value as "Virtual" | "In Person",
-                          custom_link: e.target.value === "Virtual" ? formData.custom_link : "",
+                          mode_of_interview: e.target.value as
+                            | "Virtual"
+                            | "In Person",
+                          custom_link:
+                            e.target.value === "Virtual"
+                              ? formData.custom_link
+                              : "",
                         })
                       }
-      
                       className="h-4 w-4 text-blue-600 focus:ring-blue-600 border-gray-300"
                       required
                       disabled={isSubmitting || isSendingEmail}
@@ -698,8 +722,13 @@ useEffect(() => {
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          mode_of_interview: e.target.value as "Virtual" | "In Person",
-                          custom_link: e.target.value === "Virtual" ? formData.custom_link : "",
+                          mode_of_interview: e.target.value as
+                            | "Virtual"
+                            | "In Person",
+                          custom_link:
+                            e.target.value === "Virtual"
+                              ? formData.custom_link
+                              : "",
                         })
                       }
                       className="h-4 w-4 text-blue-600 focus:ring-blue-600 border-gray-300"
@@ -711,31 +740,29 @@ useEffect(() => {
                 </div>
               </div>
 
-            <div>
-  <label className="block text-gray-700 font-semibold mb-2 text-md">
-    Schedule Date <span className="text-red-500">*</span>
-  </label>
-  <input
-    type="date"
-    value={formData.schedule_date}
-    onChange={(e) => setFormData({ ...formData, schedule_date: e.target.value })}
-    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent bg-white text-md transition-all"
-    min={
-      latestInterview
-        ? new Date(latestInterview.scheduled_on)
-            .toISOString()
-            .split("T")[0]
-        : new Date().toISOString().split("T")[0]
-    }
-    required
-    disabled={isSubmitting || isSendingEmail}
-  />
-  {latestInterview && (
-    <p className="text-xs text-gray-500 mt-1">
-      Must be after {new Date(latestInterview.scheduled_on).toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" })}
-    </p>
-  )}
-</div>
+              <div>
+                <label className="block text-gray-700 font-semibold mb-2 text-md">
+                  Schedule Date <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={formData.schedule_date}
+                  onChange={(e) =>
+                    setFormData({ ...formData, schedule_date: e.target.value })
+                  }
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent bg-white text-md transition-all"
+                  min={
+                    latestInterview
+                      ? new Date(latestInterview.scheduled_on)
+                          .toISOString()
+                          .split("T")[0]
+                      : new Date().toISOString().split("T")[0]
+                  }
+                  required
+                  disabled={isSubmitting || isSendingEmail}
+                />
+               
+              </div>
 
               <div>
                 <label className="block text-gray-700 font-semibold mb-2 text-md">
@@ -744,46 +771,56 @@ useEffect(() => {
                 <input
                   type="time"
                   value={formData.from_time}
-                  onChange={(e) => setFormData({ ...formData, from_time: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, from_time: e.target.value })
+                  }
                   className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent bg-white text-md transition-all"
                   required
                   disabled={isSubmitting || isSendingEmail}
                 />
               </div>
 
-            <div>
-  <label className="block text-gray-700 font-semibold mb-2 text-md">
-    Interview Round <span className="text-red-500">*</span>
-  </label>
-<select
-  value={formData.interview_round}
-  onChange={(e) => setFormData({ ...formData, interview_round: e.target.value })}
-  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent bg-white text-md transition-all"
-  required
-  disabled={isSubmitting || isSendingEmail || loadingRounds}
->
-  <option value="">Select Interview Round</option>
-  {interviewRounds.map((round) => {
-    const isRoundUsed = scheduledInterviews.some(
-      (interview) => interview.interview_round === round.name
-    );
-    return (
-      <option
-        key={round.name}
-        value={round.name}
-        disabled={isRoundUsed}
-      >
-        {round.name}
-      </option>
-    );
-  })}
-</select>
-  {loadingRounds && <p className="text-xs text-gray-500 mt-1">Loading rounds...</p>}
-</div>
+              <div>
+                <label className="block text-gray-700 font-semibold mb-2 text-md">
+                  Interview Round <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={formData.interview_round}
+                  onChange={(e) =>
+                    setFormData({ ...formData, interview_round: e.target.value })
+                  }
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent bg-white text-md transition-all"
+                  required
+                  disabled={isSubmitting || isSendingEmail || loadingRounds}
+                >
+                  <option value="">Select Interview Round</option>
+                  {interviewRounds.map((round) => {
+                    const isRoundUsed = scheduledInterviews.some(
+                      (interview) => interview.interview_round === round.name
+                    );
+                    return (
+                      <option
+                        key={round.name}
+                        value={round.name}
+                        disabled={isRoundUsed}
+                      >
+                        {round.name}
+                      </option>
+                    );
+                  })}
+                </select>
+                {loadingRounds && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Loading rounds...
+                  </p>
+                )}
+              </div>
 
               <div>
                 <label className="block text-gray-700 font-semibold mb-2 text-md">
-                  Remarks <span className="text-gray-400 font-normal">(Optional)</span>
+                  Remarks <span className="text-gray-400 font-normal">
+                    (Optional)
+                  </span>
                 </label>
                 <textarea
                   value={formData.custom_remarks || ""}
@@ -805,14 +842,16 @@ useEffect(() => {
                   <input
                     type="url"
                     value={formData.custom_link || ""}
-                    onChange={(e) => setFormData({ ...formData, custom_link: e.target.value })}
-                        onBlur={(e) => {
-        let value = e.target.value.trim();
-        if (value && !/^https?:\/\//i.test(value)) {
-          value = "https://" + value;
-        }
-        setFormData({ ...formData, custom_link: value });
-      }}
+                    onChange={(e) =>
+                      setFormData({ ...formData, custom_link: e.target.value })
+                    }
+                    onBlur={(e) => {
+                      let value = e.target.value.trim();
+                      if (value && !/^https?:\/\//i.test(value)) {
+                        value = "https://" + value;
+                      }
+                      setFormData({ ...formData, custom_link: value });
+                    }}
                     placeholder="e.g., https://meet.example.com"
                     className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent bg-white text-md transition-all"
                     required
