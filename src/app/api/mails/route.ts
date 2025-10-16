@@ -1,8 +1,6 @@
-
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
-import { sendEmail } from '@/lib/mail/mailer3'; // Import from mailer3
-import { Attachment } from '@/lib/mail/mailer3'; // Import Attachment interface
+import { sendEmail, Attachment, EmailRecipients } from '@/lib/mail/mailer3'; // Import from mailer3
 
 interface EmailRequest {
     from_email: string;
@@ -83,7 +81,6 @@ export async function POST(request: NextRequest) {
 
                 if (userResponse.ok) {
                     const userData = await userResponse.json();
-                    // console.log('User Data:', JSON.stringify(userData, null, 2));
                     
                     const fullName = userData.data?.full_name;
                     if (fullName) {
@@ -168,82 +165,55 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // Send emails to all recipients using mailer3.ts function
-        const emailResults = [];
-        
-        // Send to "To" recipients
-        for (const recipient of toEmails) {
-            console.log(`📨 Sending email to: ${recipient}`);
-            const result = await sendEmail(
-                senderName,           // senderHeader
-                recipient,            // email (recipient)
-                emailData.subject,    // subject
-                htmlContent,          // content
-                senderEmail,          // userEmail (sender's email - logged in user)
-                attachments           // attachments
-            );
-            emailResults.push(result);
-            console.log(`✅ Email to ${recipient}: ${result.success ? 'Success' : 'Failed'}`);
-        }
+        // Prepare recipients object
+        const recipients: EmailRecipients = {};
+        if (toEmails.length > 0) recipients.to = toEmails;
+        if (ccEmails.length > 0) recipients.cc = ccEmails;
+        if (bccEmails.length > 0) recipients.bcc = bccEmails;
 
-        // Send to "CC" recipients
-        for (const recipient of ccEmails) {
-            console.log(`📨 Sending CC email to: ${recipient}`);
-            const result = await sendEmail(
-                senderName,           // senderHeader
-                recipient,            // email (recipient)
-                emailData.subject,    // subject
-                htmlContent,          // content
-                senderEmail,          // userEmail (sender's email - logged in user)
-                attachments           // attachments
-            );
-            emailResults.push(result);
-            console.log(`✅ CC Email to ${recipient}: ${result.success ? 'Success' : 'Failed'}`);
-        }
+        console.log(`📧 Preparing to send ONE email with:`);
+        console.log(`   To: ${toEmails.length} recipient(s)`);
+        console.log(`   CC: ${ccEmails.length} recipient(s)`);
+        console.log(`   BCC: ${bccEmails.length} recipient(s)`);
+        console.log(`   Attachments: ${attachments.length}`);
 
-        // Send to "BCC" recipients
-        for (const recipient of bccEmails) {
-            console.log(`📨 Sending BCC email to: ${recipient}`);
-            const result = await sendEmail(
-                senderName,           // senderHeader
-                recipient,            // email (recipient)
-                emailData.subject,    // subject
-                htmlContent,          // content
-                senderEmail,          // userEmail (sender's email - logged in user)
-                attachments           // attachments
-            );
-            emailResults.push(result);
-            console.log(`✅ BCC Email to ${recipient}: ${result.success ? 'Success' : 'Failed'}`);
-        }
-
-        // Check if all emails were sent successfully
-        const successfulEmails = emailResults.filter(result => result.success);
-        const failedEmails = emailResults.filter(result => !result.success);
+        // Send ONE email with all recipients (To, CC, BCC)
+        const result = await sendEmail(
+            senderName,           // senderHeader
+            recipients,           // recipients object with to, cc, bcc
+            emailData.subject,    // subject
+            htmlContent,          // content
+            senderEmail,          // userEmail (sender's email - logged in user)
+            attachments           // attachments
+        );
 
         console.log(`📧 Email sending completed:`);
-        console.log(`✅ Successful: ${successfulEmails.length}`);
-        console.log(`❌ Failed: ${failedEmails.length}`);
+        console.log(`Status: ${result.success ? '✅ Success' : '❌ Failed'}`);
+        if (!result.success) {
+            console.log(`Error: ${result.error}`);
+        }
 
-        if (failedEmails.length > 0) {
-            console.error('Failed emails:', failedEmails);
+        if (!result.success) {
             return NextResponse.json({
                 success: false,
-                message: `Some emails failed to send (${successfulEmails.length} successful, ${failedEmails.length} failed)`,
-                results: emailResults,
+                message: 'Email failed to send',
+                result: result,
                 sentFrom: senderEmail,
-                totalSent: successfulEmails.length,
-                totalFailed: failedEmails.length,
-                errors: failedEmails.map(e => ({ email: e.email, error: e.error }))
-            }, { status: 207 }); // 207 Multi-Status
+                error: result.error
+            }, { status: 500 });
         }
 
         return NextResponse.json({
             success: true,
-            message: `All emails sent successfully (${successfulEmails.length} emails)`,
-            results: emailResults,
+            message: `Email sent successfully to ${toEmails.length} recipients (${ccEmails.length} CC, ${bccEmails.length} BCC)`,
+            result: result,
             sentFrom: senderEmail,
-            totalSent: successfulEmails.length,
-            totalFailed: failedEmails.length
+            recipients: {
+                to: toEmails.length,
+                cc: ccEmails.length,
+                bcc: bccEmails.length
+            },
+            attachments: attachments.length
         });
 
     } catch (error: any) {

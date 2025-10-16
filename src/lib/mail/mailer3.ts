@@ -15,12 +15,17 @@ export interface EmailResult {
   timestamp: string;
 }
 
+export interface EmailRecipients {
+  to?: string[];
+  cc?: string[];
+  bcc?: string[];
+}
+
 // Azure AD Configuration
 const getAzureConfig = () => ({
   tenantId: process.env.AZURE_TENANT_ID!,
   clientId: process.env.AZURE_CLIENT_ID!,
   clientSecret: process.env.AZURE_CLIENT_SECRET!,
-  // mailUser is now removed from here since we'll use the parameter
 });
 
 // Get Azure OAuth2 access token for Graph API
@@ -38,7 +43,6 @@ async function getGraphAccessToken(): Promise<string> {
 
 // Prepare attachment for Graph API
 function prepareAttachmentForGraph(attachment: Attachment) {
-  // Validate required fields
   if (!attachment.filename) {
     throw new Error('Attachment filename is required');
   }
@@ -60,7 +64,6 @@ function getContentType(filename: string): string {
   const extension = filename.split('.').pop()?.toLowerCase();
   
   const contentTypes: { [key: string]: string } = {
-    // Images
     'png': 'image/png',
     'jpg': 'image/jpeg',
     'jpeg': 'image/jpeg',
@@ -68,8 +71,6 @@ function getContentType(filename: string): string {
     'webp': 'image/webp',
     'bmp': 'image/bmp',
     'svg': 'image/svg+xml',
-    
-    // Documents
     'pdf': 'application/pdf',
     'doc': 'application/msword',
     'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -77,16 +78,10 @@ function getContentType(filename: string): string {
     'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     'ppt': 'application/vnd.ms-powerpoint',
     'pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-    
-    // Text files
     'txt': 'text/plain',
     'csv': 'text/csv',
-    
-    // Archives
     'zip': 'application/zip',
     'rar': 'application/x-rar-compressed',
-    
-    // Default
     'default': 'application/octet-stream'
   };
 
@@ -95,7 +90,6 @@ function getContentType(filename: string): string {
 
 // Validate attachment size (Microsoft Graph has limits)
 function validateAttachmentSize(contentBytes: string): void {
-  // Convert base64 to approximate size in bytes
   const sizeInBytes = (contentBytes.length * 3) / 4;
   const maxSize = 3 * 1024 * 1024; // 3MB limit for Graph API
   
@@ -104,25 +98,19 @@ function validateAttachmentSize(contentBytes: string): void {
   }
 }
 
-// Send email using Microsoft Graph API
+// Send email using Microsoft Graph API with CC and BCC support
 async function sendEmailViaGraph(
   senderHeader: string,
-  recipientEmail: string,
+  recipients: EmailRecipients,
   subject: string,
   htmlContent: string,
-  userEmail: string, // Added userEmail parameter
+  userEmail: string,
   attachments?: Attachment[]
 ): Promise<void> {
-  const config = getAzureConfig();
   const accessToken = await getGraphAccessToken();
 
-  // Validate recipient email format
+  // Validate userEmail format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(recipientEmail)) {
-    throw new Error('Invalid recipient email format');
-  }
-
-  // Validate userEmail format as well
   if (!emailRegex.test(userEmail)) {
     throw new Error('Invalid user email format');
   }
@@ -134,28 +122,45 @@ async function sendEmailViaGraph(
         contentType: 'HTML',
         content: htmlContent
       },
-      toRecipients: [{
-        emailAddress: { address: recipientEmail }
-      }],
       from: {
         emailAddress: {
           name: senderHeader,
-          address: userEmail // Use the userEmail parameter instead of config.mailUser
+          address: userEmail
         }
       }
     },
     saveToSentItems: true
   };
 
+  // Add To recipients
+  if (recipients.to && recipients.to.length > 0) {
+    message.message.toRecipients = recipients.to.map(email => ({
+      emailAddress: { address: email }
+    }));
+  }
+
+  // Add CC recipients
+  if (recipients.cc && recipients.cc.length > 0) {
+    message.message.ccRecipients = recipients.cc.map(email => ({
+      emailAddress: { address: email }
+    }));
+  }
+
+  // Add BCC recipients
+  if (recipients.bcc && recipients.bcc.length > 0) {
+    message.message.bccRecipients = recipients.bcc.map(email => ({
+      emailAddress: { address: email }
+    }));
+  }
+
   // Process attachments if provided
   if (attachments?.length) {
-    // Validate total attachments size
     const totalSize = attachments.reduce((total, att) => {
       const sizeInBytes = (att.content.length * 3) / 4;
       return total + sizeInBytes;
     }, 0);
     
-    if (totalSize > 25 * 1024 * 1024) { // 25MB total limit
+    if (totalSize > 25 * 1024 * 1024) {
       throw new Error('Total attachments size exceeds 25MB limit');
     }
 
@@ -166,7 +171,7 @@ async function sendEmailViaGraph(
   }
 
   const response = await fetch(
-    `https://graph.microsoft.com/v1.0/users/${userEmail}/sendMail`, // Use userEmail in the URL
+    `https://graph.microsoft.com/v1.0/users/${userEmail}/sendMail`,
     {
       method: 'POST',
       headers: {
@@ -183,33 +188,47 @@ async function sendEmailViaGraph(
   }
 }
 
+// Updated sendEmail function to support CC and BCC
 export const sendEmail = async (
   senderHeader: string,
-  email: string,
+  recipients: EmailRecipients,
   subject: string,
   content: string,
-  userEmail: string, // Moved before optional attachments parameter
+  userEmail: string,
   attachments?: Attachment[]
 ): Promise<EmailResult> => {
   const timestamp = new Date().toISOString();
 
   try {
-    await sendEmailViaGraph(senderHeader, email, subject, content, userEmail, attachments);
+    await sendEmailViaGraph(senderHeader, recipients, subject, content, userEmail, attachments);
+
+    // Return combined list of all recipients for logging
+    const allRecipients = [
+      ...(recipients.to || []),
+      ...(recipients.cc || []),
+      ...(recipients.bcc || [])
+    ].join(', ');
 
     return {
       success: true,
-      messageId: `graph-${Date.now()}@${userEmail.split('@')[1]}`, // Use userEmail for messageId
-      email,
+      messageId: `graph-${Date.now()}@${userEmail.split('@')[1]}`,
+      email: allRecipients,
       timestamp
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     console.error('Email sending error:', error);
     
+    const allRecipients = [
+      ...(recipients.to || []),
+      ...(recipients.cc || []),
+      ...(recipients.bcc || [])
+    ].join(', ');
+
     return {
       success: false,
       error: errorMessage,
-      email,
+      email: allRecipients,
       timestamp
     };
   }
