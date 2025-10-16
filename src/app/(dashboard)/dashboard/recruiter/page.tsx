@@ -275,17 +275,25 @@ export default function RecruiterDashboard() {
 
   const kpiMetrics = useMemo(() => {
     const total = filteredApplicants.length;
-    const tagged = filteredApplicants.filter((a) => a.status === "Tagged").length;
+    const tagged = filteredApplicants.filter(
+      (a) => a.status === "Tagged"
+    ).length;
     const interviews = filteredApplicants.filter(
       (a) => a.status === "Interview"
     ).length;
-    const offered = filteredApplicants.filter((a) => a.status === "Offered").length;
-    const joined = filteredApplicants.filter((a) => a.status === "Joined").length;
+    const offered = filteredApplicants.filter(
+      (a) => a.status === "Offered"
+    ).length;
+    const joined = filteredApplicants.filter(
+      (a) => a.status === "Joined"
+    ).length;
 
     return {
       totalApplicants: total,
-      taggedToInterview: tagged > 0 ? ((interviews / tagged) * 100).toFixed(1) : "0",
-      interviewToOffer: interviews > 0 ? ((offered / interviews) * 100).toFixed(1) : "0",
+      taggedToInterview:
+        tagged > 0 ? ((interviews / tagged) * 100).toFixed(1) : "0",
+      interviewToOffer:
+        interviews > 0 ? ((offered / interviews) * 100).toFixed(1) : "0",
       offerToJoin: offered > 0 ? ((joined / offered) * 100).toFixed(1) : "0",
     };
   }, [filteredApplicants]);
@@ -428,7 +436,9 @@ export default function RecruiterDashboard() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `recruiter-dashboard-${selectedClient}-${trendPeriod}-${new Date().toISOString().split("T")[0]}.csv`;
+    a.download = `recruiter-dashboard-${selectedClient}-${trendPeriod}-${
+      new Date().toISOString().split("T")[0]
+    }.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -531,10 +541,13 @@ export default function RecruiterDashboard() {
   }, [filteredApplicants]);
 
   const jobStatusData = useMemo(() => {
-    const statusCounts = filteredJobs.reduce((acc, job) => {
-      acc[job.status] = (acc[job.status] || 0) + 1;
-      return acc;
-    }, { Open: 0, Closed: 0, Cancelled: 0 } as Record<string, number>);
+    const statusCounts = filteredJobs.reduce(
+      (acc, job) => {
+        acc[job.status] = (acc[job.status] || 0) + 1;
+        return acc;
+      },
+      { Open: 0, Closed: 0, Cancelled: 0 } as Record<string, number>
+    );
     return {
       labels: ["Open", "Closed", "Cancelled"],
       datasets: [
@@ -792,7 +805,7 @@ export default function RecruiterDashboard() {
                   maintainAspectRatio: false,
                   indexAxis: "y",
                   layout: {
-                    padding: { left: 10, right: 10, top: 0, bottom: 0 },
+                    padding: { left: 10, right: 40, top: 0, bottom: 0 }, // Increased right padding for label visibility
                   },
                   plugins: {
                     legend: { display: false },
@@ -814,11 +827,15 @@ export default function RecruiterDashboard() {
                   scales: {
                     x: {
                       beginAtZero: true,
-                      max: 30,
+                      max: Math.ceil(
+                        Math.max(...(funnelData.datasets[0]?.data || [0])) * 1.1
+                      ), // Dynamic max based on data with 10% buffer
                       grid: { color: "#f1f5f9" },
                       border: { display: false },
                       ticks: {
-                        stepSize: 10,
+                        stepSize: Math.ceil(
+                          Math.max(...(funnelData.datasets[0]?.data || [0])) / 5
+                        ), // Dynamic step size for ~5 ticks
                         font: { size: 14 },
                         color: "#64748b",
                       },

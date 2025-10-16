@@ -584,124 +584,65 @@ export default function ManagerDashboard() {
         {/* Main Charts */}
         <section className="grid grid-cols-1 xl:grid-cols-2 gap-4">
           {/* Applicant Funnel */}
-          <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200">
-            <SectionHeader
-              title="Recruitment Funnel"
-              subtitle={`Stage-wise breakdown for ${currentRecruiterName}`}
-            />
-            <div className="h-80 mt-4 overflow-hidden">
-              {/* <Bar
-                data={funnelData}
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  indexAxis: "y",
-                  layout: {
-                    padding: { left: 10, right: 10, top: 0, bottom: 0 },
-                  },
-                  plugins: {
-                    legend: { display: false },
-                    datalabels: {
-                      anchor: "end",
-                      align: "end",
-                      color: "#1e293b",
-                      font: {
-                        weight: "bold",
-                        size: 12,
-                      },
-                      formatter: (value) => (value > 0 ? value : ""),
-                    },
-                    tooltip: {
-                      titleFont: { size: 12 },
-                      bodyFont: { size: 12 },
-                    },
-                  },
-                  scales: {
-                    x: {
-                      beginAtZero: true,
-                      grid: { color: "#f1f5f9" },
-                      border: { display: false },
-                      ticks: {
-                        font: { size: 12 },
-                        color: "#64748b",
-                      },
-                    },
-                    y: {
-                      grid: { display: false },
-                      border: { display: false },
-                      ticks: {
-                        font: { size: 11 },
-                        color: "#475569",
-                      },
-                    },
-                  },
-                }}
-              /> */}
-
-              <Bar
-                data={funnelData}
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  indexAxis: "y",
-                  layout: {
-                    padding: { left: 10, right: 10, top: 0, bottom: 0 },
-                  },
-                  plugins: {
-                    legend: { display: false },
-                    datalabels: {
-                      anchor: "end",
-                      align: "end",
-                      color: "#1e293b",
-                      font: {
-                        weight: "bold",
-                        size: 12,
-                      },
-                      formatter: (value) => (value > 0 ? value : ""),
-                    },
-                    tooltip: {
-                      titleFont: { size: 12 },
-                      bodyFont: { size: 12 },
-                    },
-                  },
-                  scales: {
-                    x: {
-                      beginAtZero: true,
-                      max: 30,
-                      grid: { color: "#f1f5f9" },
-                      border: { display: false },
-                      ticks: {
-                        stepSize: 10,
-                        font: { size: 12 },
-                        color: "#64748b",
-                      },
-                    },
-                    y: {
-                      grid: { display: false },
-                      border: { display: false },
-                      ticks: {
-                        font: { size: 11 },
-                        color: "#475569",
-                        callback: function (
-                          value: number | string,
-                       
-                        ) {
-                          // Convert value to number to use as array index
-                          const labelIndex = Number(value);
-                          const label =
-                            funnelData.labels?.[labelIndex]?.toString() || "";
-                          if (label.length > 20) {
-                            return label.substring(0, 17) + "...";
-                          }
-                          return label;
-                        },
-                      },
-                    },
-                  },
-                }}
-              />
-            </div>
-          </div>
+       <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200">
+  <SectionHeader
+    title="Recruitment Funnel"
+    subtitle={`Stage-wise breakdown for ${currentRecruiterName}`}
+  />
+  <div className="h-80 mt-4 overflow-hidden">
+    <Bar
+      data={funnelData}
+      options={{
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: "y",
+        layout: {
+          padding: { left: 10, right: 40, top: 0, bottom: 0 }, // Increased right padding to ensure labels are visible
+        },
+        plugins: {
+          legend: { display: false },
+          datalabels: {
+            anchor: "end",
+            align: "end",
+            color: "#1e293b",
+            font: {
+              weight: "bold",
+              size: 12,
+            },
+            formatter: (value) => (value > 0 ? value : ""),
+          },
+          tooltip: {
+            titleFont: { size: 12 },
+            bodyFont: { size: 12 },
+          },
+        },
+        scales: {
+          x: {
+            beginAtZero: true,
+            max: Math.ceil(
+              Math.max(...(funnelData.datasets[0]?.data || [0])) * 1.1
+            ), // Set max to 110% of the highest data value
+            grid: { color: "#f1f5f9" },
+            border: { display: false },
+            ticks: {
+              stepSize: 10, // Adjust step size as needed
+              font: { size: 14 },
+              color: "#64748b",
+            },
+          },
+          y: {
+            grid: { display: false },
+            border: { display: false },
+            ticks: {
+              font: { size: 14 },
+              color: "#475569",
+            },
+          },
+        },
+      }}
+    />
+  </div>
+</div>
 
           {/* Job Status */}
           <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200">

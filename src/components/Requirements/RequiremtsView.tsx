@@ -215,7 +215,7 @@ const StaffingPlansTable: React.FC<StaffingPlansTableProps> = ({ selectedLead })
       align?: "left" | "center" | "right";
       width?: string;
     }> = [
-      { field: "datetime", label: "Date", sortable: true, align: "center" },
+      { field: "datetime", label: "Date", sortable: true, align: "left" },
       // {
       //   field: "company",
       //   label: "Company & Contact",
@@ -223,10 +223,10 @@ const StaffingPlansTable: React.FC<StaffingPlansTableProps> = ({ selectedLead })
       //   width: "200px",
       //   align: "center",
       // },
-      { field: "designation", label: "Position Details", sortable: true, align: "center" },
-      { field: "location", label: "Location & Experience", sortable: true, align: "center" },
-      { field: "vacancies", label: "Vacancies & Budget", sortable: true, align: "center" },
-      { field: "actions", label: "Action", sortable: false, align: "center" },
+      { field: "designation", label: "Position Details", sortable: true, align: "left" },
+      { field: "location", label: "Location & Experience", sortable: true, align: "left" },
+      { field: "vacancies", label: "Vacancies & Budget", sortable: true, align: "left" },
+      { field: "actions", label: "Action", sortable: false, align: "left" },
     ];
     return cols;
   }, []);
@@ -534,7 +534,7 @@ useEffect(() => {
           </div>
         ) : paginatedPlans.length > 0 ? (
           <>
-            <div className="bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden mt-4">
+            <div className="bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden ">
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <SortableTableHeader

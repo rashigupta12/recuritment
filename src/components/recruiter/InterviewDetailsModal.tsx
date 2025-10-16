@@ -55,6 +55,7 @@ interface InterviewScheduleData {
   from_time?: string;
   custom_link?: string;
   custom_remarks?: string;
+  custom_interviewers?: string; // Added for comma-separated email IDs
 }
 
 // InterviewDetailsModalProps interface
@@ -88,8 +89,9 @@ export const InterviewDetailsModal: React.FC<InterviewDetailsModalProps> = ({
     from_time: "17:00",
     custom_link: "",
     custom_remarks: "this is remarks field",
+    custom_interviewers: "", // Initialize custom_interviewers
   });
-
+  const [emailInputs, setEmailInputs] = useState<string[]>([""]); // State for dynamic email inputs
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
@@ -128,7 +130,9 @@ export const InterviewDetailsModal: React.FC<InterviewDetailsModalProps> = ({
         from_time: "17:00",
         custom_link: "",
         custom_remarks: "this is remarks field",
+        custom_interviewers: "",
       });
+      setEmailInputs([""]); // Reset email inputs
       setLocalError(
         "Please fill in all required fields (Schedule Date, Interview Round, Mode, Time, Link)"
       );
@@ -173,7 +177,11 @@ export const InterviewDetailsModal: React.FC<InterviewDetailsModalProps> = ({
       const locationMode =
         formData.mode_of_interview === "Virtual"
           ? `${formData.mode_of_interview} (${formData.custom_link})`
-          : formData.mode_of_interview;
+          : `${formData.mode_of_interview}${
+              formData.custom_interviewers
+                ? ` (Interviewers: ${formData.custom_interviewers})`
+                : ""
+            }`;
 
       const emailData = {
         from_email: "no-reply@hevhire.com",
@@ -308,6 +316,32 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
     });
   };
 
+  // Handle email input changes
+  const handleEmailChange = (index: number, value: string) => {
+    const newEmailInputs = [...emailInputs];
+    newEmailInputs[index] = value;
+    setEmailInputs(newEmailInputs);
+    setFormData({
+      ...formData,
+      custom_interviewers: newEmailInputs.filter((email) => email.trim()).join(","),
+    });
+  };
+
+  // Add new email input field
+  const addEmailInput = () => {
+    setEmailInputs([...emailInputs, ""]);
+  };
+
+  // Remove email input field
+  const removeEmailInput = (index: number) => {
+    const newEmailInputs = emailInputs.filter((_, i) => i !== index);
+    setEmailInputs(newEmailInputs);
+    setFormData({
+      ...formData,
+      custom_interviewers: newEmailInputs.filter((email) => email.trim()).join(","),
+    });
+  };
+
   const handleCreateInterview = async () => {
     // Validate required fields
     if (
@@ -365,6 +399,20 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
       }
     }
 
+    // Validate email formats if provided
+    if (formData.custom_interviewers) {
+      const emails = formData.custom_interviewers
+        .split(",")
+        .map((email) => email.trim())
+        .filter((email) => email);
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const invalidEmails = emails.filter((email) => !emailRegex.test(email));
+      if (invalidEmails.length > 0) {
+        setLocalError(`Invalid email address(es): ${invalidEmails.join(", ")}`);
+        return;
+      }
+    }
+
     setLocalError(null);
     setIsSubmitting(true);
 
@@ -381,6 +429,10 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
             ? formData.custom_link
             : undefined,
         custom_remarks: formData.custom_remarks,
+        custom_interviewers:
+          formData.mode_of_interview === "In Person"
+            ? formData.custom_interviewers
+            : undefined, // Include custom_interviewers for In Person
         status: "Scheduled",
       };
 
@@ -392,6 +444,10 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
         custom_interview_round: formData.interview_round,
         custom_mode_of_interview: formData.mode_of_interview,
         custom_remarks: formData.custom_remarks,
+        custom_interviewers:
+          formData.mode_of_interview === "In Person"
+            ? formData.custom_interviewers
+            : undefined,
       };
 
       await frappeAPI.updateApplicantStatus(applicant.name, updateData);
@@ -410,7 +466,9 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
         from_time: "",
         custom_link: "",
         custom_remarks: "",
+        custom_interviewers: "",
       });
+      setEmailInputs([""]); // Reset email inputs
       setShowCreateForm(false);
       fetchScheduledInterviews();
       onStatusUpdate();
@@ -433,7 +491,9 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
       from_time: "",
       custom_link: "",
       custom_remarks: "",
+      custom_interviewers: "",
     });
+    setEmailInputs([""]);
     setLocalError(null);
     setInterviewStatuses({});
     setShowCreateForm(false);
@@ -532,6 +592,17 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
                         </a>
                       </div>
                     )}
+                    {interview.custom_mode_ === "In Person" &&
+                      interview.custom_interviewers && (
+                        <div className="flex flex-row items-center gap-2 col-span-2">
+                          <span className="font-semibold text-gray-600 text-sm">
+                            Interviewers:
+                          </span>
+                          <span className="text-sm">
+                            {interview.custom_interviewers || "N/A"}
+                          </span>
+                        </div>
+                      )}
                     <div className="flex flex-row items-center gap-2">
                       <span className="font-semibold text-gray-600 text-sm">Status:</span>
                       <span
@@ -667,7 +738,9 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
                     from_time: "",
                     custom_link: "",
                     custom_remarks: "",
+                    custom_interviewers: "",
                   });
+                  setEmailInputs([""]);
                   setLocalError(null);
                 }}
                 className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors rounded-full hover:bg-gray-100"
@@ -705,6 +778,10 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
                             e.target.value === "Virtual"
                               ? formData.custom_link
                               : "",
+                          custom_interviewers:
+                            e.target.value === "In Person"
+                              ? formData.custom_interviewers
+                              : "",
                         })
                       }
                       className="h-4 w-4 text-blue-600 focus:ring-blue-600 border-gray-300"
@@ -728,6 +805,10 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
                           custom_link:
                             e.target.value === "Virtual"
                               ? formData.custom_link
+                              : "",
+                          custom_interviewers:
+                            e.target.value === "In Person"
+                              ? formData.custom_interviewers
                               : "",
                         })
                       }
@@ -761,7 +842,6 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
                   required
                   disabled={isSubmitting || isSendingEmail}
                 />
-               
               </div>
 
               <div>
@@ -857,6 +937,48 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
                     required
                     disabled={isSubmitting || isSendingEmail}
                   />
+                </div>
+              )}
+
+              {formData.mode_of_interview === "In Person" && (
+                <div>
+                  <label className="block text-gray-700 font-semibold mb-2 text-md">
+                    Interviewers <span className="text-gray-400 font-normal">
+                      (Optional, add email addresses)
+                    </span>
+                  </label>
+                  {emailInputs.map((email, index) => (
+                    <div key={index} className="flex items-center gap-2 mb-2">
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => handleEmailChange(index, e.target.value)}
+                        placeholder="e.g., interviewer@example.com"
+                        className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent bg-white text-md transition-all"
+                        disabled={isSubmitting || isSendingEmail}
+                      />
+                      {emailInputs.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeEmailInput(index)}
+                          className="p-2 text-red-600 hover:text-red-800 transition-colors"
+                          disabled={isSubmitting || isSendingEmail}
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+                      {index === emailInputs.length - 1 && (
+                        <button
+                          type="button"
+                          onClick={addEmailInput}
+                          className="p-2 text-blue-600 hover:text-blue-800 transition-colors"
+                          disabled={isSubmitting || isSendingEmail}
+                        >
+                          <Plus className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
