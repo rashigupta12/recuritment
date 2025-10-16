@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { Attachment } from "@/lib/mail/mailer3";
 
 // JobApplicant interface
 interface JobApplicant {
@@ -55,7 +56,7 @@ interface InterviewScheduleData {
   from_time?: string;
   custom_link?: string;
   custom_remarks?: string;
-  custom_interviewers?: string; // Added for comma-separated email IDs
+  custom_interviewers?: string;
 }
 
 // InterviewDetailsModalProps interface
@@ -66,6 +67,79 @@ interface InterviewDetailsModalProps {
   jobId: string;
   onStatusUpdate: () => void;
   currentUserEmail?: string;
+}
+
+// Function to generate an ICS file for a calendar event
+function generateICSFile(
+  formData: InterviewScheduleData,
+  applicant: JobApplicant,
+  jobId: string
+): string {
+  const startDateTime = new Date(`${formData.schedule_date}T${formData.from_time}:00`);
+  const endDateTime = new Date(startDateTime.getTime() + 30 * 60 * 1000); // 30-minute duration
+  const jobTitle = applicant.designation || applicant.job_title || "Interview";
+  const companyName = applicant.custom_company_name || "HevHire";
+  const eventTitle = `Interview: ${jobTitle} at ${companyName}`;
+  const eventDescription =
+    formData.custom_remarks || "Please join the interview on time.";
+  const location =
+    formData.mode_of_interview === "Virtual" ? formData.custom_link : "In Person";
+  const organizerEmail = process.env.COMPANY_EMAIL || "no-reply@hevhire.com";
+  const attendeeEmail = applicant.email_id || "";
+
+  // Format dates to ICS format (YYYYMMDDTHHMMSS)
+  const formatICSDate = (date: Date): string => {
+    const pad = (num: number) => num.toString().padStart(2, "0");
+    return (
+      date.getFullYear() +
+      pad(date.getMonth() + 1) +
+      pad(date.getDate()) +
+      "T" +
+      pad(date.getHours()) +
+      pad(date.getMinutes()) +
+      pad(date.getSeconds())
+    );
+  };
+
+  // IST Timezone definition
+  const icsContent = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//HevHire//Interview Scheduler//EN",
+    "METHOD:REQUEST", // Added to indicate a calendar invite request
+    "BEGIN:VTIMEZONE",
+    "TZID:Asia/Kolkata",
+    "BEGIN:STANDARD",
+    "TZOFFSETFROM:+0530",
+    "TZOFFSETTO:+0530",
+    "TZNAME:IST",
+    "DTSTART:19700101T000000",
+    "END:STANDARD",
+    "END:VTIMEZONE",
+    "BEGIN:VEVENT",
+    `UID:${Date.now()}@hevhire.com`,
+    `DTSTAMP:${formatICSDate(new Date())}`,
+    `DTSTART;TZID=Asia/Kolkata:${formatICSDate(startDateTime)}`,
+    `DTEND;TZID=Asia/Kolkata:${formatICSDate(endDateTime)}`,
+    `SUMMARY:${eventTitle}`,
+    `DESCRIPTION:${eventDescription.replace(/\n/g, "\\n")}`, // Escape newlines
+    `LOCATION:${location || "N/A"}`,
+    `ORGANIZER;CN=HevHire:mailto:${organizerEmail}`,
+    `ATTENDEE;CN=${
+      applicant.applicant_name || "Candidate"
+    };ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:${attendeeEmail}`,
+    "STATUS:CONFIRMED",
+    "SEQUENCE:0",
+    "TRANSP:OPAQUE",
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\r\n");
+
+  // Log ICS content for debugging
+  console.log("Generated ICS content:", icsContent);
+
+  // Convert to base64 for attachment
+  return Buffer.from(icsContent).toString("base64");
 }
 
 export const InterviewDetailsModal: React.FC<InterviewDetailsModalProps> = ({
@@ -89,9 +163,9 @@ export const InterviewDetailsModal: React.FC<InterviewDetailsModalProps> = ({
     from_time: "17:00",
     custom_link: "",
     custom_remarks: "this is remarks field",
-    custom_interviewers: "", // Initialize custom_interviewers
+    custom_interviewers: "",
   });
-  const [emailInputs, setEmailInputs] = useState<string[]>([""]); // State for dynamic email inputs
+  const [emailInputs, setEmailInputs] = useState<string[]>([""]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
@@ -105,7 +179,7 @@ export const InterviewDetailsModal: React.FC<InterviewDetailsModalProps> = ({
     ? scheduledInterviews[scheduledInterviews.length - 1]
     : null;
 
-  // Check if latest interview is cleared (based on actual backend status, not dropdown)
+  // Check if latest interview is cleared
   const getInterviewStatus = (interview: any) => {
     const status = interview.status || "";
     return status.toLowerCase();
@@ -114,7 +188,6 @@ export const InterviewDetailsModal: React.FC<InterviewDetailsModalProps> = ({
   const isLatestInterviewCleared =
     latestInterview && getInterviewStatus(latestInterview) === "cleared";
 
-  // Only allow creating new interview when no interviews exist OR latest is cleared
   const canCreateNewInterview = !hasInterviews || isLatestInterviewCleared;
   const showCreateInterviewForm = canCreateNewInterview && showCreateForm;
 
@@ -132,7 +205,7 @@ export const InterviewDetailsModal: React.FC<InterviewDetailsModalProps> = ({
         custom_remarks: "this is remarks field",
         custom_interviewers: "",
       });
-      setEmailInputs([""]); // Reset email inputs
+      setEmailInputs([""]);
       setLocalError(
         "Please fill in all required fields (Schedule Date, Interview Round, Mode, Time, Link)"
       );
@@ -162,9 +235,10 @@ export const InterviewDetailsModal: React.FC<InterviewDetailsModalProps> = ({
     }
   };
 
-  const sendInterviewEmail = async () => {
+const sendInterviewEmail = async () => {
     if (!applicant.email_id) {
       console.error("No email address provided for the applicant");
+      toast.error("No email address provided for the applicant");
       return;
     }
 
@@ -183,21 +257,29 @@ export const InterviewDetailsModal: React.FC<InterviewDetailsModalProps> = ({
                 : ""
             }`;
 
+      // Generate ICS file
+      const icsContent = generateICSFile(formData, applicant, jobId);
+
       const emailData = {
         from_email: "no-reply@hevhire.com",
         to_email: applicant.email_id,
+        cc: formData.custom_interviewers
+          ? formData.custom_interviewers
+              .split(",")
+              .map((email) => email.trim())
+              .filter((email) => email)
+              : undefined,
         subject: `Interview Invitation – ${jobTitle} at ${companyName}`,
         message: `Hi ${firstName},
 
 We are pleased to invite you to an interview for the ${jobTitle} position at ${companyName}.
-
 Location/Mode: ${locationMode}
 Date & Time: ${new Date(formData.schedule_date).toLocaleDateString(
           "en-IN",
           {
             dateStyle: "medium",
           }
-        )} at ${formData.from_time}
+        )} at ${formData.from_time} (IST)
 Duration: 30 mins
 Agenda:
 1) Introduction & overview
@@ -207,6 +289,8 @@ Instructions:
 1) Please join on time.
 2) Ensure your device/camera/microphone is working if it's a virtual interview.
 3) Keep your resume and any supporting documents handy.
+
+Please open the attached calendar invite (interview.ics) and accept it to reserve the time slot in your calendar.
 
 We look forward to speaking with you!
 
@@ -220,9 +304,27 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
             applicant_name: applicant.applicant_name,
             email_id: applicant.email_id,
             designation: jobTitle,
+            resume_attachment: applicant.resume_attachment,
+          },
+        ],
+        // Add attachments array directly to emailData
+        attachments: [
+          {
+            filename: `interview_${applicant.name}_${formData.schedule_date}.ics`,
+            content: icsContent,
+            contentType: "text/calendar; method=REQUEST",
+            disposition: "attachment",
+            contentId: undefined,
           },
         ],
       };
+
+      console.log("Sending email with ICS attachment:", {
+        to: applicant.email_id,
+        subject: emailData.subject,
+        attachmentCount: 1,
+        attachmentName: `interview_${applicant.name}_${formData.schedule_date}.ics`,
+      });
 
       const response = await fetch("/api/mails", {
         method: "POST",
@@ -238,6 +340,7 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
         throw new Error(result.error || "Failed to send email");
       }
 
+      console.log("Email sent successfully:", result);
       toast.success("Interview invitation email sent successfully!");
     } catch (error: any) {
       console.error("Error sending interview email:", error);
@@ -264,7 +367,7 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
       const response = await frappeAPI.getInterviewRounds();
       const roundsData = Array.isArray(response.data) ? response.data : [];
       setInterviewRounds(roundsData);
-      console.log("Fetched interview rounds:", roundsData); // Debug log
+      console.log("Fetched interview rounds:", roundsData);
     } catch (err) {
       console.error("Error fetching interview rounds:", err);
       setInterviewRounds([]);
@@ -294,8 +397,6 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
       await frappeAPI.updateApplicantStatus(applicant.name, updateData);
 
       toast.success("Interview status updated successfully!");
-
-      // Fetch interviews again to get updated status from backend
       await fetchScheduledInterviews();
       onStatusUpdate();
     } catch (err: any) {
@@ -316,34 +417,34 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
     });
   };
 
-  // Handle email input changes
   const handleEmailChange = (index: number, value: string) => {
     const newEmailInputs = [...emailInputs];
     newEmailInputs[index] = value;
     setEmailInputs(newEmailInputs);
     setFormData({
       ...formData,
-      custom_interviewers: newEmailInputs.filter((email) => email.trim()).join(","),
+      custom_interviewers: newEmailInputs
+        .filter((email) => email.trim())
+        .join(","),
     });
   };
 
-  // Add new email input field
   const addEmailInput = () => {
     setEmailInputs([...emailInputs, ""]);
   };
 
-  // Remove email input field
   const removeEmailInput = (index: number) => {
     const newEmailInputs = emailInputs.filter((_, i) => i !== index);
     setEmailInputs(newEmailInputs);
     setFormData({
       ...formData,
-      custom_interviewers: newEmailInputs.filter((email) => email.trim()).join(","),
+      custom_interviewers: newEmailInputs
+        .filter((email) => email.trim())
+        .join(","),
     });
   };
 
   const handleCreateInterview = async () => {
-    // Validate required fields
     if (
       !formData.schedule_date ||
       !formData.interview_round ||
@@ -359,7 +460,6 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
       return;
     }
 
-    // Validate date
     const selectedDate = new Date(formData.schedule_date);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -368,7 +468,6 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
       return;
     }
 
-    // Validate time conflicts for all scheduled interviews on the same day
     if (scheduledInterviews.length > 0) {
       const selectedDateTruncated = new Date(formData.schedule_date);
       selectedDateTruncated.setHours(0, 0, 0, 0);
@@ -389,7 +488,6 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
       }
     }
 
-    // Validate URL format for virtual interviews
     if (formData.mode_of_interview === "Virtual") {
       try {
         new URL(formData.custom_link!);
@@ -399,7 +497,6 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
       }
     }
 
-    // Validate email formats if provided
     if (formData.custom_interviewers) {
       const emails = formData.custom_interviewers
         .split(",")
@@ -432,7 +529,7 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
         custom_interviewers:
           formData.mode_of_interview === "In Person"
             ? formData.custom_interviewers
-            : undefined, // Include custom_interviewers for In Person
+            : undefined,
         status: "Scheduled",
       };
 
@@ -452,12 +549,10 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
 
       await frappeAPI.updateApplicantStatus(applicant.name, updateData);
 
-      // Send email to candidate
       await sendInterviewEmail();
 
       toast.success("Interview scheduled successfully!");
 
-      // Reset form and hide create form
       setFormData({
         schedule_date: "",
         interview_round: "",
@@ -468,7 +563,7 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
         custom_remarks: "",
         custom_interviewers: "",
       });
-      setEmailInputs([""]); // Reset email inputs
+      setEmailInputs([""]);
       setShowCreateForm(false);
       fetchScheduledInterviews();
       onStatusUpdate();
@@ -771,17 +866,9 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          mode_of_interview: e.target.value as
-                            | "Virtual"
-                            | "In Person",
-                          custom_link:
-                            e.target.value === "Virtual"
-                              ? formData.custom_link
-                              : "",
-                          custom_interviewers:
-                            e.target.value === "In Person"
-                              ? formData.custom_interviewers
-                              : "",
+                          mode_of_interview: e.target.value as "Virtual" | "In Person",
+                          custom_link: e.target.value === "Virtual" ? formData.custom_link : "",
+                          custom_interviewers: e.target.value === "In Person" ? formData.custom_interviewers : "",
                         })
                       }
                       className="h-4 w-4 text-blue-600 focus:ring-blue-600 border-gray-300"
@@ -799,17 +886,9 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          mode_of_interview: e.target.value as
-                            | "Virtual"
-                            | "In Person",
-                          custom_link:
-                            e.target.value === "Virtual"
-                              ? formData.custom_link
-                              : "",
-                          custom_interviewers:
-                            e.target.value === "In Person"
-                              ? formData.custom_interviewers
-                              : "",
+                          mode_of_interview: e.target.value as "Virtual" | "In Person",
+                          custom_link: e.target.value === "Virtual" ? formData.custom_link : "",
+                          custom_interviewers: e.target.value === "In Person" ? formData.custom_interviewers : "",
                         })
                       }
                       className="h-4 w-4 text-blue-600 focus:ring-blue-600 border-gray-300"
@@ -834,9 +913,7 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
                   className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent bg-white text-md transition-all"
                   min={
                     latestInterview
-                      ? new Date(latestInterview.scheduled_on)
-                          .toISOString()
-                          .split("T")[0]
+                      ? new Date(latestInterview.scheduled_on).toISOString().split("T")[0]
                       : new Date().toISOString().split("T")[0]
                   }
                   required
@@ -890,17 +967,13 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
                   })}
                 </select>
                 {loadingRounds && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    Loading rounds...
-                  </p>
+                  <p className="text-xs text-gray-500 mt-1">Loading rounds...</p>
                 )}
               </div>
 
               <div>
                 <label className="block text-gray-700 font-semibold mb-2 text-md">
-                  Remarks <span className="text-gray-400 font-normal">
-                    (Optional)
-                  </span>
+                  Remarks <span className="text-gray-400 font-normal">(Optional)</span>
                 </label>
                 <textarea
                   value={formData.custom_remarks || ""}

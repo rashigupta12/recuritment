@@ -5,6 +5,8 @@ export interface Attachment {
   filename: string;
   content: string; // Base64 encoded content
   contentType?: string;
+  disposition?: 'attachment' | 'inline'; // Added for calendar invites
+  contentId?: string; // Optional for inline attachments
 }
 
 export interface EmailResult {
@@ -51,12 +53,20 @@ function prepareAttachmentForGraph(attachment: Attachment) {
     throw new Error('Attachment content is required (base64 encoded)');
   }
 
-  return {
+  const graphAttachment: any = {
     '@odata.type': '#microsoft.graph.fileAttachment',
     name: attachment.filename,
     contentType: attachment.contentType || getContentType(attachment.filename),
     contentBytes: attachment.content
   };
+
+  // Add contentId for inline attachments if provided
+  if (attachment.contentId) {
+    graphAttachment.contentId = attachment.contentId;
+    graphAttachment.isInline = attachment.disposition === 'inline';
+  }
+
+  return graphAttachment;
 }
 
 // Helper function to determine content type from filename
@@ -82,6 +92,7 @@ function getContentType(filename: string): string {
     'csv': 'text/csv',
     'zip': 'application/zip',
     'rar': 'application/x-rar-compressed',
+    'ics': 'text/calendar; method=REQUEST', // Calendar invite
     'default': 'application/octet-stream'
   };
 

@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
-import { sendEmail, Attachment, EmailRecipients } from '@/lib/mail/mailer3'; // Import from mailer3
+import { sendEmail, Attachment, EmailRecipients } from '@/lib/mail/mailer3';
 
 interface EmailRequest {
     from_email: string;
     to_email: string;
-    cc?: string; // Add optional CC field
-    bcc?: string; // Add optional BCC field
+    cc?: string;
+    bcc?: string;
     subject: string;
     designation?: string;
     message: string;
@@ -18,6 +18,13 @@ interface EmailRequest {
         email_id: string;
         designation: string;
         resume_attachment?: string;
+    }>;
+    attachments?: Array<{
+        filename: string;
+        content: string;
+        contentType?: string;
+        disposition?: 'attachment' | 'inline';
+        contentId?: string;
     }>;
 }
 
@@ -34,9 +41,12 @@ export async function POST(request: NextRequest) {
         }
 
         // Validate email addresses
-        const validateEmails = (emails?: string): string[] => {
+        const validateEmails = (emails?: string | string[]): string[] => {
             if (!emails) return [];
-            const emailArray = emails.split(',').map(email => email.trim()).filter(email => email);
+            // Handle both string and array inputs
+            const emailArray = Array.isArray(emails)
+                ? emails
+                : emails.split(',').map(email => email.trim()).filter(email => email);
             const invalidEmails = emailArray.filter(email => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email));
             if (invalidEmails.length > 0) {
                 throw new Error(`Invalid email addresses: ${invalidEmails.join(', ')}`);
@@ -56,17 +66,15 @@ export async function POST(request: NextRequest) {
         }
 
         let senderName = process.env.COMPANY_NAME || 'HevHire';
-        let senderEmail = emailData.username; // This will be used as the sender email
+        let senderEmail = emailData.username;
 
-        // If username is provided, try to get full name for sender name
         if (emailData.username) {
             console.log('🔍 Fetching user details for:', emailData.username);
-            
+
             try {
                 const cookies = request.headers.get('cookie') || '';
                 const FRAPPE_BASE_URL = process.env.NEXT_PUBLIC_dev_prod_FRAPPE_BASE_URL;
 
-                // Fetch user's full name
                 const userResponse = await fetch(
                     `${FRAPPE_BASE_URL}/resource/User/${encodeURIComponent(emailData.username)}?fields=["full_name","email"]`,
                     {
@@ -81,13 +89,12 @@ export async function POST(request: NextRequest) {
 
                 if (userResponse.ok) {
                     const userData = await userResponse.json();
-                    
+
                     const fullName = userData.data?.full_name;
                     if (fullName) {
                         senderName = fullName;
                     }
-                    
-                    // Use the email from user data if available, otherwise use username as email
+
                     senderEmail = userData.data?.email || emailData.username;
                 } else {
                     console.warn('⚠️ Could not fetch User details:', await userResponse.text());
@@ -97,7 +104,6 @@ export async function POST(request: NextRequest) {
             }
         }
 
-        // Validate sender email
         if (!senderEmail) {
             return NextResponse.json(
                 { error: 'Sender email (username) is required' },
@@ -119,7 +125,7 @@ export async function POST(request: NextRequest) {
         console.log(`CC: ${ccEmails.join(',') || 'none'}`);
         console.log(`BCC: ${bccEmails.join(',') || 'none'}`);
 
-        // Prepare HTML content with the same template
+        // Prepare HTML content
         const htmlContent = `
   <div style="font-family: Arial, sans-serif; max-width: 650px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden;">
       
@@ -133,7 +139,7 @@ export async function POST(request: NextRequest) {
 
       <!-- Message Body -->
       <div style="padding: 25px; background: #f9fafb;">
-          <p style="font-size: 16px; color: #1e293b; line-height: 1.6; margin: 0;">
+          <p style="font-size: 16px; color: #1e293b; line-height: 1.6; margin: 0; white-space: pre-wrap;">
               ${emailData.message.replace(/\n/g, '<br>')}
           </p>
       </div>
@@ -146,22 +152,23 @@ export async function POST(request: NextRequest) {
   </div>
 `;
 
-        // Prepare attachments (if any from applicants)
+        // Prepare attachments
         const attachments: Attachment[] = [];
-        
-        // Process applicant attachments if needed
-        if (emailData.applicants && emailData.applicants.length > 0) {
-            for (const applicant of emailData.applicants) {
-                if (applicant.resume_attachment) {
-                    // You'll need to convert the resume_attachment to base64
-                    // This depends on how your resume_attachment is stored
-                    // Example:
-                    // attachments.push({
-                    //     filename: `${applicant.applicant_name || applicant.name}_resume.pdf`,
-                    //     content: applicant.resume_attachment, // base64 content
-                    //     contentType: 'application/pdf'
-                    // });
-                }
+
+        // Add calendar invite and other attachments from request
+        if (emailData.attachments && emailData.attachments.length > 0) {
+            console.log(`📎 Processing ${emailData.attachments.length} attachment(s)`);
+
+            for (const att of emailData.attachments) {
+                attachments.push({
+                    filename: att.filename,
+                    content: att.content, // Already base64 encoded from frontend
+                    contentType: att.contentType || 'application/octet-stream',
+                    disposition: att.disposition || 'attachment',
+                    contentId: att.contentId,
+                });
+
+                console.log(`  ✓ Added attachment: ${att.filename} (${att.contentType})`);
             }
         }
 
@@ -177,14 +184,14 @@ export async function POST(request: NextRequest) {
         console.log(`   BCC: ${bccEmails.length} recipient(s)`);
         console.log(`   Attachments: ${attachments.length}`);
 
-        // Send ONE email with all recipients (To, CC, BCC)
+        // Send ONE email with all recipients
         const result = await sendEmail(
-            senderName,           // senderHeader
-            recipients,           // recipients object with to, cc, bcc
-            emailData.subject,    // subject
-            htmlContent,          // content
-            senderEmail,          // userEmail (sender's email - logged in user)
-            attachments           // attachments
+            senderName,
+            recipients,
+            emailData.subject,
+            htmlContent,
+            senderEmail,
+            attachments
         );
 
         console.log(`📧 Email sending completed:`);
