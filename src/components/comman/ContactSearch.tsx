@@ -397,6 +397,24 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
     setSearchQuery(e.target.value);
   };
 
+   useEffect(() => {
+    if (showDropdown) {
+      calculateDropdownPosition();
+      
+      const handleResize = () => calculateDropdownPosition();
+      const handleScroll = () => {
+        setShowDropdown(false);
+      };
+      
+      window.addEventListener("resize", handleResize);
+      window.addEventListener("scroll", handleScroll, true);
+      
+      return () => {
+        window.removeEventListener("resize", handleResize);
+        window.removeEventListener("scroll", handleScroll, true);
+      };
+    }
+  }, [showDropdown, calculateDropdownPosition]);
   const handleContactSelect = (contact: ContactType) => {
     
     const simplifiedContact: SimplifiedContact = {
