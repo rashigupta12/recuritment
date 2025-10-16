@@ -371,25 +371,39 @@ const [interviewScheduleLoading, setInterviewScheduleLoading] = useState(false);
     setModalError(null);
   };
 
-  const handleStatusChangeRequest = () => {
-    if (!selectedStatus) {
-      setModalError("Please select a status.");
-      return;
+ const handleStatusChangeRequest = () => {
+  if (!selectedStatus) {
+    setModalError("Please select a status.");
+    return;
+  }
+
+  // NEW: Handle Interview status immediately
+  if (selectedStatus.toLowerCase() === "interview") {
+    setIsStatusModalOpen(false);
+    // Update status to "Interview To Be Scheduled" immediately
+    handleConfirmStatusChangeForInterview("Interview To Be Scheduled");
+    // Open the interview details modal
+    if (selectedApplicants.length > 0) {
+      setSelectedInterviewApplicant(selectedApplicants[0]);
+      setIsInterviewDetailsModalOpen(true);
     }
-    const downgrades = selectedApplicants.filter(
-      (applicant) => applicant.status && isStatusDowngrade(applicant.status, selectedStatus)
-    );
-    if (downgrades.length > 0) {
-      const firstDowngrade = downgrades[0];
-      setDowngradeInfo({
-        from: firstDowngrade.status || "",
-        to: selectedStatus,
-      });
-      setShowDowngradeWarning(true);
-    } else {
-      handleConfirmStatusChange();
-    }
-  };
+    return;
+  }
+
+  const downgrades = selectedApplicants.filter(
+    (applicant) => applicant.status && isStatusDowngrade(applicant.status, selectedStatus)
+  );
+  if (downgrades.length > 0) {
+    const firstDowngrade = downgrades[0];
+    setDowngradeInfo({
+      from: firstDowngrade.status || "",
+      to: selectedStatus,
+    });
+    setShowDowngradeWarning(true);
+  } else {
+    handleConfirmStatusChange();
+  }
+};
 
   const handleConfirmOfferDetails = async () => {
     if (!offeredSalary.trim() || !targetStartDate.trim()) {
@@ -890,7 +904,8 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
         showStatus={true}
         showDeleteButton={true}
         onDeleteApplicant={handleDeleteApplicant}
-         onInterviewRowClick={(applicant) => {
+        onInterviewRowClick={(applicant) => {
+    console.log("Interview row clicked:", applicant); // Debug log
     setSelectedInterviewApplicant(applicant);
     setIsInterviewDetailsModalOpen(true);
   }}
@@ -955,29 +970,35 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
       className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition-all bg-gray-50 text-gray-900 text-md"
       value={selectedStatus}
       onChange={(e) => {
-        const newStatus = e.target.value;
-        setSelectedStatus(newStatus);
-        
-        if (newStatus === "Assessment") {
-          const allShortlisted = selectedApplicants.every(
-            (applicant) => applicant.status?.toLowerCase() === "shortlisted"
-          );
-          if (!allShortlisted) {
-            setModalError('Assessment can only be created for applicants with "Shortlisted" status.');
-            return;
-          }
-          setIsStatusModalOpen(false);
-          setIsAssessmentModalOpen(true);
-        } 
-        else if (newStatus === "Offered") {
-          setIsStatusModalOpen(false);
-          setIsOfferModalOpen(true);
-        }
-        // else if (newStatus === "Interview") {
-        //   setSelectedStatus("Interview");
-        //   // Will show interview sub-options
-        // }
-      }}
+  const newStatus = e.target.value;
+  setSelectedStatus(newStatus);
+  
+  if (newStatus === "Assessment") {
+    const allShortlisted = selectedApplicants.every(
+      (applicant) => applicant.status?.toLowerCase() === "shortlisted"
+    );
+    if (!allShortlisted) {
+      setModalError('Assessment can only be created for applicants with "Shortlisted" status.');
+      return;
+    }
+    setIsStatusModalOpen(false);
+    setIsAssessmentModalOpen(true);
+  } 
+  else if (newStatus === "Offered") {
+    setIsStatusModalOpen(false);
+    setIsOfferModalOpen(true);
+  }
+  else if (newStatus === "Interview") {
+    // NEW: Handle Interview immediately without going to confirm step
+    setIsStatusModalOpen(false);
+    handleConfirmStatusChangeForInterview("Interview To Be Scheduled");
+    if (selectedApplicants.length > 0) {
+      setSelectedInterviewApplicant(selectedApplicants[0]);
+      setIsInterviewDetailsModalOpen(true);
+    }
+  }
+}}
+
       aria-label="Select status"
     >
       <option value="" disabled className="text-gray-500 text-md">
