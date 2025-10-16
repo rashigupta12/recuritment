@@ -271,7 +271,7 @@ export default function TodosTable({
                       {extractCompany(todo.description) !== "-" ? (
                         <div className="flex items-start gap-2 font-semibold text-gray-900 text-md">
                           <Building className="w-4 h-4 text-gray-400 mt-1 flex-shrink-0" />
-                          <span className="block">
+                          <span className="block break-words whitespace-normal max-w-[200px]">
                             {extractCompany(todo.description)}
                           </span>
                         </div>
