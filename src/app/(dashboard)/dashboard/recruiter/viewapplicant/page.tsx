@@ -119,6 +119,9 @@ export default function ViewApplicantPage() {
   const searchParams = useSearchParams();
   const statusParam = searchParams.get("status") || "all";
   const router = useRouter();
+  const normalizeString = (str: string | undefined): string => {
+  return str ? str.toLowerCase().trim().replace(/\s+/g, ' ') : '';
+};
 
 const fetchApplicantsData = async (
   email: string,
@@ -299,9 +302,9 @@ const transformApplicantsData = (apiResponse: any[]): JobApplicant[] => {
 
     checkAuthAndFetchApplicants();
   }, [router, statusParam, currentPage]);
-
 useEffect(() => {
   let filtered = applicants;
+  
   // Search filter
   if (searchQuery.trim()) {
     const query = searchQuery.toLowerCase().trim();
@@ -313,24 +316,33 @@ useEffect(() => {
         applicant.designation?.toLowerCase().includes(query)
     );
   }
+  
+  if (filters.status.length > 0) {
+    filtered = filtered.filter((applicant) => {
+      if (!applicant.status) return false;
+      
+      // Normalize both the filter status and applicant status for comparison
+      const normalizedApplicantStatus = normalizeString(applicant.status);
+      return filters.status.some(filterStatus => 
+        normalizeString(filterStatus) === normalizedApplicantStatus
+      );
+    });
+  }
+  
   // Job titles filter
   if (filters.jobTitles.length > 0) {
     filtered = filtered.filter((applicant) =>
       applicant.designation && filters.jobTitles.includes(applicant.designation)
     );
   }
+  
   // Clients filter
   if (filters.clients.length > 0) {
     filtered = filtered.filter((applicant) =>
       applicant.custom_company_name && filters.clients.includes(applicant.custom_company_name)
     );
   }
-  // Status filter
-  if (filters.status.length > 0) {
-    filtered = filtered.filter((applicant) =>
-      applicant.status && filters.status.includes(applicant.status)
-    );
-  }
+
   setFilteredApplicants(filtered);
 }, [applicants, searchQuery, filters]);
 
@@ -433,9 +445,9 @@ const handleRefresh = async () => {
       "tagged": 1,
       "shortlisted": 2,
       "assessment": 3,
-      "interview": 4,
-      "interview reject": -1,
-      "offered": 5,
+      "interview to be scheduled": 4,
+      "interview": 5,
+      "offered": 6,
       "offer drop": -1,
       "joined": 6,
     };
@@ -563,12 +575,13 @@ const handleRefresh = async () => {
         return "bg-purple-100 text-purple-800 border-purple-200";
       case "assessment":
         return "bg-yellow-100 text-yellow-800 border-yellow-200";
+        case "interview to be scheduled":
+        return "bg-orange-200 text-orange-800 border-orange-200";
       case "interview":
         return "bg-orange-100 text-orange-800 border-orange-200";
       case "offered":
         return "bg-green-100 text-green-800 border-green-200";
-      case "interview reject":
-        return "bg-red-100 text-red-800 border-red-200";
+      
       case "offer drop":
         return "bg-red-100 text-red-800 border-red-200";
       case "joined":
