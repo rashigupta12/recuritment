@@ -1,6 +1,6 @@
-import { Building2, IndianRupee, Users } from "lucide-react";
 import { Lead } from "@/stores/leadStore";
-import { formatToIndianCurrency, formatToIndianCurrencystats } from "./helper";
+import { Building2, IndianRupee, Users } from "lucide-react";
+import { formatToIndianCurrencystats } from "./helper";
 
 interface LeadsStatsProps {
   leads: Lead[];

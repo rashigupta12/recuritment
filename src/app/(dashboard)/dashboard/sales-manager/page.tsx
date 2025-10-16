@@ -569,21 +569,14 @@
 //     </div>
 //   );
 // }
-
-/*eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
 import {
-  ArrowUpRight,
-  Calendar,
   Construction,
-  Mail,
-  Phone,
   Target,
   TrendingUp,
   Users
 } from 'lucide-react';
-import React from 'react';
 
 export default function SalesManagerDashboard() {
   return (

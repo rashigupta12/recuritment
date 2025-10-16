@@ -6,7 +6,6 @@ import IndustrySearchSection from "@/components/comman/IndustrySearchSection";
 import { frappeAPI } from "@/lib/api/frappeClient";
 import { Lead, useLeadStore } from "@/stores/leadStore";
 import {
-  ArrowLeft,
   Briefcase,
   Building2,
   Factory,
@@ -114,19 +113,19 @@ const LeadForm: React.FC<LeadFormProps> = ({
     "Follow-Up / Relationship Management",
   ];
 
-  // Stage descriptions
-  const stageDescriptions: Record<string, string> = {
-    Prospecting: "Identifying and researching potential clients.",
-    "Lead Qualification": "Assessing if the lead meets criteria for pursuit.",
-    "Needs Analysis / Discovery":
-      "Understanding client needs and requirements.",
-    "Presentation / Proposal":
-      "Presenting solutions or proposals to the client.",
-    Contract: "Negotiating and finalizing contract terms.",
-    Onboarded: "Client is fully onboarded and services begin.",
-    "Follow-Up / Relationship Management":
-      "Maintaining client relationship post-onboarding.",
-  };
+  // // Stage descriptions
+  // const stageDescriptions: Record<string, string> = {
+  //   Prospecting: "Identifying and researching potential clients.",
+  //   "Lead Qualification": "Assessing if the lead meets criteria for pursuit.",
+  //   "Needs Analysis / Discovery":
+  //     "Understanding client needs and requirements.",
+  //   "Presentation / Proposal":
+  //     "Presenting solutions or proposals to the client.",
+  //   Contract: "Negotiating and finalizing contract terms.",
+  //   Onboarded: "Client is fully onboarded and services begin.",
+  //   "Follow-Up / Relationship Management":
+  //     "Maintaining client relationship post-onboarding.",
+  // };
 
   const checkFormChanges = useCallback(() => {
     return (
@@ -412,13 +411,7 @@ const LeadForm: React.FC<LeadFormProps> = ({
     }
   };
 
-  const handleBackClick = () => {
-    if (isFormSubmitted) {
-      onClose();
-    } else {
-      handleCloseWithConfirmation(onClose);
-    }
-  };
+
 
   const handleCancel = () => {
     if (isFormSubmitted) {

@@ -54,11 +54,7 @@ async function extractTextFromPDF(buffer: Buffer): Promise<{ text: string; pages
   }
 }
 
-// Define types for mammoth
-interface Warning {
-  message: string;
-  type: string;
-}
+
 
 interface Message {
   message: string;
@@ -337,7 +333,7 @@ export async function POST(request: NextRequest) {
     } catch (typeError: unknown) {
       const message = typeError instanceof Error ? typeError.message : "Unknown error";
       console.error("Unsupported file type:", typeError);
-      const errorMessage = typeError instanceof Error ? typeError.message : "Unknown file type error";
+      // const errorMessage = typeError instanceof Error ? typeError.message : "Unknown file type error";
       return NextResponse.json(
         { error: message },
         { status: 415 }
@@ -365,7 +361,7 @@ export async function POST(request: NextRequest) {
     } catch (extractionError: unknown) {
       const message = extractionError instanceof Error ? extractionError.message : "Unknown error";
       console.error("Text extraction failed:", extractionError);
-      const errorMessage = extractionError instanceof Error ? extractionError.message : "Unknown extraction error";
+      // const errorMessage = extractionError instanceof Error ? extractionError.message : "Unknown extraction error";
       return NextResponse.json(
         { error: `Failed to extract text from ${fileType.toUpperCase()} file: ${message}` },
         { status: 400 }
@@ -380,7 +376,7 @@ export async function POST(request: NextRequest) {
     } catch (validationError: unknown) {
       const message = validationError instanceof Error ? validationError.message : "Unknown error";
       console.error("Text validation failed:", validationError);
-      const errorMessage = validationError instanceof Error ? validationError.message : "Validation error";
+      // const errorMessage = validationError instanceof Error ? validationError.message : "Validation error";
       return NextResponse.json(
         { error: message },
         { status: 400 }

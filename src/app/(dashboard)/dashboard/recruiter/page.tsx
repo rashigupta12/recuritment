@@ -306,7 +306,7 @@ export default function RecruiterDashboard() {
 
     if (periodInfo?.type === "week") {
       const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-      const currentDate = new Date(periodInfo.current_date);
+      // const currentDate = new Date(periodInfo.current_date);
       const startDate = new Date(periodInfo.start_date);
       const startDay = startDate.getDay();
       const mondayOffset = startDay === 0 ? -6 : 1 - startDay;
@@ -322,7 +322,7 @@ export default function RecruiterDashboard() {
       const currentDate = new Date(periodInfo.current_date);
       const currentMonth = currentDate.getMonth();
       const currentYear = currentDate.getFullYear();
-      const firstDay = new Date(currentYear, currentMonth, 1);
+      // const firstDay = new Date(currentYear, currentMonth, 1);
       const lastDay = new Date(currentYear, currentMonth + 1, 0);
       const totalDays = lastDay.getDate();
 
@@ -446,40 +446,40 @@ export default function RecruiterDashboard() {
     "Joined",
   ];
 
-  const candidatePipelineData = useMemo(() => {
-    const clientGroups =
-      selectedClient === "All"
-        ? clients.filter((c) => c !== "All")
-        : [selectedClient];
-    const colors = [
-      "#E0E7FF",
-      "#C7D2FE",
-      "#A5B4FC",
-      "#FBBF24",
-      "#818CF8",
-      "#6366F1",
-      "#F59E0B",
-      "#10B981",
-    ];
-    return {
-      labels: clientGroups,
-      datasets: candidateStatusOrder.map((status, idx) => ({
-        label: status
-          .replace(/([A-Z])/g, " $1")
-          .replace(/^./, (str) => str.toUpperCase())
-          .trim(),
-        data: clientGroups.map((client) => {
-          const clientApplicants = filteredApplicants.filter(
-            (a) => a.client === client
-          );
-          return clientApplicants.filter((a) => a.status === status).length;
-        }),
-        backgroundColor: colors[idx % colors.length],
-        borderColor: "#FFFFFF",
-        borderWidth: 1,
-      })),
-    };
-  }, [selectedClient, clients, filteredApplicants]);
+  // const candidatePipelineData = useMemo(() => {
+  //   const clientGroups =
+  //     selectedClient === "All"
+  //       ? clients.filter((c) => c !== "All")
+  //       : [selectedClient];
+  //   const colors = [
+  //     "#E0E7FF",
+  //     "#C7D2FE",
+  //     "#A5B4FC",
+  //     "#FBBF24",
+  //     "#818CF8",
+  //     "#6366F1",
+  //     "#F59E0B",
+  //     "#10B981",
+  //   ];
+  //   return {
+  //     labels: clientGroups,
+  //     datasets: candidateStatusOrder.map((status, idx) => ({
+  //       label: status
+  //         .replace(/([A-Z])/g, " $1")
+  //         .replace(/^./, (str) => str.toUpperCase())
+  //         .trim(),
+  //       data: clientGroups.map((client) => {
+  //         const clientApplicants = filteredApplicants.filter(
+  //           (a) => a.client === client
+  //         );
+  //         return clientApplicants.filter((a) => a.status === status).length;
+  //       }),
+  //       backgroundColor: colors[idx % colors.length],
+  //       borderColor: "#FFFFFF",
+  //       borderWidth: 1,
+  //     })),
+  //   };
+  // }, [selectedClient, clients, filteredApplicants]);
 
   const funnelStages: JobApplicant["status"][] = [
     "Tagged",
@@ -875,10 +875,10 @@ export default function RecruiterDashboard() {
                       callbacks: {
                         label: (context) => {
                           const dataset = context.dataset.data as number[];
-                          const total = dataset.reduce(
-                            (acc, curr) => acc + curr,
-                            0
-                          );
+                          // const total = dataset.reduce(
+                          //   (acc, curr) => acc + curr,
+                          //   0
+                          // );
                           const value = context.parsed;
                           return `${context.label}: ${value}`;
                         },
@@ -1002,7 +1002,7 @@ interface CardProps {
   color: "indigo" | "amber" | "emerald" | "violet";
 }
 
-function KpiCard({ icon, value, label, trend, color }: CardProps) {
+function KpiCard({ icon, value, label, color }: CardProps) {
   const colorStyles = {
     indigo: {
       bg: "bg-indigo-50",
@@ -1021,7 +1021,7 @@ function KpiCard({ icon, value, label, trend, color }: CardProps) {
       text: "text-violet-600",
     },
   };
-  const router = useRouter();
+  // const router = useRouter();
   return (
     <div
       className={`group bg-white rounded-lg p-3 shadow-sm border border-slate-200 hover:shadow-md transition-all ${

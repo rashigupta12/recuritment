@@ -1,6 +1,6 @@
 // components/Leads/LeadsHeader.tsx
 "use client";
-import { ArrowLeft, Filter, Plus, RefreshCw, Search } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Button } from "../ui/button";
 
 interface LeadsHeaderProps {
@@ -16,8 +16,7 @@ export const LeadsHeader = ({
   searchQuery,
   onSearchChange,
   onAddLead,
-  showBackButton = false,
-  onBack,
+
 }: // title = "Leads Management",
 LeadsHeaderProps) => {
   return (

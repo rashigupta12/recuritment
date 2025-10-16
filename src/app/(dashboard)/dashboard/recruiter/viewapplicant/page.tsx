@@ -1,28 +1,21 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useSearchParams } from "next/navigation";
-import { toast } from "sonner";
-import { frappeAPI } from "@/lib/api/frappeClient";
-import {
-  Search,
-  X,
-  User,
-  Mail,
-  Phone,
-  MapPin,
-  FileText,
-  Briefcase,
-  Calendar,
-  AlertCircle,
-  Award,
-  Building2,
-  Download,
-} from "lucide-react";
-import { TodosHeader } from "@/components/recruiter/Header";
 import Pagination from "@/components/comman/Pagination";
 import { ApplicantsTable } from "@/components/recruiter/CandidateTrackerTable";
+import { TodosHeader } from "@/components/recruiter/Header";
+import { frappeAPI } from "@/lib/api/frappeClient";
+import {
+  AlertCircle,
+  Award,
+  Briefcase,
+  Building2,
+  Calendar,
+  User,
+  X
+} from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export interface JobApplicant {
   name: string;
@@ -424,15 +417,15 @@ const handleRefresh = async () => {
     );
   };
 
-  const handleChangeStatus = () => {
-    if (selectedApplicants.length === 0) {
-      toast.error("Please select at least one applicant.");
-      return;
-    }
-    setIsModalOpen(true);
-    setSelectedStatus("");
-    setModalError(null);
-  };
+  // const handleChangeStatus = () => {
+  //   if (selectedApplicants.length === 0) {
+  //     toast.error("Please select at least one applicant.");
+  //     return;
+  //   }
+  //   setIsModalOpen(true);
+  //   setSelectedStatus("");
+  //   setModalError(null);
+  // };
 
   const getStatusLevel = (status: string): number => {
     const statusLevels: { [key: string]: number } = {

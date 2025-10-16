@@ -1,29 +1,28 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
+import Pagination from "@/components/comman/Pagination";
+import { formatToIndianCurrency } from "@/components/Leads/helper";
+import { SortableTableHeader } from "@/components/recruiter/SortableTableHeader";
+import { FilterState } from "@/components/recruiter/TodoHeader";
+import { TodosHeader } from "@/components/Requirements/Header";
+import { JobOpeningModal } from "@/components/Requirements/requirement-view/JobopeningModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { frappeAPI } from "@/lib/api/frappeClient";
 import {
   AlertCircle,
   Building,
   Clock,
+  Download,
   Edit,
-  IndianRupee,
   Loader2,
   MapPin,
   Phone,
-  User,
-  Users,
   Upload,
-  Download, // Used for Unpublish icon (can be replaced with a more suitable icon)
+  User,
+  Users
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
-import { SortableTableHeader } from "@/components/recruiter/SortableTableHeader";
-import { FilterState } from "@/components/recruiter/TodoHeader";
-import { JobOpeningModal } from "@/components/Requirements/requirement-view/JobopeningModal";
-import Pagination from "@/components/comman/Pagination";
-import { TodosHeader } from "@/components/Requirements/Header";
-import { formatToIndianCurrency } from "@/components/Leads/helper";
 
 // Type definitions
 type StaffingPlanItem = {

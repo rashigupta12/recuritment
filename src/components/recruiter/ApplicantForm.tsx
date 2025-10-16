@@ -1,9 +1,9 @@
 /*eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Upload, User, Mail, Phone, FileText, Briefcase, CheckCircle, GraduationCap, Building, MapPin, Plus, Trash2 } from 'lucide-react';
 import { frappeAPI } from '@/lib/api/frappeClient';
+import { Building, CheckCircle, FileText, GraduationCap, Mail, MapPin, Phone, Plus, Trash2, Upload, User } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 // Define interfaces for type safety
 interface ExperienceData {
@@ -40,7 +40,7 @@ interface ApplicantFormProps {
   initialJobId?: string;
   todoData?: any; //
 }
-export default function ApplicantForm({ initialJobId, todoData }: ApplicantFormProps) {
+export default function ApplicantForm({ initialJobId }: ApplicantFormProps) {
   const [formData, setFormData] = useState<FormData>({
     applicant_name: '',
     email_id: '',

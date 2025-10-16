@@ -1,9 +1,9 @@
 /*eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import { useState } from 'react';
-import { Upload, User, Mail, Phone, Briefcase, GraduationCap, Plus, Trash2, Send, CheckCircle } from 'lucide-react';
 import { frappeAPI } from '@/lib/api/frappeClient';
+import { CheckCircle, Mail, Phone, Send, Trash2, Upload } from 'lucide-react';
+import { useState } from 'react';
 
 interface ExperienceData {
   company_name: string;
@@ -116,9 +116,9 @@ export default function BulkApplicantForm({ initialJobId, prefilledData, isExist
     };
   }
 
-  const handleAddRow = () => {
-    setApplicantRows([...applicantRows, createEmptyRow(initialJobId || '')]);
-  };
+  // const handleAddRow = () => {
+  //   setApplicantRows([...applicantRows, createEmptyRow(initialJobId || '')]);
+  // };
 
   const handleRemoveRow = (rowId: string) => {
     if (applicantRows.length > 1) {
@@ -141,39 +141,39 @@ export default function BulkApplicantForm({ initialJobId, prefilledData, isExist
     );
   };
 
-  const handleExperienceChange = (rowId: string, field: keyof ExperienceData, value: any) => {
-    setApplicantRows(rows =>
-      rows.map(row => {
-        if (row.id === rowId) {
-          const updatedExperience = { ...row.custom_experience };
-          if (field === 'current_company') {
-            updatedExperience[field] = value ? 1 : 0;
-            if (value) {
-              updatedExperience.end_date = '';
-            }
-          } else {
-            updatedExperience[field] = value;
-          }
-          return { ...row, custom_experience: updatedExperience };
-        }
-        return row;
-      })
-    );
-  };
+  // const handleExperienceChange = (rowId: string, field: keyof ExperienceData, value: any) => {
+  //   setApplicantRows(rows =>
+  //     rows.map(row => {
+  //       if (row.id === rowId) {
+  //         const updatedExperience = { ...row.custom_experience };
+  //         if (field === 'current_company') {
+  //           updatedExperience[field] = value ? 1 : 0;
+  //           if (value) {
+  //             updatedExperience.end_date = '';
+  //           }
+  //         } else {
+  //           updatedExperience[field] = value;
+  //         }
+  //         return { ...row, custom_experience: updatedExperience };
+  //       }
+  //       return row;
+  //     })
+  //   );
+  // };
 
-  const handleEducationChange = (rowId: string, field: keyof EducationData, value: string) => {
-    setApplicantRows(rows =>
-      rows.map(row => {
-        if (row.id === rowId) {
-          return {
-            ...row,
-            custom_education: { ...row.custom_education, [field]: value }
-          };
-        }
-        return row;
-      })
-    );
-  };
+  // const handleEducationChange = (rowId: string, field: keyof EducationData, value: string) => {
+  //   setApplicantRows(rows =>
+  //     rows.map(row => {
+  //       if (row.id === rowId) {
+  //         return {
+  //           ...row,
+  //           custom_education: { ...row.custom_education, [field]: value }
+  //         };
+  //       }
+  //       return row;
+  //     })
+  //   );
+  // };
 
   const handleResumeUpload = async (rowId: string, file: File) => {
     setApplicantRows(rows =>
@@ -394,7 +394,7 @@ export default function BulkApplicantForm({ initialJobId, prefilledData, isExist
     <div className="px-4">
       <div className="mx-auto">
         <div className="space-y-4">
-          {applicantRows.map((row, index) => (
+          {applicantRows.map((row) => (
             <div key={row.id} className="">
               <div className="flex justify-between items-center mb-6">
                 {applicantRows.length > 1 && (

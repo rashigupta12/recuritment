@@ -1,4 +1,3 @@
-/*eslint-disable @typescript-eslint/no-explicit-any */
 import {
   Search,
   RefreshCw,
@@ -72,15 +71,7 @@ export const TodosHeader = ({
   searchQuery,
   onSearchChange,
   onRefresh,
-  totalJobs = 0,
-  filteredJobs = 0,
-  uniqueDepartments = [],
-  uniqueAssigners = [],
-  uniqueClients = [],
-  uniqueLocations = [],
-  uniqueJobTitles = [],
-  uniqueStatus = [],
-  uniqueContacts = [],
+
   onFilterChange,
   filterConfig = [],
   title = "My Jobs",

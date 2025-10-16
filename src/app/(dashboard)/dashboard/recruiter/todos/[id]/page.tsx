@@ -1,13 +1,8 @@
 "use client";
 
-import { TodoDetailModal } from "@/components/recruiter/TodoDetailModal";
-import ApplicantForm from "@/components/recruiter/ApplicantForm";
-import { useParams, useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
-import { frappeAPI } from "@/lib/api/frappeClient";
+import ApplicantSearchAndTag from "@/components/recruiter/ApplicantSearchAndTag";
 import TaggedApplicants from "@/components/recruiter/TaggedApplicants";
-import MultipleApplicantsForm from "@/components/recruiter/MultipleApplicantsForm";
-import { Plus } from "lucide-react";
+import { TodoDetailModal } from "@/components/recruiter/TodoDetailModal";
 import {
   Sheet,
   SheetContent,
@@ -15,7 +10,10 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/AuthContext";
-import ApplicantSearchAndTag from "@/components/recruiter/ApplicantSearchAndTag";
+import { frappeAPI } from "@/lib/api/frappeClient";
+import { Plus } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 interface TodoData {
   name: string;
@@ -45,16 +43,16 @@ export default function TodoDetailPage() {
     router.back();
   };
 
-  const handleFormSubmitSuccess = () => {
-    console.log("🔄 Refreshing applicants list...");
-    setIsSheetOpen(false);
-    setRefreshKey((prev) => prev + 1);
-  };
+  // const handleFormSubmitSuccess = () => {
+  //   console.log("🔄 Refreshing applicants list...");
+  //   setIsSheetOpen(false);
+  //   setRefreshKey((prev) => prev + 1);
+  // };
 
-  const refreshApplicants = () => {
-    console.log("🔄 Manual refresh triggered");
-    setRefreshKey((prev) => prev + 1);
-  };
+  // const refreshApplicants = () => {
+  //   console.log("🔄 Manual refresh triggered");
+  //   setRefreshKey((prev) => prev + 1);
+  // };
 
   // ✅ New function to handle opening sheet from detail modal
   const handleOpenApplicantForm = () => {

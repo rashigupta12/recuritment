@@ -3,26 +3,17 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { frappeAPI } from "@/lib/api/frappeClient";
 import { Lead, useLeadStore } from "@/stores/leadStore";
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import LeadDetailModal from "../Leads/Details";
 import { LoadingState } from "../Leads/LoadingState";
 
+import { Building2, Tag, User } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { LeadsTable } from "./Table";
-import { Building2, User, Bookmark, Tag } from "lucide-react";
-import { TodosHeader } from "../recruiter/TodoHeader";
 import Pagination from "../comman/Pagination";
 import { LeadsMobileView } from "../Leads/MobileView";
+import { TodosHeader } from "../recruiter/TodoHeader";
+import { LeadsTable } from "./Table";
 
-interface CustomerDetails {
-  name: string;
-  customer_name: string;
-  lead_name: string;
-  email_id: string;
-  mobile_no: string;
-  industry: string;
-  website: string;
-}
 
 interface FilterState {
   departments: string[];
@@ -68,18 +59,6 @@ const ContractLeads = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  const stageMapping: Record<string, string> = useMemo(
-    () => ({
-      Prospecting: "Pr",
-      "Lead Qualification": "LQ",
-      "Needs Analysis / Discovery": "NAD",
-      "Presentation / Proposal": "PP",
-      Contract: "Co",
-      Onboarded: "On",
-      "Follow-Up / Relationship Management": "FURM",
-    }),
-    []
-  );
 
   // Check if the user has a restricted role
   const restrictedRoles = ["Recruiter", "Sales User"];

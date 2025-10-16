@@ -29,20 +29,16 @@ import {
   Home,
   LogOut,
   Menu,
-  MessageCircle,
   Target,
-  TrendingUp,
   User,
   Users,
-  X,
-  Settings,
-  AlertCircle,
+  X
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ReactNode, useEffect, useState } from "react";
-import { frappeAPI } from "@/lib/api/frappeClient";
+
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -65,30 +61,30 @@ const getNavigationItems = (role: AllowedRole): NavigationItem[] => {
     "Sales User": [
       { icon: Home, label: "Dashboard", href: roleBasePath },
       { icon: Target, label: "Leads", href: `${roleBasePath}/leads` },
-      { icon: Settings, label: "Settings", href: "/dashboard/settings/email" },
+  
     ],
     "Sales Manager": [
       { icon: Home, label: "Dashboard", href: roleBasePath },
       { icon: Target, label: "Leads", href: `${roleBasePath}/leads` },
       { icon: Users, label: "Customers", href: `${roleBasePath}/contract` },
       { icon: Users, label: "Helpdesk", href: `${roleBasePath}/helpdesk` },
-      { icon: Settings, label: "Settings", href: "/dashboard/settings/email" },
+     
     ],
     "Projects Manager": [
       { icon: Home, label: "Dashboard", href: roleBasePath },
       { icon: FolderOpen, label: "Allocation", href: `${roleBasePath}/allocation` },
       { icon: Users, label: "Helpdesk", href: `${roleBasePath}/helpdesk` },
-      { icon: Settings, label: "Settings", href: "/dashboard/settings/email" },
+      
     ],
     "Projects User": [
       { icon: Home, label: "Dashboard", href: roleBasePath },
-      { icon: Settings, label: "Settings", href: "/dashboard/settings/email" },
+      
     ],
     "Delivery Manager": [
       { icon: Home, label: "Dashboard", href: roleBasePath },
       { icon: FolderOpen, label: "Deliveries", href: `${roleBasePath}/deliveries` },
       { icon: Users, label: "Helpdesk", href: `${roleBasePath}/helpdesk` },
-      { icon: Settings, label: "Settings", href: "/dashboard/settings/email" },
+     
     ],
     Recruiter: [
       { icon: Home, label: "Dashboard", href: roleBasePath },
@@ -97,7 +93,6 @@ const getNavigationItems = (role: AllowedRole): NavigationItem[] => {
       { icon: FolderOpen, label: "Jobs Assigned", href: `${roleBasePath}/todos` },
       { icon: Users, label: "Candidate Tracker", href: `${roleBasePath}/viewapplicant` },
       { icon: Users, label: "Helpdesk", href: `${roleBasePath}/helpdesk` },
-      { icon: Settings, label: "Settings", href: "/dashboard/settings/email" },
     ],
   };
 
@@ -118,37 +113,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [feedbackModalOpen, setFeedbackModalOpen] = useState(false);
-  const [emailConfigured, setEmailConfigured] = useState<boolean | null>(null);
-  const [fetchingEmailConfig, setFetchingEmailConfig] = useState(true);
 
-  // Fetch email configuration status
-  useEffect(() => {
-    const fetchEmailConfig = async () => {
-      if (user?.username) {
-        try {
-          setFetchingEmailConfig(true);
-          const response = await frappeAPI.makeAuthenticatedRequest(
-            "GET",
-            `/resource/User Setting/${user.username}`
-          );
-          console.log('DashboardLayout Email Config Response:', response); // Debug log
-          
-          if (response.data) {
-            setEmailConfigured(response.data.custom_email_configured === 1);
-          }
-        } catch (error) {
-          console.error("Error fetching email configuration:", error);
-          setEmailConfigured(false);
-        } finally {
-          setFetchingEmailConfig(false);
-        }
-      } else {
-        setFetchingEmailConfig(false);
-      }
-    };
 
-    fetchEmailConfig();
-  }, [user]);
+
 
   // Auto-collapse on mobile, remember desktop state
   useEffect(() => {
@@ -345,19 +312,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                         {user.full_name.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                    {!fetchingEmailConfig && !emailConfigured && (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <AlertCircle
-                            className="absolute -top-1 -right-1 h-4 w-4 text-red-500"
-                            style={{ backgroundColor: "white", borderRadius: "50%", padding: "2px" }}
-                          />
-                        </TooltipTrigger>
-                        <TooltipContent side="right" className="ml-2">
-                          <p>Email configuration not set. Go to Settings to configure your email.</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    )}
+                  
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="right" className="ml-2">
@@ -378,19 +333,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     {user.full_name.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                {!fetchingEmailConfig && !emailConfigured && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <AlertCircle
-                        className="absolute top-0 right-0 h-4 w-4 text-red-500"
-                        style={{ backgroundColor: "white", borderRadius: "50%", padding: "2px" }}
-                      />
-                    </TooltipTrigger>
-                    <TooltipContent side="right" className="ml-2">
-                      <p>Email configuration not set. Go to Settings to configure your email.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                )}
+            
                 <div className="flex-1 min-w-0">
                   <p className="text-lg font-medium text-gray-900 truncate">
                     {user.full_name}
@@ -509,19 +452,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     {user.full_name.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                {!fetchingEmailConfig && !emailConfigured && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <AlertCircle
-                        className="absolute top-0 right-0 h-4 w-4 text-red-500"
-                        style={{ backgroundColor: "white", borderRadius: "50%", padding: "2px" }}
-                      />
-                    </TooltipTrigger>
-                    <TooltipContent side="right" className="ml-2">
-                      <p>Email configuration not set. Go to Settings to configure your email.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                )}
+
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">
                     {user.full_name}
@@ -670,19 +601,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                           {user.full_name.charAt(0).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
-                      {!fetchingEmailConfig && !emailConfigured && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <AlertCircle
-                              className="absolute -top-1 -right-1 h-4 w-4 text-red-500"
-                              style={{ backgroundColor: "white", borderRadius: "50%", padding: "2px" }}
-                            />
-                          </TooltipTrigger>
-                          <TooltipContent side="right" className="ml-2">
-                            <p>Email configuration not set. Go to Settings to configure your email.</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      )}
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent className="w-56" align="end" forceMount>

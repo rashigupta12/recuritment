@@ -55,18 +55,7 @@ interface Props {
   companyname?:string
 }
 
-interface AssessmentResponse {
-  message?: {
-    status?: string;
-    created_assessments?: string[];
-    name?: string;
-  };
-  name?: string;
-  data?: {
-    name?: string;
-    id?: string;
-  };
-}
+
 
 
 

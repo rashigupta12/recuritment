@@ -1,9 +1,8 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
-import nodemailer from 'nodemailer';
-import type SMTPTransport from 'nodemailer/lib/smtp-transport';
-import { decrypt } from '@/lib/crypto';
+import { sendEmail } from '@/lib/mail/mailer3'; // Import from mailer3
+import { Attachment } from '@/lib/mail/mailer3'; // Import Attachment interface
 
 interface EmailRequest {
     from_email: string;
@@ -58,47 +57,20 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        let userSmtpEmail = null;
-        let userSmtpPassword = null;
         let senderName = process.env.COMPANY_NAME || 'HevHire';
+        let senderEmail = emailData.username; // This will be used as the sender email
 
-        // Fetch user's SMTP credentials if username is provided
+        // If username is provided, try to get full name for sender name
         if (emailData.username) {
-            console.log('🔍 Fetching SMTP credentials for user:', emailData.username);
+            console.log('🔍 Fetching user details for:', emailData.username);
             
             try {
                 const cookies = request.headers.get('cookie') || '';
                 const FRAPPE_BASE_URL = process.env.NEXT_PUBLIC_dev_prod_FRAPPE_BASE_URL;
 
-                // Fetch encrypted password from User Setting
-                const userSettingResponse = await fetch(
-                    `${FRAPPE_BASE_URL}/resource/User%20Setting/${encodeURIComponent(emailData.username)}?fields=["custom_mailp","full_name"]`,
-                    {
-                        method: 'GET',
-                        headers: {
-                            'Cookie': cookies,
-                        },
-                    }
-                );
-
-                console.log('User Setting Response Status:', userSettingResponse.status);
-
-                let encryptedPassword = null;
-                let fullName = null;
-
-                if (userSettingResponse.ok) {
-                    const userSettingData = await userSettingResponse.json();
-                    console.log('User Setting Data:', JSON.stringify(userSettingData, null, 2));
-                    
-                    encryptedPassword = userSettingData.data?.custom_mailp;
-                    fullName = userSettingData.data?.full_name;
-                } else {
-                    console.warn('⚠️ Could not fetch User Setting:', await userSettingResponse.text());
-                }
-
-                // Fetch SMTP email from User doctype
+                // Fetch user's full name
                 const userResponse = await fetch(
-                    `${FRAPPE_BASE_URL}/resource/User/${encodeURIComponent(emailData.username)}?fields=["custom_smtp_email","full_name","email"]`,
+                    `${FRAPPE_BASE_URL}/resource/User/${encodeURIComponent(emailData.username)}?fields=["full_name","email"]`,
                     {
                         method: 'GET',
                         headers: {
@@ -111,78 +83,47 @@ export async function POST(request: NextRequest) {
 
                 if (userResponse.ok) {
                     const userData = await userResponse.json();
-                    console.log('User Data:', JSON.stringify(userData, null, 2));
+                    // console.log('User Data:', JSON.stringify(userData, null, 2));
                     
-                    userSmtpEmail = userData.data?.custom_smtp_email || userData.data?.email;
+                    const fullName = userData.data?.full_name;
+                    if (fullName) {
+                        senderName = fullName;
+                    }
                     
-                    if (!fullName) {
-                        fullName = userData.data?.full_name;
-                    }
-
-                    if (userSmtpEmail && encryptedPassword) {
-                        console.log('✅ Found user SMTP credentials');
-                        console.log('SMTP Email:', userSmtpEmail);
-                        console.log('Has encrypted password:', !!encryptedPassword);
-                        
-                        try {
-                            userSmtpPassword = decrypt(encryptedPassword);
-                            console.log('🔓 Password decrypted successfully');
-                        } catch (decryptError) {
-                            console.error('❌ Failed to decrypt password:', decryptError);
-                            userSmtpPassword = null;
-                        }
-
-                        if (fullName) {
-                            senderName = fullName;
-                        }
-                    } else {
-                        console.log('ℹ️ No complete SMTP credentials found, using company credentials');
-                        console.log('- SMTP Email:', userSmtpEmail ? 'Found' : 'Missing');
-                        console.log('- Encrypted Password:', encryptedPassword ? 'Found' : 'Missing');
-                    }
+                    // Use the email from user data if available, otherwise use username as email
+                    senderEmail = userData.data?.email || emailData.username;
                 } else {
-                    console.warn('⚠️ Could not fetch User:', await userResponse.text());
+                    console.warn('⚠️ Could not fetch User details:', await userResponse.text());
                 }
             } catch (fetchError) {
-                console.error('⚠️ Error fetching user SMTP credentials:', fetchError);
-                console.log('ℹ️ Falling back to company credentials');
+                console.error('⚠️ Error fetching user details:', fetchError);
             }
         }
 
-        // Determine which credentials to use
-        const useUserCredentials = !!(userSmtpEmail && userSmtpPassword);
-        
-        console.log(`📧 Sending email using ${useUserCredentials ? 'USER' : 'COMPANY'} credentials`);
-        if (useUserCredentials) {
-            console.log('Using email:', userSmtpEmail);
+        // Validate sender email
+        if (!senderEmail) {
+            return NextResponse.json(
+                { error: 'Sender email (username) is required' },
+                { status: 400 }
+            );
         }
 
-        // Create transporter with appropriate credentials
-        const transportOptions: SMTPTransport.Options = {
-            host: process.env.SMTP_SERVER || 'crystal.herosite.pro',
-            port: parseInt(process.env.SMTP_PORT || '465'),
-            secure: true,
-            auth: {
-                user: (useUserCredentials ? userSmtpEmail : process.env.COMPANY_EMAIL) || '',
-                pass: (useUserCredentials ? userSmtpPassword : process.env.COMPANY_EMAIL_PASSWORD) || '',
-            },
-            tls: {
-                rejectUnauthorized: false
-            }
-        };
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(senderEmail)) {
+            return NextResponse.json(
+                { error: 'Invalid sender email format' },
+                { status: 400 }
+            );
+        }
 
-        const transporter = nodemailer.createTransport(transportOptions);
+        console.log(`📧 Sending email using Microsoft Graph API`);
+        console.log(`Sender: ${senderName} <${senderEmail}>`);
+        console.log(`To: ${toEmails.join(',') || 'none'}`);
+        console.log(`CC: ${ccEmails.join(',') || 'none'}`);
+        console.log(`BCC: ${bccEmails.join(',') || 'none'}`);
 
-
-        // Email options
-        const mailOptions = {
-            from: `"${senderName}" <${useUserCredentials ? userSmtpEmail : process.env.COMPANY_EMAIL}>`,
-            to: toEmails.length > 0 ? toEmails.join(',') : undefined,
-            cc: ccEmails.length > 0 ? ccEmails.join(',') : undefined,
-            bcc: bccEmails.length > 0 ? bccEmails.join(',') : undefined,
-            subject: emailData.subject,
-            text: emailData.message,
-            html: `
+        // Prepare HTML content with the same template
+        const htmlContent = `
   <div style="font-family: Arial, sans-serif; max-width: 650px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden;">
       
       <!-- Header with White Background for Logo -->
@@ -200,36 +141,109 @@ export async function POST(request: NextRequest) {
           </p>
       </div>
 
-
-
-
       <!-- Footer -->
       <div style="padding: 20px; background: #1e3a8a; text-align: center; color: #f8fafc;">
           <p style="margin: 0; font-size: 14px;">This email was sent from <strong style="color: #ffffff;">HevHire</strong></p>
-          ${useUserCredentials ? `<p style="margin: 5px 0 0 0; font-size: 12px; opacity: 0.8;">Sent by ${senderName}</p>` : ''}
+          <p style="margin: 5px 0 0 0; font-size: 12px; opacity: 0.8;">Sent by ${senderName}</p>
       </div>
   </div>
-`,
-            // attachments: attachments
-        };
+`;
 
-        // console.log(`📧 Preparing to send email with ${attachments.length} attachments`);
-        console.log(`To: ${toEmails.join(',') || 'none'}`);
-        console.log(`CC: ${ccEmails.join(',') || 'none'}`);
-        console.log(`BCC: ${bccEmails.join(',') || 'none'}`);
-
-        // Send email
-        const result = await transporter.sendMail(mailOptions);
+        // Prepare attachments (if any from applicants)
+        const attachments: Attachment[] = [];
         
-        console.log('📧 Email sent successfully:', result.messageId);
-        // console.log(`📎 Attachments sent: ${attachments.length}`);
+        // Process applicant attachments if needed
+        if (emailData.applicants && emailData.applicants.length > 0) {
+            for (const applicant of emailData.applicants) {
+                if (applicant.resume_attachment) {
+                    // You'll need to convert the resume_attachment to base64
+                    // This depends on how your resume_attachment is stored
+                    // Example:
+                    // attachments.push({
+                    //     filename: `${applicant.applicant_name || applicant.name}_resume.pdf`,
+                    //     content: applicant.resume_attachment, // base64 content
+                    //     contentType: 'application/pdf'
+                    // });
+                }
+            }
+        }
+
+        // Send emails to all recipients using mailer3.ts function
+        const emailResults = [];
+        
+        // Send to "To" recipients
+        for (const recipient of toEmails) {
+            console.log(`📨 Sending email to: ${recipient}`);
+            const result = await sendEmail(
+                senderName,           // senderHeader
+                recipient,            // email (recipient)
+                emailData.subject,    // subject
+                htmlContent,          // content
+                senderEmail,          // userEmail (sender's email - logged in user)
+                attachments           // attachments
+            );
+            emailResults.push(result);
+            console.log(`✅ Email to ${recipient}: ${result.success ? 'Success' : 'Failed'}`);
+        }
+
+        // Send to "CC" recipients
+        for (const recipient of ccEmails) {
+            console.log(`📨 Sending CC email to: ${recipient}`);
+            const result = await sendEmail(
+                senderName,           // senderHeader
+                recipient,            // email (recipient)
+                emailData.subject,    // subject
+                htmlContent,          // content
+                senderEmail,          // userEmail (sender's email - logged in user)
+                attachments           // attachments
+            );
+            emailResults.push(result);
+            console.log(`✅ CC Email to ${recipient}: ${result.success ? 'Success' : 'Failed'}`);
+        }
+
+        // Send to "BCC" recipients
+        for (const recipient of bccEmails) {
+            console.log(`📨 Sending BCC email to: ${recipient}`);
+            const result = await sendEmail(
+                senderName,           // senderHeader
+                recipient,            // email (recipient)
+                emailData.subject,    // subject
+                htmlContent,          // content
+                senderEmail,          // userEmail (sender's email - logged in user)
+                attachments           // attachments
+            );
+            emailResults.push(result);
+            console.log(`✅ BCC Email to ${recipient}: ${result.success ? 'Success' : 'Failed'}`);
+        }
+
+        // Check if all emails were sent successfully
+        const successfulEmails = emailResults.filter(result => result.success);
+        const failedEmails = emailResults.filter(result => !result.success);
+
+        console.log(`📧 Email sending completed:`);
+        console.log(`✅ Successful: ${successfulEmails.length}`);
+        console.log(`❌ Failed: ${failedEmails.length}`);
+
+        if (failedEmails.length > 0) {
+            console.error('Failed emails:', failedEmails);
+            return NextResponse.json({
+                success: false,
+                message: `Some emails failed to send (${successfulEmails.length} successful, ${failedEmails.length} failed)`,
+                results: emailResults,
+                sentFrom: senderEmail,
+                totalSent: successfulEmails.length,
+                totalFailed: failedEmails.length,
+                errors: failedEmails.map(e => ({ email: e.email, error: e.error }))
+            }, { status: 207 }); // 207 Multi-Status
+        }
 
         return NextResponse.json({
             success: true,
-            messageId: result.messageId,
-            // attachmentsSent: attachments.length,
-            message: 'Email sent successfully',
-            sentFrom: useUserCredentials ? userSmtpEmail : process.env.COMPANY_EMAIL
+            message: `All emails sent successfully (${successfulEmails.length} emails)`,
+            results: emailResults,
+            sentFrom: senderEmail,
+            totalSent: successfulEmails.length,
+            totalFailed: failedEmails.length
         });
 
     } catch (error: any) {
@@ -240,150 +254,3 @@ export async function POST(request: NextRequest) {
         );
     }
 }
-
-// Helper function to download file from public URL
-// async function downloadFileFromUrl(fileUrl: string): Promise<Buffer | null> {
-//     try {
-//         console.log(`🔗 Downloading file from: ${fileUrl}`);
-
-//         const response = await fetch(fileUrl, {
-//             method: 'GET',
-//             headers: {
-//                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-//             }
-//         });
-
-//         console.log(`📡 Response status: ${response.status} ${response.statusText}`);
-
-//         if (response.ok) {
-//             const arrayBuffer = await response.arrayBuffer();
-//             const buffer = Buffer.from(arrayBuffer);
-            
-//             console.log(`✅ Successfully downloaded file, size: ${buffer.length} bytes`);
-//             return buffer;
-//         } else {
-//             console.warn(`❌ Failed to download file: ${response.status} ${response.statusText}`);
-//             return null;
-//         }
-
-//     } catch (error) {
-//         console.error('❌ Error downloading file:', error);
-//         return null;
-//     }
-// }
-
-// Improved helper function to handle resume attachments
-// async function getResumeAttachments(applicants: any[]) {
-//     const attachments = [];
-//     const baseUrl = process.env.NEXT_PUBLIC_FRAPPE_BASE_URL;
-
-//     console.log('🔍 API - Processing applicants for attachments:');
-//     applicants.forEach((applicant, index) => {
-//         console.log(`Applicant ${index + 1}:`, {
-//             name: applicant.applicant_name,
-//             resume_attachment: applicant.resume_attachment,
-//             hasResume: !!applicant.resume_attachment
-//         });
-//     });
-
-//     for (const applicant of applicants) {
-//         if (applicant.resume_attachment) {
-//             try {
-//                 console.log(`\n📎 Processing resume for: ${applicant.applicant_name || applicant.name}`);
-//                 console.log(`Resume value: "${applicant.resume_attachment}"`);
-
-//                 let fileBuffer: Buffer | null = null;
-//                 let filename = `${applicant.applicant_name || applicant.name || 'applicant'}_resume.pdf`;
-//                 const resumePath = applicant.resume_attachment;
-
-//                 // Handle Frappe file paths (starting with /files/)
-//                 if (resumePath.startsWith('/files/')) {
-//                     console.log('📁 Detected Frappe file path');
-                    
-//                     // Construct the full public URL
-//                     const fullUrl = `${baseUrl}${resumePath}`;
-
-//                     console.log(`🔗 Constructed full URL: ${fullUrl}`);
-                    
-//                     // Download the file
-//                     fileBuffer = await downloadFileFromUrl(fullUrl);
-                    
-//                     if (fileBuffer) {
-//                         // Extract filename from path
-//                         const pathParts = resumePath.split('/');
-//                         const originalFilename = pathParts[pathParts.length - 1];
-//                         if (originalFilename && originalFilename.includes('.')) {
-//                             filename = originalFilename;
-//                             console.log(`📁 Using filename from path: ${filename}`);
-//                         }
-//                     }
-//                 }
-//                 // Handle HTTP URLs (direct full URLs)
-//                 else if (resumePath.startsWith('http')) {
-//                     console.log('🔗 Detected HTTP URL');
-//                     fileBuffer = await downloadFileFromUrl(resumePath);
-                    
-//                     if (fileBuffer) {
-//                         // Try to get filename from URL
-//                         const url = new URL(resumePath);
-//                         const pathname = url.pathname;
-//                         if (pathname.includes('.') && !pathname.endsWith('/')) {
-//                             const urlFilename = pathname.split('/').pop();
-//                             if (urlFilename) {
-//                                 filename = urlFilename;
-//                                 console.log(`📁 Using filename from URL: ${filename}`);
-//                             }
-//                         }
-//                     }
-//                 }
-//                 // Handle Base64 data URLs
-//                 else if (resumePath.startsWith('data:')) {
-//                     console.log('📄 Detected Base64 data URL');
-//                     try {
-//                         const matches = resumePath.match(/^data:([A-Za-z-+/]+);base64,(.+)$/);
-//                         if (matches && matches.length === 3) {
-//                             fileBuffer = Buffer.from(matches[2], 'base64');
-//                             console.log(`✅ Successfully decoded base64, size: ${fileBuffer.length} bytes`);
-                            
-//                             const mimeType = matches[1];
-//                             const ext = mimeType.split('/')[1] || 'pdf';
-//                             filename = `${applicant.applicant_name || applicant.name || 'applicant'}_resume.${ext}`;
-//                             console.log(`📁 Using filename: ${filename}`);
-//                         } else {
-//                             console.warn('❌ Invalid base64 data URL format');
-//                         }
-//                     } catch (base64Error) {
-//                         console.warn(`❌ Error processing base64 resume:`, base64Error);
-//                     }
-//                 }
-//                 // Unknown format
-//                 else {
-//                     console.log('❓ Unknown resume format:', resumePath);
-//                 }
-
-//                 // Add attachment if we have the file buffer
-//                 if (fileBuffer && fileBuffer.length > 0) {
-//                     attachments.push({
-//                         filename: filename,
-//                         content: fileBuffer
-//                     });
-//                     console.log(`✅ Resume attached: ${filename} (${fileBuffer.length} bytes)`);
-//                 } else {
-//                     console.warn(`❌ No file buffer created for ${applicant.applicant_name || applicant.name}`);
-//                 }
-
-//             } catch (error) {
-//                 console.error(`❌ Failed to attach resume for ${applicant.applicant_name || applicant.name}:`, error);
-//             }
-//         } else {
-//             console.log(`📭 No resume_attachment field for: ${applicant.applicant_name || applicant.name}`);
-//         }
-//     }
-
-//     console.log(`\n📦 Final attachments: ${attachments.length} files`);
-//     attachments.forEach((att, index) => {
-//         console.log(`  ${index + 1}. ${att.filename} (${att.content.length} bytes)`);
-//     });
-
-//     return attachments;
-// }

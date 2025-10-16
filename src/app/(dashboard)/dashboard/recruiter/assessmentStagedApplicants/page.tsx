@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { frappeAPI } from '@/lib/api/frappeClient';
-import { ApplicantsTable } from '@/components/recruiter/ApplicantsTable'; // Adjust path if needed
 import { Search } from 'lucide-react';
 
 export interface JobApplicant {

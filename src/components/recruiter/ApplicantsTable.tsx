@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { ArrowUpDown, Eye, Trash } from "lucide-react";
+import { Eye, Trash } from "lucide-react";
 import { useMemo, useState } from "react";
 import { JobApplicant } from '../../app/(dashboard)/dashboard/recruiter/viewapplicant/page';
 import { SortableTableHeader } from "./SortableTableHeader";

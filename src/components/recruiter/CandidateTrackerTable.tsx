@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { ArrowUpDown, Eye, Trash } from "lucide-react";
-import { useMemo, useState, useRef, useEffect } from "react";
+import { Eye, Trash } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from 'react-dom';
 import { JobApplicant } from '../../app/(dashboard)/dashboard/recruiter/viewapplicant/page';
 import { SortableTableHeader } from "./SortableTableHeader";
@@ -22,14 +22,6 @@ type SortField = "name" | "email" | "job_title" | "status" | "designation";
 type AllFields = SortField | "select" | "phone" | "company" | "actions";
 type SortDirection = "asc" | "desc" | null;
 
-interface GroupedApplicant {
-  representative: JobApplicant;
-  group: JobApplicant[];
-  isMultiple: boolean;
-  designations: string;
-  clients: string;
-  statuses: string;
-}
 
 interface TooltipProps {
   isVisible: boolean;
@@ -172,9 +164,6 @@ export function ApplicantsTable({
     setTooltipVisible(true);
   };
 
-  const handleMouseLeave = () => {
-    setTooltipVisible(false);
-  };
 
   return (
     <>

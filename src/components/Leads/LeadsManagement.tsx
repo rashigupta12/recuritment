@@ -6,7 +6,6 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import LeadDetailModal from "./Details";
 import { LoadingState } from "./LoadingState";
 import { LeadsFormView } from "./FormView";
-import { LeadsStats } from "./Stats";
 import { LeadsTable } from "./Table";
 import { LeadsEmptyState, LeadsMobileView } from "./MobileView";
 import { FilterState, TodosHeader } from "../recruiter/Header";

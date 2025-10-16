@@ -124,7 +124,6 @@ const API_BASE_URL =
   "/method/recruitment_app.project_manager.get_manager_dashboard_data";
 
 export default function ManagerDashboard() {
-  const router = useRouter();
   const [selectedClient, setSelectedClient] = useState<string>("All");
   const [selectedRecruiter, setSelectedRecruiter] = useState<string>("All");
   const [timePeriod, setTimePeriod] = useState<"week" | "month" | "quarter">(
@@ -685,8 +684,7 @@ export default function ManagerDashboard() {
                         color: "#475569",
                         callback: function (
                           value: number | string,
-                          index: number,
-                          ticks: any
+                       
                         ) {
                           // Convert value to number to use as array index
                           const labelIndex = Number(value);
@@ -887,7 +885,7 @@ interface CardProps {
   color: "indigo" | "amber" | "emerald" | "violet";
 }
 
-function KpiCard({ icon, value, label, trend, color }: CardProps) {
+function KpiCard({ icon, value, label,  color }: CardProps) {
   const colorStyles = {
     indigo: {
       bg: "bg-indigo-50",

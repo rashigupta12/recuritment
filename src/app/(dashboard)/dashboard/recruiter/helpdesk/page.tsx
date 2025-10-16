@@ -7,7 +7,6 @@ import { frappeAPI } from "@/lib/api/frappeClient";
 import { showToast } from "@/lib/toast/showToast";
 import { format } from "date-fns";
 import { Plus } from "lucide-react";
-import FeedbackList from "@/components/feedback/FeedBackList";
 import FeedbackForm from "@/components/feedback/FeedbackForm";
 import FeedbackDetails from "@/components/feedback/FeedBackDetails";
 import { SortableTableHeader } from "@/components/recruiter/SortableTableHeader";

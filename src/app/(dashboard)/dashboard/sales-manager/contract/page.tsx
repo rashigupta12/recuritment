@@ -1,29 +1,18 @@
 /*eslint-disable @typescript-eslint/no-explicit-any*/
 "use client";
+import Pagination from "@/components/comman/Pagination";
+import LeadDetailModal from "@/components/Leads/Details";
+import { LoadingState } from "@/components/Leads/LoadingState";
+import { LeadsMobileView } from "@/components/Leads/MobileView";
+import { getStageAbbreviation, LeadsTable } from "@/components/Onboarded/Table";
+import { FilterState, TodosHeader } from "@/components/recruiter/TodoHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { frappeAPI } from "@/lib/api/frappeClient";
 import { Lead, useLeadStore } from "@/stores/leadStore";
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { Building, Tag, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { LoadingState } from "@/components/Leads/LoadingState";
-import { LeadsTable } from "@/components/Onboarded/Table";
-import { LeadsMobileView } from "@/components/Leads/MobileView";
-import LeadDetailModal from "@/components/Leads/Details";
-import { Button } from "@/components/ui/button";
-import { Filter, RefreshCw, Users, Building, Tag } from "lucide-react";
-import { getStageAbbreviation } from "@/components/Onboarded/Table";
-import { FilterState, TodosHeader } from "@/components/recruiter/TodoHeader";
-import Pagination from "@/components/comman/Pagination";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
-interface CustomerDetails {
-  name: string;
-  customer_name: string;
-  lead_name: string;
-  email_id: string;
-  mobile_no: string;
-  industry: string;
-  website: string;
-}
 
 const ContractLeads = () => {
   const { leads, setLeads, loading, setLoading } = useLeadStore();

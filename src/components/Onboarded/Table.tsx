@@ -1,10 +1,10 @@
 /*eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
-import React, { useState, useCallback, memo, useMemo } from "react";
-import { EditIcon, UsersIcon } from "lucide-react";
+import { UsersIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { SortableTableHeader } from "../recruiter/SortableTableHeader";
+import { memo, useCallback, useMemo, useState } from "react";
 import { formatToIndianCurrency } from "../Leads/helper";
+import { SortableTableHeader } from "../recruiter/SortableTableHeader";
 
 // Lead type definition
 interface Lead {
@@ -266,7 +266,7 @@ export const getStageAbbreviation = (stage: string | null | undefined): string =
 };
 
 const LeadsTableRow = memo(
-  ({ lead, onView, onEdit, onCreateContract, onRowClick, isLoading, isRestrictedUser }: LeadsTableRowProps) => {
+  ({ lead,  onRowClick, isRestrictedUser }: LeadsTableRowProps) => {
     return (
       <tr 
         onClick={onRowClick}
