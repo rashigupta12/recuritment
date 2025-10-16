@@ -397,7 +397,26 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
     setSearchQuery(e.target.value);
   };
 
+   useEffect(() => {
+    if (showDropdown) {
+      calculateDropdownPosition();
+      
+      const handleResize = () => calculateDropdownPosition();
+      const handleScroll = () => {
+        setShowDropdown(false);
+      };
+      
+      window.addEventListener("resize", handleResize);
+      window.addEventListener("scroll", handleScroll, true);
+      
+      return () => {
+        window.removeEventListener("resize", handleResize);
+        window.removeEventListener("scroll", handleScroll, true);
+      };
+    }
+  }, [showDropdown, calculateDropdownPosition]);
   const handleContactSelect = (contact: ContactType) => {
+    
     const simplifiedContact: SimplifiedContact = {
       name: getFullName(contact),
       email: getPrimaryEmail(contact),
@@ -466,20 +485,31 @@ const ContactSearchSection: React.FC<ContactSearchSectionProps> = ({
     setShowDropdown(false);
   };
 
-  const handleCreateContact = () => {
-    const [firstName, ...lastNameParts] = searchQuery.split(" ");
-    setContactForm({
-      first_name: firstName || searchQuery,
-      last_name: lastNameParts.join(" ") || "",
-      designation: "",
-      gender: "",
-      email: "",
-      phone: "",
-      organization: "",
-    });
-    setShowContactDialog(true);
-    setShowDropdown(false);
-  };
+const handleCreateContact = () => {
+  const [firstName, ...lastNameParts] = searchQuery.split(" ");
+  
+  const formattedFirstName = 
+    (firstName || searchQuery).charAt(0).toUpperCase() + 
+    (firstName || searchQuery).slice(1);
+  
+  const formattedLastName = lastNameParts
+    .join(" ")
+    .split(" ")
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+  
+  setContactForm({
+    first_name: formattedFirstName,
+    last_name: formattedLastName,
+    designation: "",
+    gender: "",
+    email: "",
+    phone: "",
+    organization: "",
+  });
+  setShowContactDialog(true);
+  setShowDropdown(false);
+};
 
   const handleSaveContact = async () => {
     if (!contactForm.first_name.trim()) return;
