@@ -349,80 +349,123 @@
 
 
   const handleCreateCompany = () => {
-    const formattedName = 
-      searchQuery.charAt(0).toUpperCase() + searchQuery.slice(1);
+  const formattedName = 
+    searchQuery.charAt(0).toUpperCase() + searchQuery.slice(1);
+  
+  if (selectedCompany) {
+    onRemove();
+  }
+  
+  setCompanyForm({
+    company_name: formattedName || "",
+    country: "",
+    email: "",
+    website: "",
+    phone: "",
+    default_currency: "",
+    tax_id: "",
+    abbr: "",
+    domain: "",
+    custom_address: ""
+  });
+  setShowCompanyDialog(true);
+  setShowDropdown(false);
+};
+
+const handleSaveCompany = async () => {
+  try {
+    setIsSaving(true);
     
-    setCompanyForm({
-      company_name: formattedName || "",
-      country: "",
-      email: "",
-      website: "",
-      phone: "",
-      default_currency: "",
-      tax_id: "",
-      abbr: "",
-      domain: "",
-      custom_address: ""
-    });
-    setShowCompanyDialog(true);
-    setShowDropdown(false);
-  };
+    // Determine if we're editing or creating
+    const isEditing = selectedCompany && (selectedCompany.companyId || selectedCompany.name);
+    let companyId: string;
+    let companyName: string;
 
-    const handleSaveCompany = async () => {
-      try {
-        setIsSaving(true);
+    if (isEditing) {
+      // EDIT: Update existing company
+      companyId = selectedCompany.companyId || selectedCompany.name;
+      companyName = companyForm.company_name;
+      
+      console.log(`Updating existing company with ID: ${companyId}`);
+      
+      const updateData = {
+        company_name: companyForm.company_name,
+        country: companyForm.country,
+        email: companyForm.email || null,
+        website: companyForm.website || null,
+        phone: companyForm.phone || null,
+        abbr: companyForm.abbr || null,
+        domain: companyForm.domain || null,
+        custom_address: companyForm.custom_address || null,
+      };
 
-            const companyData = {
-          company_name: companyForm.company_name,
-          country: companyForm.country,
-          email: companyForm.email || null,
-          website: companyForm.website || null,
-          phone: companyForm.phone || null,
-          // default_currency: companyForm.default_currency || null,
-          // tax_id: companyForm.tax_id || null,
-          abbr: companyForm.abbr || null,
-          domain: companyForm.domain || null,
-          custom_address: companyForm.custom_address || null,
-        };
+      console.log('Update Data:', updateData);
+      
+      // Use the updateCompany method
+      await frappeAPI.updateCompany(companyId, updateData);
+      console.log('Company updated successfully');
+      
+    } else {
+      // CREATE: New company
+      console.log('Creating new company');
+      
+      const createData = {
+        company_name: companyForm.company_name,
+        country: companyForm.country,
+        email: companyForm.email || null,
+        website: companyForm.website || null,
+        phone: companyForm.phone || null,
+        abbr: companyForm.abbr || null,
+        domain: companyForm.domain || null,
+        custom_address: companyForm.custom_address || null,
+      };
 
-        let companyId: string;
-        let companyName: string;
+      console.log('Create Data:', createData);
+      
+      // Use createCompany method for new company
+      const response = await frappeAPI.createCompany(createData);
+      companyId = response.data.name;
+      companyName = companyForm.company_name;
+      console.log('Company created successfully:', companyId);
+    }
 
-        if (selectedCompany?.companyId) {
-          await frappeAPI.updateCompany(selectedCompany.companyId, companyData);
-          companyId = selectedCompany.companyId;
-          companyName = selectedCompany.company_name;
-        } else {
-          const response = await frappeAPI.createCompany(companyData);
-          companyId = response.data.name;
-          companyName = companyForm.company_name;
-        }
-
-        const simplifiedCompany: SimplifiedCompany = {
-          name: companyName,
-          company_name: companyForm.company_name,
-          email: companyForm.email,
-          website: companyForm.website,
-          country: companyForm.country,
-          companyId,
-          phone: companyForm.phone,
-          default_currency: companyForm.default_currency,
-          tax_id: companyForm.tax_id,
-          abbr: companyForm.abbr,
-          domain: companyForm.domain,
-          custom_address:companyForm.custom_address
-        };
-        onCompanySelect(simplifiedCompany);
-        setSearchQuery(companyName);
-        setShowCompanyDialog(false);
-        // Reset form after successful save
-        setCompanyForm(initialCompanyFormState);
-      } catch (error) {
-        alert("Failed to save company. Please try again.");
-      } finally {
-        setIsSaving(false);
-      }
+    // Update the UI with the saved company
+    const savedCompany: SimplifiedCompany = {
+      name: companyName,
+      company_name: companyName,
+      email: companyForm.email,
+      website: companyForm.website,
+      country: companyForm.country,
+      companyId: companyId,
+      phone: companyForm.phone,
+      default_currency: companyForm.default_currency,
+      tax_id: companyForm.tax_id,
+      abbr: companyForm.abbr,
+      domain: companyForm.domain,
+      custom_address: companyForm.custom_address
     };
+
+    onCompanySelect(savedCompany);
+    setSearchQuery(companyName);
+    setShowCompanyDialog(false);
+    setCompanyForm(initialCompanyFormState);
+
+  } catch (error: any) {
+    console.error('Error saving company:', error);
+    
+    if (error.response?.data) {
+      console.error('Error details:', error.response.data);
+    }
+    
+    if (error.message?.includes('DuplicateEntryError') || error.message?.includes('1062')) {
+      alert("A company with this name already exists. Please use a different company name.");
+    } else {
+      alert(`Failed to save company: ${error.message || 'Please try again.'}`);
+    }
+  } finally {
+    setIsSaving(false);
+  }
+};
 
     const handleCloseCompanyDialog = () => {
       setShowCompanyDialog(false);
