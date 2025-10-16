@@ -67,6 +67,8 @@ interface InterviewDetailsModalProps {
   currentUserEmail? :string
 }
 
+
+
 export const InterviewDetailsModal: React.FC<InterviewDetailsModalProps> = ({
   isOpen,
   onClose,
@@ -82,13 +84,16 @@ export const InterviewDetailsModal: React.FC<InterviewDetailsModalProps> = ({
   }>({});
   const [formData, setFormData] = useState<InterviewScheduleData>({
     schedule_date: "2025-10-31",
-    interview_round: "Round 1",
+    interview_round: "",
     interview_panel_name: "aditya@hevhire.com",
     mode_of_interview: "Virtual",
     from_time: "17:00",
     custom_link: "",
     custom_remarks: "this is remarks field",
   });
+  
+
+ 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
@@ -121,7 +126,7 @@ export const InterviewDetailsModal: React.FC<InterviewDetailsModalProps> = ({
       setShowCreateForm(false);
       setFormData({
         schedule_date: "2025-10-31",
-        interview_round: "Round 1",
+        interview_round: "",
         interview_panel_name: "aditya@hevhire.com",
         mode_of_interview: "Virtual",
         from_time: "17:00",
@@ -238,6 +243,31 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
     }
   };
 
+  const [interviewRounds, setInterviewRounds] = useState<Array<{ name: string}>>([]);
+const [loadingRounds, setLoadingRounds] = useState(false);
+
+useEffect(() => {
+  if (isOpen) {
+    fetchInterviewRounds();
+  }
+}, [isOpen]);
+
+ const fetchInterviewRounds = async () => {
+  setLoadingRounds(true);
+  try {
+    const response = await frappeAPI.getInterviewRounds();
+    const roundsData = Array.isArray(response.data) ? response.data : [];
+    setInterviewRounds(roundsData);
+    console.log("Fetched interview rounds:", roundsData); // Debug log
+  } catch (err) {
+    console.error("Error fetching interview rounds:", err);
+    setInterviewRounds([]);
+    toast.error("Failed to load interview rounds");
+  } finally {
+    setLoadingRounds(false);
+  }
+};
+
   const handleUpdateInterviewStatus = async (interviewName: string) => {
     const newStatus = interviewStatuses[interviewName];
     if (!newStatus) {
@@ -270,6 +300,16 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
     }
   };
 
+
+  const formatDateDDMMYYYY = (dateString: string): string => {
+  if (!dateString) return "N/A";
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+};
   const handleCreateInterview = async () => {
     // Validate required fields
     if (
@@ -448,7 +488,7 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
             </div>
             <div className="flex flex-row items-center gap-2">
               <span className="font-semibold text-gray-600 text-sm">Date:</span>
-              <span className="text-sm">{interview.scheduled_on || "N/A"}</span>
+              <span className="text-sm">{formatDateDDMMYYYY(interview.scheduled_on) || "N/A"}</span>
             </div>
             <div className="flex flex-row items-center gap-2">
               <span className="font-semibold text-gray-600 text-sm">Time:</span>
@@ -642,6 +682,7 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
                           custom_link: e.target.value === "Virtual" ? formData.custom_link : "",
                         })
                       }
+      
                       className="h-4 w-4 text-blue-600 focus:ring-blue-600 border-gray-300"
                       required
                       disabled={isSubmitting || isSendingEmail}
@@ -670,20 +711,31 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
                 </div>
               </div>
 
-              <div>
-                <label className="block text-gray-700 font-semibold mb-2 text-md">
-                  Schedule Date <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  value={formData.schedule_date}
-                  onChange={(e) => setFormData({ ...formData, schedule_date: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent bg-white text-md transition-all"
-                  min={new Date().toISOString().split("T")[0]}
-                  required
-                  disabled={isSubmitting || isSendingEmail}
-                />
-              </div>
+            <div>
+  <label className="block text-gray-700 font-semibold mb-2 text-md">
+    Schedule Date <span className="text-red-500">*</span>
+  </label>
+  <input
+    type="date"
+    value={formData.schedule_date}
+    onChange={(e) => setFormData({ ...formData, schedule_date: e.target.value })}
+    className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent bg-white text-md transition-all"
+    min={
+      latestInterview
+        ? new Date(latestInterview.scheduled_on)
+            .toISOString()
+            .split("T")[0]
+        : new Date().toISOString().split("T")[0]
+    }
+    required
+    disabled={isSubmitting || isSendingEmail}
+  />
+  {latestInterview && (
+    <p className="text-xs text-gray-500 mt-1">
+      Must be after {new Date(latestInterview.scheduled_on).toLocaleDateString("en-IN", { day: "2-digit", month: "2-digit", year: "numeric" })}
+    </p>
+  )}
+</div>
 
               <div>
                 <label className="block text-gray-700 font-semibold mb-2 text-md">
@@ -699,20 +751,35 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
                 />
               </div>
 
-              <div>
-                <label className="block text-gray-700 font-semibold mb-2 text-md">
-                  Interview Round <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={formData.interview_round}
-                  onChange={(e) => setFormData({ ...formData, interview_round: e.target.value })}
-                  placeholder="e.g., Round 1, Technical, HR"
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent bg-white text-md transition-all"
-                  required
-                  disabled={isSubmitting || isSendingEmail}
-                />
-              </div>
+            <div>
+  <label className="block text-gray-700 font-semibold mb-2 text-md">
+    Interview Round <span className="text-red-500">*</span>
+  </label>
+<select
+  value={formData.interview_round}
+  onChange={(e) => setFormData({ ...formData, interview_round: e.target.value })}
+  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent bg-white text-md transition-all"
+  required
+  disabled={isSubmitting || isSendingEmail || loadingRounds}
+>
+  <option value="">Select Interview Round</option>
+  {interviewRounds.map((round) => {
+    const isRoundUsed = scheduledInterviews.some(
+      (interview) => interview.interview_round === round.name
+    );
+    return (
+      <option
+        key={round.name}
+        value={round.name}
+        disabled={isRoundUsed}
+      >
+        {round.name}
+      </option>
+    );
+  })}
+</select>
+  {loadingRounds && <p className="text-xs text-gray-500 mt-1">Loading rounds...</p>}
+</div>
 
               <div>
                 <label className="block text-gray-700 font-semibold mb-2 text-md">
@@ -739,6 +806,13 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
                     type="url"
                     value={formData.custom_link || ""}
                     onChange={(e) => setFormData({ ...formData, custom_link: e.target.value })}
+                        onBlur={(e) => {
+        let value = e.target.value.trim();
+        if (value && !/^https?:\/\//i.test(value)) {
+          value = "https://" + value;
+        }
+        setFormData({ ...formData, custom_link: value });
+      }}
                     placeholder="e.g., https://meet.example.com"
                     className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent bg-white text-md transition-all"
                     required

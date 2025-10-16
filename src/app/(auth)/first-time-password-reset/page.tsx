@@ -62,11 +62,11 @@ const FirstTimePasswordResetPage = () => {
   }, [formData.newPassword, formData.confirmPassword, error, clearError]);
 
   const passwordRequirements: PasswordRequirement[] = [
-    { text: 'At least 8 characters', met: formData.newPassword.length >= 8 },
-    { text: 'Contains uppercase letter', met: /[A-Z]/.test(formData.newPassword) },
-    { text: 'Contains lowercase letter', met: /[a-z]/.test(formData.newPassword) },
-    { text: 'Contains number', met: /\d/.test(formData.newPassword) },
-    { text: 'Contains special character', met: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\?]/.test(formData.newPassword) },
+    { text: '8+ chars', met: formData.newPassword.length >= 8 },
+    { text: 'A-Z', met: /[A-Z]/.test(formData.newPassword) },
+    { text: 'a-z', met: /[a-z]/.test(formData.newPassword) },
+    { text: '0-9', met: /\d/.test(formData.newPassword) },
+    { text: 'Special', met: /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\?]/.test(formData.newPassword) },
   ];
 
   const allRequirementsMet = passwordRequirements.every(req => req.met);
@@ -213,7 +213,7 @@ const FirstTimePasswordResetPage = () => {
   const isFormValid = allRequirementsMet && passwordsMatch;
 
   return (
-    <div className="min-h-screen flex">
+    <div className="h-screen flex overflow-hidden">
       {/* Left Panel - Security & Welcome Message */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
         {/* Animated Background */}
@@ -223,12 +223,12 @@ const FirstTimePasswordResetPage = () => {
             background: `linear-gradient(135deg, ${brandConfig.colors.primary} 0%, ${brandConfig.colors.secondary} 50%, ${brandConfig.colors.accent} 100%)`
           }}
         >
-          {/* Animated geometric shapes */}
+          {/* Simplified geometric shapes */}
           <div className="absolute inset-0 opacity-10">
-            <div className="absolute top-20 left-20 w-32 h-32 bg-white rounded-full animate-pulse"></div>
-            <div className="absolute top-40 right-32 w-24 h-24 bg-white rounded-lg rotate-45 animate-bounce"></div>
-            <div className="absolute bottom-32 left-32 w-20 h-20 bg-white rounded-full animate-pulse delay-1000"></div>
-            <div className="absolute bottom-20 right-20 w-28 h-28 bg-white rounded-lg rotate-12 animate-bounce delay-500"></div>
+            <div className="absolute top-10 left-10 w-20 h-20 bg-white rounded-full"></div>
+            <div className="absolute top-20 right-16 w-16 h-16 bg-white rounded-lg rotate-45"></div>
+            <div className="absolute bottom-16 left-16 w-12 h-12 bg-white rounded-full"></div>
+            <div className="absolute bottom-10 right-10 w-14 h-14 bg-white rounded-lg rotate-12"></div>
           </div>
           
           {/* Grid pattern overlay */}
@@ -239,69 +239,68 @@ const FirstTimePasswordResetPage = () => {
         </div>
 
         {/* Content */}
-        <div className="relative z-10 flex flex-col justify-center p-12 text-white">
+        <div className="relative z-10 flex flex-col justify-center p-8 text-white">
           <div className="max-w-md">
             {/* Logo */}
-            <div className="mb-8">
+            <div className="mb-6">
               <div className="flex items-center space-x-3">
-                <div className="relative w-12 h-12 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
+                <div className="relative w-10 h-10 bg-white/20 backdrop-blur-sm rounded-lg flex items-center justify-center">
                   <Image
                     src={brandConfig.logo}
                     alt={brandConfig.name}
-                    width={40}
-                    height={40}
+                    width={32}
+                    height={32}
                     className="object-contain filter brightness-0 invert"
                     priority
                   />
                 </div>
-                <h1 className="text-3xl font-bold">{brandConfig.name}</h1>
+                <h1 className="text-2xl font-bold">{brandConfig.name}</h1>
               </div>
             </div>
 
             {/* Welcome back message */}
-            <h2 className="text-4xl font-bold mb-6 leading-tight">
+            <h2 className="text-3xl font-bold mb-4 leading-tight">
               WELCOME BACK
               <span className="block bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
                 {user.full_name}
               </span>
             </h2>
 
-            <p className="text-lg text-white/90 mb-8 leading-relaxed">
+            <p className="text-md text-white/90 mb-6 leading-relaxed">
               To ensure the security of your account, please create a strong password 
-              that meets our security requirements. This helps protect your data and 
-              maintain the integrity of our platform.
+              that meets our security requirements.
             </p>
 
             {/* Security features */}
-            <div className="space-y-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-6 h-6 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-                  <Shield className="w-4 h-4" />
+            <div className="space-y-3 mb-6">
+              <div className="flex items-center space-x-2">
+                <div className="w-5 h-5 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                  <Shield className="w-3 h-3" />
                 </div>
-                <span className="text-white/90">End-to-end encryption</span>
+                <span className="text-white/90 text-md">End-to-end encryption</span>
               </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-6 h-6 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-                  <Lock className="w-4 h-4" />
+              <div className="flex items-center space-x-2">
+                <div className="w-5 h-5 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                  <Lock className="w-3 h-3" />
                 </div>
-                <span className="text-white/90">Secure password storage</span>
+                <span className="text-white/90 text-md">Secure password storage</span>
               </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-6 h-6 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-                  <Zap className="w-4 h-4" />
+              <div className="flex items-center space-x-2">
+                <div className="w-5 h-5 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                  <Zap className="w-3 h-3" />
                 </div>
-                <span className="text-white/90">Instant access after setup</span>
+                <span className="text-white/90 text-md">Instant access after setup</span>
               </div>
             </div>
 
             {/* Progress indicator */}
-            <div className="mt-8 p-4 bg-white/10 backdrop-blur-sm rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium">Setup Progress</span>
-                <span className="text-sm">Step 1 of 1</span>
+            <div className="p-3 bg-white/10 backdrop-blur-sm rounded-lg">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-md font-medium">Setup Progress</span>
+                <span className="text-md">Step 1 of 1</span>
               </div>
-              <div className="w-full bg-white/20 rounded-full h-2">
-                <div className="bg-white h-2 rounded-full" style={{ width: '100%' }}></div>
+              <div className="w-full bg-white/20 rounded-full h-1.5">
+                <div className="bg-white h-1.5 rounded-full" style={{ width: '100%' }}></div>
               </div>
             </div>
           </div>
@@ -309,65 +308,63 @@ const FirstTimePasswordResetPage = () => {
       </div>
 
       {/* Right Panel - Password Reset Form */}
-      <div className="flex-1 flex items-center justify-center p-4 lg:p-8 bg-gradient-to-br from-[var(--brand-background)] via-gray-50 to-[var(--brand-muted)]">
-        <div className="w-full max-w-md space-y-8">
+      <div className="flex-1 flex items-center justify-center p-4 lg:p-6 bg-gradient-to-br from-[var(--brand-background)] via-gray-50 to-[var(--brand-muted)] overflow-hidden">
+        <div className="w-full max-w-md space-y-4">
           {/* Mobile header */}
           <div className="lg:hidden text-center">
-            <div className="flex justify-center mb-4">
-              <div className="relative w-16 h-16 bg-[var(--brand-primary)] rounded-2xl flex items-center justify-center shadow-lg">
+            <div className="flex justify-center mb-3">
+              <div className="relative w-12 h-12 bg-[var(--brand-primary)] rounded-xl flex items-center justify-center shadow-lg">
                 <Image
                   src={brandConfig.logo}
                   alt={brandConfig.name}
-                  width={40}
-                  height={40}
+                  width={28}
+                  height={28}
                   className="object-contain filter brightness-0 invert"
                   priority
                 />
               </div>
             </div>
-            <h2 className="text-2xl font-bold text-[var(--brand-foreground)]">
+            <h2 className="text-xl font-bold text-[var(--brand-foreground)]">
               Welcome {user.full_name}!
             </h2>
-            <p className="mt-2 text-[var(--brand-muted-foreground)]">
+            <p className="mt-1 text-md text-[var(--brand-muted-foreground)]">
               Set up your secure password to continue
             </p>
           </div>
 
           {/* Error Message */}
           {displayError && (
-            <Alert variant="destructive" className="border-red-200 bg-red-50">
-              <AlertDescription className="text-red-800">{displayError}</AlertDescription>
+            <Alert variant="destructive" className="border-red-200 bg-red-50 py-2">
+              <AlertDescription className="text-red-800 text-md">{displayError}</AlertDescription>
             </Alert>
           )}
 
           {/* Password Reset Card */}
-          <Card className="border-0 shadow-2xl bg-white/80 backdrop-blur-sm">
-            <CardHeader className="space-y-2 pb-6">
+          <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
+            <CardHeader className="space-y-1 ">
               <div className="hidden lg:block text-center">
-                <div className="flex justify-center mb-4">
+                <div className="flex justify-center">
                   <div 
-                    className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg relative"
+                    className="w-10 h-10 rounded-lg flex items-center justify-center shadow-lg relative"
                     style={{ backgroundColor: brandConfig.colors.primary }}
                   >
-                    <RefreshCw className="w-6 h-6 text-white" />
-                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
-                      <Check className="w-2 h-2 text-white" />
+                    <RefreshCw className="w-5 h-5 text-white" />
+                    <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full flex items-center justify-center">
+                      <Check className="w-1.5 h-1.5 text-white" />
                     </div>
                   </div>
                 </div>
               </div>
-              <CardTitle className="text-2xl font-bold text-center text-[var(--brand-foreground)]">
+              <CardTitle className="text-xl font-bold text-center text-[var(--brand-foreground)]">
                 Create New Password
               </CardTitle>
-              <CardDescription className="text-center text-[var(--brand-muted-foreground)] text-base">
-                Set up a secure password for your first login
-              </CardDescription>
+            
             </CardHeader>
             
-            <CardContent className="pb-8">
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="space-y-3">
-                  <Label htmlFor="newPassword" className="text-[var(--brand-foreground)] font-medium text-sm">
+            <CardContent className="pb-4">
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="newPassword" className="text-[var(--brand-foreground)] font-medium text-md">
                     New Password
                   </Label>
                   <div className="relative">
@@ -381,25 +378,25 @@ const FirstTimePasswordResetPage = () => {
                       onChange={handleInputChange}
                       required
                       disabled={isResetting}
-                      className="h-12 pr-12 border-gray-200 focus:border-[var(--brand-primary)] focus:ring-[var(--brand-primary)]/20 rounded-lg text-base"
+                      className="h-10 pr-10 border-gray-200 focus:border-[var(--brand-primary)] focus:ring-[var(--brand-primary)]/20 rounded-lg text-md"
                     />
                     <button
                       type="button"
-                      className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-[var(--brand-primary)] transition-colors"
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-[var(--brand-primary)] transition-colors"
                       onClick={() => setShowNewPassword(!showNewPassword)}
                       disabled={isResetting}
                     >
                       {showNewPassword ? (
-                        <EyeOff className="h-5 w-5" />
+                        <EyeOff className="h-4 w-4" />
                       ) : (
-                        <Eye className="h-5 w-5" />
+                        <Eye className="h-4 w-4" />
                       )}
                     </button>
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  <Label htmlFor="confirmPassword" className="text-[var(--brand-foreground)] font-medium text-sm">
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword" className="text-[var(--brand-foreground)] font-medium text-md">
                     Confirm Password
                   </Label>
                   <div className="relative">
@@ -413,40 +410,40 @@ const FirstTimePasswordResetPage = () => {
                       onChange={handleInputChange}
                       required
                       disabled={isResetting}
-                      className="h-12 pr-12 border-gray-200 focus:border-[var(--brand-primary)] focus:ring-[var(--brand-primary)]/20 rounded-lg text-base"
+                      className="h-10 pr-10 border-gray-200 focus:border-[var(--brand-primary)] focus:ring-[var(--brand-primary)]/20 rounded-lg text-md"
                     />
                     <button
                       type="button"
-                      className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-[var(--brand-primary)] transition-colors"
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-[var(--brand-primary)] transition-colors"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                       disabled={isResetting}
                     >
                       {showConfirmPassword ? (
-                        <EyeOff className="h-5 w-5" />
+                        <EyeOff className="h-4 w-4" />
                       ) : (
-                        <Eye className="h-5 w-5" />
+                        <Eye className="h-4 w-4" />
                       )}
                     </button>
                   </div>
                   {formData.confirmPassword.length > 0 && (
-                    <div className={`text-sm flex items-center gap-2 mt-2 ${passwordsMatch ? 'text-green-600' : 'text-red-600'}`}>
-                      {passwordsMatch ? <Check className="w-4 h-4" /> : <X className="w-4 h-4" />}
+                    <div className={`text-md flex items-center gap-1 mt-1 ${passwordsMatch ? 'text-green-600' : 'text-red-600'}`}>
+                      {passwordsMatch ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
                       {passwordsMatch ? 'Passwords match' : 'Passwords do not match'}
                     </div>
                   )}
                 </div>
 
                 {/* Password Requirements */}
-                <div className="bg-gray-50 rounded-lg p-4 space-y-3">
-                  <Label className="text-[var(--brand-foreground)] font-medium text-sm flex items-center gap-2">
-                    <Shield className="w-4 h-4" />
+                <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                  <Label className="text-[var(--brand-foreground)] font-medium text-md flex items-center gap-1">
+                    <Shield className="w-3 h-3" />
                     Security Requirements
                   </Label>
-                  <div className="grid grid-cols-1 gap-2">
+                  <div className="grid grid-cols-3 gap-1">
                     {passwordRequirements.map((req, index) => (
-                      <div key={index} className={`text-sm flex items-center gap-2 ${req.met ? 'text-green-600' : 'text-gray-500'}`}>
-                        <div className={`w-4 h-4 rounded-full flex items-center justify-center ${req.met ? 'bg-green-100' : 'bg-gray-100'}`}>
-                          {req.met ? <Check className="w-3 h-3" /> : <X className="w-3 h-3 text-gray-400" />}
+                      <div key={index} className={`text-sm flex items-center gap-1 ${req.met ? 'text-green-600' : 'text-gray-500'}`}>
+                        <div className={`w-3 h-3 rounded-full flex items-center justify-center ${req.met ? 'bg-green-100' : 'bg-gray-100'}`}>
+                          {req.met ? <Check className="w-2 h-2" /> : <X className="w-2 h-2 text-gray-400" />}
                         </div>
                         {req.text}
                       </div>
@@ -454,16 +451,16 @@ const FirstTimePasswordResetPage = () => {
                   </div>
                   
                   {/* Password strength indicator */}
-                  <div className="mt-3">
+                  <div className="mt-2">
                     <div className="flex justify-between items-center mb-1">
-                      <span className="text-xs text-gray-600">Password Strength</span>
-                      <span className="text-xs text-gray-600">
+                      <span className="text-md text-gray-600">Password Strength</span>
+                      <span className="text-md text-gray-600">
                         {passwordRequirements.filter(req => req.met).length}/5
                       </span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-gray-200 rounded-full h-1.5">
                       <div 
-                        className={`h-2 rounded-full transition-all duration-300 ${
+                        className={`h-1.5 rounded-full transition-all duration-300 ${
                           passwordRequirements.filter(req => req.met).length < 3 ? 'bg-red-500' :
                           passwordRequirements.filter(req => req.met).length < 5 ? 'bg-yellow-500' :
                           'bg-green-500'
@@ -474,11 +471,11 @@ const FirstTimePasswordResetPage = () => {
                   </div>
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <Button
                     type="submit"
                     disabled={isResetting || !isFormValid}
-                    className="w-full h-12 text-base font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full h-10 text-md font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{
                       backgroundColor: brandConfig.colors.primary,
                       color: 'white'
@@ -496,12 +493,12 @@ const FirstTimePasswordResetPage = () => {
                   >
                     {isResetting ? (
                       <div className="flex items-center justify-center">
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                        <span>Updating Password...</span>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <span>Updating...</span>
                       </div>
                     ) : (
                       <div className="flex items-center justify-center">
-                        <RefreshCw className="mr-2 h-5 w-5" />
+                        <RefreshCw className="mr-2 h-4 w-4" />
                         <span>Update Password</span>
                       </div>
                     )}
@@ -512,7 +509,7 @@ const FirstTimePasswordResetPage = () => {
                     onClick={handleCancel}
                     disabled={isResetting}
                     variant="outline"
-                    className="w-full h-12 text-base font-semibold rounded-lg transition-all duration-200"
+                    className="w-full h-10 text-md font-semibold rounded-lg transition-all duration-200"
                   >
                     Cancel & Logout
                   </Button>
@@ -522,26 +519,11 @@ const FirstTimePasswordResetPage = () => {
           </Card>
 
           {/* Footer */}
-          <div className="text-center space-y-4">
-            <p className="text-sm text-[var(--brand-muted-foreground)]">
-              This is a one-time password reset. After updating, you &pos;ll need to log in again.
+          <div className="text-center space-y-2">
+            <p className="text-md text-[var(--brand-muted-foreground)]">
+              This is a one-time password reset. After updating, you will need to log in again.
             </p>
-            
-            {/* Trust indicators */}
-            <div className="flex items-center justify-center space-x-6 text-xs text-gray-400">
-              <div className="flex items-center space-x-1">
-                <Shield className="w-3 h-3" />
-                <span>Encrypted</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <Lock className="w-3 h-3" />
-                <span>Secure</span>
-              </div>
-              <div className="flex items-center space-x-1">
-                <Zap className="w-3 h-3" />
-                <span>Fast Setup</span>
-              </div>
-            </div>
+  
           </div>
         </div>
       </div>

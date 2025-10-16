@@ -51,11 +51,12 @@ export function ApplicantsTable({
       setSortDirection("asc");
     }
   };
-const handleRowClick = (applicant: JobApplicant) => {
-  if (applicant.status?.toLowerCase() === "interview") {
-    onInterviewRowClick?.(applicant);
-  }
-};
+
+  const handleRowClick = (applicant: JobApplicant) => {
+    if (applicant.status?.toLowerCase() === "interview") {
+      onInterviewRowClick?.(applicant);
+    }
+  };
 
   const columns = useMemo(() => {
     const cols: Array<{ field: AllFields; label: string; sortable?: boolean; align?: 'left' | 'center' | 'right'; width?: string }> = [];
@@ -66,10 +67,10 @@ const handleRowClick = (applicant: JobApplicant) => {
 
     cols.push(
       { field: 'name', label: 'Name', sortable: true, align: 'left' },
-      { field: 'email', label: 'Email', sortable: true, align: 'left' },
+      { field: 'email', label: 'Email', sortable: true, align: 'center' },
       { field: 'phone', label: 'Phone', sortable: false, align: 'left' },
       { field: 'designation', label: 'Job Designation', sortable: true, align: 'left' },
-      { field: 'company', label: 'Client', sortable: false, align: 'left' }
+      { field: 'company', label: 'Client', sortable: false, align: 'center' }
     );
 
     if (showStatus) {
@@ -104,14 +105,6 @@ const handleRowClick = (applicant: JobApplicant) => {
         aValue = a.designation?.toLowerCase() || "";
         bValue = b.designation?.toLowerCase() || "";
         break;
-      // case "phone":
-      //   aValue = a.phone_number?.toLowerCase() || "";
-      //   bValue = b.phone_number?.toLowerCase() || "";
-      //   break;
-      // case "client":
-      //   aValue = a.custom_company_name?.toLowerCase() || "";
-      //   bValue = b.custom_company_name?.toLowerCase() || "";
-      //   break;
       default:
         return 0;
     }
@@ -137,20 +130,20 @@ const handleRowClick = (applicant: JobApplicant) => {
               const canDelete = ['tagged', 'open'].includes(applicant.status?.toLowerCase() || '');
               
               return (
-               <tr
-  key={applicant.name || `applicant-${index}`}
-  onClick={() => handleRowClick(applicant)}
-  className={`${
-    index % 2 === 0 ? "bg-white" : "bg-blue-50"
-  } hover:bg-blue-100 transition duration-100 cursor-pointer`}
->
+                <tr
+                  key={applicant.name || `applicant-${index}`}
+                  onClick={() => handleRowClick(applicant)}
+                  className={`${
+                    index % 2 === 0 ? "bg-white" : "bg-blue-50"
+                  } hover:bg-blue-100 transition duration-100 cursor-pointer`}
+                >
                   {showCheckboxes && (
-                    <td className="px-2 sm:px-4 py-4">
+                    <td className="px-2 sm:px-4 py-4" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={selectedApplicants.includes(applicant.name)}
                         onChange={() => onSelectApplicant?.(applicant.name)}
-                        className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600 border-gray-300 rounded"
+                        className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600 border-gray-300 rounded cursor-pointer"
                         disabled={!applicant.name}
                       />
                     </td>
@@ -171,16 +164,17 @@ const handleRowClick = (applicant: JobApplicant) => {
                   <td className="px-2 sm:px-4 py-4 truncate capitalize">
                     {applicant.designation || 'N/A'}
                   </td>
-                  <td className="px-2 sm:px-4 py-4 truncate capitalize">
-                    {applicant.custom_company_name || 'N/A'}
-                  </td>
+       <td className="px-2 sm:px-4 py-4 break-words whitespace-normal max-w-xs">
+  {applicant.custom_company_name || 'N/A'}
+</td>
+
                   {showStatus && (
                     <td className="px-2 sm:px-4 py-4 truncate font-medium text-blue-700">
                       {applicant.status || "N/A"}
                     </td>
                   )}
                   {(showDeleteButton || onViewDetails) && (
-                    <td className="px-2 sm:px-4 py-4">
+                    <td className="px-2 sm:px-4 py-4" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center gap-2">
                         {onViewDetails && (
                           <button
@@ -223,7 +217,6 @@ const handleRowClick = (applicant: JobApplicant) => {
           <p className="text-blue-400 text-xs mt-1">
             Try adjusting your filters
           </p>
-
         </div>
       )}
     </div>
