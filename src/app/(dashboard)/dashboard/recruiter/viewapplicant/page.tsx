@@ -453,8 +453,8 @@ const handleRefresh = async () => {
       "shortlisted": 2,
       "assessment": 3,
       "interview to be scheduled": 4,
-      "interview": -1,
-      "offered": 5,
+      "interview": 5,
+      "offered": 6,
       "offer drop": -1,
       "joined": 6,
     };

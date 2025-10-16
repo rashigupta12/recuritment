@@ -166,15 +166,15 @@ const [interviewScheduleLoading, setInterviewScheduleLoading] = useState(false);
   // Helper function to get status hierarchy level
   const getStatusLevel = (status: string): number => {
     const statusLevels: { [key: string]: number } = {
-      open: 0,
-      tagged: 1,
-      shortlisted: 2,
-      assessment: 3,
-      interview: 4,
-      "interview reject": -1,
-      offered: 5,
+      "open": 0,
+      "tagged": 1,
+      "shortlisted": 2,
+      "assessment": 3,
+      "interview to be scheduled": 4,
+      "interview": 5,
+      "offered": 6,
       "offer drop": -1,
-      joined: 6,
+      "joined": 6,
     };
     return statusLevels[status.toLowerCase()] ?? 0;
   };
