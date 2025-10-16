@@ -325,23 +325,26 @@ useEffect(() => {
     setShowDropdown(false);
   };
 
-  const handleCreateCompany = () => {
-    // Reset form with new company data
-    setCompanyForm({
-      company_name: searchQuery || "",
-      country: "",
-      email: "",
-      website: "",
-      phone: "",
-      default_currency: "",
-      tax_id: "",
-      abbr: "",
-      domain: "",
-      custom_address:""
-    });
-    setShowCompanyDialog(true);
-    setShowDropdown(false);
-  };
+
+const handleCreateCompany = () => {
+  const formattedName = 
+    searchQuery.charAt(0).toUpperCase() + searchQuery.slice(1);
+  
+  setCompanyForm({
+    company_name: formattedName || "",
+    country: "",
+    email: "",
+    website: "",
+    phone: "",
+    default_currency: "",
+    tax_id: "",
+    abbr: "",
+    domain: "",
+    custom_address: ""
+  });
+  setShowCompanyDialog(true);
+  setShowDropdown(false);
+};
 
   const handleSaveCompany = async () => {
     try {
