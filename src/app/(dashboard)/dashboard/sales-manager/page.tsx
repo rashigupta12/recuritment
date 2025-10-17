@@ -715,7 +715,7 @@ ChartJS.register(
   ChartDataLabels
 );
 
-// Type Definitions
+// Type Definition
 interface Lead {
   id: string;
   stage:
@@ -792,7 +792,7 @@ useEffect(() => {
         console.error("Invalid dashboard response structure:", dashboardResponse);
         return;
       }
-      setApiData(dashboardResponse.message);
+      setApiData(dashboardResponse.message)
       setTrendsData({
         week: weekTrends.message,
         month: monthTrends.message,
@@ -802,7 +802,7 @@ useEffect(() => {
       console.error("Error fetching dashboard data:", error);
     } finally {
       setLoading(false);
-      console.log("Loading state set to false");
+      console.log("Loading state set false");
     }
   };
   fetchData();
