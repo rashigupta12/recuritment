@@ -125,8 +125,16 @@ export async function POST(request: NextRequest) {
         console.log(`CC: ${ccEmails.join(',') || 'none'}`);
         console.log(`BCC: ${bccEmails.join(',') || 'none'}`);
 
-        // Prepare HTML content
-        const htmlContent = `
+const formatMessage = (message: string): string => {
+  // Split by newlines and filter out empty lines
+  return message
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line.length > 0)
+    .join('<br><br>'); // Double <br> for paragraph spacing
+};
+
+const htmlContent = `
   <div style="font-family: Arial, sans-serif; max-width: 650px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden;">
       
       <!-- Header with White Background for Logo -->
@@ -139,8 +147,8 @@ export async function POST(request: NextRequest) {
 
       <!-- Message Body -->
       <div style="padding: 25px; background: #f9fafb;">
-          <p style="font-size: 16px; color: #1e293b; line-height: 1.6; margin: 0; white-space: pre-wrap;">
-              ${emailData.message.replace(/\n/g, '<br>')}
+          <p style="font-size: 16px; color: #1e293b; line-height: 1.6; margin: 0;">
+              ${formatMessage(emailData.message)}
           </p>
       </div>
 

@@ -111,9 +111,27 @@ export async function POST(request: NextRequest) {
         console.log(`CC: ${ccEmails.join(',') || 'none'}`);
         console.log(`BCC: ${bccEmails.join(',') || 'none'}`);
 
+const formatMessage = (message: string): string => {
+  // Check if message contains HTML table or other HTML tags
+  const hasHtmlTable = message.includes('<table') || message.includes('<br>');
+  
+  if (hasHtmlTable) {
+    // For HTML content, just return as-is
+    // Replace any remaining newlines with <br> for consistency
+    return message.replace(/\n(?![^\n]*<)/g, '');
+  }
+  
+  // For plain text, convert newlines to <br> with proper spacing
+  return message
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line.length > 0)
+    .join('<br><br>');
+};
+
         // Prepare HTML content
         const htmlContent = `
-  <div style="font-family: Arial, sans-serif; max-width: 650px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden;">
+  <div style="font-family: Arial, sans-serif;  margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden;">
       
       <!-- Header with White Background for Logo -->
       <div style="background: #ffffff; padding: 25px; text-align: center; border-bottom: 4px solid #1e3a8a;">
@@ -124,9 +142,9 @@ export async function POST(request: NextRequest) {
       </div>
 
       <!-- Message Body -->
-      <div style="padding: 25px; background: #f9fafb;">
+     <div style="padding: 25px; background: #f9fafb;">
           <p style="font-size: 16px; color: #1e293b; line-height: 1.6; margin: 0;">
-              ${emailData.message.replace(/\n/g, '<br>')}
+              ${formatMessage(emailData.message)}
           </p>
       </div>
 

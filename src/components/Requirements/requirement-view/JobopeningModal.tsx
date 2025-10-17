@@ -1,8 +1,6 @@
 "use client";
 import { frappeAPI } from "@/lib/api/frappeClient";
-import {
-  X
-} from "lucide-react";
+import { X } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { MultiUserAssignment } from "./MultiUserAssignment";
 import LocationDropdown from "../requirement-form/LocationDropdown";
@@ -40,6 +38,7 @@ interface JobOpeningModalProps {
     detailIndex: number,
     updates: Partial<StaffingPlanItem>
   ) => void;
+  refresh?: () => void; // Make refresh optional
 }
 
 const EMPLOYMENT_TYPES = ["Intern", "Contract", "Part-time", "Full-time"];
@@ -52,6 +51,7 @@ export const JobOpeningModal: React.FC<JobOpeningModalProps> = ({
   planIndex,
   detailIndex,
   onSuccess,
+  refresh,
 }) => {
   const [isPublished, setIsPublished] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -63,6 +63,7 @@ export const JobOpeningModal: React.FC<JobOpeningModalProps> = ({
   const [confirmInfo, setConfirmInfo] = useState(false);
 
   useEffect(() => {
+    console.log("refresh prop:", refresh); // Debug log
     if (staffingDetail) {
       setAssignTo(staffingDetail.assign_to || "");
       setEmploymentType(staffingDetail.employment_type || "Full-time");
@@ -105,32 +106,6 @@ export const JobOpeningModal: React.FC<JobOpeningModalProps> = ({
       [field]: value,
     }));
   };
-
-  // const handleSaveDetails = async () => {
-  //   if (!staffingPlan || !staffingDetail) return;
-  //   setIsSaving(true);
-  //   try {
-  //     const updatedStaffingDetails = [...staffingPlan.staffing_details];
-  //     updatedStaffingDetails[detailIndex] = {
-  //       ...updatedStaffingDetails[detailIndex],
-  //       ...editData,
-  //     };
-
-  //     await frappeAPI.makeAuthenticatedRequest(
-  //       "PUT",
-  //       `/resource/Staffing Plan/${staffingPlan.name}`,
-  //       {
-  //         staffing_details: updatedStaffingDetails,
-  //       }
-  //     );
-
-  //     onSuccess(planIndex, detailIndex, editData);
-  //   } catch (error) {
-  //     console.error("Error updating staffing details:", error);
-  //   } finally {
-  //     setIsSaving(false);
-  //   }
-  // };
 
   const handleCreateOpening = async () => {
     if (!staffingPlan || !staffingDetail) return;
@@ -182,26 +157,26 @@ export const JobOpeningModal: React.FC<JobOpeningModalProps> = ({
         job_id: jobId,
         employment_type: employmentType,
       });
+      if (refresh) refresh(); // Call refresh if it exists
     } catch (error) {
       console.error("Error creating job opening:", error);
+      alert("Failed to create job opening. Please try again.");
     } finally {
       setIsCreating(false);
     }
   };
 
-const handleAllocation = async () => {
+  const handleAllocation = async () => {
     if (!staffingPlan || !staffingDetail) return;
 
     setIsAllocating(true);
     try {
-      // Update the staffing details with new allocation
       const updatedStaffingDetails = [...staffingPlan.staffing_details];
       updatedStaffingDetails[detailIndex] = {
         ...updatedStaffingDetails[detailIndex],
         assign_to: assignTo,
       };
 
-      // Make PUT request to update the Staffing Plan
       await frappeAPI.makeAuthenticatedRequest(
         "PUT",
         `/resource/Staffing Plan/${staffingPlan.name}`,
@@ -210,10 +185,9 @@ const handleAllocation = async () => {
         }
       );
 
-      // Update local state through onSuccess callback
       onSuccess(planIndex, detailIndex, { assign_to: assignTo });
-      
-      onClose(); // close modal after success
+      if (refresh) refresh(); // Call refresh if it exists
+      onClose();
     } catch (error) {
       console.error("Error updating allocation:", error);
       alert("Failed to update allocation. Please try again.");
@@ -254,26 +228,13 @@ const handleAllocation = async () => {
                   className="w-full px-2 py-1 border rounded"
                 />
               </div>
-              {/* <div>
+              <div>
                 <label className="block text-gray-600 mb-1">Location</label>
-                <input
-                  type="text"
+                <LocationDropdown
                   value={editData.location || ""}
-                  onChange={(e) =>
-                    handleInputChange("location", e.target.value)
-                  }
-                  disabled={confirmInfo}
-                  className="w-full px-2 py-1 border rounded"
+                  onChange={(value) => handleInputChange("location", value)}
                 />
-              </div> */}
-             <div>
-  <label className="block text-gray-600 mb-1">Location</label>
-  <LocationDropdown
-    value={editData.location || ""}
-    onChange={(value) => handleInputChange("location", value)}
-    
-  />
-</div>
+              </div>
               <div>
                 <label className="block text-gray-600 mb-1">Vacancies</label>
                 <input
@@ -351,7 +312,6 @@ const handleAllocation = async () => {
                 <span className="text-gray-500">Position:</span>{" "}
                 {staffingDetail.designation}
               </div>
-              
               <div>
                 <span className="text-gray-500">Location:</span>{" "}
                 {staffingDetail.location}
@@ -390,7 +350,7 @@ const handleAllocation = async () => {
                 </label>
               </div>
 
-              <div className="flex items-center space-x-2 ">
+              <div className="flex items-center space-x-2">
                 <input
                   type="checkbox"
                   checked={confirmInfo}
@@ -422,13 +382,6 @@ const handleAllocation = async () => {
           </button>
           {!hasJobId ? (
             <>
-              {/* <button
-                onClick={handleSaveDetails}
-                disabled={isSaving || confirmInfo}
-                className="px-4 py-1 bg-gray-600 text-white rounded disabled:opacity-50"
-              >
-                {isSaving ? 'Saving...' : 'Save'}
-              </button> */}
               <button
                 onClick={handleCreateOpening}
                 disabled={!confirmInfo || isCreating}

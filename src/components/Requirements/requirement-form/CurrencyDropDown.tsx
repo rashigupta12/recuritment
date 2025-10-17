@@ -160,7 +160,7 @@ const CurrencyDropdown: React.FC<CurrencyDropdownProps> = ({
                   <button
                     key={currency.name}
                     onClick={() => handleCurrencySelect(currency.name)}
-                    className={`w-full p-2 text-left hover:bg-gray-50 flex items-center justify-between transition-colors ${
+                    className={`w-full p-2 text-left hover:bg-gray-50 flex items-center justify-between transition-colors h-8 ${
                       value === currency.name ? 'bg-blue-50' : ''
                     }`}
                   >

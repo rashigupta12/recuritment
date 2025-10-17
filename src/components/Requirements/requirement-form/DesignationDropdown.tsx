@@ -245,7 +245,7 @@ const addNewDesignation = async () => {
             placeholder="Search designation..."
             value={searchQuery}
             onChange={handleSearchChange}
-            className="w-full px-3 py-2 text-md border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 capitalize"
+            className="w-full px-3 py-2 text-md border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 capitalize h-9"
             onFocus={() => {
               if (searchQuery && !isOpen) {
                 fetchDesignations(searchQuery);

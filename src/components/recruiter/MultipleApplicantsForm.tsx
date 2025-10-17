@@ -54,7 +54,7 @@ export default function BulkApplicantForm({ initialJobId, prefilledData, isExist
         email_id: data.email_id || '',
         phone_number: data.phone_number || '',
         country: data.country || 'India',
-        job_title: data.job_title || initialJobId || '',
+        job_title:  initialJobId || '',
         designation: data.designation || '',
         resume_attachment: data.resume_attachment || '',
         custom_experience: data.custom_experience?.[0] || {
@@ -324,6 +324,7 @@ export default function BulkApplicantForm({ initialJobId, prefilledData, isExist
     if (hasErrors) {
       return;
     }
+    console.log("job id " , initialJobId)
 
     setIsSubmitting(true);
 
@@ -333,7 +334,7 @@ export default function BulkApplicantForm({ initialJobId, prefilledData, isExist
         email_id: row.email_id,
         phone_number: row.phone_number,
         country: row.country,
-        job_title: row.job_title,
+      job_title: initialJobId || row.job_title,
         designation: row.designation,
         status: 'Tagged',
         source: '',
@@ -358,7 +359,6 @@ export default function BulkApplicantForm({ initialJobId, prefilledData, isExist
         ]
       }));
 
-      console.log('Submitting bulk applicants:', payload);
 
       const response = await frappeAPI.createBulkApplicants(payload);
 

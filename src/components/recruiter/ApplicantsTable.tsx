@@ -117,7 +117,7 @@ export function ApplicantsTable({
   return (
     <div className="bg-white shadow-md rounded-lg border border-blue-100 overflow-hidden w-full">
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200 text-md sm:text-md font-medium">
+        <table className="w-full divide-y divide-gray-200 text-md sm:text-md font-medium">
           <SortableTableHeader
             columns={columns}
             sortField={sortField}

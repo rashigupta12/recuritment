@@ -91,7 +91,7 @@ export const TodoDetailModal = ({
 
   const extractBudget = (description?: string) => {
     if (!description) return 'Not specified';
-    const match = description.match(/Your Target Cost:\s*([^\n]+)/i);
+    const match = description.match(/Cost Per Position:\s*([^\n]+)/i);
     return match ? match[1].trim() : 'Not specified';
   };
 
@@ -206,7 +206,7 @@ export const TodoDetailModal = ({
 
               <div className="flex items-center gap-3">
                 <span className={`px-3.5 py-1.5 text-lg font-semibold rounded-lg border `}>
-                  Budget: {extractBudget(todo.description)}
+                  Budget: {extractBudget(todo.description)} LPA
                 </span>
                 {/* ✅ Updated button handler */}
                 <button

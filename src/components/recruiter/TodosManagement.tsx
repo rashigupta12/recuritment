@@ -243,6 +243,18 @@ const TodosManagement = () => {
   };
 
   const handleRefresh = async () => {
+    setSearchQuery("");
+       setFilters({
+   departments: [],
+    assignedBy: [],
+    clients: [],
+    locations: [],
+    jobTitles: [],
+    status: [],
+    dateRange: "all",
+    vacancies: "all",
+    });
+    setCurrentPage(1);
     if (user) {
       try {
         setLoading(true);
