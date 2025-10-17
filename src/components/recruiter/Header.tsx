@@ -53,6 +53,8 @@ interface TodosHeaderProps {
   onAddLead?: () => void;
   showExportButton?: boolean;
   showAddLeadButton?: boolean;
+  // NEW: Accept filters state from parent
+  filters?: FilterState;
 }
 
 export interface FilterState {
@@ -71,7 +73,6 @@ export const TodosHeader = ({
   searchQuery,
   onSearchChange,
   onRefresh,
-
   onFilterChange,
   filterConfig = [],
   title = "My Jobs",
@@ -79,8 +80,10 @@ export const TodosHeader = ({
   onAddLead,
   showExportButton = true,
   showAddLeadButton = false,
+  filters: parentFilters, // NEW: Receive filters from parent
 }: TodosHeaderProps) => {
-  const [filters, setFilters] = useState<FilterState>({
+  // Use parent filters if provided, otherwise use local state
+  const [localFilters, setLocalFilters] = useState<FilterState>({
     departments: [],
     assignedBy: [],
     clients: [],
@@ -91,6 +94,9 @@ export const TodosHeader = ({
     dateRange: "all",
     vacancies: "all",
   });
+
+  // Use parent filters if available, otherwise use local
+  const filters = parentFilters || localFilters;
 
   const [searchStates, setSearchStates] = useState<Record<string, string>>({
     clients: "",
@@ -103,59 +109,74 @@ export const TodosHeader = ({
   });
   const [openSection, setOpenSection] = useState<string | null>(null);
 
-const toggleFilter = (type: keyof FilterState, value: string) => {
-  const current = filters[type];
-  
-  // Skip non-array filters
-  if (!Array.isArray(current)) return;
-  
-  const newValue = current.includes(value)
-    ? current.filter((v) => v !== value)
-    : [...current, value];
-  const newFilters = { ...filters, [type]: newValue };
-  setFilters(newFilters);
-  onFilterChange?.(newFilters);
-};
+  const toggleFilter = (type: keyof FilterState, value: string) => {
+    const current = filters[type];
 
-const updateRadioFilter = (type: keyof FilterState, value: string) => {
-  let newFilters;
-  
-  // For dateRange and vacancies, store as string, not array
-  if (type === "dateRange" || type === "vacancies") {
-    newFilters = { ...filters, [type]: value };
-  } else {
-    // For other radio filters (like status), store as array
-    newFilters = { ...filters, [type]: value ? [value] : [] };
-  }
-  
-  setFilters(newFilters);
-  onFilterChange?.(newFilters);
-};
+    // Skip non-array filters
+    if (!Array.isArray(current)) return;
 
-const clearAllFilters = () => {
-  const resetFilters: FilterState = {
-    departments: [],
-    assignedBy: [],
-    clients: [],
-    locations: [],
-    jobTitles: [],
-    status: [],
-    contacts: [],
-    dateRange: "all", // String, not array
-    vacancies: "all", // String, not array
+    const newValue = current.includes(value)
+      ? current.filter((v) => v !== value)
+      : [...current, value];
+    const newFilters = { ...filters, [type]: newValue };
+
+    if (parentFilters) {
+      onFilterChange?.(newFilters);
+    } else {
+      setLocalFilters(newFilters);
+      onFilterChange?.(newFilters);
+    }
   };
-  setFilters(resetFilters);
-  setSearchStates({
-    clients: "",
-    locations: "",
-    jobTitles: "",
-    status: "",
-    departments: "",
-    assignedBy: "",
-    contacts: "",
-  });
-  onFilterChange?.(resetFilters);
-};
+
+  const updateRadioFilter = (type: keyof FilterState, value: string) => {
+    let newFilters;
+
+    // For dateRange and vacancies, store as string, not array
+    if (type === "dateRange" || type === "vacancies") {
+      newFilters = { ...filters, [type]: value };
+    } else {
+      // For other radio filters (like status), store as array
+      newFilters = { ...filters, [type]: value ? [value] : [] };
+    }
+
+    if (parentFilters) {
+      onFilterChange?.(newFilters);
+    } else {
+      setLocalFilters(newFilters);
+      onFilterChange?.(newFilters);
+    }
+  };
+
+  const clearAllFilters = () => {
+    const resetFilters: FilterState = {
+      departments: [],
+      assignedBy: [],
+      clients: [],
+      locations: [],
+      jobTitles: [],
+      status: [],
+      contacts: [],
+      dateRange: "all",
+      vacancies: "all",
+    };
+
+    if (parentFilters) {
+      onFilterChange?.(resetFilters);
+    } else {
+      setLocalFilters(resetFilters);
+      onFilterChange?.(resetFilters);
+    }
+
+    setSearchStates({
+      clients: "",
+      locations: "",
+      jobTitles: "",
+      status: "",
+      departments: "",
+      assignedBy: "",
+      contacts: "",
+    });
+  };
 
   const toggleSection = (section: string) => {
     setOpenSection(openSection === section ? null : section);
@@ -373,7 +394,9 @@ const clearAllFilters = () => {
                                   type="radio"
                                   name={section.id}
                                   checked={
-                                    filters[section.id as keyof FilterState].includes(option)
+                                    Array.isArray(filters[section.id as keyof FilterState])
+                                      ? (filters[section.id as keyof FilterState] as string[]).includes(option)
+                                      : false
                                   }
                                   onChange={() =>
                                     updateRadioFilter(
@@ -419,9 +442,11 @@ const clearAllFilters = () => {
                                   >
                                     <input
                                       type="checkbox"
-                                      checked={filters[
-                                        section.id as keyof FilterState
-                                      ].includes(option)}
+                                      checked={
+                                        Array.isArray(filters[section.id as keyof FilterState])
+                                          ? (filters[section.id as keyof FilterState] as string[]).includes(option)
+                                          : false
+                                      }
                                       onChange={() =>
                                         toggleFilter(
                                           section.id as keyof FilterState,
