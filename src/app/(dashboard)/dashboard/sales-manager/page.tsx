@@ -569,103 +569,1046 @@
 //     </div>
 //   );
 // }
-'use client';
+// 'use client';
 
-import {
-  Construction,
-  Target,
-  TrendingUp,
-  Users
-} from 'lucide-react';
+// import {
+//   Construction,
+//   Target,
+//   TrendingUp,
+//   Users
+// } from 'lucide-react';
 
-export default function SalesManagerDashboard() {
-  return (
-    <div className="min-h-screen flex  justify-center ">
-      <div className="max-w-4xl w-full">
-        {/* Header */}
-        <div className="text-center ">
+// export default function SalesManagerDashboard() {
+//   return (
+//     <div className="min-h-screen flex  justify-center ">
+//       <div className="max-w-4xl w-full">
+//         {/* Header */}
+//         <div className="text-center ">
         
           
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            Sales Manager Dashboard
-          </h1>
-          <p className="text-xl text-gray-600 mb-2">
-            We &apos;re building something amazing for you
-          </p>
-          <div className="w-24 h-1 bg-blue-600 mx-auto rounded-full"></div>
-        </div>
+//           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+//             Sales Manager Dashboard
+//           </h1>
+//           <p className="text-xl text-gray-600 mb-2">
+//             We &apos;re building something amazing for you
+//           </p>
+//           <div className="w-24 h-1 bg-blue-600 mx-auto rounded-full"></div>
+//         </div>
 
-        {/* Main Content */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-8 md:p-8 ">
-          <div className="text-center mb-4">
-            <div className="inline-flex items-center px-4 py-2 rounded-full bg-blue-100 text-blue-700 text-sm font-medium mb-6">
-              <Construction className="h-4 w-4 mr-2" />
-              Under Construction
-            </div>
+//         {/* Main Content */}
+//         <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-8 md:p-8 ">
+//           <div className="text-center mb-4">
+//             <div className="inline-flex items-center px-4 py-2 rounded-full bg-blue-100 text-blue-700 text-sm font-medium mb-6">
+//               <Construction className="h-4 w-4 mr-2" />
+//               Under Construction
+//             </div>
             
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
-              Powerful Sales Insights Coming Soon
-            </h2>
-            {/* <p className="text-gray-600 text-lg mb-8 max-w-2xl mx-auto">
-              We're crafting a comprehensive dashboard to help you track leads, manage onboarding, 
-              and monitor requirements with beautiful visualizations and real-time analytics.
-            </p> */}
-          </div>
+//             <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
+//               Powerful Sales Insights Coming Soon
+//             </h2>
+//             {/* <p className="text-gray-600 text-lg mb-8 max-w-2xl mx-auto">
+//               We're crafting a comprehensive dashboard to help you track leads, manage onboarding, 
+//               and monitor requirements with beautiful visualizations and real-time analytics.
+//             </p> */}
+//           </div>
 
-          {/* Features Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="text-center p-6 bg-white rounded-2xl shadow-sm border border-gray-100">
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <Target className="h-6 w-6 text-blue-600" />
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Lead Management</h3>
-              <p className="text-gray-600 text-sm">
-                Track and convert leads with advanced pipeline management
-              </p>
-            </div>
+//           {/* Features Grid */}
+//           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+//             <div className="text-center p-6 bg-white rounded-2xl shadow-sm border border-gray-100">
+//               <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+//                 <Target className="h-6 w-6 text-blue-600" />
+//               </div>
+//               <h3 className="font-semibold text-gray-900 mb-2">Lead Management</h3>
+//               <p className="text-gray-600 text-sm">
+//                 Track and convert leads with advanced pipeline management
+//               </p>
+//             </div>
 
-            <div className="text-center p-6 bg-white rounded-2xl shadow-sm border border-gray-100">
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <Users className="h-6 w-6 text-green-600" />
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Client Onboarding</h3>
-              <p className="text-gray-600 text-sm">
-                Streamline client onboarding with automated workflows
-              </p>
-            </div>
+//             <div className="text-center p-6 bg-white rounded-2xl shadow-sm border border-gray-100">
+//               <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+//                 <Users className="h-6 w-6 text-green-600" />
+//               </div>
+//               <h3 className="font-semibold text-gray-900 mb-2">Client Onboarding</h3>
+//               <p className="text-gray-600 text-sm">
+//                 Streamline client onboarding with automated workflows
+//               </p>
+//             </div>
 
-            <div className="text-center p-6 bg-white rounded-2xl shadow-sm border border-gray-100">
-              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <TrendingUp className="h-6 w-6 text-purple-600" />
-              </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Performance Analytics</h3>
-              <p className="text-gray-600 text-sm">
-                Get deep insights with interactive charts and reports
-              </p>
-            </div>
-          </div>
+//             <div className="text-center p-6 bg-white rounded-2xl shadow-sm border border-gray-100">
+//               <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+//                 <TrendingUp className="h-6 w-6 text-purple-600" />
+//               </div>
+//               <h3 className="font-semibold text-gray-900 mb-2">Performance Analytics</h3>
+//               <p className="text-gray-600 text-sm">
+//                 Get deep insights with interactive charts and reports
+//               </p>
+//             </div>
+//           </div>
 
-          {/* Progress Section */}
-          <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-6 text-white">
-            <div className="flex items-center justify-between mb-4">
-              <span className="font-semibold">Development Progress</span>
-              <span className="font-bold">65%</span>
-            </div>
-            <div className="w-full bg-white/20 rounded-full h-3 mb-2">
-              <div 
-                className="bg-white h-3 rounded-full transition-all duration-1000 ease-out"
-                style={{ width: '65%' }}
-              ></div>
-            </div>
-            {/* <p className="text-blue-100 text-sm">
-              Estimated completion: 2 weeks
-            </p> */}
-          </div>
-        </div>
+//           {/* Progress Section */}
+//           <div className="bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-6 text-white">
+//             <div className="flex items-center justify-between mb-4">
+//               <span className="font-semibold">Development Progress</span>
+//               <span className="font-bold">65%</span>
+//             </div>
+//             <div className="w-full bg-white/20 rounded-full h-3 mb-2">
+//               <div 
+//                 className="bg-white h-3 rounded-full transition-all duration-1000 ease-out"
+//                 style={{ width: '65%' }}
+//               ></div>
+//             </div>
+//             {/* <p className="text-blue-100 text-sm">
+//               Estimated completion: 2 weeks
+//             </p> */}
+//           </div>
+//         </div>
 
        
+//       </div>
+//     </div>
+//   );
+// }
+
+
+
+/*eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
+
+import { useAuth } from "@/contexts/AuthContext";
+import { frappeAPI } from "@/lib/api/frappeClient";
+import {
+  ArcElement,
+  BarElement,
+  CategoryScale,
+  Chart as ChartJS,
+  Filler,
+  Legend,
+  LinearScale,
+  LineElement,
+  PointElement,
+  Tooltip,
+} from "chart.js";
+import {
+  Briefcase,
+  Building2,
+  Download,
+  Filter,
+  UserCheck,
+  Users,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Bar, Doughnut, Line } from "react-chartjs-2";
+import ChartDataLabels from "chartjs-plugin-datalabels";
+
+// Register ChartJS components
+ChartJS.register(
+  ArcElement,
+  Tooltip,
+  Legend,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+  LineElement,
+  PointElement,
+  Filler,
+  ChartDataLabels
+);
+
+// Type Definitions
+interface Lead {
+  id: string;
+  stage:
+    | "Prospecting"
+    | "Lead Qualification"
+    | "Needs Analysis / Discovery"
+    | "Presentation / Proposal"
+    | "Contract"
+    | "Onboarded"
+    | "Follow-Up / Relationship Management";
+  deal_value: number;
+  created_date: string;
+}
+
+interface TrendData {
+  period: string;
+  total_leads: number;
+  total_deal_value: number;
+  converted_leads: number;
+  prospecting: number;
+  lead_qualification: number;
+  needs_analysis: number;
+  presentation: number;
+  contract: number;
+  onboarded: number;
+  followup: number;
+}
+
+export default function SalesManagerDashboard() {
+  const router = useRouter();
+  const [selectedStage, setSelectedStage] = useState<string>("All");
+ const [trendPeriod, setTrendPeriod] = useState<"week" | "month" | "quarter">("week");
+const [apiData, setApiData] = useState<any>(null);
+const [trendsData, setTrendsData] = useState<Record<string, any>>({});
+    const { user } = useAuth();
+
+  const [loading, setLoading] = useState(true);
+  const selectRef = useRef<HTMLSelectElement>(null);
+
+  // Fetch dashboard data
+useEffect(() => {
+  const fetchData = async () => {
+    if (!user?.email) {
+      console.warn("No user email available, skipping API call");
+      setLoading(false);
+      return;
+    }
+    try {
+      console.log("Fetching data with email:", user.email);
+      setLoading(true);
+      const [dashboardResponse, weekTrends, monthTrends, quarterTrends] = await Promise.all([
+        frappeAPI.makeAuthenticatedRequest(
+          "GET",
+          `/method/recruitment_app.sales_manager_dashboard.get_lead_dashboard_data?lead_owner=${user.email}`
+        ),
+        frappeAPI.makeAuthenticatedRequest(
+          "GET",
+          `/method/recruitment_app.sales_manager_dashboard.get_lead_trends_data?lead_owner=${user.email}&time_period=week`
+        ),
+        frappeAPI.makeAuthenticatedRequest(
+          "GET",
+          `/method/recruitment_app.sales_manager_dashboard.get_lead_trends_data?lead_owner=${user.email}&time_period=month`
+        ),
+        frappeAPI.makeAuthenticatedRequest(
+          "GET",
+          `/method/recruitment_app.sales_manager_dashboard.get_lead_trends_data?lead_owner=${user.email}&time_period=quarter`
+        ),
+      ]);
+      console.log("Dashboard Response:", dashboardResponse);
+      console.log("Week Trends Response:", weekTrends);
+      console.log("Month Trends Response:", monthTrends);
+      console.log("Quarter Trends Response:", quarterTrends);
+      if (!dashboardResponse.message) {
+        console.error("Invalid dashboard response structure:", dashboardResponse);
+        return;
+      }
+      setApiData(dashboardResponse.message);
+      setTrendsData({
+        week: weekTrends.message,
+        month: monthTrends.message,
+        quarter: quarterTrends.message,
+      });
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+    } finally {
+      setLoading(false);
+      console.log("Loading state set to false");
+    }
+  };
+  fetchData();
+}, [user?.email]);
+
+  // Get stages from API data
+ const stages = useMemo(() => {
+  if (!apiData?.leads_by_stage?.stage_counts) return ["All"];
+  
+  // Define the desired stage order
+  const stageOrder: string[] = [
+    "Prospecting",
+    "Lead Qualification",
+    "Needs Analysis / Discovery",
+    "Presentation / Proposal",
+    "Contract",
+    "Onboarded",
+    "Follow-Up / Relationship Management",
+  ];
+  
+  // Get stages from API, filter to only those in stageOrder, and prepend "All"
+  const apiStages = Object.keys(apiData.leads_by_stage.stage_counts);
+  const orderedStages = stageOrder.filter((stage) => apiStages.includes(stage));
+  
+  return ["All", ...orderedStages];
+}, [apiData]);
+
+  // Transform API data to match component structure
+  const transformedLeads = useMemo((): Lead[] => {
+    if (!apiData?.leads_by_stage?.leads_by_stage) return [];
+    const allLeads: Lead[] = [];
+    Object.entries(apiData.leads_by_stage.leads_by_stage).forEach(
+      ([stage, leadIds]: [string, any]) => {
+        (leadIds || []).forEach((leadId: string) => {
+          allLeads.push({
+            id: leadId,
+            stage: stage as Lead["stage"],
+            deal_value: apiData.metrics.average_deal_size || 0, // Using average as individual deal values not provided
+            created_date: new Date().toISOString().split("T")[0],
+          });
+        });
+      }
+    );
+    return allLeads;
+  }, [apiData]);
+
+  // Calculate select width
+  const selectWidth = useMemo(() => {
+    if (!stages.length) return "200px";
+    const maxLength = Math.max(...stages.map((stage) => stage.length));
+    const baseWidth = 120;
+    const charWidth = 8;
+    const calculatedWidth = baseWidth + maxLength * charWidth;
+    return `${Math.min(Math.max(calculatedWidth, 150), 400)}px`;
+  }, [stages]);
+
+  // Filtering
+  const filteredLeads = useMemo(
+    () =>
+      selectedStage === "All"
+        ? transformedLeads
+        : transformedLeads.filter((l) => l.stage === selectedStage),
+    [selectedStage, transformedLeads]
+  );
+
+ const kpiMetrics = useMemo(() => {
+  const totalLeads = filteredLeads.length;
+  const totalDealValue = filteredLeads.reduce((sum, lead) => sum + lead.deal_value, 0);
+  const convertedLeads = filteredLeads.filter(
+    (lead) => lead.stage === "Onboarded" || lead.stage === "Contract"
+  ).length;
+  const conversionRate = totalLeads > 0 ? (convertedLeads / totalLeads * 100).toFixed(1) : 0;
+
+  return {
+    totalLeads,
+    totalDealValue,
+    convertedLeads,
+    conversionRate,
+  };
+}, [filteredLeads]);
+
+  // Trends Data
+const processedTrendsData = useMemo((): TrendData[] => {
+  const currentTrends = trendsData[trendPeriod];
+  if (!currentTrends?.trends) {
+    console.warn(`No trends data for ${trendPeriod}`);
+    return [];
+  }
+
+  const periodInfo = currentTrends.period_info;
+  const existingTrends = currentTrends.trends;
+
+  const trendsMap = new Map<string, TrendData>(
+    existingTrends.map((trend: TrendData) => [trend.period, trend])
+  );
+
+  let allPeriods: string[] = [];
+
+  if (periodInfo?.type === "week") {
+    const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    const startDate = new Date(periodInfo.start_date || periodInfo.current_date || Date.now());
+    const startDay = startDate.getDay();
+    const mondayOffset = startDay === 0 ? -6 : 1 - startDay;
+    const weekStart = new Date(startDate);
+    weekStart.setDate(weekStart.getDate() + mondayOffset);
+
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(weekStart);
+      date.setDate(date.getDate() + i);
+      allPeriods.push(`${days[i]} ${date.getDate()}`);
+    }
+  } else if (periodInfo?.type === "month") {
+    const currentDate = new Date(periodInfo.current_date || Date.now());
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
+    const lastDay = new Date(currentYear, currentMonth + 1, 0).getDate();
+    let weekNum = 1;
+    let startDay = 1;
+
+    while (startDay <= lastDay) {
+      const endDay = Math.min(startDay + 6, lastDay);
+      allPeriods.push(`Week ${weekNum} (${startDay}-${endDay})`);
+      startDay = endDay + 1;
+      weekNum++;
+    }
+  } else if (periodInfo?.type === "quarter") {
+    const currentDate = new Date(periodInfo.current_date || Date.now());
+    const currentMonth = currentDate.getMonth();
+    const quarterStartMonth = Math.floor(currentMonth / 3) * 3;
+    const monthNames = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+
+    for (let i = 0; i < 3; i++) {
+      allPeriods.push(monthNames[quarterStartMonth + i]);
+    }
+  }
+
+  // If API provides periods, ensure they match expected count
+  const apiPeriods = existingTrends.map((trend: TrendData) => trend.period);
+  if (apiPeriods.length > 0 && apiPeriods.length >= allPeriods.length) {
+    allPeriods = apiPeriods;
+  }
+
+  const normalizedTrends: TrendData[] = allPeriods.map((period) => {
+    const existingData = trendsMap.get(period);
+    if (existingData) {
+      return existingData;
+    }
+    return {
+      period,
+      total_leads: 0,
+      total_deal_value: 0,
+      converted_leads: 0,
+      prospecting: 0,
+      lead_qualification: 0,
+      needs_analysis: 0,
+      presentation: 0,
+      contract: 0,
+      onboarded: 0,
+      followup: 0,
+    };
+  });
+
+  console.log(`Processed Trends Data (${trendPeriod}):`, normalizedTrends);
+  console.log(`API Periods (${trendPeriod}):`, apiPeriods);
+  console.log(`Generated Periods (${trendPeriod}):`, allPeriods);
+  console.log(`Number of Weeks (${trendPeriod}):`, allPeriods.length);
+  return normalizedTrends;
+}, [trendsData, trendPeriod]);
+
+  
+
+  const exportCSV = () => {
+    const csvRows = [];
+    csvRows.push(
+      "Stage,Total Leads,Total Deal Value,Onboarded & Contracted Leads,Prospecting,Lead Qualification,Needs Analysis / Discovery,Presentation / Proposal,Contract,Onboarded,Follow-Up / Relationship Management"
+    );
+    const stageData: Record<string, any> = {};
+    filteredLeads.forEach((lead) => {
+      if (!stageData[lead.stage]) {
+        stageData[lead.stage] = {
+          totalLeads: 0,
+          totalDealValue: 0,
+          convertedLeads: lead.stage === "Onboarded" ? 1 : 0,
+          prospecting: lead.stage === "Prospecting" ? 1 : 0,
+          lead_qualification: lead.stage === "Lead Qualification" ? 1 : 0,
+          needs_analysis: lead.stage === "Needs Analysis / Discovery" ? 1 : 0,
+          presentation: lead.stage === "Presentation / Proposal" ? 1 : 0,
+          contract: lead.stage === "Contract" ? 1 : 0,
+          onboarded: lead.stage === "Onboarded" ? 1 : 0,
+          followup: lead.stage === "Follow-Up / Relationship Management" ? 1 : 0,
+        };
+      }
+      stageData[lead.stage].totalLeads++;
+      stageData[lead.stage].totalDealValue += lead.deal_value;
+      if (lead.stage === "Onboarded") stageData[lead.stage].convertedLeads++;
+    });
+    Object.entries(stageData).forEach(([stage, stats]) => {
+      csvRows.push(
+        `${stage},${stats.totalLeads},${stats.totalDealValue},${stats.convertedLeads},${stats.prospecting},${stats.lead_qualification},${stats.needs_analysis},${stats.presentation},${stats.contract},${stats.onboarded},${stats.followup}`
+      );
+    });
+    const csvContent = csvRows.join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `sales-dashboard-${selectedStage}-${new Date().toISOString().split("T")[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const funnelStages: Lead["stage"][] = [
+    "Prospecting",
+    "Lead Qualification",
+    "Needs Analysis / Discovery",
+    "Presentation / Proposal",
+    "Contract",
+    "Onboarded",
+    "Follow-Up / Relationship Management",
+  ];
+
+  const funnelData = useMemo(() => {
+    const totalLeads = filteredLeads.length;
+    const stageData = funnelStages.map(
+      (stage) => filteredLeads.filter((l) => l.stage === stage).length
+    );
+    return {
+      labels: ["Total Leads", ...funnelStages],
+      datasets: [
+        {
+          label: "Leads",
+          data: [totalLeads, ...stageData],
+          backgroundColor: [
+            "#6366F1", // Total Leads
+            "#FBBF24", // Prospecting
+            "#A5B4FC", // Lead Qualification
+            "#818CF8", // Needs Analysis / Discovery
+            "#8B5CF6", // Presentation / Proposal
+            "#EF4444", // Contract
+            "#10B981", // Onboarded
+            "#EC4899", // Follow-Up / Relationship Management
+          ],
+          borderColor: "#FFFFFF",
+          borderWidth: 1,
+          borderRadius: 4,
+        },
+      ],
+    };
+  }, [filteredLeads]);
+
+  const leadStatusData = useMemo(() => {
+    const statusCounts = filteredLeads.reduce(
+      (acc, lead) => {
+        acc[lead.stage] = (acc[lead.stage] || 0) + 1;
+        return acc;
+      },
+      {
+        Prospecting: 0,
+        "Lead Qualification": 0,
+        "Needs Analysis / Discovery": 0,
+        "Presentation / Proposal": 0,
+        Contract: 0,
+        Onboarded: 0,
+        "Follow-Up / Relationship Management": 0,
+      } as Record<string, number>
+    );
+    return {
+      labels: funnelStages,
+      datasets: [
+        {
+          data: funnelStages.map((stage) => statusCounts[stage] || 0),
+          backgroundColor: [
+            "#FBBF24", // Prospecting
+            "#A5B4FC", // Lead Qualification
+            "#818CF8", // Needs Analysis / Discovery
+            "#8B5CF6", // Presentation / Proposal
+            "#EF4444", // Contract
+            "#10B981", // Onboarded
+            "#EC4899", // Follow-Up / Relationship Management
+          ],
+          borderColor: "#FFFFFF",
+          borderWidth: 2,
+        },
+      ],
+    };
+  }, [filteredLeads]);
+
+ const trendData = useMemo(() => {
+  const data = {
+    labels: processedTrendsData.map((m: TrendData) => m.period),
+    datasets: [
+      {
+        label: "Total Leads",
+        data: processedTrendsData.map((m: TrendData) => m.total_leads),
+        borderColor: "#ec4899",
+        backgroundColor: "rgba(236,72,153,0.08)",
+        fill: true,
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: "#ec4899",
+      },
+      {
+        label: "Onboarded & Contracted Leads",
+        data: processedTrendsData.map((m: TrendData) => m.converted_leads),
+        borderColor: "#10B981",
+        backgroundColor: "rgba(16,185,129,0.08)",
+        fill: true,
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: "#10B981",
+      },
+      {
+        label: "Total Deal Value",
+        data: processedTrendsData.map((m: TrendData) => m.total_deal_value / 1000000),
+        borderColor: "#6366F1",
+        backgroundColor: "rgba(99,102,241,0.08)",
+        fill: true,
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: "#6366F1",
+      },
+      {
+        label: "Prospecting",
+        data: processedTrendsData.map((m: TrendData) => m.prospecting),
+        borderColor: "#FBBF24",
+        backgroundColor: "rgba(251,191,36,0.08)",
+        fill: true,
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: "#FBBF24",
+      },
+      {
+        label: "Lead Qualification",
+        data: processedTrendsData.map((m: TrendData) => m.lead_qualification),
+        borderColor: "#A5B4FC",
+        backgroundColor: "rgba(165,180,252,0.08)",
+        fill: true,
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: "#A5B4FC",
+      },
+      {
+        label: "Needs Analysis / Discovery",
+        data: processedTrendsData.map((m: TrendData) => m.needs_analysis),
+        borderColor: "#818CF8",
+        backgroundColor: "rgba(129,140,248,0.08)",
+        fill: true,
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: "#818CF8",
+      },
+      {
+        label: "Presentation / Proposal",
+        data: processedTrendsData.map((m: TrendData) => m.presentation),
+        borderColor: "#8B5CF6",
+        backgroundColor: "rgba(139,92,246,0.08)",
+        fill: true,
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: "#8B5CF6",
+      },
+      {
+        label: "Contract",
+        data: processedTrendsData.map((m: TrendData) => m.contract),
+        borderColor: "#EF4444",
+        backgroundColor: "rgba(239,68,68,0.08)",
+        fill: true,
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: "#EF4444",
+      },
+      {
+        label: "Onboarded",
+        data: processedTrendsData.map((m: TrendData) => m.onboarded),
+        borderColor: "#10B981",
+        backgroundColor: "rgba(16,185,129,0.08)",
+        fill: true,
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: "#10B981",
+      },
+      {
+        label: "Follow-Up / Relationship Management",
+        data: processedTrendsData.map((m: TrendData) => m.followup),
+        borderColor: "#D97706",
+        backgroundColor: "rgba(217,119,6,0.08)",
+        fill: true,
+        tension: 0.4,
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: "#D97706",
+      },
+    ],
+  };
+  console.log("Trend Data:", data);
+  return data;
+}, [processedTrendsData]);
+
+  useEffect(() => {
+  console.log("Processed Trends Data:", processedTrendsData);
+  console.log("Trend Data Object:", trendData);
+  console.log("Number of datasets:", trendData.datasets?.length);
+  console.log("Number of labels:", trendData.labels?.length);
+}, [processedTrendsData, trendData]);
+
+  const handleFunnelClick = (elements: any[]) => {
+    if (!elements.length) return;
+    const clickedIndex = elements[0].index;
+    const labels = funnelData.labels;
+    const statusMap: Record<string, string> = {
+      Prospecting: "prospecting",
+      "Lead Qualification": "lead_qualification",
+      "Needs Analysis / Discovery": "needs_analysis",
+      "Presentation / Proposal": "presentation",
+      Contract: "contract",
+      Onboarded: "onboarded",
+      "Follow-Up / Relationship Management": "followup",
+    };
+    const clickedLabel = labels[clickedIndex].trim();
+    if (clickedLabel === "Total Leads") {
+      router.push(`/dashboard/sales/viewleads`);
+    } else {
+      const stage = statusMap[clickedLabel] || "all";
+      router.push(`/dashboard/sales/viewleads?stage=${stage}`);
+    }
+  };
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-slate-600">Loading dashboard data...</p>
+        </div>
+      </main>
+    );
+  }
+
+  return (
+    <main className="min-h-screen bg-slate-50">
+      <div className="w-full mx-auto space-y-4">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-800">
+              Sales Manager Dashboard
+            </h1>
+            <p className="text-md text-slate-500 mt-0.5">
+              Monitor sales performance and track lead progress
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5">
+                <Filter className="h-4 w-4 text-slate-400" />
+                <span className="text-md font-medium text-slate-600">
+                  Stages:
+                </span>
+              </div>
+              <select
+                ref={selectRef}
+                value={selectedStage}
+                onChange={(e) => setSelectedStage(e.target.value)}
+                style={{ width: selectWidth }}
+                className="px-3 py-1.5 border border-slate-200 rounded-lg text-md focus:outline-none focus:ring-1 focus:ring-indigo-400 text-slate-700 bg-white min-w-[150px] max-w-[150px] transition-all duration-200"
+              >
+                {stages.map((stage) => (
+                  <option key={stage} value={stage}>
+                    {stage}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              type="button"
+              className="flex items-center justify-center gap-2 px-3 py-2 bg-white text-slate-700 rounded-lg shadow-sm border border-slate-200 hover:border-slate-300 transition-all text-md font-medium"
+              onClick={exportCSV}
+            >
+              <Download className="h-3.5 w-3.5" />
+              Export Data
+            </button>
+          </div>
+        </div>
+
+        {/* KPI Cards */}
+        <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <KpiCard
+            icon={<Building2 className="h-4 w-4" />}
+            value={kpiMetrics.totalLeads}
+            label="Total Leads"
+            color="violet"
+          />
+           <KpiCard
+    icon={<Briefcase className="h-4 w-4" />}
+    value={(kpiMetrics.totalDealValue / 100000).toFixed(2)}
+    label="Total Deal Value (L)"
+    color="amber"
+  />
+          <KpiCard
+            icon={<Users className="h-4 w-4" />}
+            value={kpiMetrics.convertedLeads}
+            label="Onboarded & Contracted Leads"
+            color="indigo"
+          />
+          <KpiCard
+            icon={<UserCheck className="h-4 w-4" />}
+            value={`${kpiMetrics.conversionRate}%`}
+            label="Conversion Rate"
+            color="emerald"
+          />
+        </section>
+
+        {/* Main Charts */}
+        <section className="grid grid-cols-1 xl:grid-cols-1 gap-4">
+          {/* Lead Funnel */}
+          <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200">
+            <div className="flex justify-between items-center">
+              <SectionHeader
+                title="Lead Funnel"
+                subtitle="Stage-wise breakdown"
+              />
+            </div>
+            <div className="h-80 mt-4 overflow-hidden">
+              <Bar
+                data={funnelData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  indexAxis: "y",
+                  layout: {
+                    padding: { left: 10, right: 40, top: 0, bottom: 0 },
+                  },
+                  plugins: {
+                    legend: { display: false },
+                    datalabels: {
+                      anchor: "end",
+                      align: "end",
+                      color: "#1e293b",
+                      font: {
+                        weight: "bold",
+                        size: 12,
+                      },
+                      formatter: (value) => (value > 0 ? value : ""),
+                    },
+                    tooltip: {
+                      titleFont: { size: 12 },
+                      bodyFont: { size: 12 },
+                    },
+                  },
+                  scales: {
+                    x: {
+                      beginAtZero: true,
+                      max: Math.ceil(
+                        Math.max(...(funnelData.datasets[0]?.data || [0])) * 1.1
+                      ),
+                      grid: { color: "#f1f5f9" },
+                      border: { display: false },
+                      ticks: {
+                        stepSize: Math.ceil(
+                          Math.max(...(funnelData.datasets[0]?.data || [0])) / 5
+                        ),
+                        font: { size: 14 },
+                        color: "#64748b",
+                      },
+                    },
+                    y: {
+                      grid: { display: false },
+                      border: { display: false },
+                      ticks: {
+                        font: { size: 14 },
+                        color: "#475569",
+                      },
+                    },
+                  },
+                  onClick: (event, elements) => handleFunnelClick(elements),
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Lead Status */}
+          {/* <div className="bg-white rounded-lg p-4 shadow-sm border border-slate-200">
+            <div className="flex justify-between items-start mb-2">
+              <SectionHeader
+                title="Lead Status"
+                subtitle="Current distribution"
+              />
+            </div>
+            <div className="h-64 flex items-center justify-center cursor-pointer mt-2">
+              <Doughnut
+                data={{
+                  ...leadStatusData,
+                  datasets: leadStatusData.datasets.map((dataset) => ({
+                    ...dataset,
+                    borderWidth: 0,
+                    borderColor: "transparent",
+                  })),
+                }}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    datalabels: {
+                      display: true,
+                      color: "#ffffff",
+                      font: {
+                        weight: "bold",
+                        size: 14,
+                      },
+                      formatter: (value, context) => {
+                        return value > 0 ? value : "";
+                      },
+                    },
+                    tooltip: {
+                      callbacks: {
+                        label: (context) => {
+                          const value = context.parsed;
+                          return `${context.label}: ${value}`;
+                        },
+                      },
+                    },
+                    legend: {
+                      position: "bottom",
+                      labels: {
+                        usePointStyle: true,
+                        pointStyle: "circle",
+                        font: { size: 14 },
+                        padding: 24,
+                      },
+                    },
+                  },
+                }}
+              />
+            </div>
+          </div> */}
+        </section>
+
+        {/* Sales Trends Section */}
+      <section className="grid grid-cols-1 gap-4">
+  <div className="xl:col-span-2 bg-white rounded-lg p-4 shadow-sm border border-slate-200">
+    <div className="flex justify-between items-center mb-2">
+      <SectionHeader
+        title="Sales Trends"
+        subtitle={`${trendPeriod.charAt(0).toUpperCase() + trendPeriod.slice(1)}ly breakdown`}
+      />
+      <div className="flex gap-0.5 bg-slate-100 p-0.5 rounded-md">
+        {(["week", "month", "quarter"] as const).map((period) => (
+          <button
+            key={period}
+            type="button"
+            onClick={() => setTrendPeriod(period)}
+            className={`px-2 py-1 rounded text-md font-medium transition-all
+              ${trendPeriod === period ? "bg-white text-indigo-600 shadow-sm" : "text-slate-600 hover:text-slate-800"}`}
+          >
+            {period.charAt(0).toUpperCase() + period.slice(1)}
+          </button>
+        ))}
+      </div>
+    </div>
+    <div className="h-64 mt-3">
+      <Line
+        data={trendData}
+        options={{
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            datalabels: {
+              display: true,
+              align: "top",
+              anchor: "end",
+              color: "#1e293b",
+              font: {
+                weight: "bold",
+                size: 10,
+              },
+              formatter: (value, context) => {
+                const datasetLength = context.dataset.data.length;
+                return context.dataIndex === datasetLength - 1 && value > 0
+                  ? context.dataset.label === "Total Deal Value"
+                    ? `${value.toFixed(2)}M`
+                    : value
+                  : "";
+              },
+            },
+            legend: {
+              display: true,
+              position: "top",
+              labels: {
+                padding: 24,
+                font: { size: 14 },
+                usePointStyle: true,
+                pointStyle: "circle",
+                color: "#475569",
+              },
+            },
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: { color: "#f1f5f9" },
+              border: { display: false },
+              ticks: {
+                stepSize: 10,
+                font: { size: 14 },
+                color: "#64748b",
+              },
+            },
+            x: {
+              grid: { display: false },
+              border: { display: false },
+              ticks: {
+                font: { size: 14 },
+                color: "#64748b",
+              },
+            },
+          },
+        }}
+      />
+    </div>
+  </div>
+</section>
+      </div>
+    </main>
+  );
+}
+
+interface CardProps {
+  icon: React.ReactNode;
+  value: string | number;
+  label: string;
+  color: "indigo" | "amber" | "emerald" | "violet";
+}
+
+function KpiCard({ icon, value, label, color }: CardProps) {
+  const colorStyles = {
+    indigo: {
+      bg: "bg-indigo-50",
+      text: "text-indigo-600",
+    },
+    amber: {
+      bg: "bg-amber-50",
+      text: "text-amber-600",
+    },
+    emerald: {
+      bg: "bg-emerald-50",
+      text: "text-emerald-600",
+    },
+    violet: {
+      bg: "bg-violet-50",
+      text: "text-violet-600",
+    },
+  };
+  return (
+    <div className="group bg-white rounded-lg p-3 shadow-sm border border-slate-200 hover:shadow-md transition-all">
+      <div className="flex items-start justify-between mb-2">
+        <div
+          className={`w-8 h-8 rounded-lg ${colorStyles[color].bg} flex items-center justify-center ${colorStyles[color].text}`}
+        >
+          {icon}
+        </div>
+        <div className="flex items-center gap-1 text-5xl font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-full">
+          <span>{value}</span>
+        </div>
+      </div>
+      <div className="">
+        <p className="text-md text-slate-500 font-medium">{label}</p>
       </div>
     </div>
   );
 }
 
+interface HeaderProps {
+  title: string;
+  subtitle?: string;
+}
+function SectionHeader({ title, subtitle }: HeaderProps) {
+  return (
+    <div>
+      <h3 className="text-lg font-semibold text-slate-800">{title}</h3>
+      {subtitle && <p className="text-md text-slate-500 mt-0.5">{subtitle}</p>}
+    </div>
+  );
+}
