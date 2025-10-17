@@ -103,48 +103,59 @@ export const TodosHeader = ({
   });
   const [openSection, setOpenSection] = useState<string | null>(null);
 
-  const toggleFilter = (type: keyof FilterState, value: string) => {
-    const current = filters[type];
-    if (Array.isArray(current)) {
-      const newValue = current.includes(value)
-        ? current.filter((v) => v !== value)
-        : [...current, value];
-      const newFilters = { ...filters, [type]: newValue };
-      setFilters(newFilters);
-      onFilterChange?.(newFilters);
-    }
-  };
+const toggleFilter = (type: keyof FilterState, value: string) => {
+  const current = filters[type];
+  
+  // Skip non-array filters
+  if (!Array.isArray(current)) return;
+  
+  const newValue = current.includes(value)
+    ? current.filter((v) => v !== value)
+    : [...current, value];
+  const newFilters = { ...filters, [type]: newValue };
+  setFilters(newFilters);
+  onFilterChange?.(newFilters);
+};
 
-  const updateRadioFilter = (type: keyof FilterState, value: string) => {
-    const newFilters = { ...filters, [type]: [value] };
-    setFilters(newFilters);
-    onFilterChange?.(newFilters);
-  };
+const updateRadioFilter = (type: keyof FilterState, value: string) => {
+  let newFilters;
+  
+  // For dateRange and vacancies, store as string, not array
+  if (type === "dateRange" || type === "vacancies") {
+    newFilters = { ...filters, [type]: value };
+  } else {
+    // For other radio filters (like status), store as array
+    newFilters = { ...filters, [type]: value ? [value] : [] };
+  }
+  
+  setFilters(newFilters);
+  onFilterChange?.(newFilters);
+};
 
-  const clearAllFilters = () => {
-    const resetFilters: FilterState = {
-      departments: [],
-      assignedBy: [],
-      clients: [],
-      locations: [],
-      jobTitles: [],
-      status: [],
-      contacts: [],
-      dateRange: "all",
-      vacancies: "all",
-    };
-    setFilters(resetFilters);
-    setSearchStates({
-      clients: "",
-      locations: "",
-      jobTitles: "",
-      status: "",
-      departments: "",
-      assignedBy: "",
-      contacts: "",
-    });
-    onFilterChange?.(resetFilters);
+const clearAllFilters = () => {
+  const resetFilters: FilterState = {
+    departments: [],
+    assignedBy: [],
+    clients: [],
+    locations: [],
+    jobTitles: [],
+    status: [],
+    contacts: [],
+    dateRange: "all", // String, not array
+    vacancies: "all", // String, not array
   };
+  setFilters(resetFilters);
+  setSearchStates({
+    clients: "",
+    locations: "",
+    jobTitles: "",
+    status: "",
+    departments: "",
+    assignedBy: "",
+    contacts: "",
+  });
+  onFilterChange?.(resetFilters);
+};
 
   const toggleSection = (section: string) => {
     setOpenSection(openSection === section ? null : section);
