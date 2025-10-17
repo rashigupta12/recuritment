@@ -204,7 +204,7 @@ const LocationDropdown: React.FC<LocationDropdownProps> = ({
             setIsOpen(true);
           }
         }}
-        className="w-full px-2 py-1.5 text-md border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+        className="w-full px-2 py-1.5 text-md border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 h-9"
         placeholder="Search Location"
       />
 

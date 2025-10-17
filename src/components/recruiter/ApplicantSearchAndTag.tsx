@@ -5,6 +5,7 @@ import { frappeAPI } from "@/lib/api/frappeClient";
 import { AlertTriangle, CheckCircle, Mail, Search, Upload } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import BulkApplicantForm from "./MultipleApplicantsForm";
+import { showToast } from "@/lib/toast/showToast";
 
 interface ExistingApplicant {
   name: string;
@@ -59,7 +60,6 @@ export default function ApplicantSearchAndTag({
   // Scroll to form when triggered by Update CV
   useEffect(() => {
     if (triggerCVUpdateScroll && showBulkForm && formRef.current) {
-      console.log("Scrolling to form due to Update CV");
       formRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
       setTriggerCVUpdateScroll(false); // Reset to prevent re-scrolling
     }
@@ -120,19 +120,16 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
         throw new Error(result.error || "Failed to send email");
       }
 
-      alert("CV update request sent successfully!");
+      showToast.success("CV update request sent successfully!");
     } catch (error: any) {
-      console.error("Error sending CV update request:", error);
-      alert(`Failed to send email: ${error.message}`);
+      showToast.error(`Failed to send email: ${error.message}`);
     } finally {
       setIsSendingEmail(false);
     }
   };
 
   const handleUpdateCV = () => {
-    console.log(
-      "handleUpdateCV: Setting showBulkForm and showCVUpdateForm to true"
-    );
+
     setShowCVUpdateForm(true);
     setShowBulkForm(true);
     setTriggerCVUpdateScroll(true); // Trigger scroll for Update CV
@@ -157,12 +154,10 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
         custom_education: prefilledApplicantData[0].custom_education,
       };
 
-      console.log("Submitting applicant data:", payload);
-
       const response = await frappeAPI.createApplicants(payload);
 
       if (response.data) {
-        alert("Applicant tagged successfully!");
+        showToast.success("Applicant tagged successfully!");
         setShowWarning(false);
         setShowBulkForm(false);
         setShowCVUpdateForm(false);
@@ -174,8 +169,8 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
         }
       }
     } catch (error: any) {
-      console.error("Submission error:", error);
-      alert(`Failed to tag applicant: ${error.message}`);
+
+      showToast.error(`Failed to tag applicant: ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -205,10 +200,8 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
     }
 
     try {
-      console.log("Searching for email:", searchEmail);
 
       const response = await frappeAPI.searchApplicants(searchEmail);
-      console.log("Search response:", response);
 
       if (response && response.data) {
         const applicants: ExistingApplicant[] = response.data.map(
@@ -227,7 +220,6 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
           })
         );
 
-        console.log(applicants)
         setExistingApplicants(applicants);
 
         try {
@@ -278,7 +270,6 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
             setShowBulkForm(true);
             // Scroll to form when showing for CV update
             if (formRef.current) {
-              console.log("Scrolling to form from searchApplicant");
               formRef.current.scrollIntoView({
                 behavior: "smooth",
                 block: "start",
@@ -305,7 +296,6 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
           setShowBulkForm(true);
           // Scroll to form for new applicant
           if (formRef.current) {
-            console.log("Scrolling to form for new applicant");
             formRef.current.scrollIntoView({
               behavior: "smooth",
               block: "start",

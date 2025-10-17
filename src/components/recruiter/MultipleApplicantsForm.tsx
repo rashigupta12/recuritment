@@ -359,7 +359,6 @@ export default function BulkApplicantForm({ initialJobId, prefilledData, isExist
         ]
       }));
 
-      console.log('Submitting bulk applicants:', payload);
 
       const response = await frappeAPI.createBulkApplicants(payload);
 

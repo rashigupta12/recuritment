@@ -262,7 +262,7 @@ export default function TodosTable({
                   {/* Aging Column */}
                   <td className="px-6 py-4 text-center">
                     <div className="text-md font-medium text-gray-900">
-                      {aging > 0 ? aging : "-"}
+                      {aging > 0 ? aging : "0"}
                     </div>
                   </td>
                   {/* Company & Contact Column */}

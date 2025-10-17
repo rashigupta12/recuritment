@@ -24,6 +24,7 @@ import { FilterState } from "../recruiter/TodoHeader";
 import Pagination from "../comman/Pagination";
 import { formatToIndianCurrency } from "../Leads/helper";
 import { JobOpeningModal } from "./requirement-view/JobopeningModal";
+import { showToast } from "./Management";
 
 interface StaffingPlansTableProps {
   selectedLead: {
@@ -370,11 +371,6 @@ const StaffingPlansTable: React.FC<StaffingPlansTableProps> = ({ selectedLead })
     setCurrentPage(1);
   }, [searchTerm, filterState]);
 
-  // Handle filter changes from TodosHeader
-  const handleFilterChange = (newFilters: FilterState) => {
-    console.log("Applying filters:", newFilters);
-    setFilterState(newFilters);
-  };
 
   const handleAllocation = (
     plan: StaffingPlan,
@@ -396,10 +392,6 @@ const StaffingPlansTable: React.FC<StaffingPlansTableProps> = ({ selectedLead })
     router.push(
       `/dashboard/recruiter/contract/create?planId=${planName}&mode=edit`
     );
-  };
-
-  const handleCreate = async () => {
-    await router.push(`/dashboard/recruiter/requirements/create`);
   };
 
   const handlePublish = async (
@@ -429,10 +421,10 @@ const StaffingPlansTable: React.FC<StaffingPlansTableProps> = ({ selectedLead })
         return newPlans;
       });
 
-      alert(isPublished ? "Job opening unpublished successfully!" : "Job opening published successfully!");
+      showToast.success(isPublished ? "Job opening unpublished successfully!" : "Job opening published successfully!");
     } catch (error) {
       console.error(`Error ${isPublished ? "unpublishing" : "publishing"} job:`, error);
-      alert(`Failed to ${isPublished ? "unpublish" : "publish"} job opening. Please try again.`);
+      showToast.error(`Failed to ${isPublished ? "unpublish" : "publish"} job opening. Please try again.`);
     } finally {
       setPublishingJobs((prev) => {
         const newSet = new Set(prev);
@@ -447,7 +439,7 @@ const StaffingPlansTable: React.FC<StaffingPlansTableProps> = ({ selectedLead })
     detailIndex: number,
     updates: Partial<StaffingPlanItem>
   ) => {
-    console.log("Updating plans with:", updates);
+
     setPlans((prevPlans) => {
       const newPlans = [...prevPlans];
       newPlans[planIndex] = {
@@ -457,7 +449,6 @@ const StaffingPlansTable: React.FC<StaffingPlansTableProps> = ({ selectedLead })
             idx === detailIndex ? { ...detail, ...updates } : detail
         ),
       };
-      console.log("Updated plans:", newPlans);
       return newPlans;
     });
     setIsModalOpen(false);

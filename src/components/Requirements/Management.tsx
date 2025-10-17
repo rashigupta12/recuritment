@@ -7,23 +7,18 @@ import {
   CheckCircle,
   ChevronDown,
   ChevronRight,
-  Clock,
   Edit,
   FileText,
-  IndianRupee,
   Loader2,
-  Mail,
-  MapPin,
-  Phone,
   Plus,
   Save,
   Trash2,
-  Upload,
-  User,
-  Users,
+  Upload
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useRef, useState } from "react";
+import toast from "react-hot-toast";
+import { SortableTableHeader } from "../recruiter/SortableTableHeader";
 import {
   capitalizeWords,
   cleanJobDescription,
@@ -37,10 +32,6 @@ import { LeadSearchSection } from "./LeadSerach";
 import CurrencyDropdown from "./requirement-form/CurrencyDropDown";
 import DesignationDropdown from "./requirement-form/DesignationDropdown";
 import LocationDropdown from "./requirement-form/LocationDropdown";
-import toast from "react-hot-toast";
-import { SortableTableHeader } from "../recruiter/SortableTableHeader";
-import { TooltipProvider } from "../ui/tooltip";
-import { formatToIndianCurrency } from "../Leads/helper";
 import StaffingPlansTable from "./RequiremtsView";
 
 const TOAST_ID = "global-toast";
@@ -119,6 +110,7 @@ const validateStaffingItem = (
     min_experience_reqyrs,
     location,
     employment_type,
+    job_description, // Add job_description to destructuring
   } = item;
 
   if (!designation?.trim()) {
@@ -153,6 +145,12 @@ const validateStaffingItem = (
 
   if (!employment_type?.trim()) {
     showToast.error(`Row ${index + 1}: Employment type is required`);
+    return false;
+  }
+
+  // New validation for job_description
+  if (!job_description?.trim()) {
+    showToast.error(`Row ${index + 1}: Job Description is required`);
     return false;
   }
 
@@ -314,7 +312,7 @@ const EmploymentTypeDropdown: React.FC<{
           onClick={handleToggle}
           disabled={disabled}
           onKeyDown={handleKeyDown}
-          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+          className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors h-9"
         >
           <span className="truncate text-left">
             {value || "Employment Type"}
@@ -334,7 +332,7 @@ const EmploymentTypeDropdown: React.FC<{
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             placeholder="Search employment types..."
-            className="w-full px-2 py-1.5 text-sm focus:outline-none focus:ring-0 border-0 rounded"
+            className="w-full px-2 py-1.5 text-sm focus:outline-none focus:ring-0 border-0 rounded h-10"
           />
         </div>
       )}
@@ -1095,14 +1093,14 @@ const StaffingPlanCreator: React.FC = () => {
                                       parseInt(e.target.value) || 0
                                     )
                                   }
-                                  className="w-full text-end px-1 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                                  className="w-full text-end px-1 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 h-9"
                                   min="0"
                                   placeholder="0"
                                 />
                               </td>
 
                               <td
-                                className="p-2 text-center"
+                                className="p-2 text-center h-8"
                                 style={{
                                   width: "300px",
                                   minWidth: "300px",
@@ -1140,13 +1138,13 @@ const StaffingPlanCreator: React.FC = () => {
                                           value === "" ? 0 : parseFloat(value) || 0
                                         );
                                       }}
-                                      className="w-full text-end px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm border-0"
+                                      className="w-full text-end px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm border-0 h-8"
                                       placeholder="0"
                                       min="0"
                                       step="0.01"
                                     />
                                   </div>
-                                  <div className="w-[25%] ">LPA</div>
+                                  <div className="w-[25%] h-8">LPA</div>
                                 </div>
                               </td>
 
@@ -1168,7 +1166,7 @@ const StaffingPlanCreator: React.FC = () => {
                                       parseFloat(e.target.value) || 0
                                     )
                                   }
-                                  className="w-full text-end px-1 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500"
+                                  className="w-full text-end px-1 py-1 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 h-9"
                                   step="0.5"
                                   placeholder="0"
                                   min="0"
