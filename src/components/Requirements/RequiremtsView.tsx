@@ -14,17 +14,16 @@ import {
   User,
   Users,
   Upload,
-  Download, // Used for Unpublish icon (can be replaced with a more suitable icon)
+  Download,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useMemo, useState } from "react";
 import { SortableTableHeader } from "../recruiter/SortableTableHeader";
 import { FilterState } from "../recruiter/TodoHeader";
-import { JobOpeningModal } from "./requirement-view/JobopeningModal";
-import Pagination from "../comman/Pagination";
-import { TodosHeader } from "./Header";
-import { formatToIndianCurrency } from "../Leads/helper";
 
+import Pagination from "../comman/Pagination";
+import { formatToIndianCurrency } from "../Leads/helper";
+import { JobOpeningModal } from "./requirement-view/JobopeningModal";
 
 interface StaffingPlansTableProps {
   selectedLead: {
@@ -48,7 +47,7 @@ type StaffingPlanItem = {
   assign_to?: string;
   job_id?: string;
   employment_type?: string;
-  publish?: number; // Added to track publish status
+  publish?: number;
 };
 
 type StaffingPlan = {
@@ -216,13 +215,6 @@ const StaffingPlansTable: React.FC<StaffingPlansTableProps> = ({ selectedLead })
       width?: string;
     }> = [
       { field: "datetime", label: "Date", sortable: true, align: "left" },
-      // {
-      //   field: "company",
-      //   label: "Company & Contact",
-      //   sortable: true,
-      //   width: "200px",
-      //   align: "center",
-      // },
       { field: "designation", label: "Position Details", sortable: true, align: "left" },
       { field: "location", label: "Location & Experience", sortable: true, align: "left" },
       { field: "vacancies", label: "Vacancies & Budget", sortable: true, align: "left" },
@@ -231,47 +223,52 @@ const StaffingPlansTable: React.FC<StaffingPlansTableProps> = ({ selectedLead })
     return cols;
   }, []);
 
- const fetchStaffingPlans = async () => {
-  setIsLoading(true);
-  setError(null);
+  const fetchStaffingPlans = async () => {
+    setIsLoading(true);
+    setError(null);
 
-  try {
-    const response = await frappeAPI.makeAuthenticatedRequest(
-      "GET",
-      `/method/recruitment_app.get_staffing_plan.get_staffing_plans_with_children?owner=${user?.email}`
-    );
+    try {
+      const response = await frappeAPI.makeAuthenticatedRequest(
+        "GET",
+        `/method/recruitment_app.get_staffing_plan.get_staffing_plans_with_children?owner=${user?.email}`
+      );
 
-    const plansData = response.message?.data || [];
-    
-    // Filter plans to show only those for the selected lead's company
-    const filteredPlans = selectedLead 
-      ? plansData.filter((plan: StaffingPlan) => plan.company === selectedLead.company_name)
-      : [];
-    
-    console.log("Filtered plans for selected company:", filteredPlans);
-    setPlans(filteredPlans);
-    setFilteredPlans(filteredPlans);
-  } catch (error) {
-    console.error("Error fetching staffing plans:", error);
-    setError("Failed to load staffing plans. Please try again.");
-  } finally {
-    setIsLoading(false);
-  }
-};
+      const plansData = response.message?.data || [];
+      
+      // Filter plans to show only those for the selected lead's company
+      const filteredPlans = selectedLead 
+        ? plansData.filter((plan: StaffingPlan) => plan.company === selectedLead.company_name)
+        : [];
+      
+      console.log("Fetched plans:", filteredPlans);
+      setPlans(filteredPlans);
+      setFilteredPlans(filteredPlans);
+    } catch (error) {
+      console.error("Error fetching staffing plans:", error);
+      setError("Failed to load staffing plans. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-// Add useEffect to refetch when selectedLead changes
-useEffect(() => {
-  if (selectedLead) {
-    fetchStaffingPlans();
-  } else {
-    // Clear plans if no lead is selected
-    setPlans([]);
-    setFilteredPlans([]);
-  }
-}, [selectedLead]);
+  // Add useEffect to refetch when selectedLead changes
+  useEffect(() => {
+    if (selectedLead) {
+      fetchStaffingPlans();
+    } else {
+      setPlans([]);
+      setFilteredPlans([]);
+    }
+  }, [selectedLead]);
+
+  // Update filteredPlans when plans change
+  useEffect(() => {
+    setFilteredPlans(plans);
+  }, [plans]);
 
   // Combined filtering and sorting logic with frontend pagination
   const paginatedPlans = useMemo(() => {
+    console.log("Recalculating paginatedPlans with plans:", plans);
     let filtered = [...plans];
 
     // Apply search term filter
@@ -355,9 +352,6 @@ useEffect(() => {
       });
     }
 
-    // Update filtered plans for rendering filter counts
-    setFilteredPlans(filtered);
-
     // Apply frontend pagination
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
@@ -423,7 +417,6 @@ useEffect(() => {
         { publish: isPublished ? 0 : 1 }
       );
 
-      // Update the local state to reflect the new publish status
       setPlans((prevPlans) => {
         const newPlans = [...prevPlans];
         newPlans[planIndex] = {
@@ -454,6 +447,7 @@ useEffect(() => {
     detailIndex: number,
     updates: Partial<StaffingPlanItem>
   ) => {
+    console.log("Updating plans with:", updates);
     setPlans((prevPlans) => {
       const newPlans = [...prevPlans];
       newPlans[planIndex] = {
@@ -463,6 +457,7 @@ useEffect(() => {
             idx === detailIndex ? { ...detail, ...updates } : detail
         ),
       };
+      console.log("Updated plans:", newPlans);
       return newPlans;
     });
     setIsModalOpen(false);
@@ -490,24 +485,6 @@ useEffect(() => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="w-full mx-auto">
-        {/* Header with filters */}
-        {/* <TodosHeader
-          searchQuery={searchTerm}
-          onSearchChange={setSearchTerm}
-          onRefresh={() => fetchStaffingPlans()}
-          totalJobs={plans.length}
-          filteredJobs={filteredPlans.length}
-          uniqueClients={uniqueCompanies}
-          uniqueContacts={uniqueContacts}
-          uniqueJobTitles={uniquePositions}
-          uniqueStatus={[] as string[]}
-          onFilterChange={handleFilterChange}
-          filterConfig={filterConfig}
-          title="Customers Requirements"
-          oncreateButton={handleCreate}
-        /> */}
-
-        {/* Main Table */}
         {isLoading ? (
           <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-12 text-center">
             <Loader2 className="h-16 w-16 text-blue-500 animate-spin mx-auto mb-4" />
@@ -534,7 +511,7 @@ useEffect(() => {
           </div>
         ) : paginatedPlans.length > 0 ? (
           <>
-            <div className="bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden ">
+            <div className="bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <SortableTableHeader
@@ -569,46 +546,6 @@ useEffect(() => {
                                 })()}
                               </td>
                             )}
-
-                            {/* {detailIndex === 0 && (
-                              <td
-                                className="px-4 py-3 align-top"
-                                rowSpan={plan.staffing_details.length}
-                                width={"300px"}
-                              >
-                                <div className="flex flex-col space-y-1 max-w-[250px]">
-                                  <div className="group relative">
-                                    <div className="flex items-center">
-                                      <Building className="h-4 w-4 text-gray-400 mr-2 flex-shrink-0" />
-                                      <span className="font-semibold text-gray-900 text-md leading-tight line-clamp-2">
-                                        {plan.company || "-"}
-                                      </span>
-                                    </div>
-                                    <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block bg-gray-900 text-white text-md rounded py-1 px-2 z-10 whitespace-nowrap">
-                                      {plan.company || "-"}
-                                    </div>
-                                  </div>
-                                  <div className="text-md text-gray-600 space-y-0.5">
-                                    <div
-                                      className="flex items-center truncate"
-                                      title={plan.custom_contact_name || "-"}
-                                    >
-                                      <User className="h-3 w-3 text-gray-400 mr-1 flex-shrink-0" />
-                                      <span className="truncate">
-                                        {plan.custom_contact_name || "-"}
-                                      </span>
-                                    </div>
-                                    <div className="flex items-center truncate">
-                                      <Phone className="h-3 w-3 text-gray-400 mr-1 flex-shrink-0" />
-                                      <span className="truncate">
-                                        {plan.custom_contact_phone || "-"}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                              </td>
-                            )} */}
-
                             <td className="px-4 py-4 capitalize">
                               <div className="flex flex-col">
                                 <span className="font-medium text-gray-900 text-md">
@@ -616,7 +553,6 @@ useEffect(() => {
                                 </span>
                               </div>
                             </td>
-
                             <td className="px-4 py-4">
                               <div className="flex flex-col space-y-2">
                                 <div className="flex items-center text-md text-gray-600">
@@ -631,7 +567,6 @@ useEffect(() => {
                                 </div>
                               </div>
                             </td>
-
                             <td className="px-4 py-4">
                               <div className="flex flex-col space-y-2">
                                 {(() => {
@@ -682,7 +617,6 @@ useEffect(() => {
                                 </div>
                               </div>
                             </td>
-
                             <td className="px-4 py-4">
                               <div className="flex items-center space-x-1 flex-wrap gap-2">
                                 {isProjectManager ? (
@@ -721,7 +655,6 @@ useEffect(() => {
                                         Edit Staffing Plan
                                       </span>
                                     </div>
-
                                     {detail.job_id && (
                                       <div className="relative group">
                                         <button
@@ -750,9 +683,7 @@ useEffect(() => {
                                             <Upload className="h-4 w-4 mr-1" />
                                           )}
                                           <span>
-                                            {detail.publish === 1
-                                              ? ""
-                                              : ""}
+                                            {detail.publish === 1 ? "" : ""}
                                           </span>
                                         </button>
                                         <span
@@ -784,7 +715,6 @@ useEffect(() => {
               </div>
             </div>
 
-            {/* Reusable Pagination Component */}
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
@@ -810,15 +740,19 @@ useEffect(() => {
         )}
 
         {selectedJob && (
-          <JobOpeningModal
-            isOpen={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
-            staffingPlan={selectedJob.staffingPlan}
-            staffingDetail={selectedJob.staffingDetail}
-            planIndex={selectedJob.planIndex}
-            detailIndex={selectedJob.detailIndex}
-            onSuccess={handleJobSuccess}
-          />
+          <>
+            {console.log("fetchStaffingPlans in render:", fetchStaffingPlans)}
+            <JobOpeningModal
+              isOpen={isModalOpen}
+              onClose={() => setIsModalOpen(false)}
+              staffingPlan={selectedJob.staffingPlan}
+              staffingDetail={selectedJob.staffingDetail}
+              planIndex={selectedJob.planIndex}
+              detailIndex={selectedJob.detailIndex}
+              onSuccess={handleJobSuccess}
+              refresh={fetchStaffingPlans}
+            />
+          </>
         )}
       </div>
     </div>
