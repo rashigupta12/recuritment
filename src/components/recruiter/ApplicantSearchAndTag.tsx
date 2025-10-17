@@ -39,11 +39,17 @@ export default function ApplicantSearchAndTag({
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [searchError, setSearchError] = useState("");
   const [showWarning, setShowWarning] = useState(false);
-  const [existingApplicants, setExistingApplicants] = useState<ExistingApplicant[]>([]);
+  const [existingApplicants, setExistingApplicants] = useState<
+    ExistingApplicant[]
+  >([]);
   const [alreadyTaggedJob, setAlreadyTaggedJob] = useState<string | null>(null);
-  const [prefilledApplicantData, setPrefilledApplicantData] = useState<any[]>([]);
+  const [prefilledApplicantData, setPrefilledApplicantData] = useState<any[]>(
+    []
+  );
   const [showBulkForm, setShowBulkForm] = useState(false);
-  const [latestCVTimestamp, setLatestCVTimestamp] = useState<string | null>(null);
+  const [latestCVTimestamp, setLatestCVTimestamp] = useState<string | null>(
+    null
+  );
   const [showCVUpdateForm, setShowCVUpdateForm] = useState(false);
   const [triggerCVUpdateScroll, setTriggerCVUpdateScroll] = useState(false); // New state for CV update scroll
   const formRef = useRef<HTMLDivElement>(null); // Ref for the form container
@@ -53,29 +59,31 @@ export default function ApplicantSearchAndTag({
   // Scroll to form when triggered by Update CV
   useEffect(() => {
     if (triggerCVUpdateScroll && showBulkForm && formRef.current) {
-      console.log('Scrolling to form due to Update CV');
-      formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      console.log("Scrolling to form due to Update CV");
+      formRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
       setTriggerCVUpdateScroll(false); // Reset to prevent re-scrolling
     }
   }, [triggerCVUpdateScroll, showBulkForm]);
 
-const handleRequestCVUpdate = async () => {
-  if (!prefilledApplicantData || prefilledApplicantData.length === 0) return;
+  const handleRequestCVUpdate = async () => {
+    if (!prefilledApplicantData || prefilledApplicantData.length === 0) return;
 
-  const applicantData = prefilledApplicantData[0];
-  const candidateName = applicantData.applicant_name || "Candidate";
-  const firstName = candidateName.split(" ")[0];
+    const applicantData = prefilledApplicantData[0];
+    const candidateName = applicantData.applicant_name || "Candidate";
+    const firstName = candidateName.split(" ")[0];
 
-  setIsSendingEmail(true);
+    setIsSendingEmail(true);
 
-  try {
-    const emailData = {
-      from_email: currentUserEmail || "",
-      to_email: applicantData.email_id,
-      subject: `Your Profile Has Been Shortlisted for the ${currentJobTitle} Position`,
-      message: `Hi ${firstName},
+    try {
+      const emailData = {
+        from_email: currentUserEmail || "",
+        to_email: applicantData.email_id,
+        subject: `Your Profile Has Been Shortlisted for the ${currentJobTitle} Position`,
+        message: `Hi ${firstName},
 
-Good news! Your profile has been shortlisted for the ${currentJobTitle} position with ${process.env.NEXT_PUBLIC_COMPANY_NAME || "our company"}.
+Good news! Your profile has been shortlisted for the ${currentJobTitle} position with ${
+          process.env.NEXT_PUBLIC_COMPANY_NAME || "our company"
+        }.
 
 To proceed, please share your updated CV at the earliest.
 
@@ -85,44 +93,46 @@ Looking forward to your response.
 
 Best regards,
 ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
-      job_id: currentJobTitle,
-      username: currentUserEmail,
-      applicants: [
-        {
-          name: applicantData.name,
-          applicant_name: applicantData.applicant_name,
-          email_id: applicantData.email_id,
-          designation: applicantData.designation,
-          resume_attachment: applicantData.resume_attachment,
+        job_id: currentJobTitle,
+        username: currentUserEmail,
+        applicants: [
+          {
+            name: applicantData.name,
+            applicant_name: applicantData.applicant_name,
+            email_id: applicantData.email_id,
+            designation: applicantData.designation,
+            resume_attachment: applicantData.resume_attachment,
+          },
+        ],
+      };
+
+      const response = await fetch("/api/mails", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      ],
-    };
+        body: JSON.stringify(emailData),
+      });
 
-    const response = await fetch("/api/mails", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(emailData),
-    });
+      const result = await response.json();
 
-    const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to send email");
+      }
 
-    if (!response.ok) {
-      throw new Error(result.error || "Failed to send email");
+      alert("CV update request sent successfully!");
+    } catch (error: any) {
+      console.error("Error sending CV update request:", error);
+      alert(`Failed to send email: ${error.message}`);
+    } finally {
+      setIsSendingEmail(false);
     }
-
-    alert("CV update request sent successfully!");
-  } catch (error: any) {
-    console.error("Error sending CV update request:", error);
-    alert(`Failed to send email: ${error.message}`);
-  } finally {
-    setIsSendingEmail(false);
-  }
-};
+  };
 
   const handleUpdateCV = () => {
-    console.log('handleUpdateCV: Setting showBulkForm and showCVUpdateForm to true');
+    console.log(
+      "handleUpdateCV: Setting showBulkForm and showCVUpdateForm to true"
+    );
     setShowCVUpdateForm(true);
     setShowBulkForm(true);
     setTriggerCVUpdateScroll(true); // Trigger scroll for Update CV
@@ -217,6 +227,7 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
           })
         );
 
+        console.log(applicants)
         setExistingApplicants(applicants);
 
         try {
@@ -232,9 +243,9 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
           console.error("Error fetching latest CV timestamp:", error);
         }
 
-        if (currentJobTitle) {
+        if (initialJobId) {
           const alreadyTagged = applicants.find(
-            (app) => app.job_title === currentJobTitle
+            (app) => app.job_title === initialJobId
           );
           if (alreadyTagged) {
             setAlreadyTaggedJob(currentJobTitle);
@@ -267,8 +278,11 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
             setShowBulkForm(true);
             // Scroll to form when showing for CV update
             if (formRef.current) {
-              console.log('Scrolling to form from searchApplicant');
-              formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              console.log("Scrolling to form from searchApplicant");
+              formRef.current.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+              });
             }
           }
         } else {
@@ -291,8 +305,11 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
           setShowBulkForm(true);
           // Scroll to form for new applicant
           if (formRef.current) {
-            console.log('Scrolling to form for new applicant');
-            formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            console.log("Scrolling to form for new applicant");
+            formRef.current.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
           }
         }
       } else {
@@ -315,8 +332,11 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
         setShowBulkForm(true);
         // Scroll to form for new applicant
         if (formRef.current) {
-          console.log('Scrolling to form for new applicant');
-          formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          console.log("Scrolling to form for new applicant");
+          formRef.current.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
         }
       }
     } catch (error: any) {
@@ -342,8 +362,8 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
       setShowBulkForm(true);
       // Scroll to form on error
       if (formRef.current) {
-        console.log('Scrolling to form on search error');
-        formRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        console.log("Scrolling to form on search error");
+        formRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     } finally {
       setIsSearching(false);
@@ -410,17 +430,6 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
           )}
         </div>
 
-        {alreadyTaggedJob && (
-          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
-            <div className="flex items-center gap-2 text-yellow-800">
-              <AlertTriangle className="w-5 h-5" />
-              <span className="font-medium">Already Tagged</span>
-            </div>
-            <p className="text-yellow-700 text-sm mt-1">
-              This applicant is already tagged to the current job opening.
-            </p>
-          </div>
-        )}
 
         {!existingApplicants.length && showBulkForm && (
           <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
@@ -452,7 +461,17 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
               </div>
             </div>
           )}
-          {!alreadyTaggedJob && (
+          {alreadyTaggedJob ? (
+            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+              <div className="flex items-center gap-2 text-yellow-800">
+                <AlertTriangle className="w-5 h-5" />
+                <span className="font-medium">Candidate Already Exists</span>
+              </div>
+              <p className="text-yellow-700 text-sm mt-1">
+                This applicant is already tagged to the current job opening.
+              </p>
+            </div>
+          ) : (
             <div className="flex justify-end mb-2 gap-2">
               <button
                 onClick={handleRequestCVUpdate}
