@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Search, RefreshCw, Filter, X, ChevronDown, ChevronUp, Download, Plus } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +25,7 @@ export interface FilterState {
   clients: string[];
   locations: string[];
   jobTitles: string[];
-  status: string; // Changed to string for radio button
+  status: string;
   contacts: string[];
   dateRange: "all" | "today" | "week" | "month";
   vacancies: "all" | "single" | "multiple";
@@ -47,7 +47,9 @@ interface TodosHeaderProps {
   onFilterChange?: (filters: FilterState) => void;
   filterConfig?: FilterConfig[];
   title?: string;
- oncreateButton?: (() => Promise<void>) | undefined;}
+  oncreateButton?: (() => Promise<void>) | undefined;
+  externalFilters?: FilterState; // Add this prop to sync external filter state
+}
 
 export const TodosHeader = ({
   searchQuery,
@@ -66,18 +68,21 @@ export const TodosHeader = ({
   filterConfig = [],
   title = "My Jobs",
   oncreateButton,
+  externalFilters, // Add this to props destructuring
 }: TodosHeaderProps) => {
-  const [filters, setFilters] = useState<FilterState>({
+  const initialFilterState: FilterState = {
     departments: [],
     assignedBy: [],
     clients: [],
     locations: [],
     jobTitles: [],
-    status: "", // Initialize as empty string
+    status: "",
     contacts: [],
     dateRange: "all",
     vacancies: "all",
-  });
+  };
+
+  const [filters, setFilters] = useState<FilterState>(initialFilterState);
 
   const [searchStates, setSearchStates] = useState<Record<string, string>>({
     clients: "",
@@ -89,6 +94,30 @@ export const TodosHeader = ({
     contacts: "",
   });
   const [openSection, setOpenSection] = useState<string | null>(null);
+
+  // Add useEffect to sync with external filters
+  useEffect(() => {
+    if (externalFilters) {
+      setFilters(externalFilters);
+      // Also reset search states when external filters are reset
+      if (
+        externalFilters.clients.length === 0 &&
+        externalFilters.contacts.length === 0 &&
+        externalFilters.jobTitles.length === 0 &&
+        externalFilters.status === ""
+      ) {
+        setSearchStates({
+          clients: "",
+          locations: "",
+          jobTitles: "",
+          status: "",
+          departments: "",
+          assignedBy: "",
+          contacts: "",
+        });
+      }
+    }
+  }, [externalFilters]);
 
   const toggleFilter = (type: keyof FilterState, value: string) => {
     const current = filters[type];
@@ -115,7 +144,7 @@ export const TodosHeader = ({
       clients: [],
       locations: [],
       jobTitles: [],
-      status: "", // Reset to empty string
+      status: "",
       contacts: [],
       dateRange: "all",
       vacancies: "all",
@@ -442,14 +471,13 @@ export const TodosHeader = ({
               <RefreshCw className="w-4 h-4" />
             </Button>
             {oncreateButton && (
-  <button
-    onClick={oncreateButton}
-   className="bg-primary text-white rounded-full h-10 w-10 flex items-center justify-center hover:bg-primary/90 transition-colors shadow-md"
-              
-  >
-    <Plus/>
-  </button>
-)}
+              <button
+                onClick={oncreateButton}
+                className="bg-primary text-white rounded-full h-10 w-10 flex items-center justify-center hover:bg-primary/90 transition-colors shadow-md"
+              >
+                <Plus/>
+              </button>
+            )}
           </div>
         </div>
       </div>

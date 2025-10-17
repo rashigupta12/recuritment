@@ -488,19 +488,20 @@ const StaffingPlansTable: React.FC = () => {
       <div className="w-full mx-auto">
         {/* Header with filters */}
         <TodosHeader
-          searchQuery={searchTerm}
-          onSearchChange={setSearchTerm}
-          onRefresh={handleRefresh}
-          totalJobs={plans.length}
-          filteredJobs={filteredPlans.length}
-          uniqueClients={uniqueCompanies}
-          uniqueContacts={uniqueContacts}
-          uniqueJobTitles={uniquePositions}
-          uniqueStatus={[] as string[]}
-          onFilterChange={handleFilterChange}
-          filterConfig={filterConfig}
-          title="Customers Requirements"
-        />
+  searchQuery={searchTerm}
+  onSearchChange={setSearchTerm}
+  onRefresh={handleRefresh}
+  totalJobs={plans.length}
+  filteredJobs={filteredPlans.length}
+  uniqueClients={uniqueCompanies}
+  uniqueContacts={uniqueContacts}
+  uniqueJobTitles={uniquePositions}
+  uniqueStatus={[] as string[]}
+  onFilterChange={handleFilterChange}
+  filterConfig={filterConfig}
+  title="Customers Requirements"
+  externalFilters={filterState} // Add this prop
+/>
 
         {/* Main Table */}
         {isLoading ? (
