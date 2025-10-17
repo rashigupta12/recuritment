@@ -87,7 +87,6 @@ function generateICSFile(
   const organizerEmail = process.env.COMPANY_EMAIL || "no-reply@hevhire.com";
   const attendeeEmail = applicant.email_id || "";
 
-  // Format dates to ICS format (YYYYMMDDTHHMMSS)
   const formatICSDate = (date: Date): string => {
     const pad = (num: number) => num.toString().padStart(2, "0");
     return (
@@ -101,12 +100,11 @@ function generateICSFile(
     );
   };
 
-  // IST Timezone definition
   const icsContent = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
     "PRODID:-//HevHire//Interview Scheduler//EN",
-    "METHOD:REQUEST", // Added to indicate a calendar invite request
+    "METHOD:REQUEST",
     "BEGIN:VTIMEZONE",
     "TZID:Asia/Kolkata",
     "BEGIN:STANDARD",
@@ -122,7 +120,7 @@ function generateICSFile(
     `DTSTART;TZID=Asia/Kolkata:${formatICSDate(startDateTime)}`,
     `DTEND;TZID=Asia/Kolkata:${formatICSDate(endDateTime)}`,
     `SUMMARY:${eventTitle}`,
-    `DESCRIPTION:${eventDescription.replace(/\n/g, "\\n")}`, // Escape newlines
+    `DESCRIPTION:${eventDescription.replace(/\n/g, "\\n")}`,
     `LOCATION:${location || "N/A"}`,
     `ORGANIZER;CN=HevHire:mailto:${organizerEmail}`,
     `ATTENDEE;CN=${
@@ -135,13 +133,26 @@ function generateICSFile(
     "END:VCALENDAR",
   ].join("\r\n");
 
-  // Log ICS content for debugging
   console.log("Generated ICS content:", icsContent);
-
-  // Convert to base64 for attachment
   return Buffer.from(icsContent).toString("base64");
 }
 
+// Function to generate time slots in 30-minute intervals
+const generateTimeSlots = (minTime: string): string[] => {
+  const timeSlots: string[] = [];
+  const startHour = minTime ? Math.max(parseInt(minTime.split(":")[0]), 9) : 9; // Start at 9 AM or minTime
+  const startMinute = minTime ? parseInt(minTime.split(":")[1]) : 0;
+  const endHour = 24; // End at 6 PM
+
+  for (let hour = startHour; hour <= endHour; hour++) {
+    const startMin = hour === startHour ? Math.ceil(startMinute / 30) * 30 : 0;
+    for (let minute = startMin; minute < 60; minute += 30) {
+      const time = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+      timeSlots.push(time);
+    }
+  }
+  return timeSlots;
+};
 export const InterviewDetailsModal: React.FC<InterviewDetailsModalProps> = ({
   isOpen,
   onClose,
@@ -160,7 +171,7 @@ export const InterviewDetailsModal: React.FC<InterviewDetailsModalProps> = ({
     interview_round: "",
     interview_panel_name: "aditya@hevhire.com",
     mode_of_interview: "Virtual",
-    from_time: "17:00",
+    from_time: "",
     custom_link: "",
     custom_remarks: "this is remarks field",
     custom_interviewers: "",
@@ -173,21 +184,20 @@ export const InterviewDetailsModal: React.FC<InterviewDetailsModalProps> = ({
     "Please fill in all required fields (Schedule Date, Interview Round, Mode, Time, Link)"
   );
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [minTime, setMinTime] = useState<string>("");
+  const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([]);
 
   const hasInterviews = scheduledInterviews.length > 0;
   const latestInterview = hasInterviews
     ? scheduledInterviews[scheduledInterviews.length - 1]
     : null;
 
-  // Check if latest interview is cleared
   const getInterviewStatus = (interview: any) => {
-    const status = interview.status || "";
-    return status.toLowerCase();
+    return (interview.status || "").toLowerCase();
   };
 
   const isLatestInterviewCleared =
     latestInterview && getInterviewStatus(latestInterview) === "cleared";
-
   const canCreateNewInterview = !hasInterviews || isLatestInterviewCleared;
   const showCreateInterviewForm = canCreateNewInterview && showCreateForm;
 
@@ -200,7 +210,7 @@ export const InterviewDetailsModal: React.FC<InterviewDetailsModalProps> = ({
         interview_round: "",
         interview_panel_name: "aditya@hevhire.com",
         mode_of_interview: "Virtual",
-        from_time: "17:00",
+        from_time: "",
         custom_link: "",
         custom_remarks: "this is remarks field",
         custom_interviewers: "",
@@ -209,8 +219,44 @@ export const InterviewDetailsModal: React.FC<InterviewDetailsModalProps> = ({
       setLocalError(
         "Please fill in all required fields (Schedule Date, Interview Round, Mode, Time, Link)"
       );
+      setMinTime("");
+      setAvailableTimeSlots([]);
     }
   }, [isOpen, applicant]);
+
+  // Update minimum time and available time slots when schedule date changes
+  useEffect(() => {
+    if (formData.schedule_date) {
+      const selectedDate = new Date(formData.schedule_date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      selectedDate.setHours(0, 0, 0, 0);
+
+      let minTimeValue = "";
+      if (selectedDate.getTime() === today.getTime()) {
+        // For today, set minimum time to current time + 30 minutes
+        const now = new Date();
+        now.setMinutes(now.getMinutes() + 30);
+        minTimeValue = now.toTimeString().slice(0, 5);
+      } else if (latestInterview) {
+        // Check if selected date matches latest interview date
+        const latestInterviewDate = new Date(latestInterview.scheduled_on);
+        latestInterviewDate.setHours(0, 0, 0, 0);
+        if (selectedDate.getTime() === latestInterviewDate.getTime()) {
+          // Set minimum time to latest interview time + 30 minutes
+          const [hours, minutes] = latestInterview.from_time.split(":");
+          const latestTime = new Date();
+          latestTime.setHours(parseInt(hours), parseInt(minutes) + 30);
+          minTimeValue = latestTime.toTimeString().slice(0, 5);
+        }
+      }
+      setMinTime(minTimeValue);
+      setAvailableTimeSlots(generateTimeSlots(minTimeValue));
+    } else {
+      setMinTime("");
+      setAvailableTimeSlots([]);
+    }
+  }, [formData.schedule_date, latestInterview]);
 
   const fetchScheduledInterviews = async () => {
     setLoadingInterviews(true);
@@ -235,7 +281,7 @@ export const InterviewDetailsModal: React.FC<InterviewDetailsModalProps> = ({
     }
   };
 
-const sendInterviewEmail = async () => {
+  const sendInterviewEmail = async () => {
     if (!applicant.email_id) {
       console.error("No email address provided for the applicant");
       toast.error("No email address provided for the applicant");
@@ -257,7 +303,6 @@ const sendInterviewEmail = async () => {
                 : ""
             }`;
 
-      // Generate ICS file
       const icsContent = generateICSFile(formData, applicant, jobId);
 
       const emailData = {
@@ -307,7 +352,6 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
             resume_attachment: applicant.resume_attachment,
           },
         ],
-        // Add attachments array directly to emailData
         attachments: [
           {
             filename: `interview_${applicant.name}_${formData.schedule_date}.ics`,
@@ -468,6 +512,30 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
       return;
     }
 
+    // Time validation
+    const selectedDateTime = new Date(
+      `${formData.schedule_date}T${formData.from_time}:00`
+    );
+    const now = new Date();
+    if (selectedDate.getTime() === today.getTime()) {
+      if (selectedDateTime <= now) {
+        setLocalError("Interview time must be in the future for today");
+        return;
+      }
+    }
+
+    if (latestInterview) {
+      const latestInterviewDateTime = new Date(
+        `${latestInterview.scheduled_on}T${latestInterview.from_time}:00`
+      );
+      if (selectedDateTime <= latestInterviewDateTime) {
+        setLocalError(
+          "New interview must be scheduled after the latest interview"
+        );
+        return;
+      }
+    }
+
     if (scheduledInterviews.length > 0) {
       const selectedDateTruncated = new Date(formData.schedule_date);
       selectedDateTruncated.setHours(0, 0, 0, 0);
@@ -565,6 +633,7 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
       });
       setEmailInputs([""]);
       setShowCreateForm(false);
+      setAvailableTimeSlots([]);
       fetchScheduledInterviews();
       onStatusUpdate();
     } catch (err: any) {
@@ -592,6 +661,8 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
     setLocalError(null);
     setInterviewStatuses({});
     setShowCreateForm(false);
+    setMinTime("");
+    setAvailableTimeSlots([]);
     onClose();
   };
 
@@ -600,7 +671,6 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-2xl p-6 w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
-        {/* Header */}
         <div className="flex items-center justify-between mb-4 border-b border-gray-100 pb-3">
           <h2 className="text-xl font-bold text-gray-900">Schedule Interview</h2>
           <button
@@ -613,7 +683,6 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
           </button>
         </div>
 
-        {/* Applicant Info */}
         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <div className="flex flex-wrap items-center gap-4 text-md text-gray-700">
             <div className="flex items-center gap-1">
@@ -644,7 +713,6 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
           </div>
         </div>
 
-        {/* Scheduled Interviews Section */}
         {!loadingInterviews && scheduledInterviews.length > 0 && (
           <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
             <div className="flex items-center gap-2 mb-3">
@@ -732,7 +800,6 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
                       >
                         <option value="">Update status...</option>
                         <option value="Scheduled">Scheduled</option>
-                        <option value="Pending">Pending</option>
                         <option value="Under Review">Under Review</option>
                         <option value="Cleared">Cleared</option>
                         <option value="Rejected">Rejected</option>
@@ -754,7 +821,6 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
           </div>
         )}
 
-        {/* Alert when latest interview is not cleared */}
         {hasInterviews && !isLatestInterviewCleared && !showCreateForm && (
           <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
             <div className="flex items-center gap-2">
@@ -766,7 +832,6 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
           </div>
         )}
 
-        {/* Success message when latest interview is cleared */}
         {hasInterviews && isLatestInterviewCleared && !showCreateForm && (
           <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
             <div className="flex items-center justify-between">
@@ -787,7 +852,6 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
           </div>
         )}
 
-        {/* Show create button when no interviews exist */}
         {!hasInterviews && !loadingInterviews && !showCreateForm && (
           <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex items-center justify-between">
@@ -807,7 +871,6 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
           </div>
         )}
 
-        {/* Loading state */}
         {loadingInterviews && (
           <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg text-center">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
@@ -815,7 +878,6 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
           </div>
         )}
 
-        {/* Create New Interview Form */}
         {showCreateInterviewForm && (
           <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
             <div className="flex items-center justify-between mb-4">
@@ -837,6 +899,8 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
                   });
                   setEmailInputs([""]);
                   setLocalError(null);
+                  setMinTime("");
+                  setAvailableTimeSlots([]);
                 }}
                 className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors rounded-full hover:bg-gray-100"
               >
@@ -908,7 +972,7 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
                   type="date"
                   value={formData.schedule_date}
                   onChange={(e) =>
-                    setFormData({ ...formData, schedule_date: e.target.value })
+                    setFormData({ ...formData, schedule_date: e.target.value, from_time: "" })
                   }
                   className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent bg-white text-md transition-all"
                   min={
@@ -921,21 +985,37 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
                 />
               </div>
 
-              <div>
-                <label className="block text-gray-700 font-semibold mb-2 text-md">
-                  From Time <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="time"
-                  value={formData.from_time}
-                  onChange={(e) =>
-                    setFormData({ ...formData, from_time: e.target.value })
-                  }
-                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent bg-white text-md transition-all"
-                  required
-                  disabled={isSubmitting || isSendingEmail}
-                />
-              </div>
+<div>
+  <label className="block text-gray-700 font-semibold mb-2 text-md">
+    From Time <span className="text-red-500">*</span>
+  </label>
+  <select
+    value={formData.from_time}
+    onChange={(e) => setFormData({ ...formData, from_time: e.target.value })}
+    style={{
+      maxHeight: "10rem",
+      overflowY: "auto",
+      width: "100%",
+      padding: "0.625rem 1rem", // Matches Tailwind's px-4 py-2.5
+      border: "1px solid #e5e7eb", // Matches Tailwind's border-gray-200
+      borderRadius: "0.5rem", // Matches Tailwind's rounded-lg
+      backgroundColor: "#fff",
+      fontSize: "0.875rem", // Matches Tailwind's text-md
+    }}
+    required
+    disabled={isSubmitting || isSendingEmail || !formData.schedule_date || availableTimeSlots.length === 0}
+  >
+    <option value="">Select Time</option>
+    {availableTimeSlots.map((time) => (
+      <option key={time} value={time}>
+        {time}
+      </option>
+    ))}
+  </select>
+  {formData.schedule_date && availableTimeSlots.length === 0 && (
+    <p className="text-xs text-red-500 mt-1">No available time slots for the selected date</p>
+  )}
+</div>
 
               <div>
                 <label className="block text-gray-700 font-semibold mb-2 text-md">
@@ -1058,7 +1138,6 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
           </div>
         )}
 
-        {/* Actions */}
         <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100">
           <button
             onClick={handleClose}
