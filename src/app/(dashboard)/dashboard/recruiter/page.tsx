@@ -123,10 +123,8 @@ export default function RecruiterDashboard() {
                 `/method/recruitment_app.recruiter_trends.get_recruiter_trends_granular?email=${user.email}&time_period=quarter`
               ),
             ]);
-          setApiData({
-            ...dashboardResponse.message,
-            trends_data: monthTrends.message, // Default to month
-          });
+          
+          setApiData(dashboardResponse.message);
           setTrendsData({
             week: weekTrends.message,
             month: monthTrends.message,
@@ -298,96 +296,64 @@ export default function RecruiterDashboard() {
     };
   }, [filteredApplicants]);
 
-  // Trends Data
+  // Trends Data - FIXED VERSION
   const processedTrendsData = useMemo((): TrendData[] => {
     const currentTrends = trendsData[trendPeriod];
-    if (!currentTrends?.trends) return [];
+    
+    // Check if we have valid trends data
+    if (!currentTrends || !currentTrends.trends || !Array.isArray(currentTrends.trends)) {
+      return [];
+    }
 
     const periodInfo = currentTrends.period_info;
     const existingTrends = currentTrends.trends;
 
-    const trendsMap = new Map<string, TrendData>(
-      existingTrends.map((trend: TrendData) => [trend.period, trend])
-    );
-
-    const allPeriods: string[] = [];
-
-    if (periodInfo?.type === "week") {
-      const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-      // const currentDate = new Date(periodInfo.current_date);
-      const startDate = new Date(periodInfo.start_date);
-      const startDay = startDate.getDay();
-      const mondayOffset = startDay === 0 ? -6 : 1 - startDay;
-      const weekStart = new Date(startDate);
-      weekStart.setDate(weekStart.getDate() + mondayOffset);
-
-      for (let i = 0; i < 7; i++) {
-        const date = new Date(weekStart);
-        date.setDate(date.getDate() + i);
-        allPeriods.push(`${days[i]} ${date.getDate()}`);
-      }
-    } else if (periodInfo?.type === "month") {
-      const currentDate = new Date(periodInfo.current_date);
-      const currentMonth = currentDate.getMonth();
-      const currentYear = currentDate.getFullYear();
-      // const firstDay = new Date(currentYear, currentMonth, 1);
-      const lastDay = new Date(currentYear, currentMonth + 1, 0);
-      const totalDays = lastDay.getDate();
-
-      let weekNum = 1;
-      let startDay = 1;
-
-      while (startDay <= totalDays) {
-        const endDay = Math.min(startDay + 6, totalDays);
-        allPeriods.push(`Week ${weekNum} (${startDay}-${endDay})`);
-        startDay = endDay + 1;
-        weekNum++;
-      }
-    } else if (periodInfo?.type === "quarter") {
+    // For quarter view, we need to ensure all 3 months are shown
+    if (periodInfo?.type === "quarter") {
       const currentDate = new Date(periodInfo.current_date);
       const currentMonth = currentDate.getMonth();
       const quarterStartMonth = Math.floor(currentMonth / 3) * 3;
       const monthNames = [
-        "January",
-        "February",
-        "March",
-        "April",
-        "May",
-        "June",
-        "July",
-        "August",
-        "September",
-        "October",
-        "November",
-        "December",
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December",
       ];
 
-      for (let i = 0; i < 3; i++) {
-        allPeriods.push(monthNames[quarterStartMonth + i]);
-      }
+      const allMonths = [
+        monthNames[quarterStartMonth],
+        monthNames[quarterStartMonth + 1],
+        monthNames[quarterStartMonth + 2],
+      ];
+
+      // Create a map of existing trends for quick lookup
+      const trendsMap = new Map<string, TrendData>(
+        existingTrends.map((trend: TrendData) => [trend.period, trend])
+      );
+
+      // Fill in all months with zeros if missing
+      return allMonths.map((month) => {
+        const existingData = trendsMap.get(month);
+        if (existingData) {
+          return existingData;
+        }
+        return {
+          period: month,
+          totalCVUploaded: 0,
+          open: 0,
+          tagged: 0,
+          shortlisted: 0,
+          assessment: 0,
+          interview: 0,
+          interviewReject: 0,
+          offered: 0,
+          offerDrop: 0,
+          joined: 0,
+        };
+      });
     }
 
-    const normalizedTrends: TrendData[] = allPeriods.map((period) => {
-      const existingData = trendsMap.get(period);
-      if (existingData) {
-        return existingData;
-      }
-      return {
-        period,
-        totalCVUploaded: 0,
-        open: 0,
-        tagged: 0,
-        shortlisted: 0,
-        assessment: 0,
-        interview: 0,
-        interviewReject: 0,
-        offered: 0,
-        offerDrop: 0,
-        joined: 0,
-      };
-    });
-
-    return normalizedTrends;
+    // For week and month views, return the API data as-is
+    // The backend already provides the correct structure
+    return currentTrends.trends;
   }, [trendsData, trendPeriod]);
 
   const exportCSV = () => {
@@ -455,41 +421,6 @@ export default function RecruiterDashboard() {
     "OfferDrop",
     "Joined",
   ];
-
-  // const candidatePipelineData = useMemo(() => {
-  //   const clientGroups =
-  //     selectedClient === "All"
-  //       ? clients.filter((c) => c !== "All")
-  //       : [selectedClient];
-  //   const colors = [
-  //     "#E0E7FF",
-  //     "#C7D2FE",
-  //     "#A5B4FC",
-  //     "#FBBF24",
-  //     "#818CF8",
-  //     "#6366F1",
-  //     "#F59E0B",
-  //     "#10B981",
-  //   ];
-  //   return {
-  //     labels: clientGroups,
-  //     datasets: candidateStatusOrder.map((status, idx) => ({
-  //       label: status
-  //         .replace(/([A-Z])/g, " $1")
-  //         .replace(/^./, (str) => str.toUpperCase())
-  //         .trim(),
-  //       data: clientGroups.map((client) => {
-  //         const clientApplicants = filteredApplicants.filter(
-  //           (a) => a.client === client
-  //         );
-  //         return clientApplicants.filter((a) => a.status === status).length;
-  //       }),
-  //       backgroundColor: colors[idx % colors.length],
-  //       borderColor: "#FFFFFF",
-  //       borderWidth: 1,
-  //     })),
-  //   };
-  // }, [selectedClient, clients, filteredApplicants]);
 
   const funnelStages: JobApplicant["status"][] = [
     "Tagged",
@@ -805,7 +736,7 @@ export default function RecruiterDashboard() {
                   maintainAspectRatio: false,
                   indexAxis: "y",
                   layout: {
-                    padding: { left: 10, right: 40, top: 0, bottom: 0 }, // Increased right padding for label visibility
+                    padding: { left: 10, right: 40, top: 0, bottom: 0 },
                   },
                   plugins: {
                     legend: { display: false },
@@ -829,13 +760,13 @@ export default function RecruiterDashboard() {
                       beginAtZero: true,
                       max: Math.ceil(
                         Math.max(...(funnelData.datasets[0]?.data || [0])) * 1.1
-                      ), // Dynamic max based on data with 10% buffer
+                      ),
                       grid: { color: "#f1f5f9" },
                       border: { display: false },
                       ticks: {
                         stepSize: Math.ceil(
                           Math.max(...(funnelData.datasets[0]?.data || [0])) / 5
-                        ), // Dynamic step size for ~5 ticks
+                        ),
                         font: { size: 14 },
                         color: "#64748b",
                       },
@@ -884,18 +815,13 @@ export default function RecruiterDashboard() {
                         weight: "bold",
                         size: 14,
                       },
-                      formatter: (value, context) => {
+                      formatter: (value) => {
                         return value > 0 ? value : "";
                       },
                     },
                     tooltip: {
                       callbacks: {
                         label: (context) => {
-                          const dataset = context.dataset.data as number[];
-                          // const total = dataset.reduce(
-                          //   (acc, curr) => acc + curr,
-                          //   0
-                          // );
                           const value = context.parsed;
                           return `${context.label}: ${value}`;
                         },
@@ -1038,7 +964,6 @@ function KpiCard({ icon, value, label, color }: CardProps) {
       text: "text-violet-600",
     },
   };
-  // const router = useRouter();
   return (
     <div
       className={`group bg-white rounded-lg p-3 shadow-sm border border-slate-200 hover:shadow-md transition-all ${

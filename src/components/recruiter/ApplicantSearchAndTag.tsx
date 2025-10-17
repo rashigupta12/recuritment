@@ -59,25 +59,23 @@ export default function ApplicantSearchAndTag({
     }
   }, [triggerCVUpdateScroll, showBulkForm]);
 
-  const handleRequestCVUpdate = async () => {
-    if (!prefilledApplicantData || prefilledApplicantData.length === 0) return;
+const handleRequestCVUpdate = async () => {
+  if (!prefilledApplicantData || prefilledApplicantData.length === 0) return;
 
-    const applicantData = prefilledApplicantData[0];
-    const candidateName = applicantData.applicant_name || "Candidate";
-    const firstName = candidateName.split(" ")[0];
+  const applicantData = prefilledApplicantData[0];
+  const candidateName = applicantData.applicant_name || "Candidate";
+  const firstName = candidateName.split(" ")[0];
 
-    setIsSendingEmail(true);
+  setIsSendingEmail(true);
 
-    try {
-      const emailData = {
-        from_email: currentUserEmail || "",
-        to_email: applicantData.email_id,
-        subject: `Your Profile Has Been Shortlisted for the ${currentJobTitle} Position`,
-        message: `Hi ${firstName},
+  try {
+    const emailData = {
+      from_email: currentUserEmail || "",
+      to_email: applicantData.email_id,
+      subject: `Your Profile Has Been Shortlisted for the ${currentJobTitle} Position`,
+      message: `Hi ${firstName},
 
-Good news! Your profile has been shortlisted for the ${currentJobTitle} position with ${
-          process.env.NEXT_PUBLIC_COMPANY_NAME || "our company"
-        }.
+Good news! Your profile has been shortlisted for the ${currentJobTitle} position with ${process.env.NEXT_PUBLIC_COMPANY_NAME || "our company"}.
 
 To proceed, please share your updated CV at the earliest.
 
@@ -87,41 +85,41 @@ Looking forward to your response.
 
 Best regards,
 ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
-        job_id: currentJobTitle,
-        username: currentUserEmail,
-        applicants: [
-          {
-            name: applicantData.name,
-            applicant_name: applicantData.applicant_name,
-            email_id: applicantData.email_id,
-            designation: applicantData.designation,
-            resume_attachment: applicantData.resume_attachment,
-          },
-        ],
-      };
-
-      const response = await fetch("/api/mails", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      job_id: currentJobTitle,
+      username: currentUserEmail,
+      applicants: [
+        {
+          name: applicantData.name,
+          applicant_name: applicantData.applicant_name,
+          email_id: applicantData.email_id,
+          designation: applicantData.designation,
+          resume_attachment: applicantData.resume_attachment,
         },
-        body: JSON.stringify(emailData),
-      });
+      ],
+    };
 
-      const result = await response.json();
+    const response = await fetch("/api/mails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(emailData),
+    });
 
-      if (!response.ok) {
-        throw new Error(result.error || "Failed to send email");
-      }
+    const result = await response.json();
 
-      alert("CV update request sent successfully!");
-    } catch (error: any) {
-      console.error("Error sending CV update request:", error);
-      alert(`Failed to send email: ${error.message}`);
-    } finally {
-      setIsSendingEmail(false);
+    if (!response.ok) {
+      throw new Error(result.error || "Failed to send email");
     }
-  };
+
+    alert("CV update request sent successfully!");
+  } catch (error: any) {
+    console.error("Error sending CV update request:", error);
+    alert(`Failed to send email: ${error.message}`);
+  } finally {
+    setIsSendingEmail(false);
+  }
+};
 
   const handleUpdateCV = () => {
     console.log('handleUpdateCV: Setting showBulkForm and showCVUpdateForm to true');

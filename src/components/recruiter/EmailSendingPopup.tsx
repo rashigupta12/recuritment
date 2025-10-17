@@ -6,6 +6,21 @@
 
 import { useEffect, useState } from "react";
 
+interface EditableApplicant {
+  position: string;
+  candidateName: string;
+  contactNo: string;
+  email: string;
+  currentCompany: string;
+  experience: string;
+  currentCTC: string;
+  expCTC: string;
+  noticePeriod: string;
+  currentLocation: string;
+  qualification: string;
+  resume_attachment?: string;
+  resumeLink: string;
+}
 
 interface EmailSendingPopupProps {
   isOpen: boolean;
@@ -28,6 +43,8 @@ export default function EmailSendingPopup({
   jobTitle,
   user,
 }: EmailSendingPopupProps) {
+  console.log("selected applicants ", selectedApplicants);
+  
   const [clientEmail, setClientEmail] = useState("");
   const [ccEmails, setCcEmails] = useState("");
   const [bccEmails, setBccEmails] = useState("");
@@ -35,7 +52,48 @@ export default function EmailSendingPopup({
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [editableApplicants, setEditableApplicants] = useState<EditableApplicant[]>([]);
 
+  // Helper function to extract experience from custom_experience array
+  const extractExperience = (applicant: any): string => {
+    if (applicant.custom_experience && applicant.custom_experience.length > 0) {
+      const exp = applicant.custom_experience[0];
+      return exp.company_name || "";
+    }
+    return "";
+  };
+
+  // Helper function to extract qualification from custom_education array
+  const extractQualification = (applicant: any): string => {
+    if (applicant.custom_education && applicant.custom_education.length > 0) {
+      const edu = applicant.custom_education[0];
+      return edu.degree || "";
+    }
+    return "";
+  };
+
+  // Initialize editable applicants when selectedApplicants changes
+useEffect(() => {
+  const mappedApplicants: EditableApplicant[] = selectedApplicants.map((applicant) => ({
+    position: applicant.designation || "",
+    candidateName: applicant.applicant_name || "",
+    contactNo: applicant.phone_number || "",
+    email: applicant.email_id || "",
+    currentCompany: applicant.custom_company_name || extractExperience(applicant),
+    experience: "", // You may need to calculate this from custom_experience
+    currentCTC: "",
+    expCTC: "",
+    noticePeriod: "",
+    currentLocation: applicant.country || "",
+    qualification: extractQualification(applicant),
+    resume_attachment: applicant.resume_attachment,
+    // Use resume_attachment to construct the resumeLink
+    resumeLink: applicant.resume_attachment
+      ? `${process.env.NEXT_PUBLIC_FRAPPE_BASE_URL}${applicant.resume_attachment}`
+      : "",
+  }));
+  setEditableApplicants(mappedApplicants);
+}, [selectedApplicants]);
   // Helper function to validate email addresses
   const validateEmails = (emails: string): string[] => {
     if (!emails.trim()) return [];
@@ -49,56 +107,86 @@ export default function EmailSendingPopup({
     return invalidEmails.length > 0 ? [] : emailArray;
   };
 
-  // 🧠 Helper function to extract name from email and return the default message
-  function getDefaultTemplate(
-    applicants: any[],
-    jobId: string,
-    clientEmail?: string
-  ): string {
-    let clientName = "Client";
-    if (clientEmail) {
-      const localPart = clientEmail.split("@")[0];
-      let firstName = localPart.split(/[.\-_]/)[0];
-      firstName = firstName.replace(/\d+$/, "");
-      if (firstName) {
-        clientName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
-      }
+
+const generateEmailTable = (): string => {
+  return `
+<table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; font-size: 12px; margin: 0;">
+  <thead>
+    <tr style="background-color: #b4c7e7;">
+      <th style=" text-align: left; ">Position</th>
+      <th style=" text-align: left; ">Candidate Name</th>
+      <th style=" text-align: left; ">Contact No</th>
+      <th style=" text-align: left; ">Email</th>
+      <th style=" text-align: left; ">Current company</th>
+      <th style=" text-align: left; ">Experience</th>
+      <th style="text-align: left; ">Current CTC</th>
+      <th style=" text-align: left;;">Exp CTC</th>
+      <th style=" text-align: left; ">Notice period</th>
+      <th style=" text-align: left; ">Current Location</th>
+      <th style=" text-align: left; ">Qualification</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${editableApplicants.map((applicant, index) => `
+    <tr style="background-color: ${index % 2 === 0 ? '#ffffff' : '#f5f5f5'};">
+      <td style="">${applicant.position || '-'}</td>
+      <td style="">${applicant.candidateName || '-'}</td>
+      <td style="">${applicant.contactNo || '-'}</td>
+      <td style="">${applicant.email || '-'}</td>
+      <td style="">${applicant.currentCompany || '-'}</td>
+      <td style="">${applicant.experience || '-'}</td>
+      <td style="">${applicant.currentCTC || '-'}</td>
+      <td style="">${applicant.expCTC || '-'}</td>
+      <td style="">${applicant.noticePeriod || '-'}</td>
+      <td style="">${applicant.currentLocation || '-'}</td>
+      <td style="">${applicant.qualification || '-'}</td>
+    </tr>
+    `).join('')}
+  </tbody>
+</table>
+  `.trim();
+};
+
+// Also update the getDefaultTemplate function:
+function getDefaultTemplate(clientEmail?: string): string {
+  let clientName = "Client";
+  if (clientEmail) {
+    const localPart = clientEmail.split("@")[0];
+    let firstName = localPart.split(/[.\-_]/)[0];
+    firstName = firstName.replace(/\d+$/, "");
+    if (firstName) {
+      clientName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
     }
+  }
 
-    return `Dear ${clientName},
-I am pleased to share with you ${applicants.length} candidate ${
-      applicants.length === 1 ? "profile" : "profiles"
-    } for the position ${jobTitle}.
+  // Using single newlines - the backend will add proper spacing
+  return `Hi ${clientName},
+  <br/>
 
-Candidate Summary:
-${applicants
-  .map(
-    (applicant, index) =>
-      `${index + 1}. ${applicant.applicant_name || "N/A"} - ${
-        applicant.designation || "N/A"
-      }`
-  )
-  .join("\n")}
-
-Please find their resume attached with this email.
-We trust that the shared ${
-      applicants.length === 1 ? "candidate" : "candidates"
-    } have the skills and experience that align with your requirements.
+Please find the attached profiles for ${jobTitle}
+<br/>
+<br/>
+${generateEmailTable()}
+<br/>
 
 Best regards,
 ${process.env.NEXT_PUBLIC_COMPANY_NAME || ""}`;
-  }
+}
 
-  // 🪄 Update message dynamically when email changes
+
+  // Update message dynamically when email or table changes
   useEffect(() => {
-    setMessage(getDefaultTemplate(selectedApplicants, jobId, clientEmail));
-  }, [clientEmail, selectedApplicants, jobId]);
+    setMessage(getDefaultTemplate(clientEmail));
+  }, [clientEmail, editableApplicants, jobId]);
 
-
+  // Handle table cell edit
+  const handleCellEdit = (index: number, field: keyof EditableApplicant, value: string) => {
+    const updated = [...editableApplicants];
+    updated[index] = { ...updated[index], [field]: value };
+    setEditableApplicants(updated);
+  };
 
   const handleSendEmail = async () => {
- 
-
     if (!clientEmail.trim()) {
       setError("Please enter at least one recipient email address");
       return;
@@ -114,9 +202,7 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || ""}`;
       ccEmailsArray.length === 0 &&
       bccEmailsArray.length === 0
     ) {
-      setError(
-        "Please enter at least one valid email address in To, CC, or BCC"
-      );
+      setError("Please enter at least one valid email address in To, CC, or BCC");
       return;
     }
 
@@ -126,18 +212,18 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || ""}`;
     try {
       const emailData = {
         from_email: currentUserEmail,
-        to_email: toEmailsArray.join(","), // Convert array to comma-separated string
-        cc: ccEmailsArray.join(","), // Add CC emails
-        bcc: bccEmailsArray.join(","), // Add BCC emails
+        to_email: toEmailsArray.join(","),
+        cc: ccEmailsArray.join(","),
+        bcc: bccEmailsArray.join(","),
         subject: subject,
         message: message,
         job_id: jobId,
         username: currentUserEmail,
-        applicants: selectedApplicants.map((applicant) => ({
+        applicants: selectedApplicants.map((applicant, index) => ({
           name: applicant.name,
-          applicant_name: applicant.applicant_name,
-          email_id: applicant.email_id,
-          designation: applicant.designation,
+          applicant_name: editableApplicants[index]?.candidateName || applicant.applicant_name,
+          email_id: editableApplicants[index]?.email || applicant.email_id,
+          designation: editableApplicants[index]?.position || applicant.designation,
           resume_attachment: applicant.resume_attachment,
         })),
       };
@@ -159,8 +245,8 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || ""}`;
       setClientEmail("");
       setCcEmails("");
       setBccEmails("");
-      setSubject(`Applicants for Job Title ${jobTitle}`);
-      setMessage(getDefaultTemplate(selectedApplicants, jobId));
+      setSubject(`Applicants for ${jobTitle}`);
+      setMessage(getDefaultTemplate());
 
       onEmailSent();
       onClose();
@@ -176,7 +262,7 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || ""}`;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl my-8 flex flex-col max-h-[calc(100vh-4rem)]">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-7xl my-8 flex flex-col max-h-[calc(100vh-4rem)]">
         {/* Header */}
         <div className="bg-gray-50 px-6 py-4 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center justify-between">
@@ -188,18 +274,8 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || ""}`;
               className="text-gray-400 hover:text-gray-600 transition-colors"
               disabled={sending}
             >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
@@ -210,137 +286,237 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || ""}`;
 
         {/* Content */}
         <div className="p-6 overflow-y-auto flex-1">
-      
-            <>
-              {error && (
-                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                  <p className="text-red-800 text-sm">{error}</p>
-                </div>
-              )}
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-800 text-sm">{error}</p>
+            </div>
+          )}
 
-              {/* From Email */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  From Email (Company)
-                </label>
-                <input
-                  type="email"
-                  value={`${process.env.NEXT_PUBLIC_COMPANY_NAME} <${currentUserEmail}>`}
-                  disabled
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 text-sm"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Emails are sent through company SMTP server
-                </p>
-              </div>
+          {/* From Email */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              From Email (Company)
+            </label>
+            <input
+              type="email"
+              value={`${process.env.NEXT_PUBLIC_COMPANY_NAME} <${currentUserEmail}>`}
+              disabled
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 text-sm"
+            />
+          </div>
 
-              {/* To Email */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  To Email *
-                </label>
-                <input
-                  type="text"
-                  value={clientEmail}
-                  onChange={(e) => setClientEmail(e.target.value)}
-                  placeholder="Enter recipient email addresses (comma-separated)"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  disabled={sending}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Enter multiple emails separated by commas
-                </p>
-              </div>
+          {/* To Email */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              To Email *
+            </label>
+            <input
+              type="text"
+              value={clientEmail}
+              onChange={(e) => setClientEmail(e.target.value)}
+              placeholder="Enter recipient email addresses (comma-separated)"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              disabled={sending}
+            />
+          </div>
 
-              {/* CC Emails */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  CC
-                </label>
-                <input
-                  type="text"
-                  value={ccEmails}
-                  onChange={(e) => setCcEmails(e.target.value)}
-                  placeholder="Enter CC email addresses (comma-separated)"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  disabled={sending}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Enter multiple CC emails separated by commas
-                </p>
-              </div>
+          {/* CC and BCC in one row */}
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">CC</label>
+              <input
+                type="text"
+                value={ccEmails}
+                onChange={(e) => setCcEmails(e.target.value)}
+                placeholder="CC emails (comma-separated)"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                disabled={sending}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">BCC</label>
+              <input
+                type="text"
+                value={bccEmails}
+                onChange={(e) => setBccEmails(e.target.value)}
+                placeholder="BCC emails (comma-separated)"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                disabled={sending}
+              />
+            </div>
+          </div>
 
-              {/* BCC Emails */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  BCC
-                </label>
-                <input
-                  type="text"
-                  value={bccEmails}
-                  onChange={(e) => setBccEmails(e.target.value)}
-                  placeholder="Enter BCC email addresses (comma-separated)"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  disabled={sending}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Enter multiple BCC emails separated by commas
-                </p>
-              </div>
+          {/* Subject */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+            <input
+              type="text"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              disabled={sending}
+            />
+          </div>
 
-              {/* Subject */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Subject
-                </label>
-                <input
-                  type="text"
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  disabled={sending}
-                />
-              </div>
-
-              {/* Message */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Message
-                </label>
-                <textarea
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  rows={6}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-sm"
-                  disabled={sending}
-                />
-              </div>
-
-              {/* Selected Applicants */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Selected Applicants ({selectedApplicants.length})
-                </label>
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 max-h-24 overflow-y-auto">
-                  {selectedApplicants.map((applicant, index) => (
-                    <div
-                      key={applicant.name || index}
-                      className="flex items-center justify-between py-1"
-                    >
-                      <span className="text-sm text-gray-700">
-                        {index + 1}. {applicant.applicant_name || "N/A"} -{" "}
-                        {applicant.designation || "N/A"}
-                      </span>
-                      {applicant.resume_attachment && (
-                        <span className="text-xs text-green-600 bg-green-50 px-2 py-1 rounded whitespace-nowrap ml-2">
-                          📎 Resume
-                        </span>
-                      )}
-                    </div>
+          {/* Editable Candidate Table */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Candidate Details (Editable)
+            </label>
+            <div className="border border-gray-300 rounded-lg overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead className="bg-blue-100">
+                  <tr>
+                    <th className="px-2 py-2 text-left border-b">Position</th>
+                    <th className="px-2 py-2 text-left border-b">Candidate Name</th>
+                    <th className="px-2 py-2 text-left border-b">Contact No</th>
+                    <th className="px-2 py-2 text-left border-b">Email</th>
+                    <th className="px-2 py-2 text-left border-b">Current Company</th>
+                    <th className="px-2 py-2 text-left border-b">Experience</th>
+                    <th className="px-2 py-2 text-left border-b">Current CTC</th>
+                    <th className="px-2 py-2 text-left border-b">Exp CTC</th>
+                    <th className="px-2 py-2 text-left border-b">Notice Period</th>
+                    <th className="px-2 py-2 text-left border-b">Location</th>
+                    <th className="px-2 py-2 text-left border-b">Qualification</th>
+                    <th className="px-2 py-2 text-left border-b">Resume</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {editableApplicants.map((applicant, index) => (
+                    <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                      <td className="px-2 py-1 border-b">
+                        <input
+                          type="text"
+                          value={applicant.position}
+                          onChange={(e) => handleCellEdit(index, 'position', e.target.value)}
+                          className="w-full px-1 py-1 border border-gray-200 rounded text-xs"
+                          disabled={sending}
+                        />
+                      </td>
+                      <td className="px-2 py-1 border-b">
+                        <input
+                          type="text"
+                          value={applicant.candidateName}
+                          onChange={(e) => handleCellEdit(index, 'candidateName', e.target.value)}
+                          className="w-full px-1 py-1 border border-gray-200 rounded text-xs"
+                          disabled={sending}
+                        />
+                      </td>
+                      <td className="px-2 py-1 border-b">
+                        <input
+                          type="text"
+                          value={applicant.contactNo}
+                          onChange={(e) => handleCellEdit(index, 'contactNo', e.target.value)}
+                          className="w-full px-1 py-1 border border-gray-200 rounded text-xs"
+                          disabled={sending}
+                        />
+                      </td>
+                      <td className="px-2 py-1 border-b">
+                        <input
+                          type="text"
+                          value={applicant.email}
+                          onChange={(e) => handleCellEdit(index, 'email', e.target.value)}
+                          className="w-full px-1 py-1 border border-gray-200 rounded text-xs"
+                          disabled={sending}
+                        />
+                      </td>
+                      <td className="px-2 py-1 border-b">
+                        <input
+                          type="text"
+                          value={applicant.currentCompany}
+                          onChange={(e) => handleCellEdit(index, 'currentCompany', e.target.value)}
+                          className="w-full px-1 py-1 border border-gray-200 rounded text-xs"
+                          disabled={sending}
+                        />
+                      </td>
+                      <td className="px-2 py-1 border-b">
+                        <input
+                          type="text"
+                          value={applicant.experience}
+                          onChange={(e) => handleCellEdit(index, 'experience', e.target.value)}
+                          className="w-full px-1 py-1 border border-gray-200 rounded text-xs"
+                          disabled={sending}
+                        />
+                      </td>
+                      <td className="px-2 py-1 border-b">
+                        <input
+                          type="text"
+                          value={applicant.currentCTC}
+                          onChange={(e) => handleCellEdit(index, 'currentCTC', e.target.value)}
+                          className="w-full px-1 py-1 border border-gray-200 rounded text-xs"
+                          disabled={sending}
+                        />
+                      </td>
+                      <td className="px-2 py-1 border-b">
+                        <input
+                          type="text"
+                          value={applicant.expCTC}
+                          onChange={(e) => handleCellEdit(index, 'expCTC', e.target.value)}
+                          className="w-full px-1 py-1 border border-gray-200 rounded text-xs"
+                          disabled={sending}
+                        />
+                      </td>
+                      <td className="px-2 py-1 border-b">
+                        <input
+                          type="text"
+                          value={applicant.noticePeriod}
+                          onChange={(e) => handleCellEdit(index, 'noticePeriod', e.target.value)}
+                          className="w-full px-1 py-1 border border-gray-200 rounded text-xs"
+                          disabled={sending}
+                        />
+                      </td>
+                      <td className="px-2 py-1 border-b">
+                        <input
+                          type="text"
+                          value={applicant.currentLocation}
+                          onChange={(e) => handleCellEdit(index, 'currentLocation', e.target.value)}
+                          className="w-full px-1 py-1 border border-gray-200 rounded text-xs"
+                          disabled={sending}
+                        />
+                      </td>
+                      <td className="px-2 py-1 border-b">
+                        <input
+                          type="text"
+                          value={applicant.qualification}
+                          onChange={(e) => handleCellEdit(index, 'qualification', e.target.value)}
+                          className="w-full px-1 py-1 border border-gray-200 rounded text-xs"
+                          disabled={sending}
+                        />
+                      </td>
+                      <td className="px-2 py-1 border-b">
+                        {applicant.resumeLink ? (
+                          <a
+                            href={applicant.resumeLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 underline text-xs"
+                          >
+                            View Resume
+                          </a>
+                        ) : (
+                          <span className="text-gray-400 text-xs">N/A</span>
+                        )}
+                      </td>
+                    </tr>
                   ))}
-                </div>
-              </div>
-            </>
+                </tbody>
+              </table>
+            </div>
+            <p className="text-xs text-gray-500 mt-2">
+              ✏️ You can edit any field in the table above. Changes will be reflected in the email.
+            </p>
+          </div>
+
+          {/* Message Preview */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Email Preview
+            </label>
+            <div 
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-xs overflow-x-auto"
+              dangerouslySetInnerHTML={{ __html: message }}
+            />
+          </div>
         </div>
 
         {/* Footer */}
@@ -353,21 +529,20 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || ""}`;
             >
               Cancel
             </button>
-     
-              <button
-                onClick={handleSendEmail}
-                disabled={sending || (!clientEmail && !ccEmails && !bccEmails)}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {sending ? (
-                  <div className="flex items-center">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Sending...
-                  </div>
-                ) : (
-                  "Send Email"
-                )}
-              </button>
+            <button
+              onClick={handleSendEmail}
+              disabled={sending || (!clientEmail && !ccEmails && !bccEmails)}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {sending ? (
+                <div className="flex items-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Sending...
+                </div>
+              ) : (
+                "Send Email"
+              )}
+            </button>
           </div>
         </div>
       </div>
