@@ -562,7 +562,7 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
               : "Create New Applicant"}
           </h3>
           <BulkApplicantForm
-            initialJobId={currentJobTitle}
+            initialJobId={initialJobId}
             prefilledData={prefilledApplicantData}
             isExistingApplicant={
               existingApplicants.length > 0 && showCVUpdateForm
