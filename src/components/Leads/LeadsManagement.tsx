@@ -39,7 +39,7 @@ const LeadsManagement = () => {
     []
   );
 
-  // State for filters
+  // State for filters - MOVED TO PARENT COMPONENT
   const [filters, setFilters] = useState<FilterState>({
     departments: [],
     assignedBy: [],
@@ -74,12 +74,28 @@ const LeadsManagement = () => {
     [setLeads, setLoading]
   );
 
-  // Wrapper function for refresh that doesn't require parameters
-  const handleRefresh = useCallback(async () => {
-    if (user?.email) {
-      await fetchLeads(user.email);
-    }
-  }, [user?.email, fetchLeads]);
+  // Wrapper function for refresh that doesn't require parameters and preserves filters
+// Wrapper function for refresh that resets filters and fetches leads
+const handleRefresh = useCallback(async () => {
+  if (user?.email) {
+    setSearchQuery("");
+    // Reset filters to initial state
+    setFilters({
+      departments: [],
+      assignedBy: [],
+      clients: [],
+      locations: [],
+      jobTitles: [],
+      status: [],
+      contacts: [],
+      dateRange: "all",
+      vacancies: "all",
+    });
+    setCurrentPage(1);
+    // Fetch leads
+    await fetchLeads(user.email);
+  }
+}, [user?.email, fetchLeads, setFilters]);
 
   useEffect(() => {
     if (!user?.email) return;
@@ -133,6 +149,7 @@ const LeadsManagement = () => {
   const handleFormClose = useCallback(() => {
     setCurrentView("list");
     setCurrentPage(1);
+    // Refresh data but keep filters - just fetch without clearing filters
     if (user?.email) {
       fetchLeads(user.email);
     }
@@ -157,7 +174,7 @@ const LeadsManagement = () => {
     setCurrentView("edit");
   }, []);
 
-  // Handle filter change
+  // Handle filter change - now updates parent state
   const handleFilterChange = useCallback((newFilters: FilterState) => {
     setFilters(newFilters);
     setCurrentPage(1);
@@ -188,7 +205,7 @@ const LeadsManagement = () => {
         icon: Tag,
         options: allStages,
         alwaysShowOptions: true,
-        type: "radio"as const,
+        type: "radio" as const,
         showInitialOptions: true,
       },
     ],
@@ -230,6 +247,7 @@ const LeadsManagement = () => {
         onAddLead={handleAddLead}
         showExportButton={false}
         showAddLeadButton={true}
+        filters={filters}
       />
 
       <div className="w-full mx-auto py-2">
@@ -247,7 +265,7 @@ const LeadsManagement = () => {
               leads={paginatedLeads}
               onViewLead={handleViewLead}
               onEditLead={handleEditLead}
-              isRestrictedUser={isRestrictedUser} // Pass isRestrictedUser
+              isRestrictedUser={isRestrictedUser}
             />
 
             <Pagination
@@ -279,7 +297,7 @@ const LeadsManagement = () => {
         <LeadDetailModal
           lead={selectedLead}
           onClose={handleCloseModal}
-          isRestrictedUser={isRestrictedUser} // Pass isRestrictedUser
+          isRestrictedUser={isRestrictedUser}
         />
       )}
     </div>

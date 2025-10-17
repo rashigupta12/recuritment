@@ -218,12 +218,33 @@ const ContractLeads = () => {
     setShowConfirmation(false);
   }, []);
 
+  // const handleRefresh = useCallback(async () => {
+  //   if (user?.email) {
+  //     await fetchLeads(user.email);
+  //     console.log("Refreshed leads:", leads);
+  //   }
+  // }, [user, fetchLeads]);
+
   const handleRefresh = useCallback(async () => {
-    if (user?.email) {
-      await fetchLeads(user.email);
-      console.log("Refreshed leads:", leads);
-    }
-  }, [user, fetchLeads]);
+  if (user?.email) {
+    setSearchQuery("");
+    // Reset filters to initial state
+    setFilters({
+      departments: [],
+      assignedBy: [],
+      clients: [],
+      locations: [],
+      jobTitles: [],
+      status: "",
+      contacts: [],
+      dateRange: "all",
+      vacancies: "all",
+    });
+    setCurrentPage(1);
+    // Fetch leads
+    await fetchLeads(user.email);
+  }
+}, [user?.email, fetchLeads, setFilters]);
 
   // Render loading state
   if (loading) {
