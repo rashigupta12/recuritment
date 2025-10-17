@@ -567,7 +567,7 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || ""}`;
                 placeholder="Compose your email message here..."
               />
               <p className="text-xs text-gray-500 mt-2">
-                ✏️ Edit the table above to update candidate details. You can also edit the email content in the textarea above. The candidate table will be included in the email before the "Best regards" line.
+                ✏️ Edit the table above to update candidate details. You can also edit the email content in the textarea above. The candidate table will be included in the email before the &quot;Best regards&quot; line.
               </p>
             </div>
           </div>
