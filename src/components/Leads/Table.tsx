@@ -45,8 +45,8 @@ export const LeadsTable = ({
 
   const columns = useMemo(() => {
     const cols: Array<{ field: LeadsV2AllFields; label: string; sortable?: boolean }> = [
-      { field: 'company', label: 'Company',sortable: false },
-      { field: 'contact', label: 'Contact',sortable: false },
+      { field: 'company', label: 'Company',sortable: true },
+      { field: 'contact', label: 'Contact',sortable: true },
       { field: 'stage', label: 'Stage',sortable: false },
       { field: 'offering', label: 'Offering',sortable: false },
       { field: 'salary', label: 'AVG.SAL (LPA)',sortable: false },
