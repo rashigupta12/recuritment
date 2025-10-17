@@ -462,25 +462,46 @@ const StaffingPlansTable: React.FC = () => {
     return { date: formattedDate, time: formattedTime };
   };
 
+  const handleRefresh = async () => {
+
+    setSearchTerm("");
+    // Reset filters to initial state
+    setFilterState({
+        departments: [],
+    assignedBy: [],
+    clients: [],
+    locations: [],
+    jobTitles: [],
+    status: "",
+    contacts: [],
+    dateRange: "all",
+    vacancies: "all",
+    });
+    setCurrentPage(1);
+    // Fetch leads
+    await fetchStaffingPlans();
+  
+};
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="w-full mx-auto">
         {/* Header with filters */}
         <TodosHeader
-          searchQuery={searchTerm}
-          onSearchChange={setSearchTerm}
-          onRefresh={() => fetchStaffingPlans()}
-          totalJobs={plans.length}
-          filteredJobs={filteredPlans.length}
-          uniqueClients={uniqueCompanies}
-          uniqueContacts={uniqueContacts}
-          uniqueJobTitles={uniquePositions}
-          uniqueStatus={[] as string[]}
-          onFilterChange={handleFilterChange}
-          filterConfig={filterConfig}
-          title="Customers Requirements"
-          oncreateButton={isRecruiter ? handleCreate : undefined}
-        />
+  searchQuery={searchTerm}
+  onSearchChange={setSearchTerm}
+  onRefresh={handleRefresh}
+  totalJobs={plans.length}
+  filteredJobs={filteredPlans.length}
+  uniqueClients={uniqueCompanies}
+  uniqueContacts={uniqueContacts}
+  uniqueJobTitles={uniquePositions}
+  uniqueStatus={[] as string[]}
+  onFilterChange={handleFilterChange}
+  filterConfig={filterConfig}
+  title="Customers Requirements"
+  externalFilters={filterState} // Add this prop
+/>
 
         {/* Main Table */}
         {isLoading ? (
