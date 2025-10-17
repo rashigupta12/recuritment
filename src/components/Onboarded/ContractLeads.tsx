@@ -250,13 +250,33 @@ const ContractLeads = () => {
     return <LoadingState />;
   }
 
+  const handleRefresh = async () => {
+  if (user?.email) {
+    setSearchQuery("");
+    // Reset filters to initial state
+    setFilters({
+        departments: [],
+    assignedBy: [],
+    clients: [],
+    locations: [],
+    jobTitles: [],
+    status: "",
+    dateRange: "all",
+    vacancies: "all",
+    });
+    setCurrentPage(1);
+    // Fetch leads
+    await fetchLeads(user.email);
+  }
+};
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="w-full mx-auto py-2">
         <TodosHeader
           searchQuery={searchQuery}
           onSearchChange={handleSearchChange}
-          onRefresh={() => fetchLeads(user?.email || "")}
+          onRefresh={handleRefresh}
           totalJobs={leads.length}
           filteredJobs={filteredLeads.length}
           uniqueClients={uniqueCompanies}
