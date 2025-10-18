@@ -272,7 +272,20 @@ export default function ViewApplicantPage() {
   };
 
   const handleRefresh = async () => {
-    if (!userEmail) return;
+    if (userEmail) {
+    setSearchQuery("");
+    // Reset filters to initial state
+    setFilters({
+        departments: [],
+    assignedBy: [],
+    clients: [],
+    locations: [],
+    jobTitles: [],
+    status: [],
+    dateRange: 'all',
+    vacancies: 'all',
+    });
+    setCurrentPage(1);
     try {
       const { data, total } = await fetchApplicantsData(userEmail, (currentPage - 1) * itemsPerPage, itemsPerPage);
       setApplicants(data);
@@ -282,6 +295,7 @@ export default function ViewApplicantPage() {
       toast.error("Failed to refresh applicants.");
     }
   };
+}
 
   const uniqueJobTitles = Array.from(new Set(applicants.map((applicant) => applicant.designation).filter(Boolean) as string[]));
   const uniqueClients = Array.from(new Set(applicants.map((applicant) => applicant.custom_company_name).filter(Boolean) as string[]));
@@ -321,6 +335,7 @@ export default function ViewApplicantPage() {
       searchKey: 'status',
       alwaysShowOptions: true,
       showInitialOptions: true,
+       type: "radio"as const,
     },
   ];
 
