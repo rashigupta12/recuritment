@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { frappeAPI } from "@/lib/api/frappeClient";
 import { useEffect, useState, useMemo, useRef } from "react";
-import { LoadingState } from "./LoadingState";
 // import { TodosTable } from "./TodosTable";
 import { Calendar, Briefcase, MapPin, Award } from "lucide-react";
 import { Pagination } from "@/components/comman/Pagination";
@@ -12,6 +11,7 @@ import { toast } from "sonner";
 import { TodosHeader } from "@/components/recruiter/Header";
 import { showToast } from "@/lib/toast/showToast";
 import TodosTable from "./TodosTable";
+import { LoadingState } from "../Leads/LoadingState";
 
 interface ToDo {
   name: string;
@@ -344,12 +344,7 @@ const TodosManagement = () => {
 
       <div className="w-full mx-auto mt-4" ref={tableRef}>
         {loading && (
-          <div className="absolute inset-0 bg-gray-100 bg-opacity-75 flex items-center justify-center z-10">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-lg font-semibold text-gray-700">Refreshing table...</p>
-            </div>
-          </div>
+       <LoadingState/>
         )}
         {paginatedTodos.length > 0 ? (
           <>

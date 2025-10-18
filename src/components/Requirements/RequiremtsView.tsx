@@ -25,6 +25,7 @@ import Pagination from "../comman/Pagination";
 import { formatToIndianCurrency } from "../Leads/helper";
 import { JobOpeningModal } from "./requirement-view/JobopeningModal";
 import { showToast } from "./Management";
+import { LoadingState } from "../Leads/LoadingState";
 
 interface StaffingPlansTableProps {
   selectedLead: {
@@ -474,18 +475,10 @@ const StaffingPlansTable: React.FC<StaffingPlansTableProps> = ({ selectedLead })
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className=" bg-gray-50">
       <div className="w-full mx-auto">
         {isLoading ? (
-          <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-12 text-center">
-            <Loader2 className="h-16 w-16 text-blue-500 animate-spin mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Loading Staffing Plans
-            </h3>
-            <p className="text-gray-600">
-              Please wait while we fetch your data...
-            </p>
-          </div>
+          <LoadingState/>
         ) : error ? (
           <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-12 text-center">
             <AlertCircle className="h-16 w-16 text-red-400 mx-auto mb-4" />
@@ -502,7 +495,7 @@ const StaffingPlansTable: React.FC<StaffingPlansTableProps> = ({ selectedLead })
           </div>
         ) : paginatedPlans.length > 0 ? (
           <>
-            <div className="bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden">
+            <div className="bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden pt-0">
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <SortableTableHeader
@@ -715,7 +708,7 @@ const StaffingPlansTable: React.FC<StaffingPlansTableProps> = ({ selectedLead })
             />
           </>
         ) : (
-          <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-12 text-center mt-4">
+          <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-12 text-center">
             <Building className="h-16 w-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 mb-2">
               {searchTerm || filterState.clients.length > 0 || filterState.contacts.length > 0 || filterState.jobTitles.length > 0

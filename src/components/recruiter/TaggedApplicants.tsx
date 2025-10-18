@@ -10,6 +10,7 @@ import EmailSendingPopup from "./EmailSendingPopup";
 import { Award, User, X, Search, AlertCircle, CheckCircle } from "lucide-react";
 // import { InterviewScheduleModal } from "./InterviewSchedule";
 import { InterviewDetailsModal } from "./InterviewDetailsModal";
+import { LoadingState } from "../Leads/LoadingState";
 
 interface JobApplicant {
   name: string;
@@ -103,9 +104,6 @@ export default function TaggedApplicants({
   const [targetStartDate, setTargetStartDate] = useState<string>("");
   const [isInterviewDetailsModalOpen, setIsInterviewDetailsModalOpen] = useState(false);
 const [selectedInterviewApplicant, setSelectedInterviewApplicant] = useState<JobApplicant | null>(null);
-
-  const [isInterviewScheduleModalOpen, setIsInterviewScheduleModalOpen] = useState(false);
-const [interviewScheduleLoading, setInterviewScheduleLoading] = useState(false);
   const router = useRouter();
   const [expiryDate, setExpiryDate] = useState<string>("");
   const user = { username: ownerEmail };
@@ -205,14 +203,6 @@ const [interviewScheduleLoading, setInterviewScheduleLoading] = useState(false);
       toast.error(errorMessage);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleSelectAll = () => {
-    if (selectedApplicants.length === applicants.length) {
-      setSelectedApplicants([]);
-    } else {
-      setSelectedApplicants([...applicants]);
     }
   };
 
@@ -798,14 +788,7 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center py-8 bg-gray-50 min-h-[200px] rounded-lg">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
-        <span className="ml-3 text-gray-700 font-medium text-lg">
-          Loading applicants...
-        </span>
-      </div>
-    );
+  <LoadingState/>
   }
 
   if (error) {

@@ -33,6 +33,7 @@ import CurrencyDropdown from "./requirement-form/CurrencyDropDown";
 import DesignationDropdown from "./requirement-form/DesignationDropdown";
 import LocationDropdown from "./requirement-form/LocationDropdown";
 import StaffingPlansTable from "./RequiremtsView";
+import { LoadingState } from "../Leads/LoadingState";
 
 const TOAST_ID = "global-toast";
 
@@ -943,39 +944,11 @@ const StaffingPlanCreator: React.FC = () => {
     setShowBackConfirm(false);
   };
 
-  const formatDateAndTimeV2 = (dateString?: string) => {
-    if (!dateString) return { date: "-", time: "-" };
-    const date = new Date(dateString);
-
-    const formattedDate = date.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
-
-    const formattedTime = date.toLocaleTimeString("en-IN", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    });
-
-    return { date: formattedDate, time: formattedTime };
-  };
 
   // RENDER - Moved loading check here instead of early return
   if (isLoadingPlan) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Loading Job Details
-          </h3>
-          <p className="text-gray-600">
-            Please wait while we fetch the Job data...
-          </p>
-        </div>
-      </div>
+    <LoadingState/>
     );
   }
 
@@ -997,10 +970,7 @@ const StaffingPlanCreator: React.FC = () => {
                   {isEditMode ? "Edit Requirements" : "Create Requirements"}
                 </h1>
                 {isLoadingLead && (
-                  <div className="flex items-center text-md text-blue-600">
-                    <Loader2 className="h-4 w-4 animate-spin mr-1" />
-                    Loading lead...
-                  </div>
+                 <LoadingState/>
                 )}
               </div>
 
@@ -1380,12 +1350,7 @@ const StaffingPlanCreator: React.FC = () => {
                 Previous Requirements
               </h2>
               {isLoadingPrevious ? (
-                <div className="text-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
-                  <p className="text-gray-600">
-                    Loading previous requirements...
-                  </p>
-                </div>
+                <LoadingState/>
               ) : previousPlans.length > 0 ? (
                 <div className="bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden">
                   <div className="overflow-x-auto">

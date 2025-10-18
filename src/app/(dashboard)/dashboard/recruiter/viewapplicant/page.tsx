@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import Pagination from "@/components/comman/Pagination";
+import { LoadingState } from "@/components/Leads/LoadingState";
 import { ApplicantsTable } from "@/components/recruiter/CandidateTrackerTable";
 import { TodosHeader } from "@/components/recruiter/Header";
 import { frappeAPI } from "@/lib/api/frappeClient";
@@ -11,7 +12,7 @@ import {
   Building2,
   Calendar,
   User,
-  X
+  X,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -83,13 +84,15 @@ interface FilterState {
   locations: string[];
   jobTitles: string[];
   status: string[];
-  dateRange: 'all' | 'today' | 'week' | 'month';
-  vacancies: 'all' | 'single' | 'multiple';
+  dateRange: "all" | "today" | "week" | "month";
+  vacancies: "all" | "single" | "multiple";
 }
 
 export default function ViewApplicantPage() {
   const [applicants, setApplicants] = useState<JobApplicant[]>([]);
-  const [filteredApplicants, setFilteredApplicants] = useState<JobApplicant[]>([]);
+  const [filteredApplicants, setFilteredApplicants] = useState<JobApplicant[]>(
+    []
+  );
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -99,9 +102,15 @@ export default function ViewApplicantPage() {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [modalError, setModalError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [selectedApplicantGroup, setSelectedApplicantGroup] = useState<JobApplicant[] | null>(null);
-  const [showDowngradeWarning, setShowDowngradeWarning] = useState<boolean>(false);
-  const [downgradeInfo, setDowngradeInfo] = useState<{ from: string; to: string } | null>(null);
+  const [selectedApplicantGroup, setSelectedApplicantGroup] = useState<
+    JobApplicant[] | null
+  >(null);
+  const [showDowngradeWarning, setShowDowngradeWarning] =
+    useState<boolean>(false);
+  const [downgradeInfo, setDowngradeInfo] = useState<{
+    from: string;
+    to: string;
+  } | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalCount, setTotalCount] = useState<number>(0);
   const itemsPerPage = 10;
@@ -113,38 +122,42 @@ export default function ViewApplicantPage() {
     locations: [],
     jobTitles: [],
     status: [],
-    dateRange: 'all',
-    vacancies: 'all',
+    dateRange: "all",
+    vacancies: "all",
   });
   const searchParams = useSearchParams();
   const statusParam = searchParams.get("status") || "all";
   const router = useRouter();
   const normalizeString = (str: string | undefined): string => {
-  return str ? str.toLowerCase().trim().replace(/\s+/g, ' ') : '';
-};
+    return str ? str.toLowerCase().trim().replace(/\s+/g, " ") : "";
+  };
 
-const fetchApplicantsData = async (
-  email: string,
-  limitStart = 0,
-  limitPageLength = itemsPerPage
-): Promise<{ data: JobApplicant[]; total: number }> => {
-  try {
-    const response = await frappeAPI.getAllApplicants(email, limitStart, limitPageLength);
-    const result: ApiResponse = response;
-    console.log("API response:", result.message);
-    
-    // Transform the nested structure to flat array
-    const flattenedData = transformApplicantsData(result.message.data || []);
-    
-    return {
-      data: flattenedData,
-      total: result.message.total || 0,
-    };
-  } catch (error) {
-    console.error("Error fetching applicants:", error);
-    throw error;
-  }
-};
+  const fetchApplicantsData = async (
+    email: string,
+    limitStart = 0,
+    limitPageLength = itemsPerPage
+  ): Promise<{ data: JobApplicant[]; total: number }> => {
+    try {
+      const response = await frappeAPI.getAllApplicants(
+        email,
+        limitStart,
+        limitPageLength
+      );
+      const result: ApiResponse = response;
+      console.log("API response:", result.message);
+
+      // Transform the nested structure to flat array
+      const flattenedData = transformApplicantsData(result.message.data || []);
+
+      return {
+        data: flattenedData,
+        total: result.message.total || 0,
+      };
+    } catch (error) {
+      console.error("Error fetching applicants:", error);
+      throw error;
+    }
+  };
 
   // Export applicants to CSV
   const handleExport = () => {
@@ -187,9 +200,7 @@ const fetchApplicantsData = async (
     const csvContent = [
       headers.join(","),
       ...rows.map((row) =>
-        row
-          .map((cell) => `"${cell.replace(/"/g, '""')}"`)
-          .join(",")
+        row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(",")
       ),
     ].join("\n");
 
@@ -206,49 +217,47 @@ const fetchApplicantsData = async (
     return Promise.resolve();
   };
 
+  const transformApplicantsData = (apiResponse: any[]): JobApplicant[] => {
+    const flattened: JobApplicant[] = [];
 
-  
-const transformApplicantsData = (apiResponse: any[]): JobApplicant[] => {
-  const flattened: JobApplicant[] = [];
-  
-  apiResponse.forEach((applicant: any) => {
-    if (applicant.applications && applicant.applications.length > 0) {
-      // Create a row for each application
-      applicant.applications.forEach((app: any, index: number) => {
+    apiResponse.forEach((applicant: any) => {
+      if (applicant.applications && applicant.applications.length > 0) {
+        // Create a row for each application
+        applicant.applications.forEach((app: any, index: number) => {
+          flattened.push({
+            name: `${applicant.email_id}_${index}`, // Unique identifier
+            applicant_name: applicant.applicant_name,
+            email_id: applicant.email_id,
+            phone_number: applicant.phone_number,
+            country: applicant.country,
+            job_title: app.job_title,
+            designation: app.designation,
+            status: app.status,
+            custom_company_name: app.custom_company_name,
+            resume_attachment: app.resume_attachment || "",
+            custom_experience: [],
+          });
+        });
+      } else {
+        // Applicant with no applications (shouldn't happen but handle it)
         flattened.push({
-          name: `${applicant.email_id}_${index}`, // Unique identifier
+          name: applicant.email_id,
           applicant_name: applicant.applicant_name,
           email_id: applicant.email_id,
           phone_number: applicant.phone_number,
           country: applicant.country,
-          job_title: app.job_title,
-          designation: app.designation,
-          status: app.status,
-          custom_company_name: app.custom_company_name,
-          resume_attachment: app.resume_attachment || "",
+          job_title: "",
+          designation: "",
+          status: "",
+          custom_company_name: "",
+          resume_attachment: "",
           custom_experience: [],
         });
-      });
-    } else {
-      // Applicant with no applications (shouldn't happen but handle it)
-      flattened.push({
-        name: applicant.email_id,
-        applicant_name: applicant.applicant_name,
-        email_id: applicant.email_id,
-        phone_number: applicant.phone_number,
-        country: applicant.country,
-        job_title: "",
-        designation: "",
-        status: "",
-        custom_company_name: "",
-        resume_attachment: "",
-        custom_experience: [],
-      });
-    }
-  });
-  
-  return flattened;
-};
+      }
+    });
+
+    return flattened;
+  };
   useEffect(() => {
     const checkAuthAndFetchApplicants = async () => {
       try {
@@ -267,14 +276,19 @@ const transformApplicantsData = (apiResponse: any[]): JobApplicant[] => {
         const email = session.user.email;
         setUserEmail(email);
 
-        const { data, total } = await fetchApplicantsData(email, (currentPage - 1) * itemsPerPage, itemsPerPage);
+        const { data, total } = await fetchApplicantsData(
+          email,
+          (currentPage - 1) * itemsPerPage,
+          itemsPerPage
+        );
         setApplicants(data);
         setTotalCount(total);
 
         let filtered = data;
         if (statusParam && statusParam.toLowerCase() !== "all") {
-          filtered = data.filter((applicant) =>
-            applicant.status?.toLowerCase() === statusParam.toLowerCase()
+          filtered = data.filter(
+            (applicant) =>
+              applicant.status?.toLowerCase() === statusParam.toLowerCase()
           );
           setFilters((prev) => ({ ...prev, status: [statusParam] }));
         }
@@ -282,12 +296,20 @@ const transformApplicantsData = (apiResponse: any[]): JobApplicant[] => {
       } catch (err: any) {
         console.error("Fetch error:", err);
         let errorMessage = "An error occurred while fetching applicants.";
-        if (err.message?.includes("Session expired") || err.response?.status === 401 || err.response?.status === 403) {
+        if (
+          err.message?.includes("Session expired") ||
+          err.response?.status === 401 ||
+          err.response?.status === 403
+        ) {
           errorMessage = "Session expired. Please log in again.";
           setIsAuthenticated(false);
           router.push("/login");
-        } else if (err.response?.status === 404 || err?.exc_type === "DoesNotExistError") {
-          errorMessage = "Job Applicant resource not found. Please verify the API endpoint or contact support.";
+        } else if (
+          err.response?.status === 404 ||
+          err?.exc_type === "DoesNotExistError"
+        ) {
+          errorMessage =
+            "Job Applicant resource not found. Please verify the API endpoint or contact support.";
         } else if (err.response?.data?.message) {
           errorMessage = err.response.data.message;
         }
@@ -302,87 +324,110 @@ const transformApplicantsData = (apiResponse: any[]): JobApplicant[] => {
 
     checkAuthAndFetchApplicants();
   }, [router, statusParam, currentPage]);
-useEffect(() => {
-  let filtered = applicants;
-  
-  // Search filter
-  if (searchQuery.trim()) {
-    const query = searchQuery.toLowerCase().trim();
-    filtered = filtered.filter(
-      (applicant) =>
-        applicant.applicant_name?.toLowerCase().includes(query) ||
-        applicant.email_id?.toLowerCase().includes(query) ||
-        applicant.job_title?.toLowerCase().includes(query) ||
-        applicant.designation?.toLowerCase().includes(query)
-    );
-  }
-  
-  if (filters.status.length > 0) {
-    filtered = filtered.filter((applicant) => {
-      if (!applicant.status) return false;
-      
-      // Normalize both the filter status and applicant status for comparison
-      const normalizedApplicantStatus = normalizeString(applicant.status);
-      return filters.status.some(filterStatus => 
-        normalizeString(filterStatus) === normalizedApplicantStatus
-      );
-    });
-  }
-  
-  // Job titles filter
-  if (filters.jobTitles.length > 0) {
-    filtered = filtered.filter((applicant) =>
-      applicant.designation && filters.jobTitles.includes(applicant.designation)
-    );
-  }
-  
-  // Clients filter
-  if (filters.clients.length > 0) {
-    filtered = filtered.filter((applicant) =>
-      applicant.custom_company_name && filters.clients.includes(applicant.custom_company_name)
-    );
-  }
+  useEffect(() => {
+    let filtered = applicants;
 
-  setFilteredApplicants(filtered);
-}, [applicants, searchQuery, filters]);
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter(
+        (applicant) =>
+          applicant.applicant_name?.toLowerCase().includes(query) ||
+          applicant.email_id?.toLowerCase().includes(query) ||
+          applicant.job_title?.toLowerCase().includes(query) ||
+          applicant.designation?.toLowerCase().includes(query)
+      );
+    }
+
+    if (filters.status.length > 0) {
+      filtered = filtered.filter((applicant) => {
+        if (!applicant.status) return false;
+
+        // Normalize both the filter status and applicant status for comparison
+        const normalizedApplicantStatus = normalizeString(applicant.status);
+        return filters.status.some(
+          (filterStatus) =>
+            normalizeString(filterStatus) === normalizedApplicantStatus
+        );
+      });
+    }
+
+    // Job titles filter
+    if (filters.jobTitles.length > 0) {
+      filtered = filtered.filter(
+        (applicant) =>
+          applicant.designation &&
+          filters.jobTitles.includes(applicant.designation)
+      );
+    }
+
+    // Clients filter
+    if (filters.clients.length > 0) {
+      filtered = filtered.filter(
+        (applicant) =>
+          applicant.custom_company_name &&
+          filters.clients.includes(applicant.custom_company_name)
+      );
+    }
+
+    setFilteredApplicants(filtered);
+  }, [applicants, searchQuery, filters]);
 
   const handleFilterChange = (newFilters: FilterState) => {
     setFilters(newFilters);
   };
 
-const handleRefresh = async () => {
-  console.log("clicked");
-  if (!userEmail) return;
-  try {
-    setLoading(true); // Set loading to true during refresh
-    const { data, total } = await fetchApplicantsData(userEmail, 0, itemsPerPage);
-    console.log("Refreshed data:", data);
-    setApplicants([...data]); // Create new array reference
-    setTotalCount(total);
-    setCurrentPage(1); // Reset to first page
-    setSelectedApplicants([]); // Clear selected applicants
-    setFilters({
-      departments: [],
-      assignedBy: [],
-      clients: [],
-      locations: [],
-      jobTitles: [],
-      status: statusParam && statusParam.toLowerCase() !== "all" ? [statusParam] : [],
-      dateRange: 'all',
-      vacancies: 'all',
-    }); // Reset filters
-    setSearchQuery(""); // Clear search query
-    toast.success("Table refreshed successfully."); // Confirm refresh
-  } catch (err) {
-    console.error("Refresh error:", err);
-    toast.error("Failed to refresh applicants.");
-  } finally {
-    setLoading(false); // Reset loading state
-  }
-};
+  const handleRefresh = async () => {
+    console.log("clicked");
+    if (!userEmail) return;
+    try {
+      setLoading(true); // Set loading to true during refresh
+      const { data, total } = await fetchApplicantsData(
+        userEmail,
+        0,
+        itemsPerPage
+      );
+      setApplicants([...data]); // Create new array reference
+      setTotalCount(total);
+      setCurrentPage(1); // Reset to first page
+      setSelectedApplicants([]); // Clear selected applicants
+      setFilters({
+        departments: [],
+        assignedBy: [],
+        clients: [],
+        locations: [],
+        jobTitles: [],
+        status:
+          statusParam && statusParam.toLowerCase() !== "all"
+            ? [statusParam]
+            : [],
+        dateRange: "all",
+        vacancies: "all",
+      }); // Reset filters
+      setSearchQuery(""); // Clear search query
+      toast.success("Table refreshed successfully."); // Confirm refresh
+    } catch (err) {
+      console.error("Refresh error:", err);
+      toast.error("Failed to refresh applicants.");
+    } finally {
+      setLoading(false); // Reset loading state
+    }
+  };
 
-  const uniqueJobTitles = Array.from(new Set(applicants.map((applicant) => applicant.designation).filter(Boolean) as string[]));
-  const uniqueClients = Array.from(new Set(applicants.map((applicant) => applicant.custom_company_name).filter(Boolean) as string[]));
+  const uniqueJobTitles = Array.from(
+    new Set(
+      applicants
+        .map((applicant) => applicant.designation)
+        .filter(Boolean) as string[]
+    )
+  );
+  const uniqueClients = Array.from(
+    new Set(
+      applicants
+        .map((applicant) => applicant.custom_company_name)
+        .filter(Boolean) as string[]
+    )
+  );
   const uniqueStatus = [
     "Tagged",
     "Shortlisted",
@@ -396,28 +441,28 @@ const handleRefresh = async () => {
 
   const filterConfig = [
     {
-      id: 'clients',
-      title: 'Client',
+      id: "clients",
+      title: "Client",
       icon: Building2,
       options: uniqueClients,
-      searchKey: 'clients',
+      searchKey: "clients",
       showInitialOptions: false,
     },
     {
-      id: 'jobTitles',
-      title: 'Job Designation',
+      id: "jobTitles",
+      title: "Job Designation",
       icon: Briefcase,
       options: uniqueJobTitles,
-      searchKey: 'jobTitles',
+      searchKey: "jobTitles",
       showInitialOptions: false,
     },
     {
-      id: 'status',
-      title: 'Status',
+      id: "status",
+      title: "Status",
       icon: Award,
       options: uniqueStatus,
-      type: 'radio'as const,
-      searchKey: 'status',
+      type: "radio" as const,
+      searchKey: "status",
       alwaysShowOptions: true,
       showInitialOptions: true,
     },
@@ -441,25 +486,28 @@ const handleRefresh = async () => {
 
   const getStatusLevel = (status: string): number => {
     const statusLevels: { [key: string]: number } = {
-      "open": 0,
-      "tagged": 1,
-      "shortlisted": 2,
-      "assessment": 3,
+      open: 0,
+      tagged: 1,
+      shortlisted: 2,
+      assessment: 3,
       "interview to be scheduled": 4,
-      "interview": 5,
-      "offered": 6,
+      interview: 5,
+      offered: 6,
       "offer drop": -1,
-      "joined": 6,
+      joined: 6,
     };
     return statusLevels[status.toLowerCase()] ?? 0;
   };
 
-  const isStatusDowngrade = (currentStatus: string, newStatus: string): boolean => {
+  const isStatusDowngrade = (
+    currentStatus: string,
+    newStatus: string
+  ): boolean => {
     const currentLevel = getStatusLevel(currentStatus);
     const newLevel = getStatusLevel(newStatus);
-    
+
     if (currentLevel === -1 || newLevel === -1) return false;
-    
+
     return newLevel < currentLevel;
   };
 
@@ -486,10 +534,15 @@ const handleRefresh = async () => {
           continue;
         }
         try {
-          await frappeAPI.updateApplicantStatus(name, { status: selectedStatus });
+          await frappeAPI.updateApplicantStatus(name, {
+            status: selectedStatus,
+          });
         } catch (err: any) {
           console.error(`Failed to update status for ${name}:`, err);
-          if (err?.exc_type === "DoesNotExistError" || err.response?.status === 404) {
+          if (
+            err?.exc_type === "DoesNotExistError" ||
+            err.response?.status === 404
+          ) {
             failedUpdates.push(name);
           } else {
             throw err;
@@ -497,7 +550,11 @@ const handleRefresh = async () => {
         }
       }
 
-      const { data, total } = await fetchApplicantsData(userEmail, (currentPage - 1) * itemsPerPage, itemsPerPage);
+      const { data, total } = await fetchApplicantsData(
+        userEmail,
+        (currentPage - 1) * itemsPerPage,
+        itemsPerPage
+      );
       setApplicants(data);
       setTotalCount(total);
       setSelectedApplicants([]);
@@ -506,7 +563,9 @@ const handleRefresh = async () => {
 
       if (failedUpdates.length > 0) {
         toast.warning(
-          `Status updated for some applicants. Failed for: ${failedUpdates.join(", ")}.`
+          `Status updated for some applicants. Failed for: ${failedUpdates.join(
+            ", "
+          )}.`
         );
       } else {
         toast.success("Applicant status updated successfully.");
@@ -515,7 +574,8 @@ const handleRefresh = async () => {
       console.error("Status update error:", err);
       let errorMessage = "Failed to update applicant statuses.";
       if (err.response?.status === 401 || err.response?.status === 403) {
-        errorMessage = "Session expired or insufficient permissions. Please log in again.";
+        errorMessage =
+          "Session expired or insufficient permissions. Please log in again.";
         setIsAuthenticated(false);
         router.push("/login");
       } else if (err.response?.data?.message) {
@@ -533,12 +593,15 @@ const handleRefresh = async () => {
       setModalError("Please select a status.");
       return;
     }
-    
-    const applicantDetails = applicants.filter((applicant) => selectedApplicants.includes(applicant.name));
-    const downgrades = applicantDetails.filter((applicant) =>
-      applicant.status && isStatusDowngrade(applicant.status, selectedStatus)
+
+    const applicantDetails = applicants.filter((applicant) =>
+      selectedApplicants.includes(applicant.name)
     );
-    
+    const downgrades = applicantDetails.filter(
+      (applicant) =>
+        applicant.status && isStatusDowngrade(applicant.status, selectedStatus)
+    );
+
     if (downgrades.length > 0) {
       const firstDowngrade = downgrades[0];
       setDowngradeInfo({
@@ -575,13 +638,13 @@ const handleRefresh = async () => {
         return "bg-purple-100 text-purple-800 border-purple-200";
       case "assessment":
         return "bg-yellow-100 text-yellow-800 border-yellow-200";
-        case "interview to be scheduled":
+      case "interview to be scheduled":
         return "bg-orange-200 text-orange-800 border-orange-200";
       case "interview":
         return "bg-orange-100 text-orange-800 border-orange-200";
       case "offered":
         return "bg-green-100 text-green-800 border-green-200";
-      
+
       case "offer drop":
         return "bg-red-100 text-red-800 border-red-200";
       case "joined":
@@ -592,14 +655,7 @@ const handleRefresh = async () => {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-xl font-semibold text-gray-700">Loading applicants...</p>
-        </div>
-      </div>
-    );
+    <LoadingState />;
   }
 
   if (!isAuthenticated) {
@@ -607,7 +663,9 @@ const handleRefresh = async () => {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="text-center bg-white p-8 rounded-lg shadow-lg">
           <div className="text-6xl mb-4">🔒</div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Authentication Required</h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">
+            Authentication Required
+          </h2>
           <p className="text-gray-600">Please log in to view applicants.</p>
         </div>
       </div>
@@ -639,15 +697,25 @@ const handleRefresh = async () => {
             <div className="flex items-start gap-3">
               <div className="flex-shrink-0 text-2xl">⚠️</div>
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-red-800 mb-2">Error</h3>
+                <h3 className="text-lg font-semibold text-red-800 mb-2">
+                  Error
+                </h3>
                 <p className="text-red-700 mb-3">{error}</p>
                 {error.includes("not found") && (
                   <div className="mt-3 text-sm text-red-600">
                     <p className="font-medium mb-2">Possible issues:</p>
                     <ul className="list-disc list-inside space-y-1">
-                      <li>Verify the Frappe API base URL in your environment variables</li>
-                      <li>Ensure the Job Applicant resource exists in your Frappe system</li>
-                      <li>Contact your system administrator for API access details</li>
+                      <li>
+                        Verify the Frappe API base URL in your environment
+                        variables
+                      </li>
+                      <li>
+                        Ensure the Job Applicant resource exists in your Frappe
+                        system
+                      </li>
+                      <li>
+                        Contact your system administrator for API access details
+                      </li>
                     </ul>
                   </div>
                 )}
@@ -656,48 +724,48 @@ const handleRefresh = async () => {
           </div>
         )}
         {filteredApplicants.length === 0 && filters.status.length > 0 && (
-  <div className="text-center py-12">
-    <p className="text-gray-600 text-lg">No applicants for this status.</p>
-  </div>
-)}
-{filteredApplicants.length === 0 && filters.status.length === 0 && applicants.length === 0 ? (
-  <div className="text-center py-12">
-    <p className="text-gray-600 text-lg">No applicants found.</p>
-  </div>
-) : filteredApplicants.length === 0 && filters.status.length === 0 && applicants.length > 0 ? (
-  <div className="text-center py-12">
-    <p className="text-gray-600 text-lg">No applicants match your filters.</p>
-  </div>
-) : (
-  <div className="relative">
-    {/* Loading Overlay */}
-    {loading && (
-      <div className="absolute inset-0 bg-gray-100 bg-opacity-75 flex items-center justify-center z-10">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-lg font-semibold text-gray-700">Refreshing table...</p>
-        </div>
-      </div>
-    )}
-    <ApplicantsTable
-      key={Date.now()} // Force re-render on refresh
-      applicants={filteredApplicants}
-      selectedApplicants={selectedApplicants}
-      onSelectApplicant={handleSelectApplicant}
-      onViewDetails={handleOpenDetailsModal}
-      // showCheckboxes={true}
-      showStatus={true}
-    />
-    <Pagination
-      currentPage={currentPage}
-      totalPages={Math.ceil(totalCount / itemsPerPage)}
-      totalCount={totalCount}
-      itemsPerPage={itemsPerPage}
-      onPageChange={setCurrentPage}
-    />
-    
-  </div>
-)}
+          <div className="text-center py-12">
+            <p className="text-gray-600 text-lg">
+              No applicants for this status.
+            </p>
+          </div>
+        )}
+        {filteredApplicants.length === 0 &&
+        filters.status.length === 0 &&
+        applicants.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-600 text-lg">No applicants found.</p>
+          </div>
+        ) : filteredApplicants.length === 0 &&
+          filters.status.length === 0 &&
+          applicants.length > 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-600 text-lg">
+              No applicants match your filters.
+            </p>
+          </div>
+        ) : (
+          <div className="relative">
+            {/* Loading Overlay */}
+            {loading && <LoadingState />}
+            <ApplicantsTable
+              key={Date.now()} // Force re-render on refresh
+              applicants={filteredApplicants}
+              selectedApplicants={selectedApplicants}
+              onSelectApplicant={handleSelectApplicant}
+              onViewDetails={handleOpenDetailsModal}
+              // showCheckboxes={true}
+              showStatus={true}
+            />
+            <Pagination
+              currentPage={currentPage}
+              totalPages={Math.ceil(totalCount / itemsPerPage)}
+              totalCount={totalCount}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+            />
+          </div>
+        )}
         {isModalOpen && (
           <div
             className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
@@ -741,14 +809,30 @@ const handleRefresh = async () => {
                   <option value="" disabled className="text-gray-500 text-md">
                     Select a status...
                   </option>
-                  <option value="Tagged" className="text-md">Tagged</option>
-                  <option value="Shortlisted" className="text-md">Shortlisted</option>
-                  <option value="Assessment" className="text-md">Assessment</option>
-                  <option value="Interview" className="text-md">Interview</option>
-                  <option value="Interview Reject" className="text-md">Interview Reject</option>
-                  <option value="Offered" className="text-md">Offered</option>
-                  <option value="Offer Drop" className="text-md">Offer Drop</option>
-                  <option value="Joined" className="text-md">Joined</option>
+                  <option value="Tagged" className="text-md">
+                    Tagged
+                  </option>
+                  <option value="Shortlisted" className="text-md">
+                    Shortlisted
+                  </option>
+                  <option value="Assessment" className="text-md">
+                    Assessment
+                  </option>
+                  <option value="Interview" className="text-md">
+                    Interview
+                  </option>
+                  <option value="Interview Reject" className="text-md">
+                    Interview Reject
+                  </option>
+                  <option value="Offered" className="text-md">
+                    Offered
+                  </option>
+                  <option value="Offer Drop" className="text-md">
+                    Offer Drop
+                  </option>
+                  <option value="Joined" className="text-md">
+                    Joined
+                  </option>
                 </select>
               </div>
               <div className="mb-6">
@@ -757,7 +841,9 @@ const handleRefresh = async () => {
                 </p>
                 <div className="space-y-3 max-h-64 overflow-y-auto">
                   {applicants
-                    .filter((applicant) => selectedApplicants.includes(applicant.name))
+                    .filter((applicant) =>
+                      selectedApplicants.includes(applicant.name)
+                    )
                     .map((applicant) => (
                       <div
                         key={applicant.name}
@@ -778,7 +864,9 @@ const handleRefresh = async () => {
                         </div>
                         {selectedStatus && (
                           <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedStatus)}`}
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                              selectedStatus
+                            )}`}
                           >
                             {selectedStatus}
                           </span>
@@ -832,7 +920,8 @@ const handleRefresh = async () => {
               <div className="mb-6">
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
                   <p className="text-gray-800 font-semibold mb-2">
-                    You are moving applicant(s) from a higher stage to a lower stage:
+                    You are moving applicant(s) from a higher stage to a lower
+                    stage:
                   </p>
                   <div className="flex items-center justify-center gap-3 my-3">
                     <span className="px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full font-medium">
@@ -844,7 +933,8 @@ const handleRefresh = async () => {
                     </span>
                   </div>
                   <p className="text-gray-700 text-md mt-3">
-                    This action will move {selectedApplicants.length} applicant(s) backwards in the hiring process.
+                    This action will move {selectedApplicants.length}{" "}
+                    applicant(s) backwards in the hiring process.
                   </p>
                 </div>
                 <p className="text-gray-600 font-medium text-md">
@@ -884,7 +974,10 @@ const handleRefresh = async () => {
           >
             <div className="bg-white rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-6">
-                <h2 id="details-modal-title" className="text-2xl font-bold text-gray-900">
+                <h2
+                  id="details-modal-title"
+                  className="text-2xl font-bold text-gray-900"
+                >
                   Applicant Profile
                 </h2>
                 <button
@@ -908,15 +1001,11 @@ const handleRefresh = async () => {
                       {selectedApplicantGroup[0].job_title || selectedApplicantGroup[0].designation || "N/A"}
                     </p> */}
 
-<p className="text-gray-900 text-md">
-  {selectedApplicantGroup[0].email_id || "N/A"} |{" "}
-  {selectedApplicantGroup[0].phone_number || "N/A"} |{" "}
-  {selectedApplicantGroup[0].country || "N/A"}
-</p>
-
-
-
-
+                    <p className="text-gray-900 text-md">
+                      {selectedApplicantGroup[0].email_id || "N/A"} |{" "}
+                      {selectedApplicantGroup[0].phone_number || "N/A"} |{" "}
+                      {selectedApplicantGroup[0].country || "N/A"}
+                    </p>
                   </div>
                   {/* <span
                     className={`px-3 py-1 rounded-full text-sm font-semibold border ${getStatusColor(
@@ -958,31 +1047,40 @@ const handleRefresh = async () => {
                 {selectedApplicantGroup.length > 0 ? (
                   <div className="space-y-3">
                     {selectedApplicantGroup.map((app, index) => (
-                      <div key={index} className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
+                      <div
+                        key={index}
+                        className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm"
+                      >
                         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-2 gap-2">
-                          <h5 className="text-md font-semibold text-gray-900">{app.custom_company_name || "N/A"}</h5>
+                          <h5 className="text-md font-semibold text-gray-900">
+                            {app.custom_company_name || "N/A"}
+                          </h5>
                           <span
-                            className={`px-2 py-1 rounded-full text-md font-medium ${getStatusColor(app.status)}`}
+                            className={`px-2 py-1 rounded-full text-md font-medium ${getStatusColor(
+                              app.status
+                            )}`}
                           >
                             {app.status || "N/A"}
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
-                        <p className="text-gray-700 mb-2">Designation: {app.designation || "N/A"}</p>
+                          <p className="text-gray-700 mb-2">
+                            Designation: {app.designation || "N/A"}
+                          </p>
                           <div className="flex items-center gap-2 text-md text-gray-500">
-                          {app.resume_attachment ? (
-                            <a
-                              href={`https://recruiter.gennextit.com${app.resume_attachment}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-800 underline"
-                            >
-                              View Resume
-                            </a>
-                          ) : (
-                            <span>N/A</span>
-                          )}
-                        </div>
+                            {app.resume_attachment ? (
+                              <a
+                                href={`https://recruiter.gennextit.com${app.resume_attachment}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:text-blue-800 underline"
+                              >
+                                View Resume
+                              </a>
+                            ) : (
+                              <span>N/A</span>
+                            )}
+                          </div>
                         </div>
                         {/* <div className="flex items-center gap-2 text-sm text-gray-500">
                           <FileText className="h-4 w-4" />
@@ -1005,7 +1103,9 @@ const handleRefresh = async () => {
                   </div>
                 ) : (
                   <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 text-center">
-                    <p className="text-gray-500">No application information available</p>
+                    <p className="text-gray-500">
+                      No application information available
+                    </p>
                   </div>
                 )}
               </div>
@@ -1014,35 +1114,48 @@ const handleRefresh = async () => {
                   <Briefcase className="h-5 w-5 text-gray-600" />
                   Experience
                 </h4>
-                {selectedApplicantGroup[0].custom_experience && selectedApplicantGroup[0].custom_experience.length > 0 ? (
+                {selectedApplicantGroup[0].custom_experience &&
+                selectedApplicantGroup[0].custom_experience.length > 0 ? (
                   <div className="space-y-3">
-                    {selectedApplicantGroup[0].custom_experience.map((exp, index) => (
-                      <div key={index} className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm">
-                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-2 gap-2">
-                          <h5 className="text-md font-semibold text-gray-900">{exp.company_name}</h5>
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              exp.current_company
-                                ? "bg-green-100 text-green-800 border border-green-200"
-                                : "bg-gray-100 text-gray-600 border border-gray-200"
-                            }`}
-                          >
-                            {exp.current_company ? "Current" : "Past"}
-                          </span>
+                    {selectedApplicantGroup[0].custom_experience.map(
+                      (exp, index) => (
+                        <div
+                          key={index}
+                          className="p-4 bg-white rounded-lg border border-gray-200 shadow-sm"
+                        >
+                          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-2 gap-2">
+                            <h5 className="text-md font-semibold text-gray-900">
+                              {exp.company_name}
+                            </h5>
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                exp.current_company
+                                  ? "bg-green-100 text-green-800 border border-green-200"
+                                  : "bg-gray-100 text-gray-600 border border-gray-200"
+                              }`}
+                            >
+                              {exp.current_company ? "Current" : "Past"}
+                            </span>
+                          </div>
+                          <p className="text-gray-700 mb-2">
+                            {exp.designation}
+                          </p>
+                          <div className="flex items-center gap-2 text-md text-gray-500">
+                            <Calendar className="h-4 w-4" />
+                            <span>
+                              {exp.start_date} -{" "}
+                              {exp.current_company ? "Present" : exp.end_date}
+                            </span>
+                          </div>
                         </div>
-                        <p className="text-gray-700 mb-2">{exp.designation}</p>
-                        <div className="flex items-center gap-2 text-md text-gray-500">
-                          <Calendar className="h-4 w-4" />
-                          <span>
-                            {exp.start_date} - {exp.current_company ? "Present" : exp.end_date}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
+                      )
+                    )}
                   </div>
                 ) : (
                   <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 text-center">
-                    <p className="text-gray-500">No experience information available</p>
+                    <p className="text-gray-500">
+                      No experience information available
+                    </p>
                   </div>
                 )}
               </div>
@@ -1061,11 +1174,3 @@ const handleRefresh = async () => {
     </div>
   );
 }
-
-
-
-
-
-
-
-

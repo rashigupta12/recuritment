@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { MultiUserAssignment } from "./MultiUserAssignment";
 import LocationDropdown from "../requirement-form/LocationDropdown";
+import { showToast } from "@/lib/toast/showToast";
 
 // Types
 type StaffingPlanItem = {
@@ -38,7 +39,7 @@ interface JobOpeningModalProps {
     detailIndex: number,
     updates: Partial<StaffingPlanItem>
   ) => void;
-  refresh?: () => void; // Make refresh optional
+  refresh?: () => void;
 }
 
 const EMPLOYMENT_TYPES = ["Intern", "Contract", "Part-time", "Full-time"];
@@ -63,7 +64,7 @@ export const JobOpeningModal: React.FC<JobOpeningModalProps> = ({
   const [confirmInfo, setConfirmInfo] = useState(false);
 
   useEffect(() => {
-    console.log("refresh prop:", refresh); // Debug log
+    console.log("refresh prop:", refresh);
     if (staffingDetail) {
       setAssignTo(staffingDetail.assign_to || "");
       setEmploymentType(staffingDetail.employment_type || "Full-time");
@@ -109,7 +110,10 @@ export const JobOpeningModal: React.FC<JobOpeningModalProps> = ({
 
   const handleCreateOpening = async () => {
     if (!staffingPlan || !staffingDetail) return;
+    
     setIsCreating(true);
+    showToast.loading("Creating job opening...");
+    
     try {
       const jobData = {
         job_title: editData.designation || staffingDetail.designation,
@@ -157,10 +161,14 @@ export const JobOpeningModal: React.FC<JobOpeningModalProps> = ({
         job_id: jobId,
         employment_type: employmentType,
       });
-      if (refresh) refresh(); // Call refresh if it exists
+      
+      showToast.success(`Job opening created successfully${isPublished ? ' and published' : ''}`);
+      
+      if (refresh) refresh();
+      onClose();
     } catch (error) {
       console.error("Error creating job opening:", error);
-      alert("Failed to create job opening. Please try again.");
+      showToast.error("Failed to create job opening. Please try again.");
     } finally {
       setIsCreating(false);
     }
@@ -170,6 +178,8 @@ export const JobOpeningModal: React.FC<JobOpeningModalProps> = ({
     if (!staffingPlan || !staffingDetail) return;
 
     setIsAllocating(true);
+    showToast.loading("Updating allocation...");
+    
     try {
       const updatedStaffingDetails = [...staffingPlan.staffing_details];
       updatedStaffingDetails[detailIndex] = {
@@ -186,11 +196,13 @@ export const JobOpeningModal: React.FC<JobOpeningModalProps> = ({
       );
 
       onSuccess(planIndex, detailIndex, { assign_to: assignTo });
-      if (refresh) refresh(); // Call refresh if it exists
+      showToast.success("Allocation updated successfully");
+      
+      if (refresh) refresh();
       onClose();
     } catch (error) {
       console.error("Error updating allocation:", error);
-      alert("Failed to update allocation. Please try again.");
+      showToast.error("Failed to update allocation. Please try again.");
     } finally {
       setIsAllocating(false);
     }
@@ -364,37 +376,42 @@ export const JobOpeningModal: React.FC<JobOpeningModalProps> = ({
           )}
 
           {hasJobId && (
-            <MultiUserAssignment
-              assignTo={assignTo}
-              totalVacancies={staffingDetail.vacancies}
-              onAssignToChange={setAssignTo}
-              disabled={isAllocating}
-            />
+            <>
+              <MultiUserAssignment
+                assignTo={assignTo}
+                totalVacancies={staffingDetail.vacancies}
+                onAssignToChange={setAssignTo}
+                disabled={isAllocating}
+              />
+              {isOverAllocated && (
+                <div className="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-800">
+                  ⚠️ Total allocated ({totalAllocated}) exceeds vacancies ({staffingDetail.vacancies})
+                </div>
+              )}
+            </>
           )}
         </div>
 
         <div className="flex items-center justify-end gap-3 px-5 py-3 border-t bg-gray-50">
           <button
             onClick={onClose}
-            className="px-3 py-1 border rounded text-gray-700"
+            className="px-3 py-1 border rounded text-gray-700 hover:bg-gray-100 transition-colors"
           >
             Cancel
           </button>
           {!hasJobId ? (
-            <>
-              <button
-                onClick={handleCreateOpening}
-                disabled={!confirmInfo || isCreating}
-                className="px-4 py-1 bg-blue-600 text-white rounded disabled:opacity-50"
-              >
-                {isCreating ? "Creating..." : "Create Opening"}
-              </button>
-            </>
+            <button
+              onClick={handleCreateOpening}
+              disabled={!confirmInfo || isCreating}
+              className="px-4 py-1 bg-blue-600 text-white rounded disabled:opacity-50 hover:bg-blue-700 transition-colors"
+            >
+              {isCreating ? "Creating..." : "Create Opening"}
+            </button>
           ) : (
             <button
               onClick={handleAllocation}
               disabled={isAllocating || isOverAllocated}
-              className="px-4 py-1 bg-green-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-1 bg-green-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-700 transition-colors"
             >
               {isAllocating ? "Updating..." : "Update Allocation"}
             </button>

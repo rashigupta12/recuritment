@@ -700,6 +700,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Bar, Doughnut, Line } from "react-chartjs-2";
 import ChartDataLabels from "chartjs-plugin-datalabels";
+import { LoadingState } from "@/components/Leads/LoadingState";
 
 // Register ChartJS components
 ChartJS.register(
@@ -1255,14 +1256,7 @@ const processedTrendsData = useMemo((): TrendData[] => {
   };
 
   if (loading) {
-    return (
-      <main className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-          <p className="mt-4 text-slate-600">Loading dashboard data...</p>
-        </div>
-      </main>
-    );
+   <LoadingState/>
   }
 
   return (

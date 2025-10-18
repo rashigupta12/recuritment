@@ -6,6 +6,7 @@
 import { frappeAPI } from "@/lib/api/frappeClient";
 import { useState, useEffect } from "react";
 import { X, Calendar, User, Briefcase, Building2, Users, FileText, PlusCircleIcon, Plus } from "lucide-react";
+import { LoadingState } from "../Leads/LoadingState";
 
 interface ToDo {
   name: string;
@@ -150,19 +151,7 @@ export const TodoDetailModal = ({
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full">
-          <div className="flex flex-col items-center gap-4">
-            <div className="relative">
-              <div className="animate-spin rounded-full h-12 w-12 border-4 border-slate-200 border-t-blue-600"></div>
-              <div className="absolute inset-0 rounded-full bg-blue-50/20"></div>
-            </div>
-            <p className="text-slate-700 font-medium">Loading task details...</p>
-          </div>
-        </div>
-      </div>
-    );
+   <LoadingState/>
   }
 
   if (!todo) {

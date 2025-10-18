@@ -2,6 +2,7 @@
 "use client";
 import Pagination from "@/components/comman/Pagination";
 import { formatToIndianCurrency } from "@/components/Leads/helper";
+import { LoadingState } from "@/components/Leads/LoadingState";
 import { SortableTableHeader } from "@/components/recruiter/SortableTableHeader";
 import { FilterState } from "@/components/recruiter/TodoHeader";
 import { TodosHeader } from "@/components/Requirements/Header";
@@ -505,15 +506,7 @@ const StaffingPlansTable: React.FC = () => {
 
         {/* Main Table */}
         {isLoading ? (
-          <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-12 text-center">
-            <Loader2 className="h-16 w-16 text-blue-500 animate-spin mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Loading Staffing Plans
-            </h3>
-            <p className="text-gray-600">
-              Please wait while we fetch your data...
-            </p>
-          </div>
+         <LoadingState/>
         ) : error ? (
           <div className="bg-white shadow-sm border border-gray-200 rounded-lg p-12 text-center">
             <AlertCircle className="h-16 w-16 text-red-400 mx-auto mb-4" />

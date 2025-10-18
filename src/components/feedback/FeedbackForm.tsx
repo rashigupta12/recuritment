@@ -21,7 +21,7 @@ interface ImageItem {
 
 // Define Zod schema for validation - FIXED: Removed trailing comma
 const feedbackSchema = z.object({
-  module: z.enum(["Dashboard", "Customers", "Requirements", "Jobs Assigned", "Candidate Tracker"]),
+  module: z.enum(["Recruiter Dashboard", "Customers", "Jobs Assigned", "Candidate Tracker"]),
   description: z.string().min(1, "Description is required"),
   issue_type: z.enum(["General Feedback", "Bug Report", "Feature Request"]),
   type: z.enum(["Incident", "Feedback"]),
@@ -46,7 +46,7 @@ const FeedbackForm: React.FC<{
   } = useForm<FeedbackFormData>({
     resolver: zodResolver(feedbackSchema),
     defaultValues: {
-      module: "Dashboard",
+      module: "Recruiter Dashboard",
       description: "",
       issue_type: "General Feedback",
       type: "Feedback",
@@ -63,7 +63,7 @@ const FeedbackForm: React.FC<{
   useEffect(() => {
     if (isOpen) {
       reset({
-        module: "Dashboard",
+        module: "Recruiter Dashboard",
         description: "",
         issue_type: "General Feedback",
         type: "Feedback",
@@ -172,9 +172,8 @@ const FeedbackForm: React.FC<{
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                 disabled={isSubmitting}
               >
-                <option value="Dashboard">Dashboard</option>
+                <option value="Recruiter Dashboard">Dashboard</option>
                 <option value="Customers">Customers</option>
-                <option value="Requirements">Requirements</option>
                 <option value="Jobs Assigned">Jobs Assigned</option>
                 <option value="Candidate Tracker">Candidate Tracker</option>
               </select>

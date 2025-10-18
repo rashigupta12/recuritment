@@ -21,7 +21,7 @@ interface ImageItem {
 
 // Define Zod schema for validation
 const feedbackSchema = z.object({
-  module: z.enum(["Dashboard", "Allocation",]),
+  module: z.enum(["Project Manager Dashboard", "Allocation",]),
   description: z.string().min(1, "Description is required"),
   issue_type: z.enum(["General Feedback", "Bug Report", "Feature Request"]),
   type: z.enum(["Incident", "Feedback"]),
@@ -45,7 +45,7 @@ const FeedbackForm: React.FC<{
   } = useForm<FeedbackFormData>({
     resolver: zodResolver(feedbackSchema),
     defaultValues: {
-      module: "Dashboard",
+      module: "Project Manager Dashboard",
       description: "",
       issue_type: "General Feedback",
       type: "Feedback",
@@ -54,7 +54,7 @@ const FeedbackForm: React.FC<{
 
   useEffect(() => {
     reset({
-      module: "Dashboard",
+      module: "Project Manager Dashboard",
       description: "",
       issue_type: "General Feedback",
       type: "Feedback",
@@ -156,7 +156,7 @@ const FeedbackForm: React.FC<{
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                 disabled={isSubmitting}
               >
-                <option value="Dashboard">Dashboard</option>
+                <option value="Project Manager Dashboard">Dashboard</option>
                 <option value="Allocation">Allocation</option>
 
                 

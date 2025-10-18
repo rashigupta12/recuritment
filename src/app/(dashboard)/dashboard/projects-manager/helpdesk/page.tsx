@@ -11,6 +11,7 @@ import FeedbackDetails from "@/components/feedback/FeedBackDetails";
 import { SortableTableHeader } from "@/components/recruiter/SortableTableHeader";
 import { FeedbackItem } from "@/types/feedback";
 import FeedbackForm from "@/components/project-manager/Feedbackform";
+import { LoadingState } from "@/components/Leads/LoadingState";
 
 
 type ViewType = "list" | "form" | "details";
@@ -211,12 +212,7 @@ function FeedbackListPage({
       <div className="bg-white shadow-md rounded-lg border border-blue-100 overflow-hidden w-full">
         <div className="overflow-x-auto">
           {loading ? (
-            <div className="flex items-center justify-center h-96">
-              <div className="flex items-center gap-3 text-gray-500">
-                <div className="w-6 h-6 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-                <span>Loading issues...</span>
-              </div>
-            </div>
+            <LoadingState/>
           ) : feedbacks.length === 0 ? (
             <div className="text-center py-10 text-blue-600 text-sm bg-blue-50">
               <p>No Issues Found</p>

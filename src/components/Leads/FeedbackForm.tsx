@@ -21,7 +21,7 @@ interface ImageItem {
 
 // Define Zod schema for validation - FIXED: Correct enum syntax
 const feedbackSchema = z.object({
-  module: z.enum(["Dashboard", "Leads", "Customers"]),
+  module: z.enum(["Sales Dashboard", "Leads", "Customers"]),
   description: z.string().min(1, "Description is required"),
   issue_type: z.enum(["General Feedback", "Bug Report", "Feature Request"]),
   type: z.enum(["Incident", "Feedback"]),
@@ -46,7 +46,7 @@ const FeedbackForm: React.FC<{
   } = useForm<FeedbackFormData>({
     resolver: zodResolver(feedbackSchema),
     defaultValues: {
-      module: "Dashboard",
+      module: "Sales Dashboard",
       description: "",
       issue_type: "General Feedback",
       type: "Feedback",
@@ -60,7 +60,7 @@ const FeedbackForm: React.FC<{
   useEffect(() => {
     if (isOpen) {
       reset({
-        module: "Dashboard",
+        module: "Sales Dashboard",
         description: "",
         issue_type: "General Feedback",
         type: "Feedback",
@@ -171,7 +171,7 @@ const FeedbackForm: React.FC<{
                 }`}
                 disabled={isSubmitting}
               >
-                <option value="Dashboard">Dashboard</option>
+                <option value="Sales Dashboard">Dashboard</option>
                 <option value="Leads">Leads</option>
                 <option value="Customers">Customers</option>
               </select>

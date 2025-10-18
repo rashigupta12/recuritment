@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadingState } from "@/components/Leads/LoadingState";
 import ApplicantSearchAndTag from "@/components/recruiter/ApplicantSearchAndTag";
 import TaggedApplicants from "@/components/recruiter/TaggedApplicants";
 import { TodoDetailModal } from "@/components/recruiter/TodoDetailModal";
@@ -43,17 +44,6 @@ export default function TodoDetailPage() {
     router.back();
   };
 
-  // const handleFormSubmitSuccess = () => {
-  //   console.log("🔄 Refreshing applicants list...");
-  //   setIsSheetOpen(false);
-  //   setRefreshKey((prev) => prev + 1);
-  // };
-
-  // const refreshApplicants = () => {
-  //   console.log("🔄 Manual refresh triggered");
-  //   setRefreshKey((prev) => prev + 1);
-  // };
-
   // ✅ New function to handle opening sheet from detail modal
   const handleOpenApplicantForm = () => {
     setActiveTab("applicants");
@@ -93,14 +83,7 @@ export default function TodoDetailPage() {
   console.log("tododata", todoData);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="bg-white rounded-xl shadow-sm p-8 max-w-md w-full text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading task details...</p>
-        </div>
-      </div>
-    );
+    <LoadingState/>
   }
 
   return (
