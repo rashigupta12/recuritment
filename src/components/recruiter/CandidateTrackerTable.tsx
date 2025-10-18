@@ -86,7 +86,7 @@ export function ApplicantsTable({
 
     cols.push(
       { field: 'name', label: 'Name', sortable: true, align: 'left' },
-      { field: 'email', label: 'Email', sortable: true, align: 'center' },
+      { field: 'email', label: 'Email', sortable: true, align: 'left' },
       { field: 'phone', label: 'Phone', sortable: false, align: 'left' },
       { field: 'designation', label: 'Job Designation', sortable: true, align: 'left' },
       { field: 'company', label: 'Client', sortable: false, align: 'center' }
