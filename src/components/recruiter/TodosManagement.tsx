@@ -74,8 +74,8 @@ const TodosManagement = () => {
       setTodos(todos);
       setCurrentPage(1);
     } catch (error) {
-      console.error("Error fetching todos:", error);
-      showToast.error("Failed to fetch todos.");
+      console.log("Error fetching todos:", error);
+
     } finally {
       setLoading(false);
     }

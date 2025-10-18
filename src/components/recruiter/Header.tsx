@@ -216,7 +216,7 @@ export const TodosHeader = ({
   );
 
   return (
-    <div className="w-full">
+    <div className="w-full mb-4">
       {/* Main Header Row */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         {/* LEFT SIDE - Title */}

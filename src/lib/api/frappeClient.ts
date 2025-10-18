@@ -698,7 +698,7 @@ const filters= JSON.stringify([["email_id","=",email]]);
   // },
 
   getAllApplicants: async (email: string, limitStart = 0, limitPageLength = 10) => {
-    const url = `/method/recruitment_app.get_all_applicants.get_all_job_applicants_raw?limit_start=${limitStart}&limit_page_length=${limitPageLength}`;
+    const url = `/method/recruitment_app.get_all_applicants.get_all_job_applicants_raw?limit_start=${limitStart}&limit_page_length=${limitPageLength}&owner=${email}`;
     return await frappeAPI.makeAuthenticatedRequest('GET', url);
   },
 // https://recruiter.gennextit.com/api/method/recruitment_app.get_all_applicants.get_all_job_applicants_raw
