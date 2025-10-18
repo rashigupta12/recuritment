@@ -67,10 +67,10 @@ export function ApplicantsTable({
 
     cols.push(
       { field: 'name', label: 'Name', sortable: true, align: 'left' },
-      { field: 'email', label: 'Email', sortable: true, align: 'center' },
+      { field: 'email', label: 'Email', sortable: true, align: 'left' },
       { field: 'phone', label: 'Phone', sortable: false, align: 'left' },
-      { field: 'designation', label: 'Job Designation', sortable: true, align: 'left' },
-      { field: 'company', label: 'Client', sortable: false, align: 'center' }
+      // { field: 'designation', label: 'Job Designation', sortable: true, align: 'left' },
+      { field: 'company', label: 'Client', sortable: false, align: 'left' }
     );
 
     if (showStatus) {
@@ -161,9 +161,9 @@ export function ApplicantsTable({
                   <td className="px-2 sm:px-4 py-4 truncate">
                     {applicant.phone_number || "N/A"}
                   </td>
-                  <td className="px-2 sm:px-4 py-4 truncate capitalize">
+                  {/* <td className="px-2 sm:px-4 py-4 truncate capitalize">
                     {applicant.designation || 'N/A'}
-                  </td>
+                  </td> */}
        <td className="px-2 sm:px-4 py-4 break-words whitespace-normal max-w-xs">
   {applicant.custom_company_name || 'N/A'}
 </td>

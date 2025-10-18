@@ -38,11 +38,10 @@ interface JobApplicant {
   }>;
   custom_offered_salary?: string;
   custom_target_start_date?: string;
-  custom_interview_status?: string;        
-  custom_interview_round?: string;         
-  custom_interview_panel_name?: string;    
-  custom_schedule_date?: string; 
-  
+  custom_interview_status?: string;
+  custom_interview_round?: string;
+  custom_interview_panel_name?: string;
+  custom_schedule_date?: string;
 }
 
 interface Props {
@@ -53,12 +52,8 @@ interface Props {
   refreshTrigger?: number;
   onRefresh?: () => void;
   jobTitle?: string;
-  companyname?:string
+  companyname?: string;
 }
-
-
-
-
 
 interface UpdateData {
   status: string;
@@ -77,33 +72,43 @@ export default function TaggedApplicants({
   todoData,
   refreshTrigger,
   onRefresh,
-  companyname
+  companyname,
 }: Props) {
   const [applicants, setApplicants] = useState<JobApplicant[]>([]);
-  const [filteredApplicants, setFilteredApplicants] = useState<JobApplicant[]>([]);
+  const [filteredApplicants, setFilteredApplicants] = useState<JobApplicant[]>(
+    []
+  );
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedApplicants, setSelectedApplicants] = useState<JobApplicant[]>([]);
+  const [selectedApplicants, setSelectedApplicants] = useState<JobApplicant[]>(
+    []
+  );
   const [showEmailPopup, setShowEmailPopup] = useState<boolean>(false);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState<boolean>(false);
-  const [isAssessmentModalOpen, setIsAssessmentModalOpen] = useState<boolean>(false);
+  const [isAssessmentModalOpen, setIsAssessmentModalOpen] =
+    useState<boolean>(false);
   const [isOfferModalOpen, setIsOfferModalOpen] = useState<boolean>(false);
   const [selectedStatus, setSelectedStatus] = useState<string>("");
   const [modalError, setModalError] = useState<string | null>(null);
   const [assessmentError, setAssessmentError] = useState<string | null>(null);
-  const [assessmentSuccess, setAssessmentSuccess] = useState<string | null>(null);
+  const [assessmentSuccess, setAssessmentSuccess] = useState<string | null>(
+    null
+  );
   const [testLink, setTestLink] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [refreshKey, setRefreshKey] = useState<number>(0);
-  const [showDowngradeWarning, setShowDowngradeWarning] = useState<boolean>(false);
+  const [showDowngradeWarning, setShowDowngradeWarning] =
+    useState<boolean>(false);
   const [downgradeInfo, setDowngradeInfo] = useState<{
     from: string;
     to: string;
   } | null>(null);
   const [offeredSalary, setOfferedSalary] = useState<string>("");
   const [targetStartDate, setTargetStartDate] = useState<string>("");
-  const [isInterviewDetailsModalOpen, setIsInterviewDetailsModalOpen] = useState(false);
-const [selectedInterviewApplicant, setSelectedInterviewApplicant] = useState<JobApplicant | null>(null);
+  const [isInterviewDetailsModalOpen, setIsInterviewDetailsModalOpen] =
+    useState(false);
+  const [selectedInterviewApplicant, setSelectedInterviewApplicant] =
+    useState<JobApplicant | null>(null);
   const router = useRouter();
   const [expiryDate, setExpiryDate] = useState<string>("");
   const user = { username: ownerEmail };
@@ -153,21 +158,24 @@ const [selectedInterviewApplicant, setSelectedInterviewApplicant] = useState<Job
   // Helper function to get status hierarchy level
   const getStatusLevel = (status: string): number => {
     const statusLevels: { [key: string]: number } = {
-      "open": 0,
-      "tagged": 1,
-      "shortlisted": 2,
-      "assessment": 3,
+      open: 0,
+      tagged: 1,
+      shortlisted: 2,
+      assessment: 3,
       "interview to be scheduled": 4,
-      "interview": 5,
-      "offered": 6,
+      interview: 5,
+      offered: 6,
       "offer drop": -1,
-      "joined": 6,
+      joined: 6,
     };
     return statusLevels[status.toLowerCase()] ?? 0;
   };
 
   // Helper function to check if it's a downgrade
-  const isStatusDowngrade = (currentStatus: string, newStatus: string): boolean => {
+  const isStatusDowngrade = (
+    currentStatus: string,
+    newStatus: string
+  ): boolean => {
     const currentLevel = getStatusLevel(currentStatus);
     const newLevel = getStatusLevel(newStatus);
     if (currentLevel === -1 || newLevel === -1) return false;
@@ -175,19 +183,31 @@ const [selectedInterviewApplicant, setSelectedInterviewApplicant] = useState<Job
   };
 
   const handleDeleteApplicant = async (applicant: JobApplicant) => {
-    const canDelete = ["tagged", "open"].includes(applicant.status?.toLowerCase() || "");
+    const canDelete = ["tagged", "open"].includes(
+      applicant.status?.toLowerCase() || ""
+    );
     if (!canDelete) {
       toast.error('Can only delete applicants with "Tagged" or "Open" status');
       return;
     }
-    if (!confirm(`Are you sure you want to delete ${applicant.applicant_name || applicant.name}?`)) {
+    if (
+      !confirm(
+        `Are you sure you want to delete ${
+          applicant.applicant_name || applicant.name
+        }?`
+      )
+    ) {
       return;
     }
     try {
       setLoading(true);
       await frappeAPI.deleteApplicant(applicant.name);
-      toast.success(`${applicant.applicant_name || applicant.name} deleted successfully`);
-      setSelectedApplicants((prev) => prev.filter((app) => app.name !== applicant.name));
+      toast.success(
+        `${applicant.applicant_name || applicant.name} deleted successfully`
+      );
+      setSelectedApplicants((prev) =>
+        prev.filter((app) => app.name !== applicant.name)
+      );
       setRefreshKey((prev) => prev + 1);
       if (onRefresh) onRefresh();
     } catch (err: any) {
@@ -207,66 +227,82 @@ const [selectedInterviewApplicant, setSelectedInterviewApplicant] = useState<Job
   };
 
   const handleConfirmStatusChangeForInterview = async (status: string) => {
-  if (!ownerEmail) {
-    toast.error("Owner email not found. Please try again.");
-    return;
-  }
-  try {
-    setLoading(true);
-    const failedUpdates: string[] = [];
-    
-    for (const applicant of selectedApplicants) {
-      const name = applicant.name;
-      if (!name) {
-        failedUpdates.push("Unknown (missing name)");
-        continue;
-      }
-      try {
-        const updateData: UpdateData = { status: status };
-        await frappeAPI.updateApplicantStatus(name, updateData);
-      } catch (err: any) {
-        console.error(`Failed to update status for ${name}:`, err);
-        if (err?.exc_type === "DoesNotExistError" || err.response?.status === 404) {
-          failedUpdates.push(name);
-        } else {
-          throw err;
+    if (!ownerEmail) {
+      toast.error("Owner email not found. Please try again.");
+      return;
+    }
+    try {
+      setLoading(true);
+      const failedUpdates: string[] = [];
+
+      for (const applicant of selectedApplicants) {
+        const name = applicant.name;
+        if (!name) {
+          failedUpdates.push("Unknown (missing name)");
+          continue;
+        }
+        try {
+          const updateData: UpdateData = { status: status };
+          await frappeAPI.updateApplicantStatus(name, updateData);
+        } catch (err: any) {
+          console.error(`Failed to update status for ${name}:`, err);
+          if (
+            err?.exc_type === "DoesNotExistError" ||
+            err.response?.status === 404
+          ) {
+            failedUpdates.push(name);
+          } else {
+            throw err;
+          }
         }
       }
-    }
-    
-    const response: any = await frappeAPI.getTaggedApplicantsByJobId(jobId, ownerEmail);
-    const applicantNames = response.data || [];
-    const applicantsPromises = applicantNames.map(async (applicant: any) => {
-      try {
-        const applicantDetail = await frappeAPI.getApplicantBYId(applicant.name);
-        return applicantDetail.data;
-      } catch (err) {
-        return { name: applicant.name, email_id: applicant.email_id || "Not available" };
-      }
-    });
-    
-    const applicantsData = await Promise.all(applicantsPromises);
-    setApplicants(applicantsData.filter((applicant) => applicant !== null));
-    setFilteredApplicants(applicantsData.filter((applicant) => applicant !== null));
-    setSelectedApplicants([]);
-    setSelectedStatus("");
-    setIsStatusModalOpen(false);
-    setRefreshKey((prev) => prev + 1);
-    
-    if (failedUpdates.length > 0) {
-      toast.warning(`Status updated for some applicants. Failed for: ${failedUpdates.join(", ")}`);
-    } else {
-      toast.success("Applicant status updated successfully.");
-    }
-  } catch (err: any) {
-    console.error("Status update error:", err);
-    toast.error("Failed to update applicant statuses.");
-    setIsStatusModalOpen(false);
-  } finally {
-    setLoading(false);
-  }
-};
 
+      const response: any = await frappeAPI.getTaggedApplicantsByJobId(
+        jobId,
+        ownerEmail
+      );
+      const applicantNames = response.data || [];
+      const applicantsPromises = applicantNames.map(async (applicant: any) => {
+        try {
+          const applicantDetail = await frappeAPI.getApplicantBYId(
+            applicant.name
+          );
+          return applicantDetail.data;
+        } catch (err) {
+          return {
+            name: applicant.name,
+            email_id: applicant.email_id || "Not available",
+          };
+        }
+      });
+
+      const applicantsData = await Promise.all(applicantsPromises);
+      setApplicants(applicantsData.filter((applicant) => applicant !== null));
+      setFilteredApplicants(
+        applicantsData.filter((applicant) => applicant !== null)
+      );
+      setSelectedApplicants([]);
+      setSelectedStatus("");
+      setIsStatusModalOpen(false);
+      setRefreshKey((prev) => prev + 1);
+
+      if (failedUpdates.length > 0) {
+        toast.warning(
+          `Status updated for some applicants. Failed for: ${failedUpdates.join(
+            ", "
+          )}`
+        );
+      } else {
+        toast.success("Applicant status updated successfully.");
+      }
+    } catch (err: any) {
+      console.error("Status update error:", err);
+      toast.error("Failed to update applicant statuses.");
+      setIsStatusModalOpen(false);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     let filtered = applicants;
@@ -293,7 +329,10 @@ const [selectedInterviewApplicant, setSelectedInterviewApplicant] = useState<Job
       try {
         setLoading(true);
         console.log("🔄 Fetching applicants - refreshTrigger:", refreshTrigger);
-        const response: any = await frappeAPI.getTaggedApplicantsByJobId(jobId, ownerEmail);
+        const response: any = await frappeAPI.getTaggedApplicantsByJobId(
+          jobId,
+          ownerEmail
+        );
         const applicantNames = response.data || [];
         if (applicantNames.length === 0) {
           setApplicants([]);
@@ -301,17 +340,26 @@ const [selectedInterviewApplicant, setSelectedInterviewApplicant] = useState<Job
           setLoading(false);
           return;
         }
-        const applicantsPromises = applicantNames.map(async (applicant: any) => {
-          try {
-            const applicantDetail = await frappeAPI.getApplicantBYId(applicant.name);
-            return applicantDetail.data;
-          } catch (err) {
-            console.error(`Error fetching details for ${applicant.name}:`, err);
-            return null;
+        const applicantsPromises = applicantNames.map(
+          async (applicant: any) => {
+            try {
+              const applicantDetail = await frappeAPI.getApplicantBYId(
+                applicant.name
+              );
+              return applicantDetail.data;
+            } catch (err) {
+              console.error(
+                `Error fetching details for ${applicant.name}:`,
+                err
+              );
+              return null;
+            }
           }
-        });
+        );
         const applicantsData = await Promise.all(applicantsPromises);
-        const validApplicants = applicantsData.filter((applicant) => applicant !== null);
+        const validApplicants = applicantsData.filter(
+          (applicant) => applicant !== null
+        );
         setApplicants(validApplicants);
         setFilteredApplicants(validApplicants);
         setError(null);
@@ -325,11 +373,11 @@ const [selectedInterviewApplicant, setSelectedInterviewApplicant] = useState<Job
       }
     };
     fetchApplicants();
-  }, [jobId, ownerEmail, refreshTrigger,refreshKey]);
+  }, [jobId, ownerEmail, refreshTrigger, refreshKey]);
 
   const handleInterviewStatusUpdate = () => {
-  setRefreshKey(prev => prev + 1); // This should trigger a re-fetch of applicants
-};
+    setRefreshKey((prev) => prev + 1); // This should trigger a re-fetch of applicants
+  };
 
   const handleOpenStatusModal = () => {
     if (selectedApplicants.length === 0) {
@@ -361,39 +409,40 @@ const [selectedInterviewApplicant, setSelectedInterviewApplicant] = useState<Job
     setModalError(null);
   };
 
- const handleStatusChangeRequest = () => {
-  if (!selectedStatus) {
-    setModalError("Please select a status.");
-    return;
-  }
-
-  // NEW: Handle Interview status immediately
-  if (selectedStatus.toLowerCase() === "interview") {
-    setIsStatusModalOpen(false);
-    // Update status to "Interview To Be Scheduled" immediately
-    handleConfirmStatusChangeForInterview("Interview To Be Scheduled");
-    // Open the interview details modal
-    if (selectedApplicants.length > 0) {
-      setSelectedInterviewApplicant(selectedApplicants[0]);
-      setIsInterviewDetailsModalOpen(true);
+  const handleStatusChangeRequest = () => {
+    if (!selectedStatus) {
+      setModalError("Please select a status.");
+      return;
     }
-    return;
-  }
 
-  const downgrades = selectedApplicants.filter(
-    (applicant) => applicant.status && isStatusDowngrade(applicant.status, selectedStatus)
-  );
-  if (downgrades.length > 0) {
-    const firstDowngrade = downgrades[0];
-    setDowngradeInfo({
-      from: firstDowngrade.status || "",
-      to: selectedStatus,
-    });
-    setShowDowngradeWarning(true);
-  } else {
-    handleConfirmStatusChange();
-  }
-};
+    // NEW: Handle Interview status immediately
+    if (selectedStatus.toLowerCase() === "interview") {
+      setIsStatusModalOpen(false);
+      // Update status to "Interview To Be Scheduled" immediately
+      handleConfirmStatusChangeForInterview("Interview To Be Scheduled");
+      // Open the interview details modal
+      if (selectedApplicants.length > 0) {
+        setSelectedInterviewApplicant(selectedApplicants[0]);
+        setIsInterviewDetailsModalOpen(true);
+      }
+      return;
+    }
+
+    const downgrades = selectedApplicants.filter(
+      (applicant) =>
+        applicant.status && isStatusDowngrade(applicant.status, selectedStatus)
+    );
+    if (downgrades.length > 0) {
+      const firstDowngrade = downgrades[0];
+      setDowngradeInfo({
+        from: firstDowngrade.status || "",
+        to: selectedStatus,
+      });
+      setShowDowngradeWarning(true);
+    } else {
+      handleConfirmStatusChange();
+    }
+  };
 
   const handleConfirmOfferDetails = async () => {
     if (!offeredSalary.trim() || !targetStartDate.trim()) {
@@ -430,7 +479,9 @@ const [selectedInterviewApplicant, setSelectedInterviewApplicant] = useState<Job
             subject: `Congratulations on Your Offer!`,
             message: `Dear ${candidateName},
 
-Congratulations! We are delighted to inform you that you have been selected for the ${job_title || "position"} position at ${companyname}. Your skills, experience, and dedication truly impressed our team, and we are excited to welcome you aboard.
+Congratulations! We are delighted to inform you that you have been selected for the ${
+              job_title || "position"
+            } position at ${companyname}. Your skills, experience, and dedication truly impressed our team, and we are excited to welcome you aboard.
 
 We believe you will make a valuable contribution to our organization, and we look forward to seeing you thrive in your new role. Please let us know if you have any questions regarding the next steps or the onboarding process.
 
@@ -465,7 +516,10 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
           }
         } catch (err: any) {
           console.error(`Failed to process for ${name}:`, err);
-          if (err?.exc_type === "DoesNotExistError" || err.response?.status === 404) {
+          if (
+            err?.exc_type === "DoesNotExistError" ||
+            err.response?.status === 404
+          ) {
             failedUpdates.push(name);
           } else if (err.message.includes("Failed to send email")) {
             failedEmails.push(applicant.applicant_name || name);
@@ -476,11 +530,16 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
       }
 
       // Refresh applicants list
-      const response: any = await frappeAPI.getTaggedApplicantsByJobId(jobId, ownerEmail);
+      const response: any = await frappeAPI.getTaggedApplicantsByJobId(
+        jobId,
+        ownerEmail
+      );
       const applicantNames = response.data || [];
       const applicantsPromises = applicantNames.map(async (applicant: any) => {
         try {
-          const applicantDetail = await frappeAPI.getApplicantBYId(applicant.name);
+          const applicantDetail = await frappeAPI.getApplicantBYId(
+            applicant.name
+          );
           return applicantDetail.data;
         } catch (err) {
           console.error(`Error fetching details for ${applicant.name}:`, err);
@@ -492,7 +551,9 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
       });
       const applicantsData = await Promise.all(applicantsPromises);
       setApplicants(applicantsData.filter((applicant) => applicant !== null));
-      setFilteredApplicants(applicantsData.filter((applicant) => applicant !== null));
+      setFilteredApplicants(
+        applicantsData.filter((applicant) => applicant !== null)
+      );
       setSelectedApplicants([]);
       setOfferedSalary("");
       setTargetStartDate("");
@@ -502,23 +563,34 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
       if (failedUpdates.length > 0 || failedEmails.length > 0) {
         let warningMessage = "";
         if (failedUpdates.length > 0) {
-          warningMessage += `Status update failed for: ${failedUpdates.join(", ")}. Applicant records may not exist or the endpoint may be incorrect. `;
+          warningMessage += `Status update failed for: ${failedUpdates.join(
+            ", "
+          )}. Applicant records may not exist or the endpoint may be incorrect. `;
         }
         if (failedEmails.length > 0) {
-          warningMessage += `Email sending failed for: ${failedEmails.join(", ")}.`;
+          warningMessage += `Email sending failed for: ${failedEmails.join(
+            ", "
+          )}.`;
         }
         toast.warning(warningMessage);
       } else {
-        toast.success("Applicant status updated to 'Offered' and emails sent successfully.");
+        toast.success(
+          "Applicant status updated to 'Offered' and emails sent successfully."
+        );
       }
     } catch (err: any) {
       console.error("Offer update error:", err);
       let errorMessage = "Failed to update applicant statuses or send emails.";
       if (err.response?.status === 401 || err.response?.status === 403) {
-        errorMessage = "Session expired or insufficient permissions. Please try again.";
+        errorMessage =
+          "Session expired or insufficient permissions. Please try again.";
         router.push("/login");
-      } else if (err.response?.status === 404 || err?.exc_type === "DoesNotExistError") {
-        errorMessage = "Job Applicant resource not found. Please verify the API endpoint or contact support.";
+      } else if (
+        err.response?.status === 404 ||
+        err?.exc_type === "DoesNotExistError"
+      ) {
+        errorMessage =
+          "Job Applicant resource not found. Please verify the API endpoint or contact support.";
       } else if (err.response?.data?.message) {
         errorMessage = err.response.data.message;
       }
@@ -531,7 +603,9 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
 
   const handleStartAssessment = async () => {
     if (!expiryDate || !testLink) {
-      setModalError("Please fill in all assessment details (Expiry Date and Test Link).");
+      setModalError(
+        "Please fill in all assessment details (Expiry Date and Test Link)."
+      );
       return;
     }
     try {
@@ -550,7 +624,10 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
         throw new Error("No response received from the API.");
       }
       let assessmentIds: string;
-      if (response.message?.created_assessments && Array.isArray(response.message.created_assessments)) {
+      if (
+        response.message?.created_assessments &&
+        Array.isArray(response.message.created_assessments)
+      ) {
         assessmentIds = response.message.created_assessments.join(", ");
       } else if (response.message?.name) {
         assessmentIds = response.message.name;
@@ -559,25 +636,41 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
       } else if (response.data && (response.data.name || response.data.id)) {
         assessmentIds = response.data.name || response.data.id;
       } else {
-        throw new Error("Invalid response structure: Missing assessment ID(s).");
+        throw new Error(
+          "Invalid response structure: Missing assessment ID(s)."
+        );
       }
       const statusUpdatePromises = selectedApplicants.map(async (applicant) => {
         try {
           await frappeAPI.updateApplicantStatus(applicant.name, {
             status: "Assessment",
           });
-          console.log(`✅ Status updated to "Assessment" for ${applicant.name}`);
+          console.log(
+            `✅ Status updated to "Assessment" for ${applicant.name}`
+          );
         } catch (err: any) {
-          console.error(`❌ Failed to update status for ${applicant.name}:`, err);
-          throw new Error(`Failed to update status for ${applicant.applicant_name || applicant.name}`);
+          console.error(
+            `❌ Failed to update status for ${applicant.name}:`,
+            err
+          );
+          throw new Error(
+            `Failed to update status for ${
+              applicant.applicant_name || applicant.name
+            }`
+          );
         }
       });
       await Promise.all(statusUpdatePromises);
-      const refreshResponse: any = await frappeAPI.getTaggedApplicantsByJobId(jobId, ownerEmail);
+      const refreshResponse: any = await frappeAPI.getTaggedApplicantsByJobId(
+        jobId,
+        ownerEmail
+      );
       const applicantNames = refreshResponse.data || [];
       const applicantsPromises = applicantNames.map(async (applicant: any) => {
         try {
-          const applicantDetail = await frappeAPI.getApplicantBYId(applicant.name);
+          const applicantDetail = await frappeAPI.getApplicantBYId(
+            applicant.name
+          );
           return applicantDetail.data;
         } catch (err) {
           console.error(`Error fetching details for ${applicant.name}:`, err);
@@ -589,11 +682,15 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
       });
       const applicantsData = await Promise.all(applicantsPromises);
       setApplicants(applicantsData.filter((applicant) => applicant !== null));
-      setFilteredApplicants(applicantsData.filter((applicant) => applicant !== null));
+      setFilteredApplicants(
+        applicantsData.filter((applicant) => applicant !== null)
+      );
       setAssessmentSuccess(
         `Assessment(s) created successfully with ID(s): ${assessmentIds}. Applicant status updated to "Assessment".`
       );
-      toast.success(`Assessment created and status updated to "Assessment Stage" successfully!`);
+      toast.success(
+        `Assessment created and status updated to "Assessment Stage" successfully!`
+      );
       setIsAssessmentModalOpen(false);
       setSelectedApplicants([]);
       setTestLink("");
@@ -606,13 +703,16 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
         response: err.response?.data,
         rawResponse: err.response,
       });
-      let errorMessage = "Failed to create assessment. Please try again or contact support.";
+      let errorMessage =
+        "Failed to create assessment. Please try again or contact support.";
       if (err.message.includes("Missing assessment ID")) {
-        errorMessage = "Invalid response from API: Missing assessment ID(s). Please contact support.";
+        errorMessage =
+          "Invalid response from API: Missing assessment ID(s). Please contact support.";
       } else if (err.message.includes("Failed to update status")) {
         errorMessage = `Assessment created but ${err.message}. Please update status manually.`;
       } else if (err.response?.status === 404) {
-        errorMessage = "Assessment API endpoint not found. Please verify the Frappe method or contact support.";
+        errorMessage =
+          "Assessment API endpoint not found. Please verify the Frappe method or contact support.";
       } else if (err.response?.status === 401 || err.response?.status === 403) {
         errorMessage = "Unauthorized access. Please log in again.";
         router.push("/login");
@@ -665,7 +765,9 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
               subject: `Congratulations on Your New Role at ${companyname}!`,
               message: `Hi ${firstName},
 
-Congratulations on joining ${companyname} as ${job_title || "the position"}! We are thrilled to see you take this next step in your career and are confident that you will make a remarkable impact in your new role.
+Congratulations on joining ${companyname} as ${
+                job_title || "the position"
+              }! We are thrilled to see you take this next step in your career and are confident that you will make a remarkable impact in your new role.
 
 We would also love to hear about your overall experience with HEVHire. Your feedback is valuable to us and helps us improve our support for candidates like you.
 
@@ -701,7 +803,10 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
           }
         } catch (err: any) {
           console.error(`Failed to process for ${name}:`, err);
-          if (err?.exc_type === "DoesNotExistError" || err.response?.status === 404) {
+          if (
+            err?.exc_type === "DoesNotExistError" ||
+            err.response?.status === 404
+          ) {
             failedUpdates.push(name);
           } else if (err.message.includes("Failed to send email")) {
             failedEmails.push(applicant.applicant_name || name);
@@ -712,11 +817,16 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
       }
 
       // Refresh applicants list
-      const response: any = await frappeAPI.getTaggedApplicantsByJobId(jobId, ownerEmail);
+      const response: any = await frappeAPI.getTaggedApplicantsByJobId(
+        jobId,
+        ownerEmail
+      );
       const applicantNames = response.data || [];
       const applicantsPromises = applicantNames.map(async (applicant: any) => {
         try {
-          const applicantDetail = await frappeAPI.getApplicantBYId(applicant.name);
+          const applicantDetail = await frappeAPI.getApplicantBYId(
+            applicant.name
+          );
           return applicantDetail.data;
         } catch (err) {
           console.error(`Error fetching details for ${applicant.name}:`, err);
@@ -728,7 +838,9 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
       });
       const applicantsData = await Promise.all(applicantsPromises);
       setApplicants(applicantsData.filter((applicant) => applicant !== null));
-      setFilteredApplicants(applicantsData.filter((applicant) => applicant !== null));
+      setFilteredApplicants(
+        applicantsData.filter((applicant) => applicant !== null)
+      );
       setSelectedApplicants([]);
       setSelectedStatus("");
       setIsStatusModalOpen(false);
@@ -737,10 +849,14 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
       if (failedUpdates.length > 0 || failedEmails.length > 0) {
         let warningMessage = "";
         if (failedUpdates.length > 0) {
-          warningMessage += `Status update failed for: ${failedUpdates.join(", ")}. Applicant records may not exist or the endpoint may be incorrect. `;
+          warningMessage += `Status update failed for: ${failedUpdates.join(
+            ", "
+          )}. Applicant records may not exist or the endpoint may be incorrect. `;
         }
         if (failedEmails.length > 0) {
-          warningMessage += `Email sending failed for: ${failedEmails.join(", ")}.`;
+          warningMessage += `Email sending failed for: ${failedEmails.join(
+            ", "
+          )}.`;
         }
         toast.warning(warningMessage);
       } else {
@@ -754,10 +870,15 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
       console.error("Status update error:", err);
       let errorMessage = "Failed to update applicant statuses or send emails.";
       if (err.response?.status === 401 || err.response?.status === 403) {
-        errorMessage = "Session expired or insufficient permissions. Please try again.";
+        errorMessage =
+          "Session expired or insufficient permissions. Please try again.";
         router.push("/login");
-      } else if (err.response?.status === 404 || err?.exc_type === "DoesNotExistError") {
-        errorMessage = "Job Applicant resource not found. Please verify the API endpoint or contact support.";
+      } else if (
+        err.response?.status === 404 ||
+        err?.exc_type === "DoesNotExistError"
+      ) {
+        errorMessage =
+          "Job Applicant resource not found. Please verify the API endpoint or contact support.";
       } else if (err.response?.data?.message) {
         errorMessage = err.response.data.message;
       }
@@ -788,7 +909,7 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
   };
 
   if (loading) {
-  <LoadingState/>
+    <LoadingState />;
   }
 
   if (error) {
@@ -888,10 +1009,10 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
         showDeleteButton={true}
         onDeleteApplicant={handleDeleteApplicant}
         onInterviewRowClick={(applicant) => {
-    console.log("Interview row clicked:", applicant); // Debug log
-    setSelectedInterviewApplicant(applicant);
-    setIsInterviewDetailsModalOpen(true);
-  }}
+          console.log("Interview row clicked:", applicant); // Debug log
+          setSelectedInterviewApplicant(applicant);
+          setIsInterviewDetailsModalOpen(true);
+        }}
       />
 
       {showEmailPopup && (
@@ -942,64 +1063,86 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
                 <p className="text-md">{modalError}</p>
               </div>
             )}
-           <div className="mb-4 text-md">
-  <label className="block text-gray-700 font-semibold mb-2 text-md">
-    Select New Status
-  </label>w
-  
-  {/* First Level - Main Status */}
-  {!selectedStatus || !["Interview To be Scheduled", "Interview Scheduled", "Interview Reject", "Cleared"].includes(selectedStatus) ? (
-    <select
-      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition-all bg-gray-50 text-gray-900 text-md"
-      value={selectedStatus}
-      onChange={(e) => {
-  const newStatus = e.target.value;
-  setSelectedStatus(newStatus);
-  
-  if (newStatus === "Assessment") {
-    const allShortlisted = selectedApplicants.every(
-      (applicant) => applicant.status?.toLowerCase() === "shortlisted"
-    );
-    if (!allShortlisted) {
-      setModalError('Assessment can only be created for applicants with "Shortlisted" status.');
-      return;
-    }
-    setIsStatusModalOpen(false);
-    setIsAssessmentModalOpen(true);
-  } 
-  else if (newStatus === "Offered") {
-    setIsStatusModalOpen(false);
-    setIsOfferModalOpen(true);
-  }
-  else if (newStatus === "Interview") {
-    // NEW: Handle Interview immediately without going to confirm step
-    setIsStatusModalOpen(false);
-    handleConfirmStatusChangeForInterview("Interview To Be Scheduled");
-    if (selectedApplicants.length > 0) {
-      setSelectedInterviewApplicant(selectedApplicants[0]);
-      setIsInterviewDetailsModalOpen(true);
-    }
-  }
-}}
+            <div className="mb-4 text-md">
+              <label className="block text-gray-700 font-semibold mb-2 text-md">
+                Select New Status
+              </label>
+              w{/* First Level - Main Status */}
+              {!selectedStatus ||
+              ![
+                "Interview To be Scheduled",
+                "Interview Scheduled",
+                "Interview Reject",
+                "Cleared",
+              ].includes(selectedStatus) ? (
+                <select
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition-all bg-gray-50 text-gray-900 text-md"
+                  value={selectedStatus}
+                  onChange={(e) => {
+                    const newStatus = e.target.value;
+                    setSelectedStatus(newStatus);
 
-      aria-label="Select status"
-    >
-      <option value="" disabled className="text-gray-500 text-md">
-        Select a status...
-      </option>
-      <option value="Tagged" className="text-md">Tagged</option>
-      <option value="Shortlisted" className="text-md">Shortlisted</option>
-      <option value="Assessment" className="text-md">Assessment</option>
-      <option value="Interview to be Scheduled"className="text-md">Interview to be Scheduled</option>
-      <option value="Interview" className="text-md">Interview</option>
-      <option value="Offered" className="text-md">Offered</option>
-      <option value="Offer Drop" className="text-md">Offer Drop</option>
-      <option value="Joined" className="text-md">Joined</option>
-    </select>
-  ) : null}
-
-  {/* Second Level - Interview Sub-options */}
-  {/* {selectedStatus === "Interview" && (
+                    if (newStatus === "Assessment") {
+                      const allShortlisted = selectedApplicants.every(
+                        (applicant) =>
+                          applicant.status?.toLowerCase() === "shortlisted"
+                      );
+                      if (!allShortlisted) {
+                        setModalError(
+                          'Assessment can only be created for applicants with "Shortlisted" status.'
+                        );
+                        return;
+                      }
+                      setIsStatusModalOpen(false);
+                      setIsAssessmentModalOpen(true);
+                    } else if (newStatus === "Offered") {
+                      setIsStatusModalOpen(false);
+                      setIsOfferModalOpen(true);
+                    } else if (newStatus === "Interview") {
+                      // NEW: Handle Interview immediately without going to confirm step
+                      setIsStatusModalOpen(false);
+                      handleConfirmStatusChangeForInterview(
+                        "Interview To Be Scheduled"
+                      );
+                      if (selectedApplicants.length > 0) {
+                        setSelectedInterviewApplicant(selectedApplicants[0]);
+                        setIsInterviewDetailsModalOpen(true);
+                      }
+                    }
+                  }}
+                  aria-label="Select status"
+                >
+                  <option value="" disabled className="text-gray-500 text-md">
+                    Select a status...
+                  </option>
+                  <option value="Tagged" className="text-md">
+                    Tagged
+                  </option>
+                  <option value="Shortlisted" className="text-md">
+                    Shortlisted
+                  </option>
+                  <option value="Assessment" className="text-md">
+                    Assessment
+                  </option>
+                  <option value="Interview to be Scheduled" className="text-md">
+                    Interview to be Scheduled
+                  </option>
+                  <option value="Interview" className="text-md">
+                    Interview
+                  </option>
+                  <option value="Offered" className="text-md">
+                    Offered
+                  </option>
+                  <option value="Offer Drop" className="text-md">
+                    Offer Drop
+                  </option>
+                  <option value="Joined" className="text-md">
+                    Joined
+                  </option>
+                </select>
+              ) : null}
+              {/* Second Level - Interview Sub-options */}
+              {/* {selectedStatus === "Interview" && (
     <div className="mt-4 space-y-3">
       <div className="flex items-center gap-2 mb-2">
         <button
@@ -1055,7 +1198,7 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
       </button>
     </div>
   )} */}
-</div>
+            </div>
 
             <div className="mb-6">
               <p className="text-gray-600 font-medium mb-2 text-md">
@@ -1082,7 +1225,9 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
                     </div>
                     {selectedStatus && (
                       <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedStatus)}`}
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                          selectedStatus
+                        )}`}
                       >
                         {selectedStatus}
                       </span>
@@ -1101,7 +1246,11 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
               </button>
               <button
                 onClick={handleStatusChangeRequest}
-                disabled={!selectedStatus || selectedStatus === "Assessment" || selectedStatus === "Offered"}
+                disabled={
+                  !selectedStatus ||
+                  selectedStatus === "Assessment" ||
+                  selectedStatus === "Offered"
+                }
                 className="px-5 py-2.5 text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all font-medium shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed text-md"
                 aria-label="Confirm status change"
               >
@@ -1291,7 +1440,8 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
             <div className="mb-6">
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
                 <p className="text-gray-800 font-semibold mb-2">
-                  You are moving applicant(s) from a higher stage to a lower stage:
+                  You are moving applicant(s) from a higher stage to a lower
+                  stage:
                 </p>
                 <div className="flex items-center justify-center gap-3 my-3">
                   <span className="px-3 py-1.5 bg-blue-100 text-blue-800 rounded-full font-medium">
@@ -1303,7 +1453,8 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
                   </span>
                 </div>
                 <p className="text-gray-700 text-md mt-3">
-                  This action will move {selectedApplicants.length} applicant(s) backwards in the hiring process.
+                  This action will move {selectedApplicants.length} applicant(s)
+                  backwards in the hiring process.
                 </p>
               </div>
               <p className="text-gray-600 font-medium text-md">
@@ -1335,7 +1486,7 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
         </div>
       )}
 
-     {/* {isInterviewScheduleModalOpen && selectedApplicants.length > 0 && (
+      {/* {isInterviewScheduleModalOpen && selectedApplicants.length > 0 && (
   <InterviewScheduleModal
     isOpen={isInterviewScheduleModalOpen}
     onClose={() => setIsInterviewScheduleModalOpen(false)}
@@ -1351,18 +1502,16 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
   />
 )} */}
 
-{isInterviewDetailsModalOpen && selectedInterviewApplicant && (
-  <InterviewDetailsModal
-    isOpen={isInterviewDetailsModalOpen}
-    onClose={() => setIsInterviewDetailsModalOpen(false)}
-    applicant={selectedInterviewApplicant}
-    jobId={jobId}
-    onStatusUpdate={handleInterviewStatusUpdate}
-    currentUserEmail={ownerEmail}
-  />
-)}
-
-
+      {isInterviewDetailsModalOpen && selectedInterviewApplicant && (
+        <InterviewDetailsModal
+          isOpen={isInterviewDetailsModalOpen}
+          onClose={() => setIsInterviewDetailsModalOpen(false)}
+          applicant={selectedInterviewApplicant}
+          jobId={jobId}
+          onStatusUpdate={handleInterviewStatusUpdate}
+          currentUserEmail={ownerEmail}
+        />
+      )}
     </div>
   );
 }
