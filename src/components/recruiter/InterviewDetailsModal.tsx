@@ -8,10 +8,12 @@ import {
   BriefcaseIcon,
   UserIcon,
   Plus,
+  Clock,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Attachment } from "@/lib/mail/mailer3";
+import CustomTimeDropdown from "./CustomTimeDropdown";
 
 // JobApplicant interface
 interface JobApplicant {
@@ -142,7 +144,7 @@ const generateTimeSlots = (minTime: string): string[] => {
   const timeSlots: string[] = [];
   const startHour = minTime ? Math.max(parseInt(minTime.split(":")[0]), 9) : 9; // Start at 9 AM or minTime
   const startMinute = minTime ? parseInt(minTime.split(":")[1]) : 0;
-  const endHour = 24; // End at 6 PM
+  const endHour = 23; // End at 6 PM
 
   for (let hour = startHour; hour <= endHour; hour++) {
     const startMin = hour === startHour ? Math.ceil(startMinute / 30) * 30 : 0;
@@ -985,38 +987,53 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
                 />
               </div>
 
-<div>
+{/* <div className="flex justify-between items-center">
   <label className="block text-gray-700 font-semibold mb-2 text-md">
     From Time <span className="text-red-500">*</span>
   </label>
-  <select
-    value={formData.from_time}
-    onChange={(e) => setFormData({ ...formData, from_time: e.target.value })}
-    style={{
-      maxHeight: "10rem",
-      overflowY: "auto",
-      width: "100%",
-      padding: "0.625rem 1rem", // Matches Tailwind's px-4 py-2.5
-      border: "1px solid #e5e7eb", // Matches Tailwind's border-gray-200
-      borderRadius: "0.5rem", // Matches Tailwind's rounded-lg
-      backgroundColor: "#fff",
-      fontSize: "0.875rem", // Matches Tailwind's text-md
-    }}
-    required
-    disabled={isSubmitting || isSendingEmail || !formData.schedule_date || availableTimeSlots.length === 0}
-  >
-    <option value="">Select Time</option>
-    {availableTimeSlots.map((time) => (
-      <option key={time} value={time}>
-        {time}
-      </option>
-    ))}
-  </select>
+  <div className="relative">
+    <Clock className="absolute left-3 top-3.5 h-5 w-5 text-gray-400 pointer-events-none z-10" />
+    <select size={10}
+      value={formData.from_time}
+      onChange={(e) => setFormData({ ...formData, from_time: e.target.value })}
+      className="pl-10 pr-2 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-md appearance-none transition-all hover:border-gray-400 disabled:bg-gray-50 disabled:text-gray-400 h-5"
+      style={{
+        height: "2.75rem", // Fixed height for select input
+        maxHeight: "2.75rem", // Max height for dropdown, scrollable beyond this
+        width: "100%", // Full width for consistency
+        overflowY: "auto", // Enable scrolling for dropdown
+        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+        backgroundRepeat: "no-repeat",
+        backgroundPosition: "right 1rem center",
+        paddingRight: "2.5rem",
+      }}
+      required
+      disabled={isSubmitting || isSendingEmail || !formData.schedule_date || availableTimeSlots.length === 0}
+    >
+      <option value="">Select Time</option>
+      {availableTimeSlots.map((time) => (
+        <option key={time} value={time}>
+          {time}
+        </option>
+      ))}
+    </select>
+  </div>
   {formData.schedule_date && availableTimeSlots.length === 0 && (
-    <p className="text-xs text-red-500 mt-1">No available time slots for the selected date</p>
+    <div className="flex items-center gap-2 mt-2 p-2 bg-yellow-50 rounded border border-yellow-200">
+      <AlertCircle className="h-4 w-4 text-yellow-600 flex-shrink-0" />
+      <p className="text-xs text-yellow-700">No available time slots for the selected date</p>
+    </div>
   )}
-</div>
+</div> */}
 
+
+<CustomTimeDropdown 
+  timeSlots={availableTimeSlots}
+  selectedTime={formData.from_time}
+  onSelectTime={(time) => setFormData({ ...formData, from_time: time })}
+  disabled={isSubmitting || isSendingEmail || !formData.schedule_date || availableTimeSlots.length === 0}
+  
+/>
               <div>
                 <label className="block text-gray-700 font-semibold mb-2 text-md">
                   Interview Round <span className="text-red-500">*</span>
