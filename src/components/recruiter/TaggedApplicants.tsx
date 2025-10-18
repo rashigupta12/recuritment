@@ -1067,7 +1067,7 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
               <label className="block text-gray-700 font-semibold mb-2 text-md">
                 Select New Status
               </label>
-              w{/* First Level - Main Status */}
+              {/* First Level - Main Status */}
               {!selectedStatus ||
               ![
                 "Interview To be Scheduled",
