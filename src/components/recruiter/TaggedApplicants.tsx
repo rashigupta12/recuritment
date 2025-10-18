@@ -945,7 +945,7 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
            <div className="mb-4 text-md">
   <label className="block text-gray-700 font-semibold mb-2 text-md">
     Select New Status
-  </label>w
+  </label>
   
   {/* First Level - Main Status */}
   {!selectedStatus || !["Interview To be Scheduled", "Interview Scheduled", "Interview Reject", "Cleared"].includes(selectedStatus) ? (

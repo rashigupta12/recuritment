@@ -339,7 +339,7 @@ const TodosManagement = () => {
         uniqueStatus={uniqueStatus}
         onFilterChange={handleFilterChange}
         filterConfig={filterConfig}
-        title="My Jobs"
+        title="Total Open Positions"
       />
 
       <div className="w-full mx-auto mt-4" ref={tableRef}>
