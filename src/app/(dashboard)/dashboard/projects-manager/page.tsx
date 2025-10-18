@@ -652,13 +652,28 @@ export default function ManagerDashboard() {
             />
             <div className="h-64 flex items-center justify-center cursor-pointer mt-2">
               <Doughnut
-                data={jobStatusData}
+                data={{
+                  ...jobStatusData,
+                  datasets: jobStatusData.datasets.map((dataset) => ({
+                    ...dataset,
+                    borderWidth: 0,
+                    borderColor: "transparent",
+                  })),
+                }}
                 options={{
                   responsive: true,
                   maintainAspectRatio: false,
                   plugins: {
                     datalabels: {
-                      display: false,
+                      display: true,
+                      color: "#ffffff",
+                      font: {
+                        weight: "bold",
+                        size: 14,
+                      },
+                      formatter: (value) => {
+                        return value > 0 ? value : "";
+                      },
                     },
                     tooltip: {
                       callbacks: {
