@@ -217,7 +217,8 @@ const LeadsTableRowV2 = ({ lead, onView, onEdit }: LeadsTableRowV2Props) => {
 
   console.log(lead)
   return (
-    <tr className="hover:bg-gray-50">
+    <tr className="hover:bg-gray-50 cursor-pointer" onClick={onView}>
+      
       <td className="px-4 py-2 max-w-[230px]">
         <div className="text-md text-gray-900 break-all whitespace-normal">
           {formatCompanyNameV2(lead.company_name || '') || "-"}
@@ -328,15 +329,18 @@ const LeadsTableRowV2 = ({ lead, onView, onEdit }: LeadsTableRowV2Props) => {
           lead.custom_stage !== "Follow-Up / Relationship Management" ? (
             <EditIcon
               className="text-green-500 h-5 w-5 cursor-pointer hover:text-green-600 transition-colors"
-              onClick={onEdit}
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent row click
+                onEdit();
+              }}
             />
           ) : (
             <div className="h-5 w-5"></div>
           )}
-          <Eye
+          {/* <Eye
             className="h-5 w-5 text-blue-400 cursor-pointer hover:text-blue-600 transition-colors"
             onClick={onView}
-          />
+          /> */}
         </div>
       </td>
     </tr>
