@@ -945,10 +945,10 @@ ${process.env.NEXT_PUBLIC_COMPANY_NAME || "HEVHire Team"}`,
            <div className="mb-4 text-md">
   <label className="block text-gray-700 font-semibold mb-2 text-md">
     Select New Status
-  </label>
+  </label>w
   
   {/* First Level - Main Status */}
-  {!selectedStatus || !["Interview To Be Scheduled", "Interview Scheduled", "Interview Reject", "Cleared"].includes(selectedStatus) ? (
+  {!selectedStatus || !["Interview To be Scheduled", "Interview Scheduled", "Interview Reject", "Cleared"].includes(selectedStatus) ? (
     <select
       className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm transition-all bg-gray-50 text-gray-900 text-md"
       value={selectedStatus}
