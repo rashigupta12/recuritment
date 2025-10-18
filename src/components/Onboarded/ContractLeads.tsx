@@ -329,7 +329,7 @@ const ContractLeads = () => {
               filters.jobTitles.length > 0 ||
               filters.status
                 ? "Try adjusting your search terms or filters"
-                : "No contract-ready leads are available at the moment."}
+                : ""}
             </div>
           </div>
         )}

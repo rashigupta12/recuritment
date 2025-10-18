@@ -74,8 +74,8 @@ const TodosManagement = () => {
       setTodos(todos);
       setCurrentPage(1);
     } catch (error) {
-      console.error("Error fetching todos:", error);
-      showToast.error("Failed to fetch todos.");
+      console.log("Error fetching todos:", error);
+
     } finally {
       setLoading(false);
     }
@@ -339,7 +339,7 @@ const TodosManagement = () => {
         uniqueStatus={uniqueStatus}
         onFilterChange={handleFilterChange}
         filterConfig={filterConfig}
-        title="My Jobs"
+        title="Total Open Positions"
       />
 
       <div className="w-full mx-auto mt-4" ref={tableRef}>
