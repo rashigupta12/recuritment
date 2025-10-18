@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Search, ChevronDown, Check } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { ChevronDown, Check } from 'lucide-react';
 
 interface Currency {
   name: string;
@@ -39,20 +39,18 @@ const CurrencyDropdown: React.FC<CurrencyDropdownProps> = ({
     { name: 'SGD', symbol: 'S$' }
   ];
 
-  // Calculate dropdown position
-  const calculateDropdownPosition = () => {
+  // Calculate dropdown position using viewport coordinates
+  const calculateDropdownPosition = useCallback(() => {
     if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
-      const scrollY = window.scrollY;
-      const scrollX = window.scrollX;
       
       setDropdownPosition({
-        top: rect.bottom + scrollY + 4,
-        left: rect.left + scrollX,
+        top: rect.bottom + 4, // Use viewport coordinates with small offset
+        left: rect.left,
         width: Math.max(200, rect.width)
       });
     }
-  };
+  }, []);
 
   useEffect(() => {
     const fetchCurrencies = async () => {
@@ -82,31 +80,24 @@ const CurrencyDropdown: React.FC<CurrencyDropdownProps> = ({
       }
     };
 
-    const handleScroll = () => {
-      if (isOpen) {
-        calculateDropdownPosition();
-      }
-    };
-
-    const handleResize = () => {
-      if (isOpen) {
-        calculateDropdownPosition();
-      }
+    const handleUpdate = () => {
+      requestAnimationFrame(calculateDropdownPosition);
     };
 
     if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      window.addEventListener('scroll', handleScroll, true);
-      window.addEventListener('resize', handleResize);
       calculateDropdownPosition();
+      document.addEventListener('mousedown', handleClickOutside);
+      // Listen to all scroll events using capture phase
+      window.addEventListener('scroll', handleUpdate, true);
+      window.addEventListener('resize', handleUpdate);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
-      window.removeEventListener('scroll', handleScroll, true);
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleUpdate, true);
+      window.removeEventListener('resize', handleUpdate);
     };
-  }, [isOpen]);
+  }, [isOpen, calculateDropdownPosition]);
 
   const filteredCurrencies = currencies.filter(currency =>
     currency.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -134,7 +125,7 @@ const CurrencyDropdown: React.FC<CurrencyDropdownProps> = ({
         </button>
       </div>
 
-      {/* Dropdown Portal - Fixed positioning */}
+      {/* Dropdown - Fixed positioning with viewport coordinates */}
       {isOpen && (
         <div 
           ref={dropdownRef} 

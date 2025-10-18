@@ -16,7 +16,7 @@ import {
   Upload
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { SortableTableHeader } from "../recruiter/SortableTableHeader";
 import {
@@ -198,6 +198,7 @@ const EmploymentTypeDropdown: React.FC<{
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -248,6 +249,18 @@ const EmploymentTypeDropdown: React.FC<{
     }
   }, [searchQuery, employmentTypes]);
 
+  // Enhanced position calculation using viewport coordinates
+  const calculateDropdownPosition = useCallback(() => {
+    if (dropdownRef.current) {
+      const rect = dropdownRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + 4, // Use viewport coordinates with small offset
+        left: rect.left,
+        width: rect.width,
+      });
+    }
+  }, []);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -260,16 +273,28 @@ const EmploymentTypeDropdown: React.FC<{
     };
 
     if (isOpen) {
+      calculateDropdownPosition();
+      
+      const handleUpdate = () => {
+        requestAnimationFrame(calculateDropdownPosition);
+      };
+
       document.addEventListener("mousedown", handleClickOutside);
+      // Listen to all scroll events using capture phase
+      window.addEventListener("scroll", handleUpdate, true);
+      window.addEventListener("resize", handleUpdate);
+      
       setTimeout(() => {
         inputRef.current?.focus();
       }, 100);
-    }
 
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isOpen]);
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+        window.removeEventListener("scroll", handleUpdate, true);
+        window.removeEventListener("resize", handleUpdate);
+      };
+    }
+  }, [isOpen, calculateDropdownPosition]);
 
   const handleSelect = (type: string) => {
     onChange(type);
@@ -341,18 +366,9 @@ const EmploymentTypeDropdown: React.FC<{
         <div
           className="fixed bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto mt-1 min-w-[200px]"
           style={{
-            top: dropdownRef.current
-              ? dropdownRef.current.getBoundingClientRect().bottom +
-                window.scrollY +
-                4
-              : 0,
-            left: dropdownRef.current
-              ? dropdownRef.current.getBoundingClientRect().left +
-                window.scrollX
-              : 0,
-            width: dropdownRef.current
-              ? dropdownRef.current.getBoundingClientRect().width
-              : "auto",
+            top: `${dropdownPosition.top}px`,
+            left: `${dropdownPosition.left}px`,
+            width: `${dropdownPosition.width}px`,
             zIndex: 9999,
           }}
         >

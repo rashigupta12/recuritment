@@ -103,12 +103,13 @@ const LocationDropdown: React.FC<LocationDropdownProps> = ({
     }
   };
 
+  // Enhanced position calculation using viewport coordinates
   const calculatePos = useCallback(() => {
     if (triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
       setPos({
-        top: rect.bottom + window.scrollY + 4,
-        left: rect.left + window.scrollX,
+        top: rect.bottom + 4, // Use viewport coordinates with small offset
+        left: rect.left,
         width: rect.width,
       });
     }
@@ -117,6 +118,7 @@ const LocationDropdown: React.FC<LocationDropdownProps> = ({
   useEffect(() => {
     if (isOpen) {
       calculatePos();
+      
       const handleClick = (e: MouseEvent) => {
         if (
           dropdownRef.current &&
@@ -126,13 +128,20 @@ const LocationDropdown: React.FC<LocationDropdownProps> = ({
           setIsOpen(false);
         }
       };
+
+      const handleUpdate = () => {
+        requestAnimationFrame(calculatePos);
+      };
+
       document.addEventListener("mousedown", handleClick);
-      window.addEventListener("scroll", calculatePos, true);
-      window.addEventListener("resize", calculatePos);
+      // Listen to all scroll events using capture phase
+      window.addEventListener("scroll", handleUpdate, true);
+      window.addEventListener("resize", handleUpdate);
+      
       return () => {
         document.removeEventListener("mousedown", handleClick);
-        window.removeEventListener("scroll", calculatePos, true);
-        window.removeEventListener("resize", calculatePos);
+        window.removeEventListener("scroll", handleUpdate, true);
+        window.removeEventListener("resize", handleUpdate);
       };
     }
   }, [isOpen, calculatePos]);
@@ -147,7 +156,11 @@ const LocationDropdown: React.FC<LocationDropdownProps> = ({
     <div
       ref={dropdownRef}
       className="fixed bg-white border border-gray-200 rounded shadow-lg max-h-48 overflow-y-auto z-[9999]"
-      style={{ top: pos.top, left: pos.left, width: 250 }}
+      style={{ 
+        top: `${pos.top}px`, 
+        left: `${pos.left}px`, 
+        width: '250px'
+      }}
     >
       {loading ? (
         <div className="flex items-center justify-center p-2 text-md text-gray-500">

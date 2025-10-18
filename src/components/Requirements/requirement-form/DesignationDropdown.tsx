@@ -34,11 +34,9 @@ const DesignationDropdown: React.FC<Props> = ({ value, onChange }) => {
     } else {
       if (dialog.open) dialog.close();
     }
-    // Clean up: ensure dialog closed on unmount
     return () => { if (dialog.open) dialog.close(); };
   }, [showAddDialog]);
 
-  // Listen for dialog's close to update React state as well
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
@@ -71,7 +69,7 @@ const DesignationDropdown: React.FC<Props> = ({ value, onChange }) => {
     }
   }, []);
 
-const addNewDesignation = async () => {
+  const addNewDesignation = async () => {
     if (!newDesignation.trim()) return;
     try {
       setLoading(true);
@@ -82,11 +80,9 @@ const addNewDesignation = async () => {
         { designation_name: finalDesignation }
       );
       if (res.data) {
-        // Update value
         setSearchQuery(finalDesignation);
         onChange(finalDesignation);
         setNewDesignation("");
-        // Close dialog and clear results
         setShowAddDialog(false);
         setResults([]);
         setIsOpen(false);
@@ -98,28 +94,34 @@ const addNewDesignation = async () => {
       setLoading(false);
     }
   };
-  // Dropdown position calculation
+
+  // Enhanced dropdown position calculation
   const calculateDropdownPosition = useCallback(() => {
     if (!triggerRef.current) return;
     const inputRect = triggerRef.current.getBoundingClientRect();
-    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-    const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
     setDropdownPosition({
-      top: inputRect.bottom + scrollTop,
-      left: inputRect.left + scrollLeft,
+      top: inputRect.bottom + 4, // Use viewport coordinates with small offset
+      left: inputRect.left,
       width: inputRect.width,
     });
   }, []);
 
+  // Update position on scroll and resize
   useEffect(() => {
     if (isOpen) {
       calculateDropdownPosition();
-      const handleResize = () => calculateDropdownPosition();
-      window.addEventListener("resize", handleResize);
-      window.addEventListener("scroll", handleResize);
+      
+      const handleUpdate = () => {
+        requestAnimationFrame(calculateDropdownPosition);
+      };
+
+      // Listen to all scroll events (window and any scrollable parent)
+      window.addEventListener("scroll", handleUpdate, true); // Use capture phase
+      window.addEventListener("resize", handleUpdate);
+      
       return () => {
-        window.removeEventListener("resize", handleResize);
-        window.removeEventListener("scroll", handleResize);
+        window.removeEventListener("scroll", handleUpdate, true);
+        window.removeEventListener("resize", handleUpdate);
       };
     }
   }, [isOpen, calculateDropdownPosition]);
@@ -161,30 +163,21 @@ const addNewDesignation = async () => {
     setIsOpen(false);
   };
 
-  // const handleClearDesignation = (e: React.MouseEvent) => {
-  //   e.preventDefault();
-  //   e.stopPropagation();
-  //   setSearchQuery("");
-  //   onChange("");
-  //   setResults([]);
-  //   setIsOpen(false);
-  // };
-
   const handleOpenAddDialog = () => {
     setShowAddDialog(true);
     setNewDesignation(searchQuery);
     setIsOpen(false);
   };
 
-  // Dropdown as portal
+  // Dropdown as portal with fixed positioning
   const DropdownContent = () => (
     <div
       ref={dropdownRef}
       className="fixed bg-white shadow-lg rounded-md border border-gray-200 max-h-60 overflow-y-auto z-[9999]"
       style={{
-        top: dropdownPosition.top,
-        left: dropdownPosition.left,
-        width: dropdownPosition.width,
+        top: `${dropdownPosition.top}px`,
+        left: `${dropdownPosition.left}px`,
+        width: `${dropdownPosition.width}px`,
       }}
     >
       {loading ? (
